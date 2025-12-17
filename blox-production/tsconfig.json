@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/admin" },
+    { "path": "./packages/customer" },
+    { "path": "./packages/shared" }
+  ]
+}

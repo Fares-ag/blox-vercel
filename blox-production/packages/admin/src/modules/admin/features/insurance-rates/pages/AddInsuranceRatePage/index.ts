@@ -1,0 +1,2 @@
+export { AddInsuranceRatePage } from './AddInsuranceRatePage';
+

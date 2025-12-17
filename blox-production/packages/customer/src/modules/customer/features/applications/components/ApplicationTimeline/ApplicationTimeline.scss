@@ -1,0 +1,46 @@
+.application-timeline {
+  .timeline-title {
+    margin-bottom: 24px;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .MuiTimeline-root {
+    padding-left: 0;
+    padding-right: 0;
+    align-items: flex-start;
+  }
+
+  .MuiTimelineItem-root {
+    &::before {
+      display: none;
+    }
+  }
+
+  .MuiTimelineContent-root {
+    text-align: left !important;
+    padding-left: 16px !important;
+    padding-right: 0 !important;
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+  }
+
+  .timeline-content-box {
+    padding: 8px 0;
+    text-align: left;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+
+    .MuiTypography-root {
+      text-align: left;
+      width: 100%;
+    }
+  }
+}
+
+

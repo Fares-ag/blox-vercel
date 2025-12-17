@@ -1,0 +1,45 @@
+.contact-support-page {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .page-title {
+    margin-bottom: 32px;
+    font-weight: 600;
+  }
+
+  .contact-form-card {
+    padding: 32px;
+  }
+
+  .contact-info-card {
+    padding: 24px;
+
+    .section-title {
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .business-hours {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e0e0e0;
+    }
+  }
+
+  @media (max-width: 960px) {
+    padding: 16px;
+
+    .contact-form-card {
+      padding: 24px;
+    }
+  }
+}
+
+

@@ -1,0 +1,111 @@
+.edit-package-page {
+  padding: 24px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+
+      .back-button {
+        flex-shrink: 0;
+        color: var(--primary-color);
+        font-weight: 600;
+        text-transform: none;
+        &:hover {
+          background-color: rgba(var(--primary-color-rgb), 0.1);
+        }
+      }
+
+      .page-title {
+        font-weight: 700;
+        color: var(--primary-text);
+        font-size: 28px;
+      }
+    }
+  }
+
+  .form-container {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 24px;
+    width: 100%;
+
+    .items-section {
+      .items-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .empty-items {
+        padding: 24px;
+        text-align: center;
+        background-color: var(--background-light);
+        border-radius: 8px;
+        border: 1px dashed var(--field-border-color);
+      }
+
+      .items-list {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .item-card {
+          padding: 16px;
+          background-color: var(--background-light);
+
+          .delete-item-button {
+            margin-top: 8px;
+          }
+        }
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--field-border-color);
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .header-left {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+
+        .back-button {
+          margin-bottom: 8px;
+        }
+      }
+    }
+
+    .form-container {
+      padding: 16px;
+    }
+  }
+}
+

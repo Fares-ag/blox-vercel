@@ -1,0 +1,101 @@
+.applications-list-page {
+  padding: 24px;
+  min-height: 100vh;
+
+  .page-title {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 700;
+    color: #000000;
+    margin-bottom: 8px;
+  }
+
+  .page-subtitle {
+    color: rgba(0, 0, 0, 0.7);
+    margin-bottom: 32px;
+  }
+
+  .applications-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 24px;
+
+    .application-card {
+      background-color: #FFFFFF;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+      &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #E5E7EA;
+
+        .application-id {
+          font-weight: 700;
+          color: #000000;
+          margin-bottom: 4px;
+        }
+      }
+
+      .card-details {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 20px;
+
+        .detail-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+
+        .view-button {
+          color: #16535B;
+          border-color: #16535B;
+          text-transform: none;
+          font-weight: 600;
+
+          &:hover {
+            border-color: #00CFA2;
+            background-color: #EAF7F3;
+          }
+        }
+
+        .download-button {
+          color: #00CFA2;
+          border-color: #00CFA2;
+          text-transform: none;
+          font-weight: 600;
+
+          &:hover {
+            background-color: #EAF7F3;
+          }
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .applications-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+  }
+}
+

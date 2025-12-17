@@ -1,0 +1,193 @@
+.customer-nav {
+  background: rgba(255, 255, 255, 1);
+  backdrop-filter: blur(12px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+  color: #000000;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+
+  .nav-toolbar {
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 100%;
+    min-height: 64px;
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      margin-right: 32px;
+
+      .logo-image {
+        height: 40px;
+        width: auto;
+        object-fit: contain;
+      }
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+
+      .nav-link {
+        color: #1a1a1a;
+        text-transform: none;
+        font-weight: 600;
+        font-size: 15px;
+        letter-spacing: 0.01em;
+        padding: 10px 18px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+        font-family: 'IBM Plex Sans', sans-serif;
+
+        &:hover {
+          background-color: #00CFA2 !important;
+          color: #FFFFFF !important;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 8px rgba(0, 207, 162, 0.2);
+        }
+
+        &.active {
+          color: #FFFFFF;
+          background-color: #00CFA2;
+          font-weight: 700;
+          box-shadow: 0 2px 8px rgba(0, 207, 162, 0.3);
+          
+          &:hover {
+            background-color: #00B892 !important;
+            color: #FFFFFF;
+          }
+        }
+      }
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 6px;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+          background-color: rgba(0, 0, 0, 0.05);
+        }
+
+        .user-avatar {
+          width: 32px;
+          height: 32px;
+          background-color: #00CFA2;
+          color: #FFFFFF;
+          font-size: 14px;
+          font-weight: 600;
+        }
+
+        .user-name {
+          font-weight: 600;
+          color: #1a1a1a;
+          font-size: 14px;
+          font-family: 'IBM Plex Sans', sans-serif;
+        }
+      }
+
+      .auth-buttons {
+        display: flex;
+        gap: 12px;
+
+        .login-button {
+          color: #16535B;
+          border-color: #16535B;
+          border-width: 2px;
+          text-transform: none;
+          font-weight: 600;
+          font-size: 14px;
+          padding: 10px 24px;
+          font-family: 'IBM Plex Sans', sans-serif;
+          letter-spacing: 0.01em;
+
+          &:hover {
+            border-color: #00CFA2;
+            background-color: rgba(0, 207, 162, 0.1);
+            color: #00CFA2;
+            border-width: 2px;
+          }
+        }
+
+        .signup-button {
+          background-color: #00CFA2;
+          color: #FFFFFF;
+          text-transform: none;
+          font-weight: 600;
+          font-size: 14px;
+          padding: 10px 24px;
+          font-family: 'IBM Plex Sans', sans-serif;
+          letter-spacing: 0.01em;
+          box-shadow: 0 2px 6px rgba(0, 207, 162, 0.25);
+
+          &:hover {
+            background-color: #00B892;
+            box-shadow: 0 4px 8px rgba(0, 207, 162, 0.35);
+            transform: translateY(-1px);
+          }
+        }
+      }
+    }
+  }
+
+  .mobile-menu-button {
+    display: none;
+    color: #1a1a1a;
+
+    @media (max-width: 960px) {
+      display: flex;
+      margin-right: 8px;
+      margin-left: 0;
+    }
+  }
+
+  @media (max-width: 960px) {
+    .nav-toolbar {
+      padding: 12px 16px;
+
+      .logo-section {
+        margin-right: 16px;
+
+        .logo-image {
+          height: 32px;
+        }
+      }
+
+      .nav-links {
+        display: none; // Hide on mobile, use hamburger menu instead
+      }
+
+      .nav-actions {
+        .user-info {
+          .user-name {
+            display: none;
+          }
+        }
+
+        .auth-buttons {
+          gap: 8px;
+
+          .login-button,
+          .signup-button {
+            padding: 6px 12px;
+            font-size: 12px;
+          }
+        }
+      }
+    }
+  }
+}
+
+

@@ -1,0 +1,133 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #d9f5eb 0%, #9be2c7 50%, #7ad9c4 100%);
+  padding: clamp(16px, 4vw, 32px);
+
+  .login-shell {
+    width: min(1100px, 100%);
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    padding: clamp(16px, 3vw, 32px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(16px, 2vw, 24px);
+  }
+
+  .banner {
+    background: linear-gradient(90deg, #0a6b6a 0%, #009f84 60%, #00cfa2 100%);
+    color: #fff;
+    border-radius: 12px;
+    padding: clamp(16px, 3vw, 24px);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    &::after {
+      content: '';
+      position: absolute;
+      right: -80px;
+      bottom: -80px;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.25), transparent 60%);
+    }
+
+    .banner-kicker {
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .banner-body {
+      max-width: 760px;
+      line-height: 1.45;
+    }
+
+    .banner-cta {
+      width: fit-content;
+      margin-top: 4px;
+      background: #0a6b6a;
+      &:hover {
+        background: #07534f;
+      }
+    }
+  }
+
+  .login-form-card {
+    background: #fdfefe;
+    border: 1px solid #e7f2ed;
+    border-radius: 12px;
+    padding: clamp(20px, 3vw, 28px);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .form-title {
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .form-subtitle {
+    margin-bottom: 8px;
+  }
+
+  .form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .forgot-link {
+      color: #0a6b6a;
+      text-decoration: none;
+      font-size: 14px;
+
+      .forgot-cta {
+        font-weight: 600;
+        text-decoration: underline;
+      }
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .actions-row {
+    margin-top: 4px;
+  }
+
+  .signup-link {
+    text-align: center;
+    margin-top: 4px;
+
+    a {
+      color: #0a6b6a;
+      font-weight: 600;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .login-shell {
+      padding: 16px;
+    }
+
+    .banner {
+      padding: 16px;
+    }
+  }
+}
+

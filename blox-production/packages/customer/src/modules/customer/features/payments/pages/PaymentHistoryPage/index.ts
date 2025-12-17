@@ -1,0 +1,2 @@
+export { PaymentHistoryPage } from './PaymentHistoryPage';
+

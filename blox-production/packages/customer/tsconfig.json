@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@customer/*": ["./src/modules/customer/*"],
+      "@shared/*": ["../shared/src/*"]
+    }
+  },
+  "include": ["src"]
+}
+

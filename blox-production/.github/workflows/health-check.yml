@@ -1,0 +1,32 @@
+name: Health Check
+
+on:
+  schedule:
+    - cron: '*/5 * * * *' # Every 5 minutes
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    name: Health Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check staging health
+        run: |
+          curl -f https://staging-admin.blox.com/health || exit 1
+          curl -f https://staging-customer.blox.com/health || exit 1
+      
+      - name: Check production health
+        if: github.ref == 'refs/heads/main'
+        run: |
+          curl -f https://admin.blox.com/health || exit 1
+          curl -f https://customer.blox.com/health || exit 1
+      
+      - name: Notify on failure
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Health check failed!'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        continue-on-error: true
+

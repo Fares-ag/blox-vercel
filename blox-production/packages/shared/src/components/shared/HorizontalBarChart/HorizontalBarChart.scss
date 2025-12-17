@@ -1,0 +1,56 @@
+.horizontal-bar-chart {
+  margin-bottom: var(--spacing-md);
+
+  .bar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xs);
+
+    .bar-label {
+      font-weight: 500;
+      color: var(--primary-text);
+    }
+
+    .bar-value {
+      font-weight: 600;
+      color: var(--primary-text);
+    }
+  }
+}
+
+.segmented-bar-chart {
+  margin-bottom: var(--spacing-md);
+
+  .bar-label {
+    font-weight: 500;
+    color: var(--primary-text);
+  }
+
+  .segmented-bar-container {
+    display: flex;
+    height: 24px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: var(--spacing-sm) 0;
+
+    .segment {
+      height: 100%;
+      transition: width 0.3s ease;
+      &:not(:last-child) {
+        border-right: 1px solid rgba(255, 255, 255, 0.3);
+      }
+    }
+  }
+
+  .segment-labels {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+
+    .segment-label {
+      font-size: 12px;
+      font-weight: 500;
+    }
+  }
+}

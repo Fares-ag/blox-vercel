@@ -1,0 +1,57 @@
+// Responsive breakpoints
+$breakpoints: (
+  xs: 0,
+  sm: 600px,
+  md: 960px,
+  lg: 1280px,
+  xl: 1920px,
+);
+
+// Mixins for responsive design
+@mixin mobile {
+  @media (max-width: 767px) {
+    @content;
+  }
+}
+
+@mixin tablet {
+  @media (min-width: 768px) and (max-width: 1023px) {
+    @content;
+  }
+}
+
+@mixin desktop {
+  @media (min-width: 1024px) {
+    @content;
+  }
+}
+
+// Responsive utilities
+.hide-mobile {
+  @include mobile {
+    display: none !important;
+  }
+}
+
+.hide-desktop {
+  @include desktop {
+    display: none !important;
+  }
+}
+
+// Responsive grid adjustments
+.responsive-grid {
+  @include mobile {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+// Responsive table
+.responsive-table {
+  @include mobile {
+    .MuiTableCell-root {
+      padding: 8px 4px;
+      font-size: 12px;
+    }
+  }
+}

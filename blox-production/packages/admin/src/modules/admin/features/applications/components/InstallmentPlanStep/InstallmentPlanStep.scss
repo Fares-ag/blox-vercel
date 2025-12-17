@@ -1,0 +1,117 @@
+.installment-plan-step {
+  .section-title {
+    margin-bottom: var(--spacing-lg);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  .plan-summary {
+    margin-top: var(--spacing-lg);
+    padding: var(--spacing-xl);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+
+    .summary-title {
+      margin-bottom: var(--spacing-lg);
+      color: var(--primary-text);
+      font-weight: 600;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-md) 0;
+      border-bottom: 1px solid var(--divider-color);
+      transition: all var(--transition-fast);
+
+      &:hover {
+        background: rgba(0, 207, 162, 0.02);
+        margin: 0 calc(var(--spacing-md) * -1);
+        padding-left: var(--spacing-md);
+        padding-right: var(--spacing-md);
+        border-radius: var(--radius-sm);
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      .amount {
+        color: var(--primary-btn-bg);
+        font-weight: 600;
+        font-size: 16px;
+        letter-spacing: -0.01em;
+      }
+    }
+  }
+
+  .payment-schedule-section {
+    .schedule-year {
+      transition: all var(--transition-base);
+      
+      &:hover {
+        transform: translateX(4px);
+        box-shadow: var(--shadow-md);
+      }
+    }
+  }
+
+  // Responsive styles for tables in this step
+  .MuiTableContainer-root {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    
+    &::-webkit-scrollbar {
+      height: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: rgba(0, 207, 162, 0.3);
+      border-radius: 4px;
+      
+      &:hover {
+        background: rgba(0, 207, 162, 0.4);
+      }
+    }
+  }
+
+  @media (max-width: 960px) {
+    .MuiTableCell-root {
+      font-size: 12px;
+      padding: 10px 8px;
+      
+      &.MuiTableCell-head {
+        font-size: 11px;
+        padding: 12px 8px;
+      }
+    }
+  }
+
+  @media (max-width: 600px) {
+    .plan-summary {
+      padding: var(--spacing-md);
+    }
+
+    .MuiTableCell-root {
+      font-size: 11px;
+      padding: 8px 6px;
+      white-space: nowrap;
+      
+      &.MuiTableCell-head {
+        font-size: 10px;
+        padding: 10px 6px;
+      }
+    }
+  }
+}

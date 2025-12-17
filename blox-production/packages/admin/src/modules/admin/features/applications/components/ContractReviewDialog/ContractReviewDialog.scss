@@ -1,0 +1,22 @@
+.contract-review-dialog {
+  .dialog-title {
+    padding: var(--spacing-lg);
+    border-bottom: 1px solid var(--divider-color);
+
+    h3 {
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+  }
+
+  .dialog-content {
+    padding: var(--spacing-xl);
+  }
+
+  .dialog-actions {
+    padding: var(--spacing-lg);
+    border-top: 1px solid var(--divider-color);
+    gap: var(--spacing-md);
+  }
+}
+

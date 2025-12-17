@@ -1,0 +1,52 @@
+.offer-selection-step {
+  .section-title {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .offer-card {
+    padding: var(--spacing-md);
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+
+    &:hover {
+      box-shadow: var(--card-shadow);
+    }
+
+    &.selected {
+      border-color: var(--primary-btn-bg);
+      background-color: rgba(0, 207, 162, 0.1);
+    }
+
+    &.default {
+      border-left: 4px solid var(--status-active);
+    }
+
+    .offer-content {
+      flex: 1;
+
+      .offer-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-sm);
+
+        .default-badge {
+          background: var(--status-active);
+          color: white;
+          padding: 2px 8px;
+          border-radius: var(--radius-sm);
+        }
+      }
+
+      .offer-details {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+      }
+    }
+  }
+}

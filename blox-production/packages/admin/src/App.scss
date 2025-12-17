@@ -1,0 +1,14 @@
+.admin-app-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  background-image: url('/top-gradient.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  
+  // Ensure content is above background
+  position: relative;
+  z-index: 0;
+}
+

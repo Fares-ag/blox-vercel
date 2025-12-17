@@ -1,0 +1,102 @@
+.custom-input {
+  width: 100%;
+
+  .MuiOutlinedInput-root {
+    height: 48px;
+    min-height: 48px;
+    border-radius: 8px;
+    background-color: #ffffff;
+    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    &:hover {
+      background-color: #ffffff;
+      .MuiOutlinedInput-notchedOutline {
+        border-color: #00CFA2;
+      }
+    }
+
+    &.Mui-focused {
+      background-color: #ffffff;
+      .MuiOutlinedInput-notchedOutline {
+        border-color: #00CFA2;
+        border-width: 2px;
+      }
+    }
+
+    &.Mui-error {
+      .MuiOutlinedInput-notchedOutline {
+        border-color: #F95668;
+      }
+    }
+
+    &.Mui-disabled {
+      background-color: #F9FAFB;
+      .MuiOutlinedInput-notchedOutline {
+        border-color: #E5E7EB;
+      }
+    }
+
+    // Multiline inputs should have auto height
+    &.MuiInputBase-multiline {
+      height: auto;
+      min-height: 48px;
+      align-items: flex-start;
+    }
+
+    .MuiInputBase-input {
+      padding: 0 16px;
+      height: 48px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #000000;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 400;
+      
+      &::placeholder {
+        color: #9CA3AF;
+        opacity: 1;
+        font-weight: 400;
+      }
+    }
+
+    .MuiInputBase-inputMultiline {
+      padding: 12px 16px;
+      min-height: 48px;
+      height: auto;
+    }
+  }
+
+  .MuiInputLabel-root {
+    color: #16535B;
+    font-weight: 500;
+    font-size: 14px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    transform: translate(14px, 14px) scale(1);
+
+    &.MuiInputLabel-shrink {
+      transform: translate(14px, -9px) scale(0.85);
+    }
+
+    &.Mui-focused {
+      color: #00CFA2;
+    }
+
+    &.Mui-error {
+      color: #F95668;
+    }
+  }
+
+  .MuiFormHelperText-root {
+    color: #6B7280;
+    font-size: 12px;
+    margin-top: 6px;
+    margin-left: 0;
+    line-height: 1.4;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 400;
+
+    &.Mui-error {
+      color: #F95668;
+    }
+  }
+}

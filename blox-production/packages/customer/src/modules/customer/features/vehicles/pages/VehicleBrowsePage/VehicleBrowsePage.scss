@@ -1,0 +1,175 @@
+.vehicle-browse-page {
+  min-height: 100vh;
+  padding: 24px;
+  width: 100%;
+
+  .page-header {
+    margin-bottom: 32px;
+    
+    h2 {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .vehicle-count {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: #666666;
+    }
+  }
+
+  .search-section {
+    margin-bottom: 24px;
+  }
+
+  .main-content-wrapper {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .filter-panel-wrapper {
+    flex-shrink: 0;
+    width: 280px;
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+
+    .MuiPaper-root {
+      background-color: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+  }
+
+  .vehicles-grid-wrapper {
+    flex: 1;
+    min-width: 0; // Allows flex item to shrink below content size
+  }
+
+  .vehicles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+  }
+
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    background-color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 40px;
+  }
+
+  .pagination-section {
+    margin-top: 40px;
+    padding: 24px;
+    text-align: center;
+    background-color: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    .pagination-text {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666666;
+    }
+  }
+
+  // Tablet (768px - 1024px)
+  @media (max-width: 1024px) {
+    padding: 20px;
+
+    .main-content-wrapper {
+      gap: 20px;
+    }
+
+    .filter-panel-wrapper {
+      width: 240px;
+    }
+
+    .vehicles-grid {
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+  }
+
+  // Mobile (below 768px)
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .page-header {
+      margin-bottom: 20px;
+
+      h2 {
+        font-size: 24px;
+        line-height: 31.2px;
+      }
+    }
+
+    .search-section {
+      margin-bottom: 20px;
+    }
+
+    .main-content-wrapper {
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .filter-panel-wrapper {
+      width: 100%;
+      position: static;
+      max-height: none;
+      order: 2; // Show filter below on mobile
+    }
+
+    .vehicles-grid-wrapper {
+      order: 1; // Show vehicles first on mobile
+      width: 100%;
+    }
+
+    .vehicles-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .pagination-section {
+      margin-top: 24px;
+      padding: 16px;
+    }
+  }
+
+  // Small mobile (below 480px)
+  @media (max-width: 480px) {
+    padding: 12px 8px;
+
+    .page-header {
+      h2 {
+        font-size: 20px;
+        line-height: 26px;
+      }
+    }
+
+    .vehicles-grid {
+      gap: 12px;
+    }
+  }
+}
+

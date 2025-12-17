@@ -1,0 +1,59 @@
+.profile-page {
+  padding: 24px;
+  max-width: 1000px;
+  margin: 0 auto;
+
+  .back-button {
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    margin-bottom: 32px;
+    font-weight: 600;
+  }
+
+  .profile-card {
+    padding: 32px;
+  }
+
+  .profile-header {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+
+    .MuiAvatar-root {
+      background: linear-gradient(135deg, #00cfa2 0%, #00a085 100%);
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 16px;
+    margin-top: 32px;
+    justify-content: flex-end;
+  }
+
+  @media (max-width: 600px) {
+    padding: 16px;
+
+    .profile-card {
+      padding: 24px;
+    }
+
+    .profile-header {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .action-buttons {
+      flex-direction: column-reverse;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}
+
+

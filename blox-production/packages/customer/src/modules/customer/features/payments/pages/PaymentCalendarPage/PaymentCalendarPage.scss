@@ -1,0 +1,281 @@
+.payment-calendar-page {
+  padding: 24px;
+  width: 100%;
+
+  .back-button {
+    margin-bottom: 24px;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    .page-title {
+      font-weight: 600;
+    }
+
+    .month-navigation {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .current-month {
+        min-width: 150px;
+        text-align: center;
+      }
+    }
+  }
+
+  .calendar-layout {
+    display: flex;
+    gap: 24px;
+    width: 100%;
+    align-items: flex-start;
+
+    .calendar-section {
+      flex: 0 0 70%;
+      width: 70%;
+    }
+
+    .upcoming-section {
+      flex: 0 0 30%;
+      width: 30%;
+    }
+
+    @media (max-width: 960px) {
+      flex-direction: column;
+
+      .calendar-section,
+      .upcoming-section {
+        flex: 1 1 100%;
+        width: 100%;
+      }
+    }
+  }
+
+  .calendar-paper {
+    padding: 24px;
+  }
+
+  .calendar-container {
+    .calendar-header {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+
+      .weekday-header {
+        text-align: center;
+        padding: 8px;
+      }
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+
+      .calendar-day {
+        min-height: 100px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        padding: 8px;
+        background-color: #fff;
+        transition: all 0.2s;
+
+        &:hover {
+          background-color: #f5f5f5;
+        }
+
+        &.other-month {
+          opacity: 0.4;
+        }
+
+        &.today {
+          background-color: #e3f2fd;
+          border-color: #2196f3;
+        }
+
+        .day-number {
+          font-weight: 600;
+          margin-bottom: 4px;
+        }
+
+        .payments-list {
+          margin-top: 4px;
+
+          .payment-indicator {
+            padding: 2px 4px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
+
+            &.paid {
+              background-color: #e8f5e9;
+              color: #2e7d32;
+            }
+
+            &.upcoming {
+              background-color: #fff3e0;
+              color: #e65100;
+            }
+
+            &.overdue {
+              background-color: #ffebee;
+              color: #c62828;
+            }
+
+            &.active {
+              background-color: #e1f5fe;
+              color: #0277bd;
+            }
+
+            &.deferred {
+              border-left: 3px solid #ff9800;
+              background-color: #fff3e0;
+              position: relative;
+              
+              &::before {
+                content: '⏱️';
+                margin-right: 2px;
+              }
+            }
+
+            &.partially-deferred {
+              border-left: 3px solid #9c27b0;
+              background-color: #f3e5f5;
+              position: relative;
+              
+              &::before {
+                content: '⏸️';
+                margin-right: 2px;
+              }
+            }
+
+            &:hover {
+              opacity: 0.8;
+            }
+          }
+
+          .more-indicator {
+            color: #757575;
+            font-style: italic;
+          }
+        }
+      }
+    }
+  }
+
+  .upcoming-payments-paper {
+    padding: 24px;
+
+    .section-title {
+      margin-bottom: 24px;
+      font-weight: 600;
+    }
+
+    .payment-card {
+      .payment-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .payment-amount {
+        color: #00cfa2;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+    }
+  }
+
+  @media (max-width: 960px) {
+    padding: 16px;
+
+    .calendar-paper {
+      padding: 20px;
+    }
+
+    .calendar-container {
+      .calendar-grid {
+        .calendar-day {
+          min-height: 60px;
+          padding: 4px;
+
+          .payments-list {
+            .payment-indicator {
+              font-size: 10px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @media (max-width: 600px) {
+    padding: 12px;
+
+    .back-button {
+      margin-bottom: 16px;
+    }
+
+    .calendar-paper {
+      padding: 16px;
+    }
+
+    .page-header {
+      margin-bottom: 20px;
+    }
+
+    .month-navigation {
+      gap: 8px;
+
+      .current-month {
+        min-width: auto;
+        font-size: 14px;
+      }
+    }
+
+    .calendar-container {
+      .calendar-header {
+        gap: 4px;
+
+        .weekday-header {
+          padding: 4px;
+        }
+      }
+
+      .calendar-grid {
+        gap: 4px;
+
+        .calendar-day {
+          min-height: 52px;
+          padding: 3px;
+
+          .day-number {
+            font-size: 12px;
+          }
+
+          .payments-list {
+            .payment-indicator {
+              padding: 1px 2px;
+              border-radius: 3px;
+            }
+
+            .more-indicator {
+              font-size: 10px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+

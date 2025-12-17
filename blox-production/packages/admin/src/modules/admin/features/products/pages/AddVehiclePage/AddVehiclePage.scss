@@ -1,0 +1,405 @@
+.add-vehicle-page {
+  padding: 24px;
+  min-height: 100vh;
+  background: #f5f5f5;
+  width: 100%;
+  max-width: 100%;
+
+  .page-header {
+    margin-bottom: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .back-button {
+      align-self: flex-start;
+      font-weight: 600;
+      text-transform: none;
+      padding: 10px 20px;
+      border: 1px solid #00cfa2;
+      color: #00cfa2;
+      background-color: #ffffff;
+
+      &:hover {
+        background-color: #f0fdfa;
+        border-color: #0a6b6a;
+        color: #0a6b6a;
+      }
+    }
+
+    .header-text {
+      .page-title {
+        font-weight: 700;
+        color: #000000;
+        margin-bottom: 8px;
+        font-size: 32px;
+      }
+
+      .page-subtitle {
+        color: #666666;
+        font-size: 14px;
+      }
+    }
+  }
+
+  .form-section {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 32px;
+    margin-bottom: 24px;
+
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 24px;
+
+      .section-icon {
+        color: #00cfa2;
+        font-size: 32px;
+        margin-top: 4px;
+      }
+
+      .section-title {
+        font-weight: 700;
+        color: #000000;
+        margin-bottom: 4px;
+        font-size: 20px;
+      }
+
+      .section-description {
+        color: #666666;
+        font-size: 14px;
+      }
+
+      .add-attribute-button {
+        margin-top: -8px;
+      }
+    }
+
+    .image-upload-area {
+      border: 2px dashed #d1d5db;
+      border-radius: 12px;
+      padding: 48px 24px;
+      text-align: center;
+      background: linear-gradient(to bottom, #fafafa, #ffffff);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+
+      &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(0, 207, 162, 0.05) 0%, rgba(0, 207, 162, 0.02) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      &:hover {
+        border-color: #00cfa2;
+        background: linear-gradient(to bottom, #f0fdfa, #ffffff);
+
+        &::before {
+          opacity: 1;
+        }
+
+        .upload-icon {
+          color: #00cfa2;
+          transform: scale(1.1);
+        }
+      }
+
+      .upload-label {
+        cursor: pointer;
+        display: block;
+        width: 100%;
+      }
+
+      .upload-content {
+        position: relative;
+        z-index: 1;
+      }
+
+      .upload-icon {
+        font-size: 64px;
+        color: #9ca3af;
+        margin-bottom: 16px;
+        transition: all 0.3s ease;
+      }
+
+      .upload-title {
+        font-weight: 600;
+        color: #1f2937;
+        margin-bottom: 8px;
+      }
+
+      .upload-subtitle {
+        color: #6b7280;
+      }
+    }
+
+    .images-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 24px;
+
+      .image-preview {
+        position: relative;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 2px solid #e5e7eb;
+        aspect-ratio: 4/3;
+        background: #f9fafb;
+        transition: all 0.3s ease;
+
+        &:hover {
+          border-color: #00cfa2;
+          box-shadow: 0 4px 12px rgba(0, 207, 162, 0.2);
+          transform: translateY(-2px);
+
+          .remove-image-button {
+            opacity: 1;
+          }
+        }
+
+        img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+        }
+
+        .remove-image-button {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          background-color: rgba(220, 38, 38, 0.9);
+          color: white;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+
+          &:hover {
+            background-color: rgba(220, 38, 38, 1);
+          }
+        }
+
+        .image-number {
+          position: absolute;
+          bottom: 8px;
+          left: 8px;
+          background-color: rgba(0, 0, 0, 0.7);
+          color: white;
+          padding: 4px 8px;
+          border-radius: 4px;
+          font-size: 12px;
+          font-weight: 600;
+        }
+      }
+    }
+
+    .attribute-row {
+      padding: 16px;
+      background: #f9fafb;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      transition: all 0.2s ease;
+
+      &:hover {
+        border-color: #00cfa2;
+        background: #f0fdfa;
+      }
+
+      .remove-attribute-button {
+        height: 56px;
+      }
+    }
+
+    .empty-attributes {
+      text-align: center;
+      padding: 48px 24px;
+      background: #f9fafb;
+      border-radius: 8px;
+      border: 2px dashed #d1d5db;
+    }
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 16px;
+    margin-top: 32px;
+    padding: 24px;
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  @media (max-width: 1024px) {
+    .form-section {
+      padding: 24px;
+
+      .section-header {
+        .section-icon {
+          font-size: 28px;
+        }
+
+        .section-title {
+          font-size: 18px;
+        }
+      }
+
+      .image-upload-area {
+        padding: 32px 16px;
+
+        .upload-icon {
+          font-size: 48px;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .page-header {
+      margin-bottom: 24px;
+
+      .header-text {
+        .page-title {
+          font-size: 24px;
+        }
+      }
+    }
+
+    .form-section {
+      padding: 20px 16px;
+      margin-bottom: 16px;
+
+      .section-header {
+        flex-direction: column;
+        gap: 12px;
+        margin-bottom: 16px;
+
+        .section-icon {
+          font-size: 24px;
+        }
+
+        .section-title {
+          font-size: 18px;
+        }
+
+        .section-description {
+          font-size: 13px;
+        }
+
+        .add-attribute-button {
+          align-self: flex-start;
+          margin-top: 0;
+          width: 100%;
+        }
+      }
+
+      .image-upload-area {
+        padding: 24px 16px;
+
+        .upload-icon {
+          font-size: 40px;
+          margin-bottom: 12px;
+        }
+
+        .upload-title {
+          font-size: 16px;
+        }
+
+        .upload-subtitle {
+          font-size: 12px;
+        }
+      }
+
+      .images-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+        margin-top: 16px;
+      }
+
+      .attribute-row {
+        padding: 12px;
+
+        .remove-attribute-button {
+          height: auto;
+          padding: 8px 16px;
+        }
+      }
+
+      .empty-attributes {
+        padding: 32px 16px;
+
+        svg {
+          font-size: 40px !important;
+        }
+      }
+    }
+
+    .form-actions {
+      flex-direction: column-reverse;
+      margin-top: 24px;
+      padding: 20px 16px;
+      gap: 12px;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+
+    .page-header {
+      .back-button {
+        padding: 8px 16px;
+        font-size: 14px;
+      }
+
+      .header-text {
+        .page-title {
+          font-size: 20px;
+        }
+
+        .page-subtitle {
+          font-size: 13px;
+        }
+      }
+    }
+
+    .form-section {
+      padding: 16px 12px;
+
+      .section-header {
+        .section-icon {
+          font-size: 20px;
+        }
+
+        .section-title {
+          font-size: 16px;
+        }
+      }
+
+      .images-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .form-actions {
+      padding: 16px 12px;
+    }
+  }
+}
+

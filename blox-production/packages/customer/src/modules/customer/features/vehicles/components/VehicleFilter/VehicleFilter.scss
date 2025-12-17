@@ -1,0 +1,111 @@
+.vehicle-filter {
+  font-family: 'IBM Plex Sans', sans-serif;
+  padding: 20px;
+
+  .filter-title {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #000000;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #00CFA2;
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .MuiAccordion-root {
+    box-shadow: none;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-radius: 8px !important;
+    margin-bottom: 10px;
+    background-color: rgba(255, 255, 255, 0.8);
+    font-family: 'IBM Plex Sans', sans-serif;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: rgba(0, 207, 162, 0.3);
+      background-color: rgba(255, 255, 255, 0.95);
+    }
+
+    &:before {
+      display: none;
+    }
+
+    .MuiAccordionSummary-root {
+      padding: 12px 16px;
+      min-height: 48px;
+
+      .MuiAccordionSummary-content {
+        margin: 0;
+
+        .MuiTypography-root {
+          font-family: 'IBM Plex Sans', sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+          color: #000000;
+        }
+      }
+
+      .MuiAccordionSummary-expandIconWrapper {
+        color: #00CFA2;
+      }
+    }
+
+    .MuiAccordionDetails-root {
+      padding: 16px;
+      padding-top: 12px;
+      background-color: rgba(249, 250, 251, 0.6);
+    }
+  }
+
+  .filter-actions {
+    margin-top: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    button {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 6px;
+      text-transform: none;
+    }
+  }
+
+  // Mobile adjustments
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .filter-title {
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+
+    .filter-group {
+      gap: 10px;
+    }
+
+    .MuiAccordion-root {
+      .MuiAccordionSummary-root {
+        padding: 10px 14px;
+        min-height: 44px;
+      }
+
+      .MuiAccordionDetails-root {
+        padding: 12px;
+      }
+    }
+
+    .filter-actions {
+      margin-top: 20px;
+      gap: 10px;
+    }
+  }
+}
+

@@ -1,0 +1,224 @@
+.vehicle-detail-page {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
+  padding: 24px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+  position: relative;
+  overflow-x: hidden;
+
+  .back-button {
+    align-self: flex-start;
+    color: #16535B;
+    font-weight: 600;
+  }
+
+  .detail-content {
+    display: flex;
+    gap: 24px;
+    width: 100%;
+    align-items: flex-start;
+
+    .left-column {
+      flex: 7;
+      min-width: 0;
+    }
+
+    .right-column {
+      flex: 3;
+      min-width: 300px;
+    }
+  }
+
+  .card {
+    background: #FFFFFF;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  }
+
+  .image-section {
+    padding: 20px;
+    text-align: center;
+    background: linear-gradient(135deg, #EAF7F3 0%, #D6F1E8 100%);
+
+    .main-image {
+      width: 100%;
+      max-height: 480px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: #FFFFFF;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+    }
+  }
+
+  .specifications-section,
+  .description-section {
+    padding: 24px;
+
+    .section-title {
+      margin-bottom: 16px;
+      font-weight: 700;
+      color: #000000;
+      font-family: 'IBM Plex Sans', sans-serif;
+    }
+
+    .spec-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+
+    .spec-item {
+      padding: 10px 8px;
+      background: #F9FAFB;
+      border-radius: 8px;
+      border: 1px solid #E5E7EA;
+
+      .MuiTypography-caption {
+        font-size: 11px;
+        color: #BCBCBC;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+
+      .MuiTypography-body1 {
+        font-size: 14px;
+        font-weight: 600;
+        color: #000000;
+      }
+    }
+  }
+
+  .description-section {
+    .section-title {
+      margin-bottom: 12px;
+    }
+
+    p {
+      color: #2E2C34;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+  }
+
+  .pricing-section {
+    padding: 24px;
+    position: sticky;
+    top: 24px;
+    background: linear-gradient(180deg, #00CFA2 0%, #0A6B6A 100%);
+    color: #FFFFFF;
+
+    .price-header {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+
+      .price {
+        font-weight: 800;
+        font-size: 28px;
+        line-height: 32px;
+        color: #FFFFFF;
+      }
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+
+      button {
+        text-transform: none;
+        font-weight: 600;
+      }
+    }
+
+    .features-box {
+      padding: 14px;
+      background-color: rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+
+      .MuiTypography-body2 {
+        color: #EAF7F3;
+      }
+    }
+  }
+
+  .calculator-section {
+    padding: 24px;
+
+    .section-title {
+      font-weight: 700;
+      color: #000000;
+    }
+  }
+
+  .promotions-section {
+    padding: 20px;
+    background: linear-gradient(180deg, #00CFA2 0%, #0A6B6A 100%);
+    color: #FFFFFF;
+  }
+
+  @media (max-width: 1024px) {
+    padding: 20px;
+
+    .detail-content {
+      flex-direction: column;
+
+      .right-column {
+        max-width: 100%;
+        width: 100%;
+      }
+    }
+
+    .pricing-section {
+      position: static;
+      margin-top: 16px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .image-section {
+      padding: 16px;
+
+      .main-image {
+        max-height: 360px;
+      }
+    }
+
+    .specifications-section,
+    .description-section {
+      padding: 18px;
+
+      .spec-list {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+
+    .pricing-section,
+    .calculator-section,
+    .specifications-section,
+    .description-section {
+      padding: 16px;
+    }
+
+    .image-section {
+      padding: 12px;
+
+      .main-image {
+        max-height: 280px;
+      }
+    }
+  }
+}
+

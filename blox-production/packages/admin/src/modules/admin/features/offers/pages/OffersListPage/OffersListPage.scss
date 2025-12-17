@@ -1,0 +1,23 @@
+.offers-list-page {
+  .search-section {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .table-section {
+    width: 100%;
+  }
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+
+    .header-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+      align-items: center;
+    }
+  }
+}

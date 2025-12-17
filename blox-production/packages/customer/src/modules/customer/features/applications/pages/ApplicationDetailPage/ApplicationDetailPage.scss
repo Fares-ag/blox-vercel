@@ -1,0 +1,624 @@
+.application-detail-page {
+  padding: 24px;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+
+  .back-button {
+    color: #000000;
+    font-weight: 600;
+    margin-bottom: 24px;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    .page-title {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 700;
+      color: #000000;
+      margin-bottom: 4px;
+    }
+
+    .page-subtitle {
+      color: rgba(0, 0, 0, 0.7);
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+
+    .primary-action {
+      background-color: #00CFA2;
+      color: #FFFFFF;
+      text-transform: none;
+      font-weight: 600;
+
+      &:hover {
+        background-color: #0A6B6A;
+      }
+    }
+
+    .secondary-action {
+      color: #FFFFFF;
+      border-color: rgba(255, 255, 255, 0.5);
+      text-transform: none;
+      font-weight: 600;
+
+      &:hover {
+        border-color: #FFFFFF;
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+    }
+  }
+
+  .tabs-container {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    margin-bottom: 24px;
+    overflow: visible;
+    position: relative;
+    z-index: 1;
+
+    .detail-tabs {
+      .MuiTabs-flexContainer {
+        display: flex;
+        
+        .MuiTab-root {
+          flex: 1;
+          min-width: 0;
+          max-width: none;
+        }
+      }
+
+      .MuiTab-root {
+        text-transform: none;
+        font-weight: 600;
+        color: #666666;
+        min-height: 48px;
+        font-size: 14px;
+        flex: 1;
+        min-width: 0;
+        max-width: none;
+        cursor: pointer;
+        pointer-events: auto !important;
+        position: relative;
+        z-index: 10;
+        user-select: none;
+
+        &.Mui-selected {
+          color: #00cfa2;
+        }
+
+        &:not(.Mui-disabled):hover {
+          background-color: rgba(0, 207, 162, 0.05);
+        }
+
+        &.Mui-disabled {
+          cursor: not-allowed;
+          opacity: 0.5;
+        }
+      }
+
+      .MuiTabs-indicator {
+        background-color: #00cfa2;
+        height: 3px;
+      }
+    }
+  }
+
+  // Tablet + mobile: when Tabs are in scrollable mode, do not force equal-width tabs.
+  // (MUI adds `.MuiTabs-scrollableX` on the root when `variant="scrollable"`).
+  .tabs-container {
+    .detail-tabs.MuiTabs-scrollableX {
+      .MuiTabs-scroller {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .MuiTabs-flexContainer {
+        flex-wrap: nowrap;
+      }
+
+      .MuiTab-root {
+        flex: 0 0 auto;
+        min-width: 130px;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  // Phones: slightly smaller tab footprint.
+  @media (max-width: 600px) {
+    .tabs-container {
+      .detail-tabs.MuiTabs-scrollableX {
+        .MuiTab-root {
+          min-width: 110px;
+          font-size: 12px;
+          padding: 8px 10px;
+        }
+      }
+    }
+  }
+
+  .tab-content {
+    .tab-panel {
+      background-color: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      padding: 24px;
+      min-height: 400px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+
+      .section-icon {
+        color: #00CFA2;
+        font-size: 24px;
+      }
+
+      .section-title {
+        font-weight: 700;
+        color: #000000;
+        font-family: 'IBM Plex Sans', sans-serif;
+      }
+    }
+  }
+
+  .detail-content {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+
+    .left-column {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .right-column {
+      flex: 0 0 400px;
+      min-width: 300px;
+    }
+
+    .detail-card {
+      background-color: #FFFFFF;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .section-icon {
+          color: #00CFA2;
+          font-size: 24px;
+        }
+
+        .section-title {
+          font-weight: 700;
+          color: #000000;
+          font-family: 'IBM Plex Sans', sans-serif;
+        }
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+
+        .info-item {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+
+          .highlight-amount {
+            color: #00CFA2;
+            font-size: 18px;
+          }
+        }
+      }
+
+      .documents-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+
+        .document-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px;
+          background-color: #F9FAFB;
+          border-radius: 8px;
+          border: 1px solid #E5E7EA;
+
+          .document-info {
+            flex: 1;
+          }
+        }
+      }
+
+      .payment-schedule {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+
+        .payment-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px;
+          background-color: #F9FAFB;
+          border-radius: 8px;
+          border-left: 4px solid #00CFA2;
+
+          .payment-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+          }
+
+          .payment-amount {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+          }
+        }
+      }
+    }
+  }
+
+  @media (max-width: 1024px) {
+    .detail-content {
+      flex-direction: column;
+
+      .right-column {
+        flex: 1;
+        width: 100%;
+        min-width: 0;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+
+    .back-button {
+      margin-bottom: 16px;
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+      margin-bottom: 16px;
+      gap: 12px;
+      width: 100%;
+      
+      .page-title {
+        font-size: 20px;
+        line-height: 1.3;
+      }
+
+      .page-subtitle {
+        font-size: 13px;
+      }
+    }
+
+    .action-buttons {
+      width: 100%;
+      margin-bottom: 16px;
+      gap: 8px;
+
+      button {
+        flex: 1;
+        min-width: 0;
+        font-size: 14px;
+        padding: 10px 16px;
+      }
+    }
+
+    .tabs-container {
+      margin-bottom: 16px;
+      
+      .detail-tabs {
+        .MuiTabs-flexContainer {
+          .MuiTab-root {
+            flex: 1;
+            min-width: 0;
+            max-width: none;
+          }
+        }
+
+        .MuiTab-root {
+          font-size: 12px;
+          min-height: 44px;
+          padding: 8px 8px;
+          min-width: 0;
+          flex: 1;
+          max-width: none;
+        }
+      }
+    }
+
+    .tab-content {
+      width: 100%;
+      
+      .tab-panel {
+        padding: 16px;
+        min-height: auto;
+      }
+    }
+
+    .detail-content {
+      gap: 16px;
+
+      .left-column {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .right-column {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .detail-card {
+        width: 100%;
+        max-width: 100%;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        box-sizing: border-box;
+
+        .card-header {
+          flex-wrap: wrap;
+          gap: 8px;
+          margin-bottom: 16px;
+
+          .section-icon {
+            font-size: 20px;
+          }
+
+          .section-title {
+            font-size: 16px;
+          }
+        }
+
+        .info-grid {
+          grid-template-columns: 1fr;
+          gap: 16px;
+
+          .info-item {
+            gap: 6px;
+
+            .MuiTypography-caption {
+              font-size: 11px;
+            }
+
+            .MuiTypography-body2 {
+              font-size: 14px;
+            }
+          }
+        }
+
+        .section-header {
+          flex-wrap: wrap;
+          margin-bottom: 12px;
+
+          .section-icon {
+            font-size: 20px;
+          }
+
+          .section-title {
+            font-size: 16px;
+          }
+        }
+      }
+
+      .right-column {
+        min-width: 0;
+      }
+    }
+    
+    // Make tables scrollable on mobile
+    .MuiTableContainer-root {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin: 0 -16px;
+      padding: 0 16px;
+      
+      &::-webkit-scrollbar {
+        height: 6px;
+      }
+      
+      &::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+      }
+      
+      &::-webkit-scrollbar-thumb {
+        background: rgba(0, 207, 162, 0.3);
+        border-radius: 3px;
+      }
+    }
+    
+    .MuiTableCell-root {
+      font-size: 12px;
+      padding: 10px 8px;
+      white-space: nowrap;
+      
+      &.MuiTableCell-head {
+        font-size: 11px;
+        padding: 12px 8px;
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 8px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+
+    .back-button {
+      font-size: 13px;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+    }
+
+    .page-header {
+      margin-bottom: 12px;
+      gap: 8px;
+      width: 100%;
+
+      .page-title {
+        font-size: 18px;
+        line-height: 1.2;
+      }
+
+      .page-subtitle {
+        font-size: 12px;
+      }
+    }
+
+    .action-buttons {
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 12px;
+      width: 100%;
+
+      button {
+        width: 100%;
+        font-size: 13px;
+        padding: 10px 16px;
+      }
+    }
+
+    .tabs-container {
+      margin-bottom: 12px;
+
+      .detail-tabs {
+        .MuiTabs-flexContainer {
+          .MuiTab-root {
+            flex: 1;
+            min-width: 0;
+            max-width: none;
+          }
+        }
+
+        .MuiTab-root {
+          font-size: 11px;
+          padding: 6px 4px;
+          min-width: 0;
+          flex: 1;
+          max-width: none;
+          min-height: 40px;
+        }
+      }
+    }
+
+    .tab-content {
+      width: 100%;
+      
+      .tab-panel {
+        padding: 12px;
+      }
+    }
+
+    .detail-content {
+      gap: 12px;
+
+      .left-column {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .right-column {
+        width: 100%;
+        max-width: 100%;
+      }
+
+      .detail-card {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+
+        .card-header {
+          margin-bottom: 12px;
+
+          .section-icon {
+            font-size: 18px;
+          }
+
+          .section-title {
+            font-size: 15px;
+          }
+        }
+
+        .info-grid {
+          gap: 12px;
+
+          .info-item {
+            gap: 4px;
+
+            .MuiTypography-caption {
+              font-size: 10px;
+            }
+
+            .MuiTypography-body2 {
+              font-size: 13px;
+            }
+          }
+        }
+
+        .section-header {
+          margin-bottom: 10px;
+
+          .section-icon {
+            font-size: 18px;
+          }
+
+          .section-title {
+            font-size: 15px;
+          }
+        }
+      }
+    }
+    
+    .MuiTableCell-root {
+      font-size: 11px;
+      padding: 8px 6px;
+      
+      &.MuiTableCell-head {
+        font-size: 10px;
+        padding: 10px 6px;
+      }
+    }
+  }
+}
+

@@ -1,0 +1,15 @@
+.badge-display {
+  .badge-card {
+    &.unlocked {
+      border: 2px solid transparent;
+      background: linear-gradient(white, white) padding-box,
+                  linear-gradient(135deg, #00CFA2, #00B892) border-box;
+    }
+
+    &.locked {
+      opacity: 0.7;
+      filter: grayscale(0.3);
+    }
+  }
+}
+

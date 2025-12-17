@@ -1,0 +1,228 @@
+.dashboard-page {
+  padding: 0;
+  max-width: 100%;
+  width: 100%;
+
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-lg, 24px);
+    flex-wrap: wrap;
+    gap: var(--spacing-md, 16px);
+
+    .page-title {
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 8px;
+    }
+
+    .page-subtitle {
+      color: #666666;
+      font-size: 15px;
+    }
+  }
+
+  .stat-card {
+    height: 100%;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .MuiCardContent-root {
+      padding: 24px;
+    }
+
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .stat-icon {
+      font-size: 32px;
+      opacity: 0.8;
+    }
+
+    .stat-value {
+      font-weight: 700;
+      font-size: 28px;
+      margin-bottom: 8px;
+      color: #1a1a1a;
+    }
+
+    .stat-label {
+      color: #666666;
+      font-size: 14px;
+    }
+
+    &.stat-card-primary {
+      .stat-icon {
+        color: #2196F3;
+      }
+      .stat-value {
+        color: #2196F3;
+      }
+    }
+
+    &.stat-card-warning {
+      .stat-icon {
+        color: #FF9800;
+      }
+      .stat-value {
+        color: #FF9800;
+      }
+      .overdue-notice {
+        color: #F44336;
+        font-weight: 600;
+        margin-top: 4px;
+        display: block;
+      }
+    }
+
+    &.stat-card-success {
+      .stat-icon {
+        color: #00CFA2;
+      }
+      .stat-value {
+        color: #00CFA2;
+      }
+    }
+
+    &.stat-card-info {
+      .stat-icon {
+        color: #00CFA2;
+      }
+      .stat-value {
+        color: #00CFA2;
+      }
+    }
+  }
+
+  .section-card {
+    padding: 24px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+    min-height: 0; // Allow flex shrinking
+
+    .section-title {
+      font-weight: 700;
+      color: #1a1a1a;
+      font-size: 18px;
+    }
+  }
+
+  .quick-actions-card {
+    .quick-action-btn {
+      padding: 14px 20px;
+      border-radius: 8px;
+      text-transform: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+    }
+  }
+
+  .next-payment-card {
+    background: linear-gradient(135deg, #00CFA2 0%, #0A6B6A 100%);
+    color: #FFFFFF;
+
+    .next-payment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .section-title {
+      color: #FFFFFF;
+    }
+
+    .next-payment-details {
+      .payment-amount {
+        text-align: center;
+        padding: 16px 0;
+      }
+    }
+  }
+
+  .activity-list {
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 12px 0;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background-color: rgba(0, 207, 162, 0.05);
+        border-radius: 8px;
+        padding: 12px;
+        margin: 0 -12px;
+      }
+
+      .activity-icon-wrapper {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .activity-content {
+        min-width: 0;
+      }
+    }
+  }
+
+  .application-stats,
+  .payment-overview {
+    .stat-item,
+    .payment-stat-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+
+  @media (max-width: 960px) {
+    .dashboard-header {
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      .stat-value {
+        font-size: 24px;
+      }
+    }
+
+    .section-card {
+      padding: 20px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .stat-card {
+      .MuiCardContent-root {
+        padding: 20px;
+      }
+    }
+  }
+}
+

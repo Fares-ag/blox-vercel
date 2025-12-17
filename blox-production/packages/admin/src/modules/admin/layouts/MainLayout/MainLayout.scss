@@ -1,0 +1,19 @@
+.main-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--spacing-lg);
+    min-width: 0; // Prevents flex item from overflowing
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .sidebar-toggle-button {
+    transition: all 0.3s ease;
+  }
+}
