@@ -14,6 +14,8 @@ export interface DashboardStats {
   monthlyPayable: number;
   monthlyReceivable: number;
   profitability: number; // percentage
+   deferralsInPeriod: number;
+   customersNearDeferralLimit: number;
 }
 
 export interface DashboardChartData {

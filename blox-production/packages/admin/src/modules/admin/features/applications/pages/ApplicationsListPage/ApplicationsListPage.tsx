@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Box, Typography, Tabs, Tab, IconButton, LinearProgress, Fab, Tooltip } from '@mui/material';
+import { Box, Typography, Tabs, Tab, IconButton, Fab, Tooltip } from '@mui/material';
 import {
   AttachMoney,
   AccountBalance,
@@ -107,9 +107,27 @@ export const ApplicationsListPage: React.FC = () => {
     // Use Redux state instead of localStorage
     const allApps = list;
     const filtered = filterApplicationsByStatus(allApps, statusFilter);
-    const totalPayable = 0; // Calculate from payment data
+    // Total Payable = sum of all unpaid installments for the filtered applications
+    const totalPayable = filtered.reduce((sum, app) => {
+      const schedule = app.installmentPlan?.schedule || [];
+      const unpaidForApp = schedule.reduce((acc, payment) => {
+        if (payment.status === 'paid') return acc;
+        return acc + (payment.amount || 0);
+      }, 0);
+      return sum + unpaidForApp;
+    }, 0);
+
+    // Total Receivable = total loan amount for the filtered applications
     const totalReceivable = filtered.reduce((sum, app) => sum + (app.loanAmount || 0), 0);
-    const profitability = filtered.length > 0 ? 100.0 : 0; // Calculate actual profitability
+
+    // Profitability: mirror the main dashboard formula using these totals:
+    // (receivable - payable) / (receivable + payable), rounded to 2 decimals
+    let profitability = 0;
+    if (totalPayable + totalReceivable > 0) {
+      const raw =
+        ((totalReceivable - totalPayable) / (totalReceivable + totalPayable)) * 100;
+      profitability = Math.round(raw * 100) / 100;
+    }
 
     return {
       totalPayable,
@@ -119,14 +137,30 @@ export const ApplicationsListPage: React.FC = () => {
     };
   }, [list, statusFilter]);
 
-  // Calculate asset distribution percentage (dummy calculation)
+  // Calculate asset distribution percentage based on real ownership:
+  // (down payment + sum of paid installments) / vehicle price
   const getAssetDistribution = (application: Application): number => {
-    if (application.status === 'completed') return 0;
-    if (application.status === 'active') {
-      // Random between 80-100 for active
-      return application.id === 'APP003' ? 99.97 : 80.0;
+    const vehiclePrice = application.vehicle?.price || 0;
+    const downPayment = application.downPayment || application.installmentPlan?.downPayment || 0;
+
+    let paidInstallmentsTotal = 0;
+    if (application.installmentPlan?.schedule) {
+      application.installmentPlan.schedule.forEach((payment) => {
+        if (payment.status === 'paid') {
+          paidInstallmentsTotal += payment.amount || 0;
+        }
+      });
     }
-    return 0;
+
+    const customerOwnershipAmount = downPayment + paidInstallmentsTotal;
+
+    if (vehiclePrice <= 0) {
+      return 0;
+    }
+
+    const rawPercentage = (customerOwnershipAmount / vehiclePrice) * 100;
+    // Clamp to [0, 100]
+    return Math.min(100, Math.max(0, rawPercentage));
   };
 
   const columns: Column<Application>[] = [
@@ -136,35 +170,114 @@ export const ApplicationsListPage: React.FC = () => {
       minWidth: 150,
     },
     {
-      id: 'aiResponse',
-      label: 'AI Response',
-      minWidth: 120,
-      format: () => 'N/A',
-    },
-    {
-      id: 'aiReason',
-      label: 'AI Reason',
-      minWidth: 120,
-      format: () => 'AI Failed',
-    },
-    {
-      id: 'adminResponse',
-      label: 'Admin Response',
-      minWidth: 150,
+      id: 'paymentHealth',
+      label: 'Payment Health',
+      minWidth: 140,
       format: (_, row: Application) => {
-        if (row.status === 'active') return 'approved';
-        if (row.status === 'completed') return 'approved';
-        return 'N/A';
+        const schedule = row.installmentPlan?.schedule || [];
+        if (schedule.length === 0) {
+          return (
+            <Box
+              sx={{
+                display: 'inline-flex',
+                px: 1.5,
+                py: 0.5,
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 600,
+                bgcolor: '#E5E7EA',
+                color: '#4B5563',
+              }}
+            >
+              No Schedule
+            </Box>
+          );
+        }
+
+        const now = new Date();
+        const overdueCount = schedule.filter((p) => {
+          if (p.status === 'paid') return false;
+          const due = new Date(p.dueDate);
+          return due.getTime() < now.getTime();
+        }).length;
+
+        const isOnTrack = overdueCount === 0;
+        const label = isOnTrack ? 'On Track' : `Overdue (${overdueCount})`;
+        const colors = isOnTrack
+          ? { bg: 'rgba(34,197,94,0.12)', fg: '#16A34A' }
+          : { bg: 'rgba(248,113,113,0.12)', fg: '#DC2626' };
+
+        return (
+          <Box
+            sx={{
+              display: 'inline-flex',
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 600,
+              bgcolor: colors.bg,
+              color: colors.fg,
+            }}
+          >
+            {label}
+          </Box>
+        );
       },
     },
     {
-      id: 'adminReason',
-      label: 'Admin Reason',
-      minWidth: 150,
+      id: 'riskLevel',
+      label: 'Risk Level',
+      minWidth: 120,
       format: (_, row: Application) => {
-        if (row.status === 'active') return row.id === 'APP003' ? 'done' : 'test';
-        if (row.status === 'completed') return 'done';
-        return 'N/A';
+        const vehiclePrice = row.vehicle?.price || 0;
+        const downPayment = row.downPayment || row.installmentPlan?.downPayment || 0;
+        const schedule = row.installmentPlan?.schedule || [];
+
+        const paidTotal = schedule
+          .filter((p) => p.status === 'paid')
+          .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+        const ownershipAmount = downPayment + paidTotal;
+        const ownershipPct = vehiclePrice > 0 ? (ownershipAmount / vehiclePrice) * 100 : 0;
+
+        const now = new Date();
+        const overdueCount = schedule.filter((p) => {
+          if (p.status === 'paid') return false;
+          const due = new Date(p.dueDate);
+          return due.getTime() < now.getTime();
+        }).length;
+
+        let level: 'High' | 'Medium' | 'Low' = 'Low';
+        if (overdueCount >= 2 || ownershipPct < 10) {
+          level = 'High';
+        } else if (overdueCount === 1 || ownershipPct < 30) {
+          level = 'Medium';
+        }
+
+        const colors =
+          level === 'High'
+            ? { bg: 'rgba(248,113,113,0.12)', fg: '#DC2626' }
+            : level === 'Medium'
+            ? { bg: 'rgba(250,204,21,0.16)', fg: '#B45309' }
+            : { bg: 'rgba(34,197,94,0.12)', fg: '#16A34A' };
+
+        return (
+          <Box
+            sx={{
+              display: 'inline-flex',
+              px: 1.5,
+              py: 0.5,
+              borderRadius: 999,
+              fontSize: 12,
+              fontWeight: 600,
+              bgcolor: colors.bg,
+              color: colors.fg,
+            }}
+          >
+            {level}
+          </Box>
+        );
       },
     },
     {
@@ -185,28 +298,36 @@ export const ApplicationsListPage: React.FC = () => {
     {
       id: 'assetDistribution',
       label: 'Asset Distribution',
-      minWidth: 200,
+      minWidth: 220,
       format: (_, row: Application) => {
-        const percentage = getAssetDistribution(row);
-        const color = percentage >= 90 ? '#00CFA2' : percentage >= 50 ? '#FFA726' : '#E5E7EA';
+        const customerPercentage = getAssetDistribution(row);
+        const bloxPercentage = 100 - customerPercentage;
+
         return (
-          <Box sx={{ width: '100%', minWidth: 150 }}>
-            <LinearProgress
-              variant="determinate"
-              value={percentage}
+          <Box sx={{ width: '100%', minWidth: 200 }}>
+            <Box
               sx={{
+                display: 'flex',
+                width: '100%',
                 height: 8,
                 borderRadius: 4,
+                overflow: 'hidden',
                 backgroundColor: '#E5E7EA',
-                '& .MuiLinearProgress-bar': {
-                  backgroundColor: color,
-                  borderRadius: 4,
-                },
               }}
-            />
-            <Typography variant="caption" sx={{ mt: 0.5, display: 'block', color: '#666' }}>
-              {percentage.toFixed(2)}%
-            </Typography>
+            >
+              <Box
+                sx={{
+                  width: `${customerPercentage}%`,
+                  backgroundColor: '#E2B13C',
+                }}
+              />
+              <Box
+                sx={{
+                  width: `${bloxPercentage}%`,
+                  backgroundColor: '#09C97F',
+                }}
+              />
+            </Box>
           </Box>
         );
       },

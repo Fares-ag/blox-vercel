@@ -33,6 +33,26 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         onKeyPress={handleKeyPress}
         placeholder={placeholder}
         fullWidth
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            backgroundColor: '#ffffff',
+            boxShadow: '0 0 0 1px rgba(15, 23, 42, 0.06)',
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#00cfa2',
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#00cfa2',
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#00cfa2',
+              borderWidth: 2,
+            },
+          },
+          '& .MuiInputBase-input::placeholder': {
+            color: '#6b7280',
+            opacity: 1,
+          },
+        }}
         InputProps={{
           startAdornment: (
             <IconButton

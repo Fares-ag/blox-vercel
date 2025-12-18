@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
 import { ArrowBack } from '@mui/icons-material';
-import { apiService } from '@shared/services/api.service';
+import { supabaseApiService } from '@shared/services';
 import type { Promotion } from '@shared/models/promotion.model';
 import { Button, Input, Select, type SelectOption, DatePicker, Loading } from '@shared/components';
 import { toast } from 'react-toastify';
@@ -57,34 +57,15 @@ export const AddPromotionPage: React.FC = () => {
       delete payload.startDateMoment;
       delete payload.endDateMoment;
 
-      try {
-        const response = await apiService.post<Promotion>('/promotions/create', payload);
+      const response = await supabaseApiService.createPromotion(payload as Promotion);
 
-        if (response.status === 'SUCCESS' && response.data) {
-          toast.success('Promotion created successfully');
-          navigate('/admin/promotions');
-          return;
-        }
-      } catch (error: any) {
-        // Backend not available - use localStorage instead
-        console.log('Backend not available, using localStorage:', error.message);
-        
-        const mockPromotion: Promotion = {
-          id: `PROMO${Date.now()}`,
-          ...payload,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        // Store in localStorage
-        const storedPromotions = JSON.parse(localStorage.getItem('promotions') || '[]');
-        storedPromotions.push(mockPromotion);
-        localStorage.setItem('promotions', JSON.stringify(storedPromotions));
-
-        toast.success('Promotion saved locally! (Backend not connected)');
+      if (response.status === 'SUCCESS' && response.data) {
+        toast.success('Promotion created successfully');
         navigate('/admin/promotions');
         return;
       }
+
+      throw new Error(response.message || 'Failed to create promotion');
     } catch (error: any) {
       toast.error(error.message || 'Failed to create promotion');
     } finally {

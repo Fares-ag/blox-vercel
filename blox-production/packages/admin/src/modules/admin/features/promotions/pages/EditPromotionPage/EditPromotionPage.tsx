@@ -5,7 +5,7 @@ import Grid from '@mui/material/GridLegacy';
 import { ArrowBack } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading } from '../../../../store/slices/promotions.slice';
-import { apiService } from '@shared/services/api.service';
+import { supabaseApiService } from '@shared/services';
 import type { Promotion } from '@shared/models/promotion.model';
 import { Button, Input, Select, type SelectOption, DatePicker, Loading } from '@shared/components';
 import { toast } from 'react-toastify';
@@ -100,27 +100,18 @@ export const EditPromotionPage: React.FC = () => {
 
     try {
       dispatch(setLoading(true));
-      const response = await apiService.get<Promotion>(`/promotions/details/${id}`);
+      const response = await supabaseApiService.getPromotionById(id);
 
       if (response.status === 'SUCCESS' && response.data) {
         dispatch(setSelected(response.data));
       } else {
-        // Use dummy data if API fails
-        const dummyData = dummyPromotions[id];
-        if (dummyData) {
-          dispatch(setSelected(dummyData));
-        }
-      }
-    } catch (error) {
-      console.error('Failed to load promotion:', error);
-      // Use dummy data on error
-      const dummyData = dummyPromotions[id || ''];
-      if (dummyData) {
-        dispatch(setSelected(dummyData));
-      } else {
-        toast.error('Failed to load promotion');
+        toast.error(response.message || 'Failed to load promotion');
         navigate('/admin/promotions');
       }
+    } catch (error: any) {
+      console.error('Failed to load promotion:', error);
+      toast.error(error.message || 'Failed to load promotion');
+      navigate('/admin/promotions');
     } finally {
       dispatch(setLoading(false));
     }
@@ -143,45 +134,25 @@ export const EditPromotionPage: React.FC = () => {
       setSaving(true);
       const payload = {
         ...data,
-        startDate: data.startDateMoment ? data.startDateMoment.format('YYYY-MM-DD') : data.startDate,
-        endDate: data.endDateMoment ? data.endDateMoment.format('YYYY-MM-DD') : data.endDate,
+        startDate: data.startDateMoment
+          ? data.startDateMoment.format('YYYY-MM-DD')
+          : data.startDate,
+        endDate: data.endDateMoment
+          ? data.endDateMoment.format('YYYY-MM-DD')
+          : data.endDate,
       };
       delete payload.startDateMoment;
       delete payload.endDateMoment;
 
-      try {
-        const response = await apiService.post<Promotion>(`/promotions/update/${id}`, payload);
+      const response = await supabaseApiService.updatePromotion(id, payload as Promotion);
 
-        if (response.status === 'SUCCESS' && response.data) {
-          toast.success('Promotion updated successfully');
-          navigate('/admin/promotions');
-          return;
-        }
-      } catch (error: any) {
-        // Backend not available - use localStorage instead
-        console.log('Backend not available, using localStorage:', error.message);
-        
-        const updatedPromotion: Promotion = {
-          ...(selected || {}),
-          ...payload,
-          id,
-          updatedAt: new Date().toISOString(),
-        } as Promotion;
-
-        // Update in localStorage
-        const storedPromotions = JSON.parse(localStorage.getItem('promotions') || '[]');
-        const index = storedPromotions.findIndex((p: Promotion) => p.id === id);
-        if (index !== -1) {
-          storedPromotions[index] = updatedPromotion;
-        } else {
-          storedPromotions.push(updatedPromotion);
-        }
-        localStorage.setItem('promotions', JSON.stringify(storedPromotions));
-
-        toast.success('Promotion updated locally! (Backend not connected)');
+      if (response.status === 'SUCCESS' && response.data) {
+        toast.success('Promotion updated successfully');
         navigate('/admin/promotions');
         return;
       }
+
+      throw new Error(response.message || 'Failed to update promotion');
     } catch (error: any) {
       toast.error(error.message || 'Failed to update promotion');
     } finally {

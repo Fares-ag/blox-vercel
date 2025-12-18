@@ -6,119 +6,9 @@ import { VehicleCard } from '../../components/VehicleCard/VehicleCard';
 import { VehicleFilter } from '../../components/VehicleFilter/VehicleFilter';
 import { SearchBar, Loading, EmptyState } from '@shared/components';
 import { toast } from 'react-toastify';
+import { supabaseApiService } from '@shared/services';
+import { useAppSelector } from '../../../../store/hooks';
 import './VehicleBrowsePage.scss';
-
-// Dummy data for testing
-const dummyVehicles: Product[] = [
-  {
-    id: 'PROD001',
-    make: 'Toyota',
-    model: 'Camry',
-    trim: 'SE',
-    modelYear: 2023,
-    condition: 'new',
-    engine: '2.5L 4-Cylinder',
-    color: 'White',
-    mileage: 0,
-    price: 125000,
-    status: 'active',
-    images: [],
-    documents: [],
-    attributes: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'PROD002',
-    make: 'Honda',
-    model: 'Accord',
-    trim: 'EX-L',
-    modelYear: 2023,
-    condition: 'new',
-    engine: '1.5L Turbo',
-    color: 'Black',
-    mileage: 0,
-    price: 135000,
-    status: 'active',
-    images: [],
-    documents: [],
-    attributes: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'PROD003',
-    make: 'Nissan',
-    model: 'Altima',
-    trim: 'SV',
-    modelYear: 2022,
-    condition: 'old',
-    engine: '2.5L 4-Cylinder',
-    color: 'Silver',
-    mileage: 15000,
-    price: 95000,
-    status: 'active',
-    images: [],
-    documents: [],
-    attributes: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'PROD004',
-    make: 'BMW',
-    model: '3 Series',
-    trim: '330i',
-    modelYear: 2023,
-    condition: 'new',
-    engine: '2.0L Turbo',
-    color: 'Blue',
-    mileage: 0,
-    price: 185000,
-    status: 'active',
-    images: [],
-    documents: [],
-    attributes: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'PROD005',
-    make: 'Mercedes-Benz',
-    model: 'C-Class',
-    trim: 'C300',
-    modelYear: 2023,
-    condition: 'new',
-    engine: '2.0L Turbo',
-    color: 'Black',
-    mileage: 0,
-    price: 195000,
-    status: 'active',
-    images: [],
-    documents: [],
-    attributes: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'PROD006',
-    make: 'Toyota',
-    model: 'Corolla',
-    trim: 'LE',
-    modelYear: 2022,
-    condition: 'old',
-    engine: '1.8L 4-Cylinder',
-    color: 'White',
-    mileage: 12000,
-    price: 75000,
-    status: 'active',
-    images: [],
-    documents: [],
-    attributes: [],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
 
 export const VehicleBrowsePage: React.FC = () => {
   const [vehicles, setVehicles] = useState<Product[]>([]);
@@ -129,6 +19,7 @@ export const VehicleBrowsePage: React.FC = () => {
     limit: 12,
   });
   const [totalCount, setTotalCount] = useState(0);
+  const { user } = useAppSelector((state) => state.auth);
 
   useEffect(() => {
     loadVehicles();
@@ -142,57 +33,86 @@ export const VehicleBrowsePage: React.FC = () => {
         search: searchTerm || undefined,
       };
 
-      // For now, use dummy data
-      // TODO: Replace with actual API call when backend is ready
-      // const response = await vehicleService.getVehicles(searchFilters);
-      // if (response.status === 'SUCCESS' && response.data) {
-      //   setVehicles(response.data);
-      //   setTotalCount(response.meta?.total || response.data.length);
-      // }
+      // Fetch vehicles from Supabase via shared API service
+      const response = await supabaseApiService.getProducts();
+      if (response.status === 'SUCCESS' && response.data) {
+        let filteredVehicles = [...response.data];
 
-      // Using dummy data
-      let filteredVehicles = [...dummyVehicles];
+        // Exclude vehicles that are already tied to other customers' active applications
+        try {
+          const applicationsResponse = await supabaseApiService.getApplications();
+          if (applicationsResponse.status === 'SUCCESS' && applicationsResponse.data) {
+            const currentEmail = user?.email?.toLowerCase() || null;
+            const reservedStatuses = new Set([
+              'active',
+              'under_review',
+              'contract_signing_required',
+              'contracts_submitted',
+              'contract_under_review',
+              'down_payment_required',
+            ]);
 
-      // Apply search filter
-      if (searchTerm) {
-        filteredVehicles = filteredVehicles.filter(
-          (v) =>
-            v.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            v.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            v.id.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
+            const reservedVehicleIds = new Set(
+              applicationsResponse.data
+                .filter((app) => {
+                  const statusMatch = reservedStatuses.has(app.status);
+                  const isOtherCustomer =
+                    currentEmail && app.customerEmail
+                      ? app.customerEmail.toLowerCase() !== currentEmail
+                      : true;
+                  return statusMatch && isOtherCustomer && app.vehicleId;
+                })
+                .map((app) => app.vehicleId as string)
+            );
 
-      // Apply other filters
-      if (filters.make) {
-        filteredVehicles = filteredVehicles.filter((v) => v.make === filters.make);
-      }
-      if (filters.model) {
-        filteredVehicles = filteredVehicles.filter((v) => v.model === filters.model);
-      }
-      if (filters.condition) {
-        filteredVehicles = filteredVehicles.filter((v) => v.condition === filters.condition);
-      }
-      if (filters.minPrice) {
-        filteredVehicles = filteredVehicles.filter((v) => v.price >= filters.minPrice!);
-      }
-      if (filters.maxPrice) {
-        filteredVehicles = filteredVehicles.filter((v) => v.price <= filters.maxPrice!);
-      }
-      if (filters.minYear) {
-        filteredVehicles = filteredVehicles.filter((v) => v.modelYear >= filters.minYear!);
-      }
-      if (filters.maxYear) {
-        filteredVehicles = filteredVehicles.filter((v) => v.modelYear <= filters.maxYear!);
-      }
+            filteredVehicles = filteredVehicles.filter((v) => !reservedVehicleIds.has(v.id));
+          }
+        } catch (e) {
+          // If applications lookup fails, we just don't filter by reservations
+          console.error('Failed to filter reserved vehicles', e);
+        }
 
-      setVehicles(filteredVehicles);
-      setTotalCount(filteredVehicles.length);
+        // Apply search filter
+        if (searchTerm) {
+          filteredVehicles = filteredVehicles.filter(
+            (v) =>
+              v.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              v.model.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+        }
+
+        // Apply other filters
+        if (filters.make) {
+          filteredVehicles = filteredVehicles.filter((v) => v.make === filters.make);
+        }
+        if (filters.model) {
+          filteredVehicles = filteredVehicles.filter((v) => v.model === filters.model);
+        }
+        if (filters.condition) {
+          filteredVehicles = filteredVehicles.filter((v) => v.condition === filters.condition);
+        }
+        if (filters.minPrice) {
+          filteredVehicles = filteredVehicles.filter((v) => v.price >= filters.minPrice!);
+        }
+        if (filters.maxPrice) {
+          filteredVehicles = filteredVehicles.filter((v) => v.price <= filters.maxPrice!);
+        }
+        if (filters.minYear) {
+          filteredVehicles = filteredVehicles.filter((v) => v.modelYear >= filters.minYear!);
+        }
+        if (filters.maxYear) {
+          filteredVehicles = filteredVehicles.filter((v) => v.modelYear <= filters.maxYear!);
+        }
+
+        setVehicles(filteredVehicles);
+        setTotalCount(filteredVehicles.length);
+      } else {
+        throw new Error(response.message || 'Failed to load vehicles');
+      }
     } catch (error: any) {
       toast.error(error.message || 'Failed to load vehicles');
-      // Use dummy data on error
-      setVehicles(dummyVehicles);
-      setTotalCount(dummyVehicles.length);
+      setVehicles([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }

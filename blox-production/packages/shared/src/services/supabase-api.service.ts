@@ -428,6 +428,122 @@ class SupabaseApiService {
     }
   }
 
+  /**
+   * Mark a specific installment as paid in both payment_schedules and the application's installmentPlan.
+   * This keeps the dashboard (which reads from payment_schedules) and the frontend views (which read from
+   * application.installmentPlan.schedule) in sync.
+   */
+  async markInstallmentAsPaid(
+    applicationId: string,
+    paymentDueDate: string,
+    amount: number
+  ): Promise<ApiResponse<Application>> {
+    try {
+      const paidAt = new Date().toISOString();
+
+      // 1) Ensure payment_schedules reflects this payment
+      try {
+        const { data: existingRows, error: selectError } = await supabase
+          .from('payment_schedules')
+          .select('id')
+          .eq('application_id', applicationId)
+          .eq('due_date', paymentDueDate)
+          .eq('amount', amount)
+          .limit(1);
+
+        if (selectError) {
+          console.error('❌ markInstallmentAsPaid: select from payment_schedules failed', selectError);
+        } else if (existingRows && existingRows.length > 0) {
+          const existingId = existingRows[0].id;
+          const { error: updateError } = await supabase
+            .from('payment_schedules')
+            .update({
+              status: 'paid',
+              paid_date: paidAt,
+              updated_at: paidAt,
+            })
+            .eq('id', existingId);
+
+          if (updateError) {
+            console.error('❌ markInstallmentAsPaid: update payment_schedules failed', updateError);
+          }
+        } else {
+          const { error: insertError } = await supabase
+            .from('payment_schedules')
+            .insert({
+              application_id: applicationId,
+              due_date: paymentDueDate,
+              amount,
+              status: 'paid',
+              paid_date: paidAt,
+              created_at: paidAt,
+              updated_at: paidAt,
+            });
+
+          if (insertError) {
+            console.error('❌ markInstallmentAsPaid: insert into payment_schedules failed', insertError);
+          }
+        }
+      } catch (scheduleError) {
+        console.error('❌ markInstallmentAsPaid: unexpected error updating payment_schedules', scheduleError);
+      }
+
+      // 2) Update the application installmentPlan JSON so customer/admin UIs stay consistent
+      const appResponse = await this.getApplicationById(applicationId);
+      if (appResponse.status !== 'SUCCESS' || !appResponse.data) {
+        return {
+          status: 'ERROR',
+          message: appResponse.message || 'Application not found',
+          data: {} as Application,
+        };
+      }
+
+      const app = appResponse.data;
+      const installmentPlan = app.installmentPlan;
+
+      if (!installmentPlan || !Array.isArray(installmentPlan.schedule)) {
+        return {
+          status: 'ERROR',
+          message: 'Application has no installment schedule',
+          data: {} as Application,
+        };
+      }
+
+      const updatedSchedule = installmentPlan.schedule.map((payment: any) => {
+        // Match by dueDate and amount; if your data model later gets a stable ID for payments,
+        // this can be tightened to use that ID instead.
+        if (
+          payment.dueDate === paymentDueDate &&
+          Number(payment.amount) === Number(amount)
+        ) {
+          return {
+            ...payment,
+            status: 'paid',
+            paidDate: paidAt,
+          };
+        }
+        return payment;
+      });
+
+      const updateResult = await this.updateApplication(applicationId, {
+        installmentPlan: {
+          ...installmentPlan,
+          schedule: updatedSchedule,
+        } as any,
+      });
+
+      // updateApplication already invalidates caches and returns the fresh Application
+      return updateResult;
+    } catch (error: any) {
+      console.error('❌ markInstallmentAsPaid: unexpected error', error);
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to mark installment as paid',
+        data: {} as Application,
+      };
+    }
+  }
+
   async deleteApplication(id: string): Promise<ApiResponse<void>> {
     try {
       const response = await supabase

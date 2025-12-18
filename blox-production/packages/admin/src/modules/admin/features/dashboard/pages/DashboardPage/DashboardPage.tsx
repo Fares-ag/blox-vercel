@@ -8,10 +8,12 @@ import {
   Person,
   ArrowForward,
   FilterList,
+  Schedule,
+  WarningAmber,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
-import { setStats, setFilters, setLoading } from '../../../../store/slices/dashboard.slice';
-import { apiService } from '@shared/services/api.service';
+import { setStats, setFilters, setLoading, setError } from '../../../../store/slices/dashboard.slice';
+import { supabase } from '@shared/services';
 import type { DashboardStats } from '@shared/models/dashboard.model';
 import { Card, Loading, DatePicker, Button, HorizontalBarChart, SegmentedBarChart, VerticalBarChart } from '@shared/components';
 import { useNavigate } from 'react-router-dom';
@@ -28,33 +30,11 @@ import './DashboardPage.scss';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-// Temporary dummy data for testing
-const dummyStats: DashboardStats = {
-  projectedInsurance: 50000,
-  projectedFunding: 250000,
-  projectedRevenue: 175000,
-  realRevenue: 330000,
-  paidInstallments: 3,
-  unpaidInstallments: 0,
-  userBloxPercentage: 73.33,
-  companyBloxPercentage: 26.67,
-  totalAssetsOwnership: 100,
-  customerOwnershipPercentage: 73.33,
-  bloxOwnershipPercentage: 26.67,
-  activeApplications: 1,
-  monthlyPayable: 0,
-  monthlyReceivable: 33000000, // In cents (330000.00 QAR)
-  profitability: 100.00,
-};
-
 export const DashboardPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { stats: reduxStats, filters, loading } = useAppSelector((state) => state.dashboard);
+  const { stats, filters, loading, error } = useAppSelector((state) => state.dashboard);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-
-  // Use dummy data if no real data is available (temporary)
-  const stats = reduxStats || dummyStats;
 
   useEffect(() => {
     loadDashboardData();
@@ -63,23 +43,53 @@ export const DashboardPage: React.FC = () => {
   const loadDashboardData = async () => {
     try {
       dispatch(setLoading(true));
+      dispatch(setError(null));
+      // If no filters are set, use an "overall" range (all time) for stats.
       const dateRange = filters || {
-        startDate: moment().startOf('month').format('YYYY-MM-DD'),
-        endDate: moment().endOf('month').format('YYYY-MM-DD'),
+        startDate: '1900-01-01',
+        endDate: '2100-12-31',
       };
 
-      const response = await apiService.post<DashboardStats>('/sales/dashboard-stats', dateRange);
+      // Call Supabase RPC instead of external API
+      const { data, error } = await supabase.rpc('get_dashboard_stats', {
+        start_date: dateRange.startDate,
+        end_date: dateRange.endDate,
+      });
 
-      if (response.status === 'SUCCESS' && response.data) {
-        dispatch(setStats(response.data));
-      } else {
-        // If API fails, use dummy data temporarily
-        dispatch(setStats(dummyStats));
+      if (error) {
+        console.error('Failed to load dashboard data from Supabase:', error);
+        dispatch(setError(error.message || 'Failed to load dashboard data'));
+        return;
       }
-    } catch (error) {
-      console.error('Failed to load dashboard data:', error);
-      // Use dummy data on error (temporary)
-      dispatch(setStats(dummyStats));
+
+      if (data && data.length > 0) {
+        const row = data[0] as any;
+        const statsFromSupabase: DashboardStats = {
+          projectedInsurance: Number(row.projected_insurance || 0),
+          projectedFunding: Number(row.projected_funding || 0),
+          projectedRevenue: Number(row.projected_revenue || 0),
+          realRevenue: Number(row.real_revenue || 0),
+          paidInstallments: Number(row.paid_installments || 0),
+          unpaidInstallments: Number(row.unpaid_installments || 0),
+          userBloxPercentage: Number(row.user_blox_percentage || 0),
+          companyBloxPercentage: Number(row.company_blox_percentage || 0),
+          totalAssetsOwnership: Number(row.total_assets_ownership || 100),
+          customerOwnershipPercentage: Number(row.customer_ownership_percentage || 0),
+          bloxOwnershipPercentage: Number(row.blox_ownership_percentage || 0),
+          activeApplications: Number(row.active_applications || 0),
+          monthlyPayable: Number(row.monthly_payable || 0),
+          monthlyReceivable: Number(row.monthly_receivable || 0),
+          profitability: Number(row.profitability || 0),
+          deferralsInPeriod: Number(row.deferrals_in_period || 0),
+          customersNearDeferralLimit: Number(row.customers_near_deferral_limit || 0),
+        };
+        dispatch(setStats(statsFromSupabase));
+      } else {
+        dispatch(setError('No dashboard data returned from Supabase'));
+      }
+    } catch (err: any) {
+      console.error('Failed to load dashboard data:', err);
+      dispatch(setError(err.message || 'Failed to load dashboard data'));
     } finally {
       dispatch(setLoading(false));
     }
@@ -112,10 +122,40 @@ export const DashboardPage: React.FC = () => {
       const end = moment(filters.endDate).format('DD MMM YYYY');
       return `${start} - ${end}`;
     }
-    const start = moment().startOf('month').format('DD MMM YYYY');
-    const end = moment().endOf('month').format('DD MMM YYYY');
-    return `${start} - ${end}`;
+    // Default label when no explicit filter is selected
+    return 'Overall';
   };
+
+  if (loading && !stats) {
+    return <Loading fullScreen message="Loading dashboard..." />;
+  }
+
+  // If there's no stats data (e.g. API failed), show a friendly message instead of dummy data
+  if (!stats) {
+    return (
+      <Box className="dashboard-page">
+        <Box className="dashboard-header">
+          <Typography variant="h2">Dashboard</Typography>
+        </Box>
+        <Paper
+          className="dashboard-panel"
+          sx={{
+            mt: 4,
+            maxWidth: 600,
+            marginInline: 'auto',
+            textAlign: 'center',
+          }}
+        >
+          <Typography variant="h3" sx={{ mb: 2 }}>
+            No dashboard data available
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {error || 'The dashboard API did not return any data for the selected date range.'}
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
 
   const installmentChartData = {
     labels: ['Paid', 'Unpaid'],
@@ -127,10 +167,6 @@ export const DashboardPage: React.FC = () => {
       },
     ],
   };
-
-  if (loading && !reduxStats) {
-    return <Loading fullScreen message="Loading dashboard..." />;
-  }
 
   return (
     <Box className="dashboard-page">
@@ -235,6 +271,34 @@ export const DashboardPage: React.FC = () => {
           value={stats.realRevenue}
           moduleType="currency"
           icon={<ShowChart />}
+        />
+      </Box>
+
+      {/* Deferrals Overview */}
+      <Box
+        className="stats-grid-container"
+        sx={{
+          width: '100%',
+          display: 'flex',
+          gap: '24px',
+          marginBottom: 'var(--spacing-lg)',
+          '& > *': {
+            flex: '1 1 0',
+            minWidth: 0,
+          },
+        }}
+      >
+        <Card
+          title="Deferrals (Selected Period)"
+          value={stats.deferralsInPeriod}
+          moduleType="number"
+          icon={<Schedule />}
+        />
+        <Card
+          title="Customers Near Deferral Limit"
+          value={stats.customersNearDeferralLimit}
+          moduleType="number"
+          icon={<WarningAmber />}
         />
       </Box>
 

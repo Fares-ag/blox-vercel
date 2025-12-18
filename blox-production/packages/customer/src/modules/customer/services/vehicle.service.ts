@@ -1,4 +1,4 @@
-import { apiService } from '@shared/services/api.service';
+import { supabaseApiService } from '@shared/services';
 import type { Product } from '@shared/models/product.model';
 import type { ApiResponse } from '@shared/models/api.model';
 
@@ -20,44 +20,92 @@ class VehicleService {
    * Get all vehicles (public - no auth required)
    */
   async getVehicles(filters?: VehicleFilters): Promise<ApiResponse<Product[]>> {
-    const params = new URLSearchParams();
-    
-    if (filters?.search) params.append('search', filters.search);
-    if (filters?.make) params.append('make', filters.make);
-    if (filters?.model) params.append('model', filters.model);
-    if (filters?.minPrice) params.append('minPrice', filters.minPrice.toString());
-    if (filters?.maxPrice) params.append('maxPrice', filters.maxPrice.toString());
-    if (filters?.condition) params.append('condition', filters.condition);
-    if (filters?.minYear) params.append('minYear', filters.minYear.toString());
-    if (filters?.maxYear) params.append('maxYear', filters.maxYear.toString());
-    if (filters?.page) params.append('page', filters.page.toString());
-    if (filters?.limit) params.append('limit', filters.limit.toString());
+    // Delegate to Supabase products API and then filter client-side
+    const response = await supabaseApiService.getProducts();
+    if (response.status !== 'SUCCESS' || !response.data) {
+      return {
+        status: 'ERROR',
+        message: response.message || 'Failed to load vehicles from Supabase',
+        data: [],
+      };
+    }
 
-    const queryString = params.toString();
-    const url = `/customer/vehicles${queryString ? `?${queryString}` : ''}`;
-    
-    return await apiService.get<Product[]>(url);
+    let vehicles = response.data as Product[];
+
+    if (filters) {
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        vehicles = vehicles.filter(
+          (v) =>
+            v.make.toLowerCase().includes(q) ||
+            v.model.toLowerCase().includes(q) ||
+            v.id.toLowerCase().includes(q)
+        );
+      }
+      if (filters.make) vehicles = vehicles.filter((v) => v.make === filters.make);
+      if (filters.model) vehicles = vehicles.filter((v) => v.model === filters.model);
+      if (filters.condition) vehicles = vehicles.filter((v) => v.condition === filters.condition);
+      if (filters.minPrice) vehicles = vehicles.filter((v) => v.price >= filters.minPrice!);
+      if (filters.maxPrice) vehicles = vehicles.filter((v) => v.price <= filters.maxPrice!);
+      if (filters.minYear) vehicles = vehicles.filter((v) => v.modelYear >= filters.minYear!);
+      if (filters.maxYear) vehicles = vehicles.filter((v) => v.modelYear <= filters.maxYear!);
+    }
+
+    return {
+      status: 'SUCCESS',
+      data: vehicles,
+      message: 'Vehicles loaded from Supabase',
+    };
   }
 
   /**
    * Get vehicle by ID (public - no auth required)
    */
   async getVehicleById(id: string): Promise<ApiResponse<Product>> {
-    return await apiService.get<Product>(`/customer/vehicles/${id}`);
+    // Use Supabase products table directly
+    const response = await supabaseApiService.getProductById(id);
+    if (response.status !== 'SUCCESS' || !response.data) {
+      return {
+        status: 'ERROR',
+        message: response.message || 'Failed to load vehicle from Supabase',
+        data: {} as Product,
+      };
+    }
+    return response;
   }
 
   /**
    * Get available makes (for filter dropdown)
    */
   async getMakes(): Promise<ApiResponse<string[]>> {
-    return await apiService.get<string[]>('/customer/vehicles/makes');
+    const response = await supabaseApiService.getProducts();
+    if (response.status !== 'SUCCESS' || !response.data) {
+      return {
+        status: 'ERROR',
+        message: response.message || 'Failed to load makes from Supabase',
+        data: [],
+      };
+    }
+    const makes = Array.from(new Set(response.data.map((v) => v.make))).sort();
+    return { status: 'SUCCESS', data: makes, message: 'Makes loaded from Supabase' };
   }
 
   /**
    * Get models for a specific make
    */
   async getModelsByMake(make: string): Promise<ApiResponse<string[]>> {
-    return await apiService.get<string[]>(`/customer/vehicles/models?make=${make}`);
+    const response = await supabaseApiService.getProducts();
+    if (response.status !== 'SUCCESS' || !response.data) {
+      return {
+        status: 'ERROR',
+        message: response.message || 'Failed to load models from Supabase',
+        data: [],
+      };
+    }
+    const models = Array.from(
+      new Set(response.data.filter((v) => v.make === make).map((v) => v.model))
+    ).sort();
+    return { status: 'SUCCESS', data: models, message: 'Models loaded from Supabase' };
   }
 }
 

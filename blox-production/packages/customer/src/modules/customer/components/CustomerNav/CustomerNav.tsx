@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar,
@@ -11,11 +11,18 @@ import {
   MenuItem,
   Avatar,
   Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
 } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, Logout, DirectionsCar } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, Logout, DirectionsCar, Star, AddCircleOutline } from '@mui/icons-material';
 import { useAppSelector } from '../../store/hooks';
 import { useAuth } from '../../hooks/useAuth';
 import { NotificationCenter } from '../../features/notifications/components/NotificationCenter/NotificationCenter';
+import { formatCurrency } from '@shared/utils/formatters';
+import { toast } from 'react-toastify';
 import './CustomerNav.scss';
 
 export const CustomerNav: React.FC = () => {
@@ -25,6 +32,30 @@ export const CustomerNav: React.FC = () => {
   const { logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null);
+  const [bloxCredits, setBloxCredits] = useState<number>(0);
+  const [topUpDialogOpen, setTopUpDialogOpen] = useState(false);
+  const [creditsToBuy, setCreditsToBuy] = useState<string>('1');
+
+  const BLOX_CREDIT_PRICE_QAR = 250;
+
+  useEffect(() => {
+    // Load stored Blox credits from localStorage (simple wallet for now)
+    if (typeof window === 'undefined') return;
+    const stored = localStorage.getItem('blox_credits');
+    if (stored) {
+      const parsed = parseInt(stored, 10);
+      if (!isNaN(parsed)) {
+        setBloxCredits(parsed);
+      }
+    }
+  }, []);
+
+  const updateBloxCredits = (newBalance: number) => {
+    setBloxCredits(newBalance);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('blox_credits', String(newBalance));
+    }
+  };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -42,6 +73,24 @@ export const CustomerNav: React.FC = () => {
     setMobileMenuAnchor(null);
   };
 
+  const handleOpenTopUp = () => {
+    setCreditsToBuy('1');
+    setTopUpDialogOpen(true);
+  };
+
+  const handleConfirmTopUp = () => {
+    const credits = parseInt(creditsToBuy, 10);
+    if (isNaN(credits) || credits <= 0) {
+      toast.error('Please enter a valid number of Blox Credits.');
+      return;
+    }
+    const newBalance = bloxCredits + credits;
+    const totalCost = credits * BLOX_CREDIT_PRICE_QAR;
+    updateBloxCredits(newBalance);
+    toast.success(`Added ${credits} Blox Credits for ${formatCurrency(totalCost)}.`);
+    setTopUpDialogOpen(false);
+  };
+
   const handleLogoutClick = async () => {
     handleMenuClose();
     await logout();
@@ -52,8 +101,9 @@ export const CustomerNav: React.FC = () => {
   };
 
   return (
-    <AppBar position="static" className="customer-nav" elevation={0}>
-      <Toolbar className="nav-toolbar">
+    <>
+      <AppBar position="static" className="customer-nav" elevation={0}>
+        <Toolbar className="nav-toolbar">
         {/* Mobile Menu Button */}
         <IconButton
           className="mobile-menu-button"
@@ -224,6 +274,14 @@ export const CustomerNav: React.FC = () => {
                   <AccountCircle sx={{ mr: 1 }} />
                   Profile
                 </MenuItem>
+                <MenuItem disabled>
+                  <Star sx={{ mr: 1, color: '#FACC15' }} />
+                  Blox Credits: {bloxCredits}
+                </MenuItem>
+                <MenuItem onClick={() => { handleMenuClose(); handleOpenTopUp(); }}>
+                  <AddCircleOutline sx={{ mr: 1 }} />
+                  Top Up Blox Credits
+                </MenuItem>
                 <MenuItem onClick={() => { handleMenuClose(); navigate('/customer/profile/change-password'); }}>
                   <AccountCircle sx={{ mr: 1 }} />
                   Change Password
@@ -255,7 +313,35 @@ export const CustomerNav: React.FC = () => {
           )}
         </Box>
       </Toolbar>
-    </AppBar>
+      </AppBar>
+      <Dialog open={topUpDialogOpen} onClose={() => setTopUpDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Top Up Blox Credits</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Each Blox Credit costs <strong>{formatCurrency(BLOX_CREDIT_PRICE_QAR)}</strong>.
+            All amounts are in QAR.
+          </Typography>
+          <TextField
+            label="Number of Credits"
+            type="number"
+            fullWidth
+            value={creditsToBuy}
+            onChange={(e) => setCreditsToBuy(e.target.value)}
+            inputProps={{ min: 1 }}
+            sx={{ mb: 2 }}
+          />
+          <Typography variant="body2">
+            Total: <strong>{formatCurrency((parseInt(creditsToBuy, 10) || 0) * BLOX_CREDIT_PRICE_QAR)}</strong>
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setTopUpDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleConfirmTopUp}>
+            Confirm Top Up
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 };
 

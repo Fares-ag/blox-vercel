@@ -409,8 +409,24 @@ export const ApplicationDetailPage: React.FC = () => {
     'contract_signing_required': 'Contract Signing Required',
   };
 
-  // Calculate asset distribution percentages (dummy calculation - should come from API)
-  const customerOwnershipPercentage = displayData.assetDistribution || 0;
+  // Calculate asset distribution percentages based on real installment data
+  const vehiclePrice = displayData.vehicle?.price || 0;
+  const downPayment = displayData.downPayment || displayData.installmentPlan?.downPayment || 0;
+  let paidInstallmentsTotal = 0;
+
+  if (displayData.installmentPlan?.schedule) {
+    displayData.installmentPlan.schedule.forEach((payment) => {
+      if (payment.status === 'paid') {
+        paidInstallmentsTotal += payment.amount || 0;
+      }
+    });
+  }
+
+  const customerOwnershipAmount = downPayment + paidInstallmentsTotal;
+  const rawCustomerOwnershipPercentage =
+    vehiclePrice > 0 ? (customerOwnershipAmount / vehiclePrice) * 100 : 0;
+
+  const customerOwnershipPercentage = Math.min(100, Math.max(0, rawCustomerOwnershipPercentage));
   const bloxOwnershipPercentage = 100 - customerOwnershipPercentage;
 
   const handleApprove = () => {

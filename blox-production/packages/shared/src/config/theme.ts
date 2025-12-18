@@ -18,8 +18,8 @@ export const theme = createTheme({
       paper: '#FFFFFF',
     },
     text: {
-      primary: '#000000',
-      secondary: '#BCBCBC',
+      primary: '#111827',   // near-black for readability
+      secondary: '#4B5563', // darker grey for secondary text
     },
     divider: '#e5e7eb',
   },
@@ -196,11 +196,11 @@ export const brandColors = {
   fieldLabelColor: '#16535B',
   tableHeader: '#008A6C',
   tableHeaderColor: '#FFFFFF',
-  customTextColor: '#BCBCBC',
-  fieldBorderColor: '#BCBCBC',
+  customTextColor: '#6B7280',
+  fieldBorderColor: '#9CA3AF',
   fieldBorderFocus: '#00CFA2',
-  primaryText: '#000000',
-  secondaryText: '#666666',
+  primaryText: '#111827',
+  secondaryText: '#4B5563',
   fieldPlaceholder: '#648C92',
   background: '#F1F2F4',
   backgroundSecondary: '#f3f4f6',

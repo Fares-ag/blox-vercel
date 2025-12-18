@@ -20,12 +20,16 @@ import {
   CheckCircle,
   Schedule,
   AttachMoney,
+  Star,
 } from '@mui/icons-material';
 import { formatCurrency, formatDate } from '@shared/utils/formatters';
 import { StatusBadge, Loading } from '@shared/components';
 import { supabaseApiService } from '@shared/services';
-import type { Application, PaymentSchedule } from '@shared/models/application.model';
+import type { Application, PaymentSchedule, BloxMembership } from '@shared/models/application.model';
 import { useAppSelector } from '../../../../store/hooks';
+import { membershipService } from '../../../../services/membership.service';
+import { PurchaseMembershipDialog } from '../../../membership/components/PurchaseMembershipDialog';
+import { toast } from 'react-toastify';
 import moment from 'moment';
 import './DashboardPage.scss';
 
@@ -34,6 +38,7 @@ interface DashboardStats {
   upcomingPayments: number;
   totalPaid: number;
   remainingBalance: number;
+  ownershipPercentage: number;
   nextPaymentDate: string | null;
   nextPaymentAmount: number;
   overduePayments: number;
@@ -60,18 +65,36 @@ export const DashboardPage: React.FC = () => {
     upcomingPayments: 0,
     totalPaid: 0,
     remainingBalance: 0,
+    ownershipPercentage: 0,
     nextPaymentDate: null,
     nextPaymentAmount: 0,
     overduePayments: 0,
     totalApplications: 0,
   });
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  const [membership, setMembership] = useState<BloxMembership | null>(null);
+  const [membershipLoading, setMembershipLoading] = useState(false);
+  const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user?.email) {
       loadDashboardData();
+      loadMembershipStatus();
     }
   }, [user?.email]);
+
+  const loadMembershipStatus = async () => {
+    try {
+      setMembershipLoading(true);
+      const status = await membershipService.getMembershipStatus();
+      setMembership(status);
+    } catch (error) {
+      console.error('Failed to load membership status:', error);
+      setMembership(null);
+    } finally {
+      setMembershipLoading(false);
+    }
+  };
 
   const loadDashboardData = async () => {
     try {
@@ -142,11 +165,16 @@ export const DashboardPage: React.FC = () => {
         }
       });
 
+      const totalAssetValue = totalPaid + remainingBalance;
+      const ownershipPercentage =
+        totalAssetValue > 0 ? (totalPaid / totalAssetValue) * 100 : 0;
+
       setStats({
         activeApplications: activeApps.length,
         upcomingPayments: upcomingCount,
         totalPaid,
         remainingBalance: Math.max(0, remainingBalance),
+        ownershipPercentage,
         nextPaymentDate,
         nextPaymentAmount,
         overduePayments: overdueCount,
@@ -213,6 +241,7 @@ export const DashboardPage: React.FC = () => {
         upcomingPayments: 0,
         totalPaid: 0,
         remainingBalance: 0,
+        ownershipPercentage: 0,
         nextPaymentDate: null,
         nextPaymentAmount: 0,
         overduePayments: 0,
@@ -366,6 +395,67 @@ export const DashboardPage: React.FC = () => {
         </Card>
       </Box>
 
+      {/* Blox Membership Promo */}
+      {!membershipLoading && !membership?.isActive && (
+        <Paper
+          className="blox-membership-cta"
+          sx={{
+            mb: 3,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 3,
+            background: 'linear-gradient(90deg, #0EA5E9 0%, #22C55E 100%)',
+            color: '#ffffff',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
+            borderRadius: '16px',
+            padding: '18px 24px',
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Star sx={{ color: '#FACC15' }} />
+            </Box>
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                Become a Blox Member
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                Unlock up to 3 payment deferrals per year across all your applications.
+              </Typography>
+            </Box>
+          </Box>
+          <Button
+            variant="contained"
+            color="inherit"
+            onClick={() => setPurchaseDialogOpen(true)}
+            sx={{
+              color: '#0F172A',
+              fontWeight: 700,
+              px: 3,
+              py: 1,
+              borderRadius: 999,
+              textTransform: 'none',
+              '&:hover': {
+                backgroundColor: '#ffffff',
+              },
+            }}
+          >
+            Become a Member
+          </Button>
+        </Paper>
+      )}
+
       <Box
         className="dashboard-main-content"
         sx={{
@@ -489,9 +579,30 @@ export const DashboardPage: React.FC = () => {
               <Divider sx={{ my: 2 }} />
               <Box className="next-payment-details">
                 <Box className="payment-amount">
-                  <Typography variant="h4" fontWeight={700} color="primary">
-                    {formatCurrency(stats.nextPaymentAmount)}
-                  </Typography>
+                  <Box
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      px: 3,
+                      py: 1.5,
+                      borderRadius: 999,
+                      backgroundColor: 'rgba(255,255,255,0.12)',
+                      backdropFilter: 'blur(6px)',
+                    }}
+                  >
+                    <Typography
+                      variant="h4"
+                      fontWeight={800}
+                      sx={{
+                        color: '#FFFFFF',
+                        letterSpacing: '0.04em',
+                        textShadow: '0 2px 6px rgba(0,0,0,0.35)',
+                      }}
+                    >
+                      {formatCurrency(stats.nextPaymentAmount)}
+                    </Typography>
+                  </Box>
                 </Box>
               </Box>
             </Paper>
@@ -538,8 +649,8 @@ export const DashboardPage: React.FC = () => {
                         </Typography>
                       </Box>
                       <StatusBadge
-                        status={activity.status.replace(/_/g, ' ')}
-                        type="application"
+                        status={activity.status}
+                        type={activity.type === 'payment' ? 'payment' : 'application'}
                       />
                     </Box>
                     {index < recentActivity.length - 1 && <Divider sx={{ my: 1 }} />}
@@ -626,6 +737,15 @@ export const DashboardPage: React.FC = () => {
               <Divider sx={{ my: 1.5 }} />
               <Box className="payment-stat-item">
                 <Typography variant="body2" color="text.secondary">
+                  Ownership
+                </Typography>
+                <Typography variant="h6" fontWeight={700}>
+                  {stats.ownershipPercentage.toFixed(2)}%
+                </Typography>
+              </Box>
+              <Divider sx={{ my: 1.5 }} />
+              <Box className="payment-stat-item">
+                <Typography variant="body2" color="text.secondary">
                   Upcoming Payments
                 </Typography>
                 <Typography variant="h6" fontWeight={700}>
@@ -658,6 +778,28 @@ export const DashboardPage: React.FC = () => {
           </Paper>
         </Box>
       </Box>
+
+      <PurchaseMembershipDialog
+        open={purchaseDialogOpen}
+        onClose={() => setPurchaseDialogOpen(false)}
+        onPurchase={async (type) => {
+          try {
+            const firstApp = applications[0];
+            if (!firstApp) {
+              toast.error('You need at least one application to purchase membership.');
+              return;
+            }
+            const result = await membershipService.purchaseMembership(firstApp.id, type);
+            setMembership(result);
+            toast.success('Blox Membership activated!');
+            setPurchaseDialogOpen(false);
+          } catch (error: any) {
+            console.error('Failed to purchase membership:', error);
+            toast.error(error.message || 'Failed to purchase membership');
+          }
+        }}
+        termMonths={36}
+      />
     </Box>
   );
 };

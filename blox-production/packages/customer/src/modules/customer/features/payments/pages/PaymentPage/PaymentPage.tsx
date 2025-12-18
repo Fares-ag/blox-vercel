@@ -21,6 +21,7 @@ import {
   Wallet,
   Lock,
   CheckCircle,
+  Stars,
 } from '@mui/icons-material';
 import { supabaseApiService } from '@shared/services';
 import type { PaymentMethod } from '@shared/models/payment.model';
@@ -46,6 +47,12 @@ const PAYMENT_METHODS: PaymentMethod[] = [
     id: 'bank_transfer',
     type: 'bank_transfer',
     label: 'Bank Transfer',
+    enabled: true,
+  },
+  {
+    id: 'blox_credit',
+    type: 'blox_credit',
+    label: 'Blox Credit',
     enabled: true,
   },
   {
@@ -238,10 +245,13 @@ export const PaymentPage: React.FC = () => {
       return;
     }
 
-    const isValid = selectedMethod === 'card' ? validateCardDetails() : validateBankTransfer();
-    if (!isValid) {
-      return;
+    let isValid = true;
+    if (selectedMethod === 'card') {
+      isValid = validateCardDetails();
+    } else if (selectedMethod === 'bank_transfer') {
+      isValid = validateBankTransfer();
     }
+    if (!isValid) return;
 
     try {
       setProcessing(true);
@@ -263,6 +273,25 @@ export const PaymentPage: React.FC = () => {
 
       // Simulate payment processing
       await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Mark the installment as paid in Supabase for non-daily payments.
+      // Daily payments are currently treated as a separate flow and are not yet
+      // reflected at the installment level.
+      if (!isDailyPayment && paymentSchedule) {
+        const result = await supabaseApiService.markInstallmentAsPaid(
+          application.id,
+          paymentSchedule.dueDate,
+          paymentSchedule.amount
+        );
+
+        if (result.status !== 'SUCCESS') {
+          console.error('❌ Failed to mark installment as paid:', result.message);
+          toast.error('Payment recorded, but failed to update installment status. Please contact support if this persists.');
+        } else {
+          // Refresh local application state so the UI reflects the updated schedule
+          setApplication(result.data);
+        }
+      }
 
       toast.success('Payment processed successfully!');
       navigate(`/customer/my-applications/${id}/payment-confirmation`, {
@@ -398,6 +427,7 @@ export const PaymentPage: React.FC = () => {
                       {method.type === 'card' && <CreditCard />}
                       {method.type === 'bank_transfer' && <AccountBalance />}
                       {method.type === 'wallet' && <Wallet />}
+                        {method.type === 'blox_credit' && <Stars />}
                       {method.label}
                     </Box>
                   }

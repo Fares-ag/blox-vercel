@@ -18,11 +18,12 @@
   --field-lable-color: #16535b;
   --table-header: #008a6c;
   --table-header-color: #ffffff;
-  --custom-text-color: #bcbcbc;
-  --field-border-color: #bcbcbc;
+  /* Text & border colors tuned for higher contrast */
+  --custom-text-color: #6b7280; /* was #bcbcbc */
+  --field-border-color: #9ca3af; /* was #bcbcbc */
   --field-border-focus: #00cfa2;
-  --primary-text: #000000;
-  --secondary-text: #666666;
+  --primary-text: #111827; /* near-black for better readability */
+  --secondary-text: #4b5563; /* darker grey for body text */
   --field-placeholder: #648c92;
   --divider-color: #e5e7eb;
 

@@ -122,6 +122,21 @@
     }
   }
 
+  .blox-membership-cta {
+    .MuiTypography-h6 {
+      font-size: 18px;
+      letter-spacing: 0.02em;
+    }
+
+    .MuiTypography-body2 {
+      font-size: 14px;
+    }
+
+    button {
+      font-size: 14px;
+    }
+  }
+
   .quick-actions-card {
     .quick-action-btn {
       padding: 14px 20px;
