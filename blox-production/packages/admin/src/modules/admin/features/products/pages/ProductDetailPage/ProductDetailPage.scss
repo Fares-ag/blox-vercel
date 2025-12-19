@@ -61,13 +61,14 @@
       overflow: hidden;
       cursor: pointer;
       transition: all var(--transition-base);
-      border: 2px solid transparent;
+      border: 2px solid #e5e7eb;
       box-shadow: var(--shadow-xs);
-      background: var(--background);
+      background: #ffffff;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 200px;
+      aspect-ratio: 4/3;
+      position: relative;
 
       &:hover {
         transform: translateY(-4px);
@@ -77,10 +78,10 @@
 
       .product-image {
         width: 100%;
-        height: auto;
+        height: 100%;
         display: block;
-        object-fit: contain;
-        max-height: 500px;
+        object-fit: cover;
+        object-position: center;
       }
     }
   }
