@@ -4,6 +4,52 @@ import { supabase } from './supabase.service';
 class AuthService {
   private readonly storageKey = 'blox-supabase-auth';
 
+  private async fetchUserRoleFromDB(userId: string, email: string, userMetadata?: any): Promise<string> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (error || !data) {
+        const { data: emailData, error: emailError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('email', email)
+          .single();
+        if (!emailError && emailData?.role) {
+          return emailData.role;
+        }
+        
+        // If users table is not accessible (406 error), fall back to user_metadata
+        if (error?.code === 'PGRST116' || error?.message?.includes('406') || emailError?.code === 'PGRST116') {
+          console.warn('⚠️ Users table not accessible, falling back to user_metadata');
+          const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
+          if (roleFromMetadata) {
+            return roleFromMetadata;
+          }
+        }
+        
+        return 'customer';
+      }
+      return data.role || 'customer';
+    } catch (error: any) {
+      console.error('Error fetching user role from DB:', error);
+      
+      // If it's a 406 or table access error, try user_metadata fallback
+      if (error?.code === 'PGRST116' || error?.message?.includes('406') || error?.status === 406) {
+        console.warn('⚠️ Users table not accessible, falling back to user_metadata');
+        const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
+        if (roleFromMetadata) {
+          return roleFromMetadata;
+        }
+      }
+      
+      return 'customer';
+    }
+  }
+
   private readStoredSessionSync(): any | null {
     // Supabase stores the session in localStorage under the configured storageKey
     // (see `packages/shared/src/services/supabase.service.ts`).
@@ -38,33 +84,12 @@ class AuthService {
       throw new Error('Login failed: No user or session returned');
     }
 
-    // Fetch role from users table instead of user_metadata
-    let role = 'customer'; // Default
-    try {
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
-
-      if (!userError && userData?.role) {
-        role = userData.role;
-      } else {
-        // Fallback: try by email
-        const { data: emailData } = await supabase
-          .from('users')
-          .select('role')
-          .eq('email', data.user.email)
-          .single();
-
-        if (emailData?.role) {
-          role = emailData.role;
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching user role from DB:', err);
-      // Keep default 'customer' role
-    }
+    // Fetch role from users table, fallback to user_metadata if table not accessible
+    const role = await this.fetchUserRoleFromDB(
+      data.user.id, 
+      data.user.email || '', 
+      data.user.user_metadata
+    );
 
     const user: User = {
       id: data.user.id,
@@ -119,33 +144,8 @@ class AuthService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    // Fetch role from users table instead of user_metadata
-    let role = 'customer'; // Default
-    try {
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (!userError && userData?.role) {
-        role = userData.role;
-      } else {
-        // Fallback: try by email
-        const { data: emailData } = await supabase
-          .from('users')
-          .select('role')
-          .eq('email', user.email)
-          .single();
-
-        if (emailData?.role) {
-          role = emailData.role;
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching user role from DB:', err);
-      // Keep default 'customer' role
-    }
+    // Fetch role from users table, fallback to user_metadata if table not accessible
+    const role = await this.fetchUserRoleFromDB(user.id, user.email || '', user.user_metadata);
 
     return {
       id: user.id,
