@@ -204,7 +204,6 @@ export const AuthInitializer: React.FC = () => {
 
     return () => {
       mounted = false;
-      clearTimeout(timeoutId);
       if (subscription) {
         subscription.unsubscribe();
       }
