@@ -22,12 +22,12 @@ export const ClearStoragePage: React.FC = () => {
         refreshInfo();
         toast.success('All storage cleared successfully!');
         // Reload page to reset app state
+        // Note: No cleanup needed here as page will reload
         setTimeout(() => {
           window.location.reload();
         }, 1000);
       } catch (error) {
         toast.error('Failed to clear storage');
-      } finally {
         setClearing(false);
       }
     }

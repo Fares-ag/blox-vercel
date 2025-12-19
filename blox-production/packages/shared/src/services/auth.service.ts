@@ -8,10 +8,8 @@ class AuthService {
     // First, check user_metadata immediately (fast path)
     const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
     
-    // Create a timeout promise (2 seconds max)
-    const timeoutPromise = new Promise<string>((resolve) => {
-      setTimeout(() => resolve('timeout'), 2000);
-    });
+    // Create a timeout promise (2 seconds max) with cleanup support
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     // Try to fetch from users table with timeout
     const fetchPromise = (async () => {
@@ -60,11 +58,25 @@ class AuthService {
       }
     })();
 
+    // Create timeout promise
+    const timeoutPromise = new Promise<string>((resolve) => {
+      timeoutId = setTimeout(() => resolve('timeout'), 2000);
+    });
+
     // Race between fetch and timeout
     const result = await Promise.race([fetchPromise, timeoutPromise]);
     
+    // Clean up timeout if it's still pending
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    
     // If timeout, use metadata immediately
     if (result === 'timeout') {
+      // Only log in development mode
+      if (import.meta.env.DEV) {
+        console.debug('Users table query timed out, using user_metadata (this is expected if users table is not accessible)');
+      }
       return roleFromMetadata || 'customer';
     }
 

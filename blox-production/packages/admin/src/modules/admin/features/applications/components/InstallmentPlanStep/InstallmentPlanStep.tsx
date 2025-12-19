@@ -243,13 +243,38 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
     data.offer,
   ]);
 
+  // Helper function to update data with current schedule (for manual mode)
+  const updateDataWithSchedule = useCallback(() => {
+    if (!hasExistingLoan || entryMode !== 'manual' || paymentSchedule.length === 0) return;
+    
+    const updatedPlan = {
+      ...data.installmentPlan,
+      schedule: paymentSchedule,
+      monthlyAmount: manualMonthlyPayment || data.installmentPlan?.monthlyAmount || 0,
+    };
+    
+    const updatedExistingLoan = {
+      ...data.existingLoan,
+      entryMode: 'manual' as const,
+      monthlyPaymentAmount: manualMonthlyPayment,
+      totalMonths: totalLoanMonths,
+      startDate: loanStartDate?.format('YYYY-MM-DD'),
+      downPayment: downPayment,
+    };
+    
+    updateData({
+      installmentPlan: updatedPlan,
+      existingLoan: updatedExistingLoan,
+    });
+  }, [hasExistingLoan, entryMode, paymentSchedule, loanStartDate, totalLoanMonths, downPayment, manualMonthlyPayment, data.installmentPlan, data.existingLoan, updateData]);
+
   // Existing-loan manual mode: propagate manual edits when schedule changes.
   useEffect(() => {
     if (!hasExistingLoan) return;
     if (entryMode !== 'manual') return;
     if (paymentSchedule.length === 0) return;
     updateDataWithSchedule();
-  }, [hasExistingLoan, entryMode, paymentSchedule, loanStartDate, totalLoanMonths, downPayment, manualMonthlyPayment]);
+  }, [hasExistingLoan, entryMode, paymentSchedule, loanStartDate, totalLoanMonths, downPayment, manualMonthlyPayment, updateDataWithSchedule]);
 
   const generateSchedule = (
     monthlyPayment: number,

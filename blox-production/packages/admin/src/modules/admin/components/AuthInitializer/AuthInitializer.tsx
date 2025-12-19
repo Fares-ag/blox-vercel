@@ -14,9 +14,10 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
   // First, check user_metadata immediately (fast path)
   const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
   
-  // Create a timeout promise (2 seconds max)
+  // Create a timeout promise (2 seconds max) with cleanup support
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
   const timeoutPromise = new Promise<string>((resolve) => {
-    setTimeout(() => resolve('timeout'), 2000);
+    timeoutId = setTimeout(() => resolve('timeout'), 2000);
   });
 
   // Try to fetch from users table with timeout
@@ -30,7 +31,10 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
 
       // If we get a 406 error immediately, skip the email fallback
       if (error?.code === 'PGRST116' || error?.message?.includes('406') || error?.status === 406) {
-        console.warn('⚠️ Users table not accessible (406), using user_metadata');
+        // Only log in development mode
+        if (import.meta.env.DEV) {
+          console.debug('Users table not accessible (406), using user_metadata (this is expected if RLS policies are not set up)');
+        }
         return roleFromMetadata || 'customer';
       }
 
@@ -52,7 +56,10 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
 
         // If email lookup also returns 406, use metadata
         if (emailError?.code === 'PGRST116' || emailError?.message?.includes('406') || emailError?.status === 406) {
-          console.warn('⚠️ Users table not accessible (406), using user_metadata');
+          // Only log in development mode
+          if (import.meta.env.DEV) {
+            console.debug('Users table not accessible (406), using user_metadata');
+          }
           return roleFromMetadata || 'customer';
         }
       }
@@ -62,7 +69,10 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
     } catch (error: any) {
       // If it's a 406 or table access error, use metadata immediately
       if (error?.code === 'PGRST116' || error?.message?.includes('406') || error?.status === 406) {
-        console.warn('⚠️ Users table not accessible (406), using user_metadata');
+        // Only log in development mode
+        if (import.meta.env.DEV) {
+          console.debug('Users table not accessible (406), using user_metadata');
+        }
         return roleFromMetadata || 'customer';
       }
       return roleFromMetadata || 'customer';
@@ -72,9 +82,17 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
   // Race between fetch and timeout
   const result = await Promise.race([fetchPromise, timeoutPromise]);
   
+  // Clean up timeout if it's still pending (if fetchPromise won the race)
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+  }
+  
   // If timeout, use metadata immediately
   if (result === 'timeout') {
-    console.warn('⚠️ Users table query timed out, using user_metadata');
+    // Only log in development mode to reduce console noise in production
+    if (import.meta.env.DEV) {
+      console.debug('Users table query timed out, using user_metadata (this is expected if users table is not accessible)');
+    }
     return roleFromMetadata || 'customer';
   }
 
@@ -115,7 +133,8 @@ export const AuthInitializer: React.FC = () => {
           
           // Set credentials immediately so app can load
           dispatch(setCredentials({ user, token: session.access_token }));
-          dispatch(setInitialized()); // Mark as initialized immediately
+          // Mark as initialized immediately (setInitialized is called separately to avoid double render)
+          dispatch(setInitialized());
           
           // Set user context in Sentry
           loggingService.setUser(user);

@@ -31,10 +31,15 @@ export const OfferDetailPage: React.FC = () => {
         const rate = supabaseResponse.data.find((ir) => ir.id === insuranceRateId);
         if (rate) {
           setInsuranceRate(rate);
+        } else {
+          console.warn(`Insurance rate with ID ${insuranceRateId} not found`);
         }
+      } else {
+        throw new Error(supabaseResponse.message || 'Failed to load insurance rates');
       }
     } catch (error: any) {
       console.error('❌ Failed to load insurance rate:', error);
+      toast.error(error.message || 'Failed to load insurance rate information');
     }
   }, []);
 

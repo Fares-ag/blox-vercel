@@ -1,8 +1,8 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Box, Typography, Checkbox, FormControlLabel, Link } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Box, Typography, Checkbox, FormControlLabel, Link, Alert } from '@mui/material';
+import { Link as RouterLink, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../../../hooks/useAuth';
 import { Input, Button } from '@shared/components';
@@ -16,7 +16,9 @@ interface LoginFormData {
 }
 
 export const LoginPage: React.FC = () => {
-  const { login, loading } = useAuth();
+  const { login, loading, error } = useAuth();
+  const [searchParams] = useSearchParams();
+  const reason = searchParams.get('reason');
 
   const {
     register,
@@ -36,7 +38,12 @@ export const LoginPage: React.FC = () => {
     if (result.success) {
       toast.success('Login successful!');
     } else {
-      toast.error(result.error || 'Login failed');
+      // Show error message - don't show toast if it's an access denied error (already shown as alert)
+      if (result.error?.includes('Access denied') || result.error?.includes('Administrator privileges')) {
+        // Error is already displayed via the error state
+      } else {
+        toast.error(result.error || 'Login failed');
+      }
     }
   }, [login]);
 
@@ -54,6 +61,15 @@ export const LoginPage: React.FC = () => {
         </Box>
 
         <Box component="form" className="login-form" onSubmit={handleSubmit(onSubmit)}>
+          {(reason === 'not_admin' || (error && (error.includes('Access denied') || error.includes('Administrator privileges')))) ? (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              <Typography variant="body2">
+                <strong>Access Denied:</strong> Administrator privileges required. Only admin users can access this portal. 
+                Please contact your administrator if you believe this is an error.
+              </Typography>
+            </Alert>
+          ) : null}
+          
           <Input
             label="Email"
             type="email"
