@@ -224,34 +224,6 @@ export const ProductDetailPage: React.FC = () => {
               </Grid>
             </Grid>
           </Paper>
-        </Grid>
-
-        <Grid item xs={12} md={4}>
-          <Paper className="detail-section">
-            <Typography variant="h3" className="section-title">
-              Additional Information
-            </Typography>
-            <Box className="info-item">
-              <Typography variant="body2" className="info-label">
-                Created At
-              </Typography>
-              <Typography variant="body1">{formatDate(displayData.createdAt)}</Typography>
-            </Box>
-            <Box className="info-item">
-              <Typography variant="body2" className="info-label">
-                Updated At
-              </Typography>
-              <Typography variant="body1">{formatDate(displayData.updatedAt)}</Typography>
-            </Box>
-            {displayData.description && (
-              <Box className="info-item">
-                <Typography variant="body2" className="info-label">
-                  Description
-                </Typography>
-                <Typography variant="body1">{displayData.description}</Typography>
-              </Box>
-            )}
-          </Paper>
 
           <Paper className="detail-section">
             <Typography variant="h3" className="section-title">
@@ -277,6 +249,34 @@ export const ProductDetailPage: React.FC = () => {
             ) : (
               <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
                 <Typography variant="body2">No images available for this vehicle</Typography>
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+
+        <Grid item xs={12} md={4}>
+          <Paper className="detail-section">
+            <Typography variant="h3" className="section-title">
+              Additional Information
+            </Typography>
+            <Box className="info-item">
+              <Typography variant="body2" className="info-label">
+                Created At
+              </Typography>
+              <Typography variant="body1">{formatDate(displayData.createdAt)}</Typography>
+            </Box>
+            <Box className="info-item">
+              <Typography variant="body2" className="info-label">
+                Updated At
+              </Typography>
+              <Typography variant="body1">{formatDate(displayData.updatedAt)}</Typography>
+            </Box>
+            {displayData.description && (
+              <Box className="info-item">
+                <Typography variant="body2" className="info-label">
+                  Description
+                </Typography>
+                <Typography variant="body1">{displayData.description}</Typography>
               </Box>
             )}
           </Paper>
