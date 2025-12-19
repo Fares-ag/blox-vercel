@@ -131,31 +131,44 @@ export const AuthInitializer: React.FC = () => {
             permissions: session.user.user_metadata?.permissions || [],
           };
           
-          // Set credentials immediately so app can load
-          dispatch(setCredentials({ user, token: session.access_token }));
-          // Mark as initialized immediately (setInitialized is called separately to avoid double render)
-          dispatch(setInitialized());
-          
-          // Set user context in Sentry
-          loggingService.setUser(user);
-          
-          // Then try to fetch from DB in background (non-blocking)
-          fetchUserRoleFromDB(
-            session.user.id, 
-            session.user.email || '', 
-            session.user.user_metadata
-          ).then((dbRole) => {
-            // Only update if role changed and we're still mounted
-            if (mounted && dbRole !== metadataRole) {
-              dispatch(setCredentials({ 
-                user: { ...user, role: dbRole }, 
-                token: session.access_token 
-              }));
-            }
-          }).catch((err) => {
-            // Silently fail - we already have metadata role
-            console.debug('Background role fetch failed:', err);
-          });
+          // CRITICAL: Only set credentials if user is admin
+          // Non-admin users should not be authenticated in admin app
+          if (metadataRole === 'admin') {
+            // Set credentials immediately so app can load
+            dispatch(setCredentials({ user, token: session.access_token }));
+            // Mark as initialized immediately (setInitialized is called separately to avoid double render)
+            dispatch(setInitialized());
+            
+            // Set user context in Sentry
+            loggingService.setUser(user);
+            
+            // Then try to fetch from DB in background (non-blocking)
+            fetchUserRoleFromDB(
+              session.user.id, 
+              session.user.email || '', 
+              session.user.user_metadata
+            ).then((dbRole) => {
+              // If DB role is different and still admin, update it
+              if (mounted && dbRole === 'admin' && dbRole !== metadataRole) {
+                dispatch(setCredentials({ 
+                  user: { ...user, role: dbRole }, 
+                  token: session.access_token 
+                }));
+              } else if (mounted && dbRole !== 'admin') {
+                // If DB says user is not admin, sign them out
+                dispatch(logout());
+                supabase.auth.signOut();
+              }
+            }).catch((err) => {
+              // Silently fail - we already have metadata role
+              console.debug('Background role fetch failed:', err);
+            });
+          } else {
+            // Non-admin user detected - sign them out immediately
+            dispatch(logout());
+            supabase.auth.signOut();
+            dispatch(setInitialized());
+          }
         } else {
           // No session found, mark as initialized immediately
           dispatch(setInitialized());
@@ -189,25 +202,38 @@ export const AuthInitializer: React.FC = () => {
               permissions: session.user.user_metadata?.permissions || [],
             };
             
-            dispatch(setCredentials({ user, token: session.access_token }));
-            // Set user context in Sentry
-            loggingService.setUser(user);
-            
-            // Try to fetch from DB in background (non-blocking)
-            fetchUserRoleFromDB(
-              session.user.id, 
-              session.user.email || '', 
-              session.user.user_metadata
-            ).then((dbRole) => {
-              if (mounted && dbRole !== metadataRole) {
-                dispatch(setCredentials({ 
-                  user: { ...user, role: dbRole }, 
-                  token: session.access_token 
-                }));
-              }
-            }).catch(() => {
-              // Silently fail - we already have metadata role
-            });
+            // CRITICAL: Only set credentials if user is admin
+            // Non-admin users should not be authenticated in admin app
+            if (metadataRole === 'admin') {
+              dispatch(setCredentials({ user, token: session.access_token }));
+              // Set user context in Sentry
+              loggingService.setUser(user);
+              
+              // Try to fetch from DB in background (non-blocking)
+              fetchUserRoleFromDB(
+                session.user.id, 
+                session.user.email || '', 
+                session.user.user_metadata
+              ).then((dbRole) => {
+                // If DB role is different and still admin, update it
+                if (mounted && dbRole === 'admin' && dbRole !== metadataRole) {
+                  dispatch(setCredentials({ 
+                    user: { ...user, role: dbRole }, 
+                    token: session.access_token 
+                  }));
+                } else if (mounted && dbRole !== 'admin') {
+                  // If DB says user is not admin, sign them out
+                  dispatch(logout());
+                  supabase.auth.signOut();
+                }
+              }).catch(() => {
+                // Silently fail - we already have metadata role
+              });
+            } else {
+              // Non-admin user detected - sign them out immediately
+              dispatch(logout());
+              supabase.auth.signOut();
+            }
           } else {
             dispatch(logout()); // This already sets initialized to true
             // Clear user context in Sentry

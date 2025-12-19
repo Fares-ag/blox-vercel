@@ -8,13 +8,15 @@ interface GuestGuardProps {
 }
 
 export const GuestGuard = ({ children }: GuestGuardProps) => {
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
 
   if (Config.bypassGuards) {
     return <>{children}</>;
   }
 
-  if (isAuthenticated) {
+  // Only redirect to dashboard if user is authenticated AND is an admin
+  // Non-admin users should stay on login page (they'll be blocked by login handler anyway)
+  if (isAuthenticated && user?.role === 'admin') {
     return <Navigate to="/admin/dashboard" replace />;
   }
 
