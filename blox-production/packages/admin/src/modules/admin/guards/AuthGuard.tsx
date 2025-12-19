@@ -18,7 +18,14 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
 
   // Wait for auth to be initialized before making redirect decisions
   // This prevents redirects during the initial auth check on page refresh
+  // But don't block if we have a valid session in localStorage (for faster reloads)
   if (!initialized) {
+    // If we have a token in sync storage, we're likely authenticated, just wait briefly
+    const hasToken = localStorage.getItem('blox-supabase-auth') || sessionStorage.getItem('blox-supabase-auth');
+    if (!hasToken) {
+      return <Loading fullScreen message="Loading..." />;
+    }
+    // If we have a token, show loading but don't redirect yet
     return <Loading fullScreen message="Loading..." />;
   }
 
