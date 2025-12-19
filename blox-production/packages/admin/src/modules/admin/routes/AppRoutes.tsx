@@ -126,14 +126,10 @@ export const AppRoutes: React.FC = () => {
 
       {/* Default Redirect - only for root path */}
       <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
-      {/* Catch-all for unmatched routes - only redirect if not already in /admin path */}
+      {/* Catch-all for unmatched routes - redirect to dashboard (AuthGuard will handle auth) */}
       <Route 
         path="*" 
-        element={
-          <AuthGuard>
-            <Navigate to="/admin/dashboard" replace />
-          </AuthGuard>
-        } 
+        element={<Navigate to="/admin/dashboard" replace />} 
       />
     </Routes>
   );
