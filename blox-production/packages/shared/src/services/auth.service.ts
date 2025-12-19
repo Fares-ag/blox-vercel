@@ -105,11 +105,18 @@ class AuthService {
       throw new Error('Login failed: No user or session returned');
     }
 
-    // Use metadata first for faster response, then try DB in background
+    // Use metadata first for faster response, then try DB with timeout
     const metadataRole = data.user.user_metadata?.role || 
                         data.user.user_metadata?.user_role || 
                         data.user.user_metadata?.userRole || 
                         'customer';
+
+    // Try to fetch from DB with timeout (2 seconds max)
+    const role = await this.fetchUserRoleFromDB(
+      data.user.id, 
+      data.user.email || '', 
+      data.user.user_metadata
+    );
 
     const user: User = {
       id: data.user.id,
@@ -117,23 +124,9 @@ class AuthService {
       name: data.user.user_metadata?.first_name && data.user.user_metadata?.last_name
         ? `${data.user.user_metadata.first_name} ${data.user.user_metadata.last_name}`.trim()
         : data.user.email || '',
-      role: metadataRole, // Use metadata first for instant response
+      role: role,
       permissions: data.user.user_metadata?.permissions || [],
     };
-
-    // Try to fetch from DB in background (non-blocking)
-    this.fetchUserRoleFromDB(
-      data.user.id, 
-      data.user.email || '', 
-      data.user.user_metadata
-    ).then((dbRole) => {
-      if (dbRole !== metadataRole) {
-        // Role updated from DB - but we already returned, so this is just for future calls
-        console.debug('Role updated from DB:', dbRole);
-      }
-    }).catch(() => {
-      // Silently fail - we already have metadata role
-    });
 
     return {
       user,
