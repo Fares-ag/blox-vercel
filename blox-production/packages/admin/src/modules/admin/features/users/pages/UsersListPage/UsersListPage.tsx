@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Box, Typography, Chip } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { supabaseApiService } from '@shared/services';
@@ -17,11 +17,7 @@ export const UsersListPage: React.FC = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -48,14 +44,18 @@ export const UsersListPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleSearch = (term: string) => {
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
     setPage(0);
-  };
+  }, []);
 
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = useMemo(() => users.filter((user) => {
     if (!searchTerm) return true;
     const searchLower = searchTerm.toLowerCase();
     return (
@@ -66,12 +66,12 @@ export const UsersListPage: React.FC = () => {
       user.phone?.toLowerCase().includes(searchLower) ||
       user.nationalId?.toLowerCase().includes(searchLower)
     );
-  });
+  }), [users, searchTerm]);
 
-  const paginatedUsers = filteredUsers.slice(
+  const paginatedUsers = useMemo(() => filteredUsers.slice(
     page * rowsPerPage,
     page * rowsPerPage + rowsPerPage
-  );
+  ), [filteredUsers, page, rowsPerPage]);
 
   const columns: Column<User>[] = [
     {

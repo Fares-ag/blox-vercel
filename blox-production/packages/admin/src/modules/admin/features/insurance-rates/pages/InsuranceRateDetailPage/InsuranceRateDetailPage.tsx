@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Divider, Chip, Alert } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -20,13 +20,7 @@ export const InsuranceRateDetailPage: React.FC = () => {
   const { selected, loading } = useAppSelector((state) => state.insuranceRates);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      loadInsuranceRateDetails(id);
-    }
-  }, [id]);
-
-  const loadInsuranceRateDetails = async (rateId: string) => {
+  const loadInsuranceRateDetails = useCallback(async (rateId: string) => {
     try {
       dispatch(setLoading(true));
       
@@ -44,13 +38,19 @@ export const InsuranceRateDetailPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [dispatch]);
 
-  const handleDelete = () => {
+  useEffect(() => {
+    if (id) {
+      loadInsuranceRateDetails(id);
+    }
+  }, [id, loadInsuranceRateDetails]);
+
+  const handleDelete = useCallback(() => {
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -70,7 +70,7 @@ export const InsuranceRateDetailPage: React.FC = () => {
     } finally {
       setDeleteDialogOpen(false);
     }
-  };
+  }, [id, dispatch, navigate]);
 
   if (loading) {
     return <Loading fullScreen />;

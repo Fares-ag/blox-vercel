@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Box, Typography, IconButton } from '@mui/material';
 import { Edit, Delete } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
@@ -23,11 +23,7 @@ export const ProductsListPage: React.FC = () => {
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search by 300ms
 
-  useEffect(() => {
-    loadProducts();
-  }, [pagination.page, pagination.limit, filters, debouncedSearchTerm]);
-
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       dispatch(setLoading(true));
       
@@ -82,28 +78,32 @@ export const ProductsListPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [pagination.page, pagination.limit, filters, debouncedSearchTerm, dispatch]);
 
-  const handleSearch = (term: string) => {
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
+
+  const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
     dispatch(setPage(1));
-  };
+  }, [dispatch]);
 
-  const handleFilterChange = (newFilters: Record<string, any>) => {
+  const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
     dispatch(setFilters(newFilters));
-  };
+  }, [dispatch]);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     dispatch(clearFilters());
     setSearchTerm('');
-  };
+  }, [dispatch]);
 
-  const handleDelete = async (productId: string) => {
+  const handleDelete = useCallback((productId: string) => {
     setProductToDelete(productId);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (!productToDelete) return;
 
     try {
@@ -124,7 +124,7 @@ export const ProductsListPage: React.FC = () => {
       setDeleteDialogOpen(false);
       setProductToDelete(null);
     }
-  };
+  }, [productToDelete, dispatch, loadProducts]);
 
   const filterConfigs: FilterConfig[] = [
     { id: 'condition', label: 'Condition', type: 'multiselect', options: [

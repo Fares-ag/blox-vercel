@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { Box, IconButton } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import { Menu } from '@mui/icons-material';
 import { SidePanel, type MenuItem } from '@shared/components';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useAppSelector } from '../../store/hooks';
 import { useAppDispatch } from '../../store/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -27,6 +27,9 @@ export const MainLayout: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md')); // md breakpoint is typically 960px
 
   const handleLogout = async () => {
     try {
@@ -38,6 +41,13 @@ export const MainLayout: React.FC = () => {
       navigate('/admin/auth/login');
     }
   };
+
+  // Auto-collapse sidebar on mobile on initial load and after navigation
+  useEffect(() => {
+    if (isMobile) {
+      setCollapsed(true);
+    }
+  }, [isMobile, location.pathname]);
 
   return (
     <Box className="main-layout">

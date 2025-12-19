@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography } from '@mui/material';
 import { MultiStepForm, type StepConfig } from '@shared/components';
@@ -28,7 +28,7 @@ export const AddApplicationPage: React.FC = () => {
     { label: 'Review Application', component: ReviewStep },
   ];
 
-  const handleSubmit = async (data: any) => {
+  const handleSubmit = useCallback(async (data: any) => {
     try {
       // Draft-friendly: allow missing sections/fields.
       const customerInfo = data.customerInfo || {};
@@ -82,11 +82,11 @@ export const AddApplicationPage: React.FC = () => {
       console.error('Submission error details:', error);
       toast.error(error.message || 'Failed to create application. Please try again.');
     }
-  };
+  }, [dispatch, navigate]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     navigate('/admin/applications');
-  };
+  }, [navigate]);
 
   return (
     <Box className="add-application-page">

@@ -116,24 +116,24 @@ export const AddVehiclePage: React.FC = () => {
     }
   }, [uploadedImages, setValue]);
 
-  const handleRemoveImage = (index: number) => {
+  const handleRemoveImage = useCallback((index: number) => {
     const newImages = uploadedImages.filter((_, i) => i !== index);
     setUploadedImages(newImages);
     setValue('images', newImages as any);
-  };
+  }, [uploadedImages, setValue]);
 
-  const handleDragOver = (e: React.DragEvent) => {
+  const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-  };
+  }, []);
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     handleImageUpload(e.dataTransfer.files);
-  };
+  }, [handleImageUpload]);
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = useCallback(async (data: any) => {
     try {
       setSaving(true);
       const submitData = {
@@ -173,7 +173,7 @@ export const AddVehiclePage: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [uploadedImages, dispatch, navigate]);
 
   return (
     <Box className="add-vehicle-page">

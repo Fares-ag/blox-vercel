@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -31,13 +31,7 @@ export const UserDetailPage: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (email) {
-      loadUserDetails();
-    }
-  }, [email]);
-
-  const loadUserDetails = async () => {
+  const loadUserDetails = useCallback(async () => {
     if (!email) return;
     
     try {
@@ -66,7 +60,23 @@ export const UserDetailPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [email]);
+
+  useEffect(() => {
+    if (email) {
+      loadUserDetails();
+    }
+  }, [email, loadUserDetails]);
+
+  const totalLoanAmount = useMemo(() => 
+    applications.reduce((sum, app) => sum + (app.loanAmount || 0), 0),
+    [applications]
+  );
+
+  const activeApplications = useMemo(() => 
+    applications.filter((app) => app.status === 'active').length,
+    [applications]
+  );
 
   if (loading && !user) {
     return <Loading fullScreen message="Loading user details..." />;
@@ -84,9 +94,6 @@ export const UserDetailPage: React.FC = () => {
       </Box>
     );
   }
-
-  const totalLoanAmount = applications.reduce((sum, app) => sum + (app.loanAmount || 0), 0);
-  const activeApplications = applications.filter((app) => app.status === 'active').length;
 
   return (
     <Box className="user-detail-page">

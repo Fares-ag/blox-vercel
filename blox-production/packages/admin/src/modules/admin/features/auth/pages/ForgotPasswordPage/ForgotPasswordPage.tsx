@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Box, Typography, Link } from '@mui/material';
@@ -28,7 +28,7 @@ export const ForgotPasswordPage: React.FC = () => {
     },
   });
 
-  const onSubmit = async (data: ForgotPasswordFormData) => {
+  const onSubmit = useCallback(async (data: ForgotPasswordFormData) => {
     setLoading(true);
     const result = await forgotPassword(data.email);
     setLoading(false);
@@ -38,7 +38,7 @@ export const ForgotPasswordPage: React.FC = () => {
     } else {
       toast.error(result.error || 'Failed to send reset email');
     }
-  };
+  }, [forgotPassword]);
 
   return (
     <Box className="forgot-password-page">

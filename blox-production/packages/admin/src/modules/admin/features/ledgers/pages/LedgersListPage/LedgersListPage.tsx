@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setList, setLoading, setPage, setLimit } from '../../../../store/slices/ledgers.slice';
@@ -15,11 +15,7 @@ export const LedgersListPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { list, loading, pagination } = useAppSelector((state) => state.ledgers);
 
-  useEffect(() => {
-    loadLedgers();
-  }, [pagination.page, pagination.limit]);
-
-  const loadLedgers = async () => {
+  const loadLedgers = useCallback(async () => {
     try {
       dispatch(setLoading(true));
       
@@ -43,7 +39,11 @@ export const LedgersListPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [pagination.page, pagination.limit, dispatch]);
+
+  useEffect(() => {
+    loadLedgers();
+  }, [loadLedgers]);
 
   const columns: Column<Ledger>[] = [
     { id: 'id', label: 'ID', minWidth: 100 },

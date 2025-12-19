@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Box, Typography, Link } from '@mui/material';
@@ -22,21 +22,21 @@ export const ResetPasswordPage: React.FC = () => {
   const [validating, setValidating] = useState(true);
   const [sessionValid, setSessionValid] = useState(false);
 
-  useEffect(() => {
-    const validateSession = async () => {
-      try {
-        // Check if there's an active session (Supabase handles this automatically when user clicks reset link)
-        const { data: { session } } = await supabase.auth.getSession();
-        setSessionValid(!!session);
-      } catch (error) {
-        setSessionValid(false);
-      } finally {
-        setValidating(false);
-      }
-    };
-
-    validateSession();
+  const validateSession = useCallback(async () => {
+    try {
+      // Check if there's an active session (Supabase handles this automatically when user clicks reset link)
+      const { data: { session } } = await supabase.auth.getSession();
+      setSessionValid(!!session);
+    } catch (error) {
+      setSessionValid(false);
+    } finally {
+      setValidating(false);
+    }
   }, []);
+
+  useEffect(() => {
+    validateSession();
+  }, [validateSession]);
 
   const {
     register,
@@ -50,7 +50,7 @@ export const ResetPasswordPage: React.FC = () => {
     },
   });
 
-  const onSubmit = async (data: ResetPasswordFormData) => {
+  const onSubmit = useCallback(async (data: ResetPasswordFormData) => {
     setLoading(true);
     const result = await resetPassword(data.password);
     setLoading(false);
@@ -61,7 +61,7 @@ export const ResetPasswordPage: React.FC = () => {
     } else {
       toast.error(result.error || 'Failed to reset password');
     }
-  };
+  }, [resetPassword, navigate]);
 
   if (validating) {
     return (

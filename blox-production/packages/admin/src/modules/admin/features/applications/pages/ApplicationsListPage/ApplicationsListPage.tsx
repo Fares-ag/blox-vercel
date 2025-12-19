@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Box, Typography, Tabs, Tab, IconButton, Fab, Tooltip } from '@mui/material';
 import {
   AttachMoney,
@@ -29,12 +29,31 @@ export const ApplicationsListPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [activeTab, setActiveTab] = useState(0);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
+  // Debounce search term to avoid excessive API calls
   useEffect(() => {
-    loadApplications();
-  }, [pagination.page, pagination.limit, searchTerm, statusFilter]);
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  const loadApplications = async () => {
+  const filterApplicationsByStatus = useCallback((applications: Application[], filter: StatusFilter): Application[] => {
+    if (filter === 'all') return applications;
+    if (filter === 'inprogress') {
+      return applications.filter((app) => app.status === 'under_review' || app.status === 'resubmission_required');
+    }
+    if (filter === 'active') return applications.filter((app) => app.status === 'active');
+    if (filter === 'rejected') return applications.filter((app) => app.status === 'rejected');
+    if (filter === 'completed') return applications.filter((app) => app.status === 'completed');
+    if (filter === 'cancelled') {
+      return applications.filter((app) => app.status === 'submission_cancelled');
+    }
+    return applications;
+  }, []);
+
+  const loadApplications = useCallback(async () => {
     try {
       dispatch(setLoading(true));
       
@@ -44,9 +63,9 @@ export const ApplicationsListPage: React.FC = () => {
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         let applications = supabaseResponse.data;
         
-        // Apply search filter
-        if (searchTerm) {
-          const searchLower = searchTerm.toLowerCase();
+        // Apply search filter (using debounced term)
+        if (debouncedSearchTerm) {
+          const searchLower = debouncedSearchTerm.toLowerCase();
           applications = applications.filter((app: Application) =>
             app.customerName?.toLowerCase().includes(searchLower) ||
             app.customerEmail?.toLowerCase().includes(searchLower) ||
@@ -74,33 +93,23 @@ export const ApplicationsListPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [pagination.page, pagination.limit, debouncedSearchTerm, statusFilter, dispatch, filterApplicationsByStatus]);
 
-  const filterApplicationsByStatus = (applications: Application[], filter: StatusFilter): Application[] => {
-    if (filter === 'all') return applications;
-    if (filter === 'inprogress') {
-      return applications.filter((app) => app.status === 'under_review' || app.status === 'resubmission_required');
-    }
-    if (filter === 'active') return applications.filter((app) => app.status === 'active');
-    if (filter === 'rejected') return applications.filter((app) => app.status === 'rejected');
-    if (filter === 'completed') return applications.filter((app) => app.status === 'completed');
-    if (filter === 'cancelled') {
-      return applications.filter((app) => app.status === 'submission_cancelled');
-    }
-    return applications;
-  };
+  useEffect(() => {
+    loadApplications();
+  }, [loadApplications]);
 
-  const handleSearch = (term: string) => {
+  const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
     dispatch(setPage(1));
-  };
+  }, [dispatch]);
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = useCallback((_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
     const statusMap: StatusFilter[] = ['all', 'inprogress', 'active', 'rejected', 'completed', 'cancelled'];
     setStatusFilter(statusMap[newValue]);
     dispatch(setPage(1));
-  };
+  }, [dispatch]);
 
   // Calculate metrics
   const metrics = useMemo(() => {

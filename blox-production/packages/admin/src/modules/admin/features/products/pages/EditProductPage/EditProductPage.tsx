@@ -60,7 +60,7 @@ export const EditProductPage: React.FC = () => {
   useEffect(() => {
     if (id && (!selected || selected.id !== id)) {
       loadProduct();
-    } else if (selected) {
+    } else if (selected && selected.id === id) {
       // Populate form with existing data
       reset({
         ...selected,
@@ -68,7 +68,8 @@ export const EditProductPage: React.FC = () => {
       });
       setUploadedImages(selected.images || []);
     }
-  }, [id, selected, reset]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, selected?.id]);
 
   const loadProduct = async () => {
     if (!id) return;

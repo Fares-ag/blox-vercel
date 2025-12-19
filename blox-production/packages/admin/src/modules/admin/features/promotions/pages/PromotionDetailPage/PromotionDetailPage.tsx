@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Divider, Chip } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -20,13 +20,7 @@ export const PromotionDetailPage: React.FC = () => {
   const { selected, loading } = useAppSelector((state) => state.promotions);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      loadPromotionDetails(id);
-    }
-  }, [id]);
-
-  const loadPromotionDetails = async (promotionId: string) => {
+  const loadPromotionDetails = useCallback(async (promotionId: string) => {
     try {
       dispatch(setLoading(true));
       
@@ -44,9 +38,15 @@ export const PromotionDetailPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [dispatch]);
 
-  const handleDelete = async () => {
+  useEffect(() => {
+    if (id) {
+      loadPromotionDetails(id);
+    }
+  }, [id, loadPromotionDetails]);
+
+  const handleDelete = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -65,7 +65,7 @@ export const PromotionDetailPage: React.FC = () => {
     } finally {
       setDeleteDialogOpen(false);
     }
-  };
+  }, [id, navigate]);
 
   if (loading && !selected) {
     return <Loading fullScreen message="Loading promotion..." />;

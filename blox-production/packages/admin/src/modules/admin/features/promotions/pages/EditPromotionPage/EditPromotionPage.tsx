@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -81,21 +81,7 @@ export const EditPromotionPage: React.FC = () => {
     },
   });
 
-  useEffect(() => {
-    if (id && (!selected || selected.id !== id)) {
-      loadPromotion();
-    } else if (selected) {
-      setValue('name', selected.name);
-      setValue('description', selected.description);
-      setValue('discountType', selected.discountType);
-      setValue('discountValue', selected.discountValue);
-      setValue('status', selected.status);
-      setValue('startDateMoment', selected.startDate ? moment(selected.startDate) : null);
-      setValue('endDateMoment', selected.endDate ? moment(selected.endDate) : null);
-    }
-  }, [id, selected, setValue]);
-
-  const loadPromotion = async () => {
+  const loadPromotion = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -115,7 +101,22 @@ export const EditPromotionPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [id, dispatch, navigate]);
+
+  useEffect(() => {
+    if (id && (!selected || selected.id !== id)) {
+      loadPromotion();
+    } else if (selected && selected.id === id) {
+      setValue('name', selected.name);
+      setValue('description', selected.description);
+      setValue('discountType', selected.discountType);
+      setValue('discountValue', selected.discountValue);
+      setValue('status', selected.status);
+      setValue('startDateMoment', selected.startDate ? moment(selected.startDate) : null);
+      setValue('endDateMoment', selected.endDate ? moment(selected.endDate) : null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, selected?.id, loadPromotion]);
 
   const discountTypeOptions: SelectOption[] = [
     { value: 'percentage', label: 'Percentage (%)' },
@@ -127,7 +128,7 @@ export const EditPromotionPage: React.FC = () => {
     { value: 'inactive', label: 'Inactive' },
   ];
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = useCallback(async (data: any) => {
     if (!id) return;
 
     try {
@@ -158,7 +159,7 @@ export const EditPromotionPage: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [id, navigate]);
 
   if (loading && !selected) {
     return <Loading fullScreen message="Loading promotion..." />;

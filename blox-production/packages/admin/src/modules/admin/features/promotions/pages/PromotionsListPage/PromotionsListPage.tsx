@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -17,14 +17,19 @@ export const PromotionsListPage: React.FC = () => {
   const navigate = useNavigate();
   const { list, loading } = useAppSelector((state) => state.promotions);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [promotionToDelete, setPromotionToDelete] = useState<string | null>(null);
 
+  // Debounce search term to avoid excessive API calls
   useEffect(() => {
-    loadPromotions();
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const loadPromotions = async () => {
+  const loadPromotions = useCallback(async () => {
     try {
       dispatch(setLoading(true));
       
@@ -34,9 +39,9 @@ export const PromotionsListPage: React.FC = () => {
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         let promotions = supabaseResponse.data;
         
-        // Apply search filter
-        if (searchTerm) {
-          const searchLower = searchTerm.toLowerCase();
+        // Apply search filter (using debounced term)
+        if (debouncedSearchTerm) {
+          const searchLower = debouncedSearchTerm.toLowerCase();
           promotions = promotions.filter((promo: Promotion) =>
             promo.name?.toLowerCase().includes(searchLower) ||
             promo.id?.toLowerCase().includes(searchLower)
@@ -53,18 +58,22 @@ export const PromotionsListPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [debouncedSearchTerm, dispatch]);
 
-  const handleSearch = (term: string) => {
+  useEffect(() => {
+    loadPromotions();
+  }, [loadPromotions]);
+
+  const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
-  };
+  }, []);
 
-  const handleDelete = (promotionId: string) => {
+  const handleDelete = useCallback((promotionId: string) => {
     setPromotionToDelete(promotionId);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (!promotionToDelete) return;
 
     try {
@@ -84,7 +93,7 @@ export const PromotionsListPage: React.FC = () => {
       setDeleteDialogOpen(false);
       setPromotionToDelete(null);
     }
-  };
+  }, [promotionToDelete, loadPromotions]);
 
   const columns: Column<Promotion>[] = [
     { id: 'id', label: 'ID', minWidth: 100 },

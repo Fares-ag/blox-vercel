@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -46,7 +46,7 @@ export const AddPromotionPage: React.FC = () => {
     { value: 'inactive', label: 'Inactive' },
   ];
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = useCallback(async (data: any) => {
     try {
       setSaving(true);
       const payload = {
@@ -71,7 +71,7 @@ export const AddPromotionPage: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [navigate]);
 
   if (saving) {
     return <Loading fullScreen message="Creating promotion..." />;

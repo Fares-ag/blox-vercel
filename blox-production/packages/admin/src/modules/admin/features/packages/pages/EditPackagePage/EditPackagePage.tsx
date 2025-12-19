@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, IconButton, Divider } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -52,19 +52,7 @@ export const EditPackagePage: React.FC = () => {
     name: 'items',
   });
 
-  useEffect(() => {
-    if (id && (!selected || selected.id !== id)) {
-      loadPackage();
-    } else if (selected) {
-      // Populate form with existing data
-      reset({
-        ...selected,
-        items: selected.items || [],
-      });
-    }
-  }, [id, selected, reset]);
-
-  const loadPackage = async () => {
+  const loadPackage = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -89,9 +77,22 @@ export const EditPackagePage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [id, dispatch, navigate, reset]);
 
-  const onSubmit = async (data: any) => {
+  useEffect(() => {
+    if (id && (!selected || selected.id !== id)) {
+      loadPackage();
+    } else if (selected && selected.id === id) {
+      // Populate form with existing data
+      reset({
+        ...selected,
+        items: selected.items || [],
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, selected?.id, loadPackage]);
+
+  const onSubmit = useCallback(async (data: any) => {
     if (!id) return;
 
     try {
@@ -117,19 +118,19 @@ export const EditPackagePage: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [id, dispatch, navigate]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     if (id) {
       navigate(`/admin/packages/${id}`);
     } else {
       navigate('/admin/packages');
     }
-  };
+  }, [id, navigate]);
 
-  const addItem = () => {
+  const addItem = useCallback(() => {
     append({ id: `item_${Date.now()}`, name: '', description: '' });
-  };
+  }, [append]);
 
   if (loading && !selected) {
     return <Loading fullScreen message="Loading package..." />;

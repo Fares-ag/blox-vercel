@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -17,11 +17,7 @@ export const PackagesListPage: React.FC = () => {
   const navigate = useNavigate();
   const { list, loading } = useAppSelector((state) => state.packages);
 
-  useEffect(() => {
-    loadPackages();
-  }, []);
-
-  const loadPackages = async () => {
+  const loadPackages = useCallback(async () => {
     try {
       dispatch(setLoading(true));
       
@@ -39,7 +35,11 @@ export const PackagesListPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [dispatch]);
+
+  useEffect(() => {
+    loadPackages();
+  }, [loadPackages]);
 
   const columns: Column<Package>[] = [
     { id: 'id', label: 'ID', minWidth: 100 },

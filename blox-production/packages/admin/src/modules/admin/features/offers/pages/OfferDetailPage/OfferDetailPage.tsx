@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Divider, Chip } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -22,23 +22,7 @@ export const OfferDetailPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [insuranceRate, setInsuranceRate] = useState<InsuranceRate | null>(null);
 
-  useEffect(() => {
-    if (id) {
-      loadOfferDetails(id);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    // Load insurance rate if offer has insuranceRateId
-    const data = selected;
-    if (data?.insuranceRateId && !data?.insuranceRate) {
-      loadInsuranceRate(data.insuranceRateId);
-    } else if (data?.insuranceRate) {
-      setInsuranceRate(data.insuranceRate);
-    }
-  }, [selected, id]);
-
-  const loadInsuranceRate = async (insuranceRateId: string) => {
+  const loadInsuranceRate = useCallback(async (insuranceRateId: string) => {
     try {
       // Note: We don't have getInsuranceRateById in supabaseApiService yet
       // For now, load all rates and find the one we need
@@ -52,9 +36,9 @@ export const OfferDetailPage: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Failed to load insurance rate:', error);
     }
-  };
+  }, []);
 
-  const loadOfferDetails = async (offerId: string) => {
+  const loadOfferDetails = useCallback(async (offerId: string) => {
     try {
       dispatch(setLoading(true));
       
@@ -72,9 +56,25 @@ export const OfferDetailPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [dispatch]);
 
-  const handleDelete = async () => {
+  useEffect(() => {
+    if (id) {
+      loadOfferDetails(id);
+    }
+  }, [id, loadOfferDetails]);
+
+  useEffect(() => {
+    // Load insurance rate if offer has insuranceRateId
+    const data = selected;
+    if (data?.insuranceRateId && !data?.insuranceRate) {
+      loadInsuranceRate(data.insuranceRateId);
+    } else if (data?.insuranceRate) {
+      setInsuranceRate(data.insuranceRate);
+    }
+  }, [selected?.insuranceRateId, selected?.insuranceRate, loadInsuranceRate]);
+
+  const handleDelete = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -93,7 +93,7 @@ export const OfferDetailPage: React.FC = () => {
     } finally {
       setDeleteDialogOpen(false);
     }
-  };
+  }, [id, navigate]);
 
   if (loading && !selected) {
     return <Loading fullScreen message="Loading offer..." />;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -16,14 +16,19 @@ export const InsuranceRatesListPage: React.FC = () => {
   const navigate = useNavigate();
   const { list, loading } = useAppSelector((state) => state.insuranceRates);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [rateToDelete, setRateToDelete] = useState<string | null>(null);
 
+  // Debounce search term to avoid excessive API calls
   useEffect(() => {
-    loadInsuranceRates();
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const loadInsuranceRates = async () => {
+  const loadInsuranceRates = useCallback(async () => {
     try {
       dispatch(setLoading(true));
       
@@ -33,9 +38,9 @@ export const InsuranceRatesListPage: React.FC = () => {
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         let rates = supabaseResponse.data;
         
-        // Apply search filter
-        if (searchTerm) {
-          const searchLower = searchTerm.toLowerCase();
+        // Apply search filter (using debounced term)
+        if (debouncedSearchTerm) {
+          const searchLower = debouncedSearchTerm.toLowerCase();
           rates = rates.filter((rate: InsuranceRate) =>
             rate.name?.toLowerCase().includes(searchLower) ||
             rate.description?.toLowerCase().includes(searchLower)
@@ -52,18 +57,22 @@ export const InsuranceRatesListPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [debouncedSearchTerm, dispatch]);
 
-  const handleSearch = (term: string) => {
+  useEffect(() => {
+    loadInsuranceRates();
+  }, [loadInsuranceRates]);
+
+  const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
-  };
+  }, []);
 
-  const handleDelete = (rateId: string) => {
+  const handleDelete = useCallback((rateId: string) => {
     setRateToDelete(rateId);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (!rateToDelete) return;
 
     try {
@@ -83,7 +92,7 @@ export const InsuranceRatesListPage: React.FC = () => {
       setDeleteDialogOpen(false);
       setRateToDelete(null);
     }
-  };
+  }, [rateToDelete, loadInsuranceRates]);
 
   const columns: Column<InsuranceRate>[] = [
     { id: 'id', label: 'ID', minWidth: 100 },

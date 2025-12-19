@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Box, Typography, Checkbox, FormControlLabel, Link } from '@mui/material';
@@ -31,14 +31,14 @@ export const LoginPage: React.FC = () => {
     },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
+  const onSubmit = useCallback(async (data: LoginFormData) => {
     const result = await login(data);
     if (result.success) {
       toast.success('Login successful!');
     } else {
       toast.error(result.error || 'Login failed');
     }
-  };
+  }, [login]);
 
   return (
     <Box className="login-page">

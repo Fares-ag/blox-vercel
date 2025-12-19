@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Switch, FormControlLabel } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -38,7 +38,7 @@ export const AddOfferPage: React.FC = () => {
   });
 
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = useCallback(async (data: any) => {
     try {
       setSaving(true);
       // Create in Supabase only
@@ -66,7 +66,7 @@ export const AddOfferPage: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [dispatch, navigate]);
 
   return (
     <Box className="add-offer-page">

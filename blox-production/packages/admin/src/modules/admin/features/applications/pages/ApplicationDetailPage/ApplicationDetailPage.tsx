@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -85,13 +85,7 @@ export const ApplicationDetailPage: React.FC = () => {
   const [convertScheduleDialogOpen, setConvertScheduleDialogOpen] = useState(false);
   const [convertingSchedule, setConvertingSchedule] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      loadApplicationDetails(id);
-    }
-  }, [id]);
-
-  const loadApplicationDetails = async (applicationId: string) => {
+  const loadApplicationDetails = useCallback(async (applicationId: string) => {
     try {
       dispatch(setLoading(true));
       
@@ -110,7 +104,13 @@ export const ApplicationDetailPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (id) {
+      loadApplicationDetails(id);
+    }
+  }, [id, loadApplicationDetails]);
 
   // Helper function to create notifications
   const createNotificationForCustomer = async (

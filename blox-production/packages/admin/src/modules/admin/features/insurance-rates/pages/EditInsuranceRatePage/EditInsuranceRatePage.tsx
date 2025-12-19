@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Switch, FormControlLabel } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -30,17 +30,7 @@ export const EditInsuranceRatePage: React.FC = () => {
     defaultValues: selected || {},
   });
 
-  useEffect(() => {
-    if (id && (!selected || selected.id !== id)) {
-      loadInsuranceRate();
-    } else if (selected) {
-      Object.keys(selected).forEach((key) => {
-        setValue(key as keyof InsuranceRate, selected[key as keyof InsuranceRate] as any);
-      });
-    }
-  }, [id, selected, setValue]);
-
-  const loadInsuranceRate = async () => {
+  const loadInsuranceRate = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -61,7 +51,18 @@ export const EditInsuranceRatePage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [id, dispatch, navigate]);
+
+  useEffect(() => {
+    if (id && (!selected || selected.id !== id)) {
+      loadInsuranceRate();
+    } else if (selected && selected.id === id) {
+      Object.keys(selected).forEach((key) => {
+        setValue(key as keyof InsuranceRate, selected[key as keyof InsuranceRate] as any);
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, selected?.id, loadInsuranceRate]);
 
   const coverageTypeOptions: SelectOption[] = [
     { value: 'comprehensive', label: 'Comprehensive' },
@@ -69,7 +70,7 @@ export const EditInsuranceRatePage: React.FC = () => {
     { value: 'full', label: 'Full' },
   ];
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = useCallback(async (data: any) => {
     if (!id) return;
 
     try {
@@ -103,7 +104,7 @@ export const EditInsuranceRatePage: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [id, dispatch, navigate]);
 
   if (loading && !selected) {
     return <Loading fullScreen message="Loading insurance rate..." />;

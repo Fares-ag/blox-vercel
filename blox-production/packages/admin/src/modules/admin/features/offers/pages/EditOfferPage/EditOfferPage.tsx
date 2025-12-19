@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Switch, FormControlLabel } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -33,24 +33,7 @@ export const EditOfferPage: React.FC = () => {
     defaultValues: selected || {},
   });
 
-  useEffect(() => {
-    loadInsuranceRates();
-  }, []);
-
-  useEffect(() => {
-    if (id && (!selected || selected.id !== id)) {
-      loadOffer();
-    } else if (selected) {
-      Object.keys(selected).forEach((key) => {
-        setValue(key as keyof Offer, selected[key as keyof Offer] as any);
-      });
-      if (selected.insuranceRateId) {
-        setValue('insuranceRateId', selected.insuranceRateId);
-      }
-    }
-  }, [id, selected, setValue]);
-
-  const loadInsuranceRates = async () => {
+  const loadInsuranceRates = useCallback(async () => {
     try {
       setLoadingRates(true);
       
@@ -69,7 +52,11 @@ export const EditOfferPage: React.FC = () => {
     } finally {
       setLoadingRates(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadInsuranceRates();
+  }, [loadInsuranceRates]);
 
   const insuranceRateOptions: SelectOption[] = insuranceRates.map((ir) => ({
     value: ir.id,
@@ -78,7 +65,7 @@ export const EditOfferPage: React.FC = () => {
 
   const selectedInsuranceRate = insuranceRates.find((ir) => ir.id === watch('insuranceRateId'));
 
-  const loadOffer = async () => {
+  const loadOffer = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -99,9 +86,23 @@ export const EditOfferPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [id, dispatch, navigate]);
 
-  const onSubmit = async (data: any) => {
+  useEffect(() => {
+    if (id && (!selected || selected.id !== id)) {
+      loadOffer();
+    } else if (selected && selected.id === id) {
+      Object.keys(selected).forEach((key) => {
+        setValue(key as keyof Offer, selected[key as keyof Offer] as any);
+      });
+      if (selected.insuranceRateId) {
+        setValue('insuranceRateId', selected.insuranceRateId);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, selected?.id, loadOffer]);
+
+  const onSubmit = useCallback(async (data: any) => {
     if (!id) return;
 
     try {
@@ -133,7 +134,7 @@ export const EditOfferPage: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [id, dispatch, navigate]);
 
   if (loading && !selected) {
     return <Loading fullScreen message="Loading offer..." />;

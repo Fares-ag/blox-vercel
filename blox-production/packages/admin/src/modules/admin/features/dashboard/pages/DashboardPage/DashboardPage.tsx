@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Box, Typography, Paper, Popover } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
 import {
@@ -36,11 +36,7 @@ export const DashboardPage: React.FC = () => {
   const { stats, filters, loading, error } = useAppSelector((state) => state.dashboard);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [filters]);
-
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
       dispatch(setLoading(true));
       dispatch(setError(null));
@@ -93,9 +89,13 @@ export const DashboardPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [filters, dispatch]);
 
-  const handleDateRangeChange = (startDate: Moment | null, endDate: Moment | null) => {
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  const handleDateRangeChange = useCallback((startDate: Moment | null, endDate: Moment | null) => {
     if (startDate && endDate) {
       dispatch(
         setFilters({
@@ -104,19 +104,19 @@ export const DashboardPage: React.FC = () => {
         })
       );
     }
-  };
+  }, [dispatch]);
 
-  const handleFilterClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleFilterClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     setAnchorEl(event.currentTarget);
-  };
+  }, []);
 
-  const handleFilterClose = () => {
+  const handleFilterClose = useCallback(() => {
     setAnchorEl(null);
-  };
+  }, []);
 
   const open = Boolean(anchorEl);
 
-  const formatDateRange = () => {
+  const formatDateRange = useMemo(() => {
     if (filters?.startDate && filters?.endDate) {
       const start = moment(filters.startDate).format('DD MMM YYYY');
       const end = moment(filters.endDate).format('DD MMM YYYY');
@@ -124,7 +124,7 @@ export const DashboardPage: React.FC = () => {
     }
     // Default label when no explicit filter is selected
     return 'Overall';
-  };
+  }, [filters]);
 
   if (loading && !stats) {
     return <Loading fullScreen message="Loading dashboard..." />;
@@ -182,7 +182,7 @@ export const DashboardPage: React.FC = () => {
             justifyContent: 'flex-start',
           }}
         >
-          {formatDateRange()}
+          {formatDateRange}
         </Button>
         <Popover
           open={open}

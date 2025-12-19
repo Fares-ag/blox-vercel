@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, IconButton, Divider } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -44,7 +44,7 @@ export const AddPackagePage: React.FC = () => {
     name: 'items',
   });
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = useCallback(async (data: any) => {
     try {
       setSaving(true);
       
@@ -70,15 +70,15 @@ export const AddPackagePage: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [dispatch, navigate]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     navigate('/admin/packages');
-  };
+  }, [navigate]);
 
-  const addItem = () => {
+  const addItem = useCallback(() => {
     append({ id: `item_${Date.now()}`, name: '', description: '' });
-  };
+  }, [append]);
 
   return (
     <Box className="add-package-page">

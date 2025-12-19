@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Switch, FormControlLabel } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -40,7 +40,7 @@ export const AddInsuranceRatePage: React.FC = () => {
     { value: 'full', label: 'Full' },
   ];
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = useCallback(async (data: any) => {
     try {
       setSaving(true);
       
@@ -72,7 +72,7 @@ export const AddInsuranceRatePage: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  };
+  }, [dispatch, navigate]);
 
   return (
     <Box className="add-insurance-rate-page">

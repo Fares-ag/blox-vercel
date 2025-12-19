@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Box, Typography } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -16,14 +16,19 @@ export const OffersListPage: React.FC = () => {
   const navigate = useNavigate();
   const { list, loading } = useAppSelector((state) => state.offers);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [offerToDelete, setOfferToDelete] = useState<string | null>(null);
 
+  // Debounce search term to avoid excessive API calls
   useEffect(() => {
-    loadOffers();
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const loadOffers = async () => {
+  const loadOffers = useCallback(async () => {
     try {
       dispatch(setLoading(true));
       
@@ -33,9 +38,9 @@ export const OffersListPage: React.FC = () => {
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         let offers = supabaseResponse.data;
         
-        // Apply search filter
-        if (searchTerm) {
-          const searchLower = searchTerm.toLowerCase();
+        // Apply search filter (using debounced term)
+        if (debouncedSearchTerm) {
+          const searchLower = debouncedSearchTerm.toLowerCase();
           offers = offers.filter((offer: Offer) =>
             offer.name?.toLowerCase().includes(searchLower) ||
             offer.id?.toLowerCase().includes(searchLower)
@@ -52,18 +57,22 @@ export const OffersListPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [debouncedSearchTerm, dispatch]);
 
-  const handleSearch = (term: string) => {
+  useEffect(() => {
+    loadOffers();
+  }, [loadOffers]);
+
+  const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
-  };
+  }, []);
 
-  const handleDelete = (offerId: string) => {
+  const handleDelete = useCallback((offerId: string) => {
     setOfferToDelete(offerId);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (!offerToDelete) return;
 
     try {
@@ -82,7 +91,7 @@ export const OffersListPage: React.FC = () => {
       setDeleteDialogOpen(false);
       setOfferToDelete(null);
     }
-  };
+  }, [offerToDelete, loadOffers]);
 
   const columns: Column<Offer>[] = [
     { id: 'id', label: 'ID', minWidth: 100 },

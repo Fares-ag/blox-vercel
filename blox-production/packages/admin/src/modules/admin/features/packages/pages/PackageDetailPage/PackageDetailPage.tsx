@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Divider, List, ListItem, ListItemText } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -20,13 +20,7 @@ export const PackageDetailPage: React.FC = () => {
   const { selected, loading } = useAppSelector((state) => state.packages);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      loadPackageDetails(id);
-    }
-  }, [id]);
-
-  const loadPackageDetails = async (packageId: string) => {
+  const loadPackageDetails = useCallback(async (packageId: string) => {
     try {
       dispatch(setLoading(true));
       
@@ -44,9 +38,15 @@ export const PackageDetailPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [dispatch]);
 
-  const handleDelete = async () => {
+  useEffect(() => {
+    if (id) {
+      loadPackageDetails(id);
+    }
+  }, [id, loadPackageDetails]);
+
+  const handleDelete = useCallback(async () => {
     if (!id) return;
 
     try {
@@ -66,7 +66,7 @@ export const PackageDetailPage: React.FC = () => {
     } finally {
       setDeleteDialogOpen(false);
     }
-  };
+  }, [id, dispatch, navigate]);
 
   if (loading && !selected) {
     return <Loading fullScreen message="Loading package..." />;

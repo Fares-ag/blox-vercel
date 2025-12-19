@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, Switch, FormControlLabel } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -21,19 +21,7 @@ export const ProductDetailPage: React.FC = () => {
   const [isActive, setIsActive] = React.useState(selected?.status === 'active');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  useEffect(() => {
-    if (id) {
-      loadProductDetails(id);
-    }
-  }, [id]);
-
-  useEffect(() => {
-    if (selected) {
-      setIsActive(selected.status === 'active');
-    }
-  }, [selected, id]);
-
-  const loadProductDetails = async (productId: string) => {
+  const loadProductDetails = useCallback(async (productId: string) => {
     try {
       dispatch(setLoading(true));
       
@@ -51,9 +39,21 @@ export const ProductDetailPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  };
+  }, [dispatch]);
 
-  const handleStatusToggle = async () => {
+  useEffect(() => {
+    if (id) {
+      loadProductDetails(id);
+    }
+  }, [id, loadProductDetails]);
+
+  useEffect(() => {
+    if (selected) {
+      setIsActive(selected.status === 'active');
+    }
+  }, [selected?.status]);
+
+  const handleStatusToggle = useCallback(async () => {
     if (!id || !selected) return;
 
     try {
@@ -75,13 +75,13 @@ export const ProductDetailPage: React.FC = () => {
       console.error('❌ Failed to update vehicle status:', error);
       toast.error(error.message || 'Failed to update vehicle status');
     }
-  };
+  }, [id, selected, isActive, dispatch]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (!id) return;
 
     try {
