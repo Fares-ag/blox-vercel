@@ -653,56 +653,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
     });
   };
 
-  const updateDataWithSchedule = () => {
-    if (paymentSchedule.length === 0) return;
-
-    // Final validation before updating data
-    const validation = validatePaymentSchedule(paymentSchedule);
-    if (!validation.isValid) {
-      // Don't block update, but show errors
-      setValidationErrors(validation.errors);
-    }
-
-    const carValue = data.vehicle?.price || 0;
-    const loanAmount = carValue - downPayment;
-    const totalPaid = paymentSchedule
-      .filter((s) => s.status === 'paid')
-      .reduce((sum, s) => sum + s.amount, 0);
-    const totalRemaining = paymentSchedule
-      .filter((s) => s.status !== 'paid')
-      .reduce((sum, s) => sum + s.amount, 0);
-    const totalAmount = totalPaid + totalRemaining;
-
-    updateData({
-      existingLoan: {
-        enabled: true,
-        entryMode: 'manual',
-        startDate: loanStartDate?.format('YYYY-MM-DD') || '',
-        totalMonths: totalLoanMonths,
-        downPayment,
-        monthlyPaymentAmount: manualMonthlyPayment,
-      },
-      installmentPlan: {
-        ...(data.installmentPlan || {}),
-        tenure: formatMonthsToTenure(totalLoanMonths),
-        interval: 'Monthly',
-        monthlyAmount: manualMonthlyPayment,
-        totalAmount,
-        schedule: paymentSchedule,
-      },
-      loanAmount,
-      downPayment,
-      paymentHistory: paymentSchedule
-        .filter((s) => s.status === 'paid')
-        .map((s, index) => ({
-          id: `payment-${index}`,
-          amount: s.amount,
-          type: 'Installment',
-          status: 'paid' as PaymentStatus,
-          date: s.paidDate || s.dueDate,
-        })),
-    });
-  };
+  // Removed duplicate updateDataWithSchedule function - using the one with useCallback above (line 247)
 
   const handleGenerateSchedule = () => {
     if (!loanStartDate || totalLoanMonths <= 0 || manualMonthlyPayment <= 0) {

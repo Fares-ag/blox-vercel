@@ -6,7 +6,6 @@ import {
   Paper,
   Divider,
   Chip,
-  LinearProgress,
   IconButton,
   Tooltip,
   Tabs,
@@ -153,7 +152,7 @@ export const ApplicationDetailPage: React.FC = () => {
         const filePath = `payment-proofs/${fileName}`;
 
         // Upload to Supabase Storage
-        const { data: uploadData, error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('documents')
           .upload(filePath, proofFile, {
             cacheControl: '3600',

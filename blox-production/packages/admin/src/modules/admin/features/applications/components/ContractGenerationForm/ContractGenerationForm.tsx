@@ -6,13 +6,12 @@ import {
   DialogActions,
   Box,
   Typography,
-  Grid,
   RadioGroup,
   FormControlLabel,
   Radio,
-  TextField,
 } from '@mui/material';
-import { Button, Input, Select, DatePicker } from '@shared/components';
+import Grid from '@mui/material/GridLegacy';
+import { Button, Input, DatePicker } from '@shared/components';
 import { formatCurrency } from '@shared/utils/formatters';
 import { useForm, Controller } from 'react-hook-form';
 import moment from 'moment';
