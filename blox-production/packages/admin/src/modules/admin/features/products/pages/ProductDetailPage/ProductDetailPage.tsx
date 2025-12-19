@@ -232,7 +232,7 @@ export const ProductDetailPage: React.FC = () => {
             {displayData.images && displayData.images.length > 0 ? (
               <Grid container spacing={2}>
                 {displayData.images.map((image, index) => (
-                  <Grid item xs={12} sm={6} md={4} key={index}>
+                  <Grid item xs={12} sm={6} key={index}>
                     <Box
                       className="product-image-wrapper"
                       onClick={() => window.open(image, '_blank')}
