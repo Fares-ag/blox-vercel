@@ -6,6 +6,39 @@ import { supabase } from '@shared/services/supabase.service';
 import { loggingService } from '@shared/services/logging.service';
 
 /**
+ * Helper function to fetch user role from the users table
+ */
+const fetchUserRoleFromDB = async (userId: string, email: string): Promise<string> => {
+  try {
+    const { data, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    if (error || !data) {
+      // Fallback: try by email if ID lookup fails
+      const { data: emailData } = await supabase
+        .from('users')
+        .select('role')
+        .eq('email', email)
+        .single();
+
+      if (emailData?.role) {
+        return emailData.role;
+      }
+      // Default to customer if not found
+      return 'customer';
+    }
+
+    return data.role || 'customer';
+  } catch (error) {
+    console.error('Error fetching user role from DB:', error);
+    return 'customer'; // Safe default
+  }
+};
+
+/**
  * AuthInitializer component that listens to Supabase auth state changes
  * and updates the Redux store accordingly for the admin app.
  */
@@ -21,18 +54,16 @@ export const AuthInitializer: React.FC = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (mounted && session?.user) {
-          const roleRaw =
-            session.user.user_metadata?.role ??
-            session.user.user_metadata?.user_role ??
-            session.user.user_metadata?.userRole;
+          // Fetch role from users table instead of user_metadata
+          const role = await fetchUserRoleFromDB(session.user.id, session.user.email || '');
+          
           const user: User = {
             id: session.user.id,
             email: session.user.email || '',
             name: session.user.user_metadata?.name || session.user.user_metadata?.first_name 
               ? `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim()
               : session.user.email || '',
-            // Safer default: if missing, treat as customer (so RLS-denied actions don't look like "bugs").
-            role: roleRaw || 'customer',
+            role: role,
             permissions: session.user.user_metadata?.permissions || [],
           };
           dispatch(setCredentials({ user, token: session.access_token }));
@@ -50,17 +81,16 @@ export const AuthInitializer: React.FC = () => {
           if (!mounted) return;
           
           if (session?.user) {
-            const roleRaw =
-              session.user.user_metadata?.role ??
-              session.user.user_metadata?.user_role ??
-              session.user.user_metadata?.userRole;
+            // Fetch role from users table instead of user_metadata
+            const role = await fetchUserRoleFromDB(session.user.id, session.user.email || '');
+            
             const user: User = {
               id: session.user.id,
               email: session.user.email || '',
               name: session.user.user_metadata?.name || session.user.user_metadata?.first_name 
                 ? `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim()
                 : session.user.email || '',
-              role: roleRaw || 'customer',
+              role: role,
               permissions: session.user.user_metadata?.permissions || [],
             };
             dispatch(setCredentials({ user, token: session.access_token }));

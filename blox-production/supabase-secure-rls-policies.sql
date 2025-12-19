@@ -19,7 +19,28 @@ BEGIN
     RETURN TRUE;
   END IF;
 
-  -- Preferred: check the current logged-in user by auth.uid()
+  -- PRIMARY: Check the public.users table (where we store roles)
+  SELECT role INTO user_role
+  FROM public.users
+  WHERE id = auth.uid();
+
+  IF user_role = 'admin' THEN
+    RETURN TRUE;
+  END IF;
+
+  -- Fallback: check by email in public.users table
+  user_email := auth.jwt() ->> 'email';
+  IF user_email IS NOT NULL THEN
+    SELECT role INTO user_role
+    FROM public.users
+    WHERE LOWER(email) = LOWER(user_email);
+
+    IF user_role = 'admin' THEN
+      RETURN TRUE;
+    END IF;
+  END IF;
+
+  -- Legacy fallback: check auth.users.raw_user_meta_data (for backwards compatibility)
   SELECT COALESCE(raw_user_meta_data->>'role', raw_user_meta_data->>'user_role')
     INTO user_role
   FROM auth.users
@@ -27,19 +48,6 @@ BEGIN
 
   IF user_role = 'admin' THEN
     RETURN TRUE;
-  END IF;
-
-  -- Fallback: match by email (case-insensitive)
-  user_email := auth.jwt() ->> 'email';
-  IF user_email IS NOT NULL THEN
-    SELECT COALESCE(raw_user_meta_data->>'role', raw_user_meta_data->>'user_role')
-      INTO user_role
-    FROM auth.users
-    WHERE LOWER(email) = LOWER(user_email);
-
-    IF user_role = 'admin' THEN
-      RETURN TRUE;
-    END IF;
   END IF;
 
   RETURN FALSE;

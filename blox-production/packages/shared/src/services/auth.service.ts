@@ -38,18 +38,41 @@ class AuthService {
       throw new Error('Login failed: No user or session returned');
     }
 
+    // Fetch role from users table instead of user_metadata
+    let role = 'customer'; // Default
+    try {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (!userError && userData?.role) {
+        role = userData.role;
+      } else {
+        // Fallback: try by email
+        const { data: emailData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('email', data.user.email)
+          .single();
+
+        if (emailData?.role) {
+          role = emailData.role;
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching user role from DB:', err);
+      // Keep default 'customer' role
+    }
+
     const user: User = {
       id: data.user.id,
       email: data.user.email || '',
       name: data.user.user_metadata?.first_name && data.user.user_metadata?.last_name
         ? `${data.user.user_metadata.first_name} ${data.user.user_metadata.last_name}`.trim()
         : data.user.email || '',
-      // Safer default: do NOT assume admin unless the user metadata explicitly says so.
-      role:
-        data.user.user_metadata?.role ||
-        data.user.user_metadata?.user_role ||
-        data.user.user_metadata?.userRole ||
-        'customer',
+      role: role,
       permissions: data.user.user_metadata?.permissions || [],
     };
 
@@ -96,13 +119,41 @@ class AuthService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    // Fetch role from users table instead of user_metadata
+    let role = 'customer'; // Default
+    try {
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (!userError && userData?.role) {
+        role = userData.role;
+      } else {
+        // Fallback: try by email
+        const { data: emailData } = await supabase
+          .from('users')
+          .select('role')
+          .eq('email', user.email)
+          .single();
+
+        if (emailData?.role) {
+          role = emailData.role;
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching user role from DB:', err);
+      // Keep default 'customer' role
+    }
+
     return {
       id: user.id,
       email: user.email || '',
       name: user.user_metadata?.first_name && user.user_metadata?.last_name
         ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim()
         : user.email || '',
-      role: user.user_metadata?.role || 'admin',
+      role: role,
       permissions: user.user_metadata?.permissions || [],
     };
   }
@@ -123,6 +174,8 @@ class AuthService {
     const user = session?.user;
     if (!user) return null;
 
+    // For sync method, we can't fetch from DB, so use user_metadata as fallback
+    // The async AuthInitializer will update the role from DB after mount
     const roleRaw =
       user.user_metadata?.role ??
       user.user_metadata?.user_role ??
