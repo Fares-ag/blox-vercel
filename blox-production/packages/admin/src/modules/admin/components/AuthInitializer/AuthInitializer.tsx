@@ -8,55 +8,77 @@ import { loggingService } from '@shared/services/logging.service';
 /**
  * Helper function to fetch user role from the users table
  * Falls back to user_metadata if table is not accessible
+ * Optimized with timeout to prevent long loading times
  */
 const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?: any): Promise<string> => {
-  try {
-    const { data, error } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', userId)
-      .single();
+  // First, check user_metadata immediately (fast path)
+  const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
+  
+  // Create a timeout promise (2 seconds max)
+  const timeoutPromise = new Promise<string>((resolve) => {
+    setTimeout(() => resolve('timeout'), 2000);
+  });
 
-    if (error || !data) {
-      // Fallback: try by email if ID lookup fails
-      const { data: emailData, error: emailError } = await supabase
+  // Try to fetch from users table with timeout
+  const fetchPromise = (async () => {
+    try {
+      const { data, error } = await supabase
         .from('users')
         .select('role')
-        .eq('email', email)
+        .eq('id', userId)
         .single();
 
-      if (!emailError && emailData?.role) {
-        return emailData.role;
+      // If we get a 406 error immediately, skip the email fallback
+      if (error?.code === 'PGRST116' || error?.message?.includes('406') || error?.status === 406) {
+        console.warn('⚠️ Users table not accessible (406), using user_metadata');
+        return roleFromMetadata || 'customer';
       }
-      
-      // If users table is not accessible (406 error), fall back to user_metadata
-      if (error?.code === 'PGRST116' || error?.message?.includes('406') || emailError?.code === 'PGRST116') {
-        console.warn('⚠️ Users table not accessible, falling back to user_metadata');
-        const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
-        if (roleFromMetadata) {
-          return roleFromMetadata;
+
+      if (!error && data?.role) {
+        return data.role;
+      }
+
+      // Only try email fallback if ID lookup didn't return 406
+      if (error && error.status !== 406) {
+        const { data: emailData, error: emailError } = await supabase
+          .from('users')
+          .select('role')
+          .eq('email', email)
+          .single();
+
+        if (!emailError && emailData?.role) {
+          return emailData.role;
+        }
+
+        // If email lookup also returns 406, use metadata
+        if (emailError?.code === 'PGRST116' || emailError?.message?.includes('406') || emailError?.status === 406) {
+          console.warn('⚠️ Users table not accessible (406), using user_metadata');
+          return roleFromMetadata || 'customer';
         }
       }
-      
-      // Default to customer if not found
-      return 'customer';
-    }
 
-    return data.role || 'customer';
-  } catch (error: any) {
-    console.error('Error fetching user role from DB:', error);
-    
-    // If it's a 406 or table access error, try user_metadata fallback
-    if (error?.code === 'PGRST116' || error?.message?.includes('406') || error?.status === 406) {
-      console.warn('⚠️ Users table not accessible, falling back to user_metadata');
-      const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
-      if (roleFromMetadata) {
-        return roleFromMetadata;
+      // Default to metadata if available, otherwise customer
+      return roleFromMetadata || 'customer';
+    } catch (error: any) {
+      // If it's a 406 or table access error, use metadata immediately
+      if (error?.code === 'PGRST116' || error?.message?.includes('406') || error?.status === 406) {
+        console.warn('⚠️ Users table not accessible (406), using user_metadata');
+        return roleFromMetadata || 'customer';
       }
+      return roleFromMetadata || 'customer';
     }
-    
-    return 'customer'; // Safe default
+  })();
+
+  // Race between fetch and timeout
+  const result = await Promise.race([fetchPromise, timeoutPromise]);
+  
+  // If timeout, use metadata immediately
+  if (result === 'timeout') {
+    console.warn('⚠️ Users table query timed out, using user_metadata');
+    return roleFromMetadata || 'customer';
   }
+
+  return result as string;
 };
 
 /**
@@ -75,12 +97,11 @@ export const AuthInitializer: React.FC = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (mounted && session?.user) {
-          // Fetch role from users table, fallback to user_metadata if table not accessible
-          const role = await fetchUserRoleFromDB(
-            session.user.id, 
-            session.user.email || '', 
-            session.user.user_metadata
-          );
+          // Use metadata immediately for faster initialization, then update from DB if available
+          const metadataRole = session.user.user_metadata?.role || 
+                              session.user.user_metadata?.user_role || 
+                              session.user.user_metadata?.userRole || 
+                              'customer';
           
           const user: User = {
             id: session.user.id,
@@ -88,14 +109,36 @@ export const AuthInitializer: React.FC = () => {
             name: session.user.user_metadata?.name || session.user.user_metadata?.first_name 
               ? `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim()
               : session.user.email || '',
-            role: role,
+            role: metadataRole, // Use metadata first for instant initialization
             permissions: session.user.user_metadata?.permissions || [],
           };
+          
+          // Set credentials immediately so app can load
           dispatch(setCredentials({ user, token: session.access_token }));
+          dispatch(setInitialized()); // Mark as initialized immediately
+          
           // Set user context in Sentry
           loggingService.setUser(user);
+          
+          // Then try to fetch from DB in background (non-blocking)
+          fetchUserRoleFromDB(
+            session.user.id, 
+            session.user.email || '', 
+            session.user.user_metadata
+          ).then((dbRole) => {
+            // Only update if role changed and we're still mounted
+            if (mounted && dbRole !== metadataRole) {
+              dispatch(setCredentials({ 
+                user: { ...user, role: dbRole }, 
+                token: session.access_token 
+              }));
+            }
+          }).catch((err) => {
+            // Silently fail - we already have metadata role
+            console.debug('Background role fetch failed:', err);
+          });
         } else {
-          // No session found, mark as initialized anyway
+          // No session found, mark as initialized immediately
           dispatch(setInitialized());
         }
       } catch (error) {
@@ -111,12 +154,11 @@ export const AuthInitializer: React.FC = () => {
           if (!mounted) return;
           
           if (session?.user) {
-            // Fetch role from users table, fallback to user_metadata if table not accessible
-            const role = await fetchUserRoleFromDB(
-              session.user.id, 
-              session.user.email || '', 
-              session.user.user_metadata
-            );
+            // Use metadata immediately for faster updates
+            const metadataRole = session.user.user_metadata?.role || 
+                                session.user.user_metadata?.user_role || 
+                                session.user.user_metadata?.userRole || 
+                                'customer';
             
             const user: User = {
               id: session.user.id,
@@ -124,12 +166,29 @@ export const AuthInitializer: React.FC = () => {
               name: session.user.user_metadata?.name || session.user.user_metadata?.first_name 
                 ? `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim()
                 : session.user.email || '',
-              role: role,
+              role: metadataRole, // Use metadata first
               permissions: session.user.user_metadata?.permissions || [],
             };
+            
             dispatch(setCredentials({ user, token: session.access_token }));
             // Set user context in Sentry
             loggingService.setUser(user);
+            
+            // Try to fetch from DB in background (non-blocking)
+            fetchUserRoleFromDB(
+              session.user.id, 
+              session.user.email || '', 
+              session.user.user_metadata
+            ).then((dbRole) => {
+              if (mounted && dbRole !== metadataRole) {
+                dispatch(setCredentials({ 
+                  user: { ...user, role: dbRole }, 
+                  token: session.access_token 
+                }));
+              }
+            }).catch(() => {
+              // Silently fail - we already have metadata role
+            });
           } else {
             dispatch(logout()); // This already sets initialized to true
             // Clear user context in Sentry
@@ -140,10 +199,8 @@ export const AuthInitializer: React.FC = () => {
       }
     };
 
-    // Delay initialization slightly to avoid race conditions
-    const timeoutId = setTimeout(() => {
-      initializeAuth();
-    }, 0);
+    // Initialize immediately (no delay needed)
+    initializeAuth();
 
     return () => {
       mounted = false;

@@ -5,49 +5,70 @@ class AuthService {
   private readonly storageKey = 'blox-supabase-auth';
 
   private async fetchUserRoleFromDB(userId: string, email: string, userMetadata?: any): Promise<string> {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', userId)
-        .single();
+    // First, check user_metadata immediately (fast path)
+    const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
+    
+    // Create a timeout promise (2 seconds max)
+    const timeoutPromise = new Promise<string>((resolve) => {
+      setTimeout(() => resolve('timeout'), 2000);
+    });
 
-      if (error || !data) {
-        const { data: emailData, error: emailError } = await supabase
+    // Try to fetch from users table with timeout
+    const fetchPromise = (async () => {
+      try {
+        const { data, error } = await supabase
           .from('users')
           .select('role')
-          .eq('email', email)
+          .eq('id', userId)
           .single();
-        if (!emailError && emailData?.role) {
-          return emailData.role;
+
+        // If we get a 406 error immediately, skip the email fallback
+        if (error?.code === 'PGRST116' || error?.message?.includes('406') || error?.status === 406) {
+          return roleFromMetadata || 'customer';
         }
-        
-        // If users table is not accessible (406 error), fall back to user_metadata
-        if (error?.code === 'PGRST116' || error?.message?.includes('406') || emailError?.code === 'PGRST116') {
-          console.warn('⚠️ Users table not accessible, falling back to user_metadata');
-          const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
-          if (roleFromMetadata) {
-            return roleFromMetadata;
+
+        if (!error && data?.role) {
+          return data.role;
+        }
+
+        // Only try email fallback if ID lookup didn't return 406
+        if (error && error.status !== 406) {
+          const { data: emailData, error: emailError } = await supabase
+            .from('users')
+            .select('role')
+            .eq('email', email)
+            .single();
+
+          if (!emailError && emailData?.role) {
+            return emailData.role;
+          }
+
+          // If email lookup also returns 406, use metadata
+          if (emailError?.code === 'PGRST116' || emailError?.message?.includes('406') || emailError?.status === 406) {
+            return roleFromMetadata || 'customer';
           }
         }
-        
-        return 'customer';
-      }
-      return data.role || 'customer';
-    } catch (error: any) {
-      console.error('Error fetching user role from DB:', error);
-      
-      // If it's a 406 or table access error, try user_metadata fallback
-      if (error?.code === 'PGRST116' || error?.message?.includes('406') || error?.status === 406) {
-        console.warn('⚠️ Users table not accessible, falling back to user_metadata');
-        const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
-        if (roleFromMetadata) {
-          return roleFromMetadata;
+
+        // Default to metadata if available, otherwise customer
+        return roleFromMetadata || 'customer';
+      } catch (error: any) {
+        // If it's a 406 or table access error, use metadata immediately
+        if (error?.code === 'PGRST116' || error?.message?.includes('406') || error?.status === 406) {
+          return roleFromMetadata || 'customer';
         }
+        return roleFromMetadata || 'customer';
       }
-      
-      return 'customer';
+    })();
+
+    // Race between fetch and timeout
+    const result = await Promise.race([fetchPromise, timeoutPromise]);
+    
+    // If timeout, use metadata immediately
+    if (result === 'timeout') {
+      return roleFromMetadata || 'customer';
     }
+
+    return result as string;
   }
 
   private readStoredSessionSync(): any | null {
@@ -84,12 +105,11 @@ class AuthService {
       throw new Error('Login failed: No user or session returned');
     }
 
-    // Fetch role from users table, fallback to user_metadata if table not accessible
-    const role = await this.fetchUserRoleFromDB(
-      data.user.id, 
-      data.user.email || '', 
-      data.user.user_metadata
-    );
+    // Use metadata first for faster response, then try DB in background
+    const metadataRole = data.user.user_metadata?.role || 
+                        data.user.user_metadata?.user_role || 
+                        data.user.user_metadata?.userRole || 
+                        'customer';
 
     const user: User = {
       id: data.user.id,
@@ -97,9 +117,23 @@ class AuthService {
       name: data.user.user_metadata?.first_name && data.user.user_metadata?.last_name
         ? `${data.user.user_metadata.first_name} ${data.user.user_metadata.last_name}`.trim()
         : data.user.email || '',
-      role: role,
+      role: metadataRole, // Use metadata first for instant response
       permissions: data.user.user_metadata?.permissions || [],
     };
+
+    // Try to fetch from DB in background (non-blocking)
+    this.fetchUserRoleFromDB(
+      data.user.id, 
+      data.user.email || '', 
+      data.user.user_metadata
+    ).then((dbRole) => {
+      if (dbRole !== metadataRole) {
+        // Role updated from DB - but we already returned, so this is just for future calls
+        console.debug('Role updated from DB:', dbRole);
+      }
+    }).catch(() => {
+      // Silently fail - we already have metadata role
+    });
 
     return {
       user,
