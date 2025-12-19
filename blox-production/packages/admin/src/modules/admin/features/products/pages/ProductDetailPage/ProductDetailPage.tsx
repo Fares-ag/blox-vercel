@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Box, Typography, Paper, Switch, FormControlLabel } from '@mui/material';
+import { Box, Typography, Paper, Switch, FormControlLabel, Dialog, IconButton } from '@mui/material';
+import { Close, ZoomIn } from '@mui/icons-material';
 import Grid from '@mui/material/GridLegacy';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading, removeProduct } from '../../../../store/slices/products.slice';
@@ -20,6 +21,8 @@ export const ProductDetailPage: React.FC = () => {
   const { selected, loading } = useAppSelector((state) => state.products);
   const [isActive, setIsActive] = React.useState(selected?.status === 'active');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   const loadProductDetails = useCallback(async (productId: string) => {
     try {
@@ -104,6 +107,16 @@ export const ProductDetailPage: React.FC = () => {
     }
   }, [id, dispatch, navigate]);
 
+  const handleImageClick = useCallback((imageUrl: string) => {
+    setSelectedImage(imageUrl);
+    setImageModalOpen(true);
+  }, []);
+
+  const handleCloseImageModal = useCallback(() => {
+    setImageModalOpen(false);
+    setSelectedImage(null);
+  }, []);
+
   if (loading) {
     return <Loading fullScreen message="Loading vehicle details..." />;
   }
@@ -144,7 +157,52 @@ export const ProductDetailPage: React.FC = () => {
       </Box>
 
       <Grid container spacing={3}>
-        <Grid item xs={12} md={8}>
+        <Grid item xs={12} md={12}>
+          {/* Images section - Full width and moved to top */}
+          {displayData.images && displayData.images.length > 0 && (
+            <Paper className="detail-section" sx={{ mb: 3 }}>
+              <Typography variant="h3" className="section-title">
+                Images
+              </Typography>
+              <Grid container spacing={2}>
+                {displayData.images.map((image, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={index}>
+                    <Box
+                      className="product-image-wrapper"
+                      onClick={() => handleImageClick(image)}
+                      sx={{ position: 'relative' }}
+                    >
+                      <img 
+                        src={image} 
+                        alt={`Vehicle image ${index + 1}`}
+                        className="product-image"
+                        onError={(e) => {
+                          // Fallback to placeholder if image fails to load
+                          (e.target as HTMLImageElement).src = '/CarImage.png';
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                          borderRadius: '50%',
+                          padding: '4px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <ZoomIn sx={{ color: 'white', fontSize: 20 }} />
+                      </Box>
+                    </Box>
+                  </Grid>
+                ))}
+              </Grid>
+            </Paper>
+          )}
+
           <Paper className="detail-section">
             <Typography variant="h3" className="section-title">
               Basic Information
@@ -225,36 +283,9 @@ export const ProductDetailPage: React.FC = () => {
             </Grid>
           </Paper>
 
-          <Paper className="detail-section">
-            <Typography variant="h3" className="section-title">
-              Images
-            </Typography>
-            {displayData.images && displayData.images.length > 0 ? (
-              <Grid container spacing={2}>
-                {displayData.images.map((image, index) => (
-                  <Grid item xs={12} sm={6} key={index}>
-                    <Box
-                      className="product-image-wrapper"
-                      onClick={() => window.open(image, '_blank')}
-                    >
-                      <img 
-                        src={image} 
-                        alt={`Vehicle image ${index + 1}`}
-                        className="product-image"
-                      />
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
-                <Typography variant="body2">No images available for this vehicle</Typography>
-              </Box>
-            )}
-          </Paper>
         </Grid>
 
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={6}>
           <Paper className="detail-section">
             <Typography variant="h3" className="section-title">
               Additional Information
@@ -293,6 +324,57 @@ export const ProductDetailPage: React.FC = () => {
         onConfirm={confirmDelete}
         onCancel={() => setDeleteDialogOpen(false)}
       />
+
+      {/* Image Modal */}
+      <Dialog
+        open={imageModalOpen}
+        onClose={handleCloseImageModal}
+        maxWidth="lg"
+        fullWidth
+        PaperProps={{
+          sx: {
+            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+            padding: 0,
+          },
+        }}
+      >
+        <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+          <IconButton
+            onClick={handleCloseImageModal}
+            sx={{
+              position: 'absolute',
+              top: 8,
+              right: 8,
+              zIndex: 1,
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: 'white',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              },
+            }}
+          >
+            <Close />
+          </IconButton>
+          {selectedImage && (
+            <Box
+              component="img"
+              src={selectedImage}
+              alt="Vehicle image"
+              sx={{
+                width: '100%',
+                height: 'auto',
+                maxHeight: '90vh',
+                objectFit: 'contain',
+                display: 'block',
+              }}
+              onError={(e) => {
+                // Fallback to placeholder if image fails to load
+                (e.target as HTMLImageElement).src = '/CarImage.png';
+              }}
+            />
+          )}
+        </Box>
+      </Dialog>
     </Box>
   );
 };
