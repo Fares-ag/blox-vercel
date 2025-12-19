@@ -29,7 +29,7 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
-      state.initialized = true; // Mark as initialized when credentials are set
+      // Don't set initialized here - let AuthInitializer handle it to avoid double renders
       state.error = null;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
