@@ -7,8 +7,9 @@ import { loggingService } from '@shared/services/logging.service';
 
 /**
  * Helper function to fetch user role from the users table
+ * Falls back to user_metadata if table is not accessible
  */
-const fetchUserRoleFromDB = async (userId: string, email: string): Promise<string> => {
+const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?: any): Promise<string> => {
   try {
     const { data, error } = await supabase
       .from('users')
@@ -18,22 +19,42 @@ const fetchUserRoleFromDB = async (userId: string, email: string): Promise<strin
 
     if (error || !data) {
       // Fallback: try by email if ID lookup fails
-      const { data: emailData } = await supabase
+      const { data: emailData, error: emailError } = await supabase
         .from('users')
         .select('role')
         .eq('email', email)
         .single();
 
-      if (emailData?.role) {
+      if (!emailError && emailData?.role) {
         return emailData.role;
       }
+      
+      // If users table is not accessible (406 error), fall back to user_metadata
+      if (error?.code === 'PGRST116' || error?.message?.includes('406') || emailError?.code === 'PGRST116') {
+        console.warn('⚠️ Users table not accessible, falling back to user_metadata');
+        const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
+        if (roleFromMetadata) {
+          return roleFromMetadata;
+        }
+      }
+      
       // Default to customer if not found
       return 'customer';
     }
 
     return data.role || 'customer';
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching user role from DB:', error);
+    
+    // If it's a 406 or table access error, try user_metadata fallback
+    if (error?.code === 'PGRST116' || error?.message?.includes('406') || error?.status === 406) {
+      console.warn('⚠️ Users table not accessible, falling back to user_metadata');
+      const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
+      if (roleFromMetadata) {
+        return roleFromMetadata;
+      }
+    }
+    
     return 'customer'; // Safe default
   }
 };
@@ -54,8 +75,12 @@ export const AuthInitializer: React.FC = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (mounted && session?.user) {
-          // Fetch role from users table instead of user_metadata
-          const role = await fetchUserRoleFromDB(session.user.id, session.user.email || '');
+          // Fetch role from users table, fallback to user_metadata if table not accessible
+          const role = await fetchUserRoleFromDB(
+            session.user.id, 
+            session.user.email || '', 
+            session.user.user_metadata
+          );
           
           const user: User = {
             id: session.user.id,
@@ -86,8 +111,12 @@ export const AuthInitializer: React.FC = () => {
           if (!mounted) return;
           
           if (session?.user) {
-            // Fetch role from users table instead of user_metadata
-            const role = await fetchUserRoleFromDB(session.user.id, session.user.email || '');
+            // Fetch role from users table, fallback to user_metadata if table not accessible
+            const role = await fetchUserRoleFromDB(
+              session.user.id, 
+              session.user.email || '', 
+              session.user.user_metadata
+            );
             
             const user: User = {
               id: session.user.id,
