@@ -8,6 +8,7 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   loading: boolean;
+  initialized: boolean; // Track if auth has been initialized
   error: string | null;
 }
 
@@ -16,6 +17,7 @@ const initialState: AuthState = {
   token: authService.getTokenSync(),
   isAuthenticated: authService.isAuthenticatedSync(),
   loading: false,
+  initialized: false, // Start as false, will be set to true after AuthInitializer runs
   error: null,
 };
 
@@ -27,6 +29,7 @@ const authSlice = createSlice({
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
+      state.initialized = true; // Mark as initialized when credentials are set
       state.error = null;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -40,7 +43,11 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      state.initialized = true; // Mark as initialized even on logout
       state.error = null;
+    },
+    setInitialized: (state) => {
+      state.initialized = true; // Allow manual initialization flag
     },
     clearError: (state) => {
       state.error = null;
@@ -48,5 +55,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { setCredentials, setLoading, setError, logout, clearError } = authSlice.actions;
+export const { setCredentials, setLoading, setError, logout, clearError, setInitialized } = authSlice.actions;
 export default authSlice.reducer;

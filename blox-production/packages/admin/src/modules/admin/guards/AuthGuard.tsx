@@ -2,17 +2,24 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAppSelector } from '../store/hooks';
 import { Config } from '@shared/config/app.config';
+import { Loading } from '@shared/components';
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
 export const AuthGuard = ({ children }: AuthGuardProps) => {
-  const { isAuthenticated, user } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, user, initialized } = useAppSelector((state) => state.auth);
   const location = useLocation();
 
   if (Config.bypassGuards) {
     return <>{children}</>;
+  }
+
+  // Wait for auth to be initialized before making redirect decisions
+  // This prevents redirects during the initial auth check on page refresh
+  if (!initialized) {
+    return <Loading fullScreen message="Loading..." />;
   }
 
   if (!isAuthenticated) {

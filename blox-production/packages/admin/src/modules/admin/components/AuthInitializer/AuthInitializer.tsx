@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useAppDispatch } from '../../store/hooks';
-import { setCredentials, logout } from '../../store/slices/auth.slice';
+import { setCredentials, logout, setInitialized } from '../../store/slices/auth.slice';
 import type { User } from '@shared/models/user.model';
 import { supabase } from '@shared/services/supabase.service';
 import { loggingService } from '@shared/services/logging.service';
@@ -69,10 +69,15 @@ export const AuthInitializer: React.FC = () => {
           dispatch(setCredentials({ user, token: session.access_token }));
           // Set user context in Sentry
           loggingService.setUser(user);
+        } else {
+          // No session found, mark as initialized anyway
+          dispatch(setInitialized());
         }
       } catch (error) {
         console.error('Error initializing auth:', error);
         loggingService.captureException(error as Error, { context: 'auth_initialization' });
+        // Mark as initialized even on error to prevent infinite loading
+        dispatch(setInitialized());
       }
 
       // Listen to auth state changes
@@ -97,7 +102,7 @@ export const AuthInitializer: React.FC = () => {
             // Set user context in Sentry
             loggingService.setUser(user);
           } else {
-            dispatch(logout());
+            dispatch(logout()); // This already sets initialized to true
             // Clear user context in Sentry
             loggingService.setUser(null);
           }
