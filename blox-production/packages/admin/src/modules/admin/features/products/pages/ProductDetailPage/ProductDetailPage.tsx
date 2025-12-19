@@ -102,7 +102,7 @@ export const ProductDetailPage: React.FC = () => {
     } finally {
       setDeleteDialogOpen(false);
     }
-  };
+  }, [id, dispatch, navigate]);
 
   if (loading) {
     return <Loading fullScreen message="Loading vehicle details..." />;
