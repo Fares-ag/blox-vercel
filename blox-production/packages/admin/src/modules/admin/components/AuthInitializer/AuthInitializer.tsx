@@ -30,7 +30,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
         .single();
 
       // If we get a 406 error immediately, skip the email fallback
-      if (error?.code === 'PGRST116' || error?.message?.includes('406') || error?.status === 406) {
+      if (error?.code === 'PGRST116' || error?.message?.includes('406')) {
         // Only log in development mode
         if (import.meta.env.DEV) {
           console.debug('Users table not accessible (406), using user_metadata (this is expected if RLS policies are not set up)');
@@ -43,7 +43,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
       }
 
       // Only try email fallback if ID lookup didn't return 406
-      if (error && error.status !== 406) {
+      if (error && error.code !== 'PGRST116' && !error.message?.includes('406')) {
         const { data: emailData, error: emailError } = await supabase
           .from('users')
           .select('role')
@@ -55,7 +55,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
         }
 
         // If email lookup also returns 406, use metadata
-        if (emailError?.code === 'PGRST116' || emailError?.message?.includes('406') || emailError?.status === 406) {
+        if (emailError?.code === 'PGRST116' || emailError?.message?.includes('406')) {
           // Only log in development mode
           if (import.meta.env.DEV) {
             console.debug('Users table not accessible (406), using user_metadata');
@@ -68,7 +68,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
       return roleFromMetadata || 'customer';
     } catch (error: any) {
       // If it's a 406 or table access error, use metadata immediately
-      if (error?.code === 'PGRST116' || error?.message?.includes('406') || error?.status === 406) {
+      if (error?.code === 'PGRST116' || error?.message?.includes('406')) {
         // Only log in development mode
         if (import.meta.env.DEV) {
           console.debug('Users table not accessible (406), using user_metadata');
