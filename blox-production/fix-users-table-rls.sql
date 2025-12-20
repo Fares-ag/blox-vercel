@@ -36,3 +36,4 @@ CREATE POLICY "Authenticated can read user roles" ON public.users
 GRANT SELECT ON public.users TO authenticated;
 GRANT SELECT (id, email, role) ON public.users TO authenticated;
 
+

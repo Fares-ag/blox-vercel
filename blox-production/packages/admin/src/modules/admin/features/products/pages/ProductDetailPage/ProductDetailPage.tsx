@@ -36,9 +36,12 @@ export const ProductDetailPage: React.FC = () => {
       } else {
         throw new Error(supabaseResponse.message || 'Product not found');
       }
-    } catch (error: any) {
-      console.error('❌ Failed to load vehicle details:', error);
-      toast.error(error.message || 'Failed to load vehicle details');
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Failed to load vehicle details');
+      if (import.meta.env.DEV) {
+        console.error('Failed to load vehicle details:', err);
+      }
+      toast.error(err.message);
     } finally {
       dispatch(setLoading(false));
     }
@@ -74,9 +77,12 @@ export const ProductDetailPage: React.FC = () => {
       } else {
         throw new Error(supabaseResponse.message || 'Failed to update vehicle status');
       }
-    } catch (error: any) {
-      console.error('❌ Failed to update vehicle status:', error);
-      toast.error(error.message || 'Failed to update vehicle status');
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Failed to update vehicle status');
+      if (import.meta.env.DEV) {
+        console.error('Failed to update vehicle status:', err);
+      }
+      toast.error(err.message);
     }
   }, [id, selected, isActive, dispatch]);
 
@@ -176,6 +182,7 @@ export const ProductDetailPage: React.FC = () => {
                         src={image} 
                         alt={`Vehicle image ${index + 1}`}
                         className="product-image"
+                        loading="lazy"
                         onError={(e) => {
                           // Fallback to placeholder if image fails to load
                           (e.target as HTMLImageElement).src = '/CarImage.png';
@@ -360,6 +367,7 @@ export const ProductDetailPage: React.FC = () => {
               component="img"
               src={selectedImage}
               alt="Vehicle image"
+              loading="lazy"
               sx={{
                 width: '100%',
                 height: 'auto',

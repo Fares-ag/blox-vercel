@@ -15,7 +15,10 @@ import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setStats, setFilters, setLoading, setError } from '../../../../store/slices/dashboard.slice';
 import { supabase } from '@shared/services';
 import type { DashboardStats } from '@shared/models/dashboard.model';
-import { Card, Loading, DatePicker, Button, HorizontalBarChart, SegmentedBarChart, VerticalBarChart } from '@shared/components';
+import { Card, Loading, DatePicker, Button, HorizontalBarChart, SegmentedBarChart, VerticalBarChart, LineChart, FunnelChart, Table, type Column } from '@shared/components';
+import { analyticsService, reportExportService } from '@shared/services';
+import type { RevenueForecast, ConversionFunnelStage, PaymentCollectionRate, CustomerLifetimeValue, AnalyticsData } from '@shared/models/dashboard.model';
+import { formatCurrency } from '@shared/utils/formatters';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import type { Moment } from 'moment';
@@ -26,6 +29,8 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
+import { GetApp, PictureAsPdf, TableChart } from '@mui/icons-material';
+import { toast } from 'react-toastify';
 import './DashboardPage.scss';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -35,6 +40,8 @@ export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const { stats, filters, loading, error } = useAppSelector((state) => state.dashboard);
   const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
 
   const loadDashboardData = useCallback(async () => {
     try {
@@ -59,7 +66,7 @@ export const DashboardPage: React.FC = () => {
       }
 
       if (data && data.length > 0) {
-        const row = data[0] as any;
+        const row = data[0] as Record<string, unknown>;
         const statsFromSupabase: DashboardStats = {
           projectedInsurance: Number(row.projected_insurance || 0),
           projectedFunding: Number(row.projected_funding || 0),
@@ -83,17 +90,53 @@ export const DashboardPage: React.FC = () => {
       } else {
         dispatch(setError('No dashboard data returned from Supabase'));
       }
-    } catch (err: any) {
-      console.error('Failed to load dashboard data:', err);
-      dispatch(setError(err.message || 'Failed to load dashboard data'));
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error('Failed to load dashboard data');
+      if (import.meta.env.DEV) {
+        console.error('Failed to load dashboard data:', error);
+      }
+      dispatch(setError(error.message));
     } finally {
       dispatch(setLoading(false));
     }
   }, [filters, dispatch]);
 
+  const loadAnalyticsData = useCallback(async () => {
+    try {
+      setAnalyticsLoading(true);
+      // Use filters if available, otherwise use default date range
+      const dateRange = filters || {
+        startDate: '1900-01-01',
+        endDate: '2100-12-31',
+      };
+      
+      const data = await analyticsService.getAllAnalyticsData(dateRange, 6, 50);
+      setAnalyticsData(data);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error('Unknown error');
+      if (import.meta.env.DEV) {
+        console.error('Failed to load analytics data:', error);
+      }
+      // Set empty data structure so sections still show with error message
+      setAnalyticsData({
+        revenueForecast: [],
+        conversionFunnel: [],
+        paymentCollectionRates: [],
+        customerLifetimeValues: [],
+        topCustomers: [],
+      });
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [filters]);
+
   useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData]);
+
+  useEffect(() => {
+    loadAnalyticsData();
+  }, [loadAnalyticsData]);
 
   const handleDateRangeChange = useCallback((startDate: Moment | null, endDate: Moment | null) => {
     if (startDate && endDate) {
@@ -125,6 +168,58 @@ export const DashboardPage: React.FC = () => {
     // Default label when no explicit filter is selected
     return 'Overall';
   }, [filters]);
+
+  // Memoize chart labels and datasets to prevent unnecessary re-renders
+  const revenueForecastLabels = useMemo(() => {
+    return analyticsData?.revenueForecast.map((r) => r.period) ?? [];
+  }, [analyticsData?.revenueForecast]);
+
+  const revenueForecastDatasets = useMemo(() => {
+    if (!analyticsData?.revenueForecast.length) return [];
+    return [
+      {
+        label: 'Projected Revenue',
+        data: analyticsData.revenueForecast.map((r) => r.projectedRevenue),
+        borderColor: '#00CFA2',
+        backgroundColor: 'rgba(0, 207, 162, 0.1)',
+      },
+      {
+        label: 'Actual Revenue',
+        data: analyticsData.revenueForecast.map((r) => r.actualRevenue),
+        borderColor: '#09C97F',
+        backgroundColor: 'rgba(9, 201, 127, 0.1)',
+      },
+      {
+        label: 'Forecasted Revenue',
+        data: analyticsData.revenueForecast.map((r) => r.forecastedRevenue),
+        borderColor: '#BCB4FF',
+        backgroundColor: 'rgba(188, 180, 255, 0.1)',
+        borderDash: [5, 5],
+      },
+    ];
+  }, [analyticsData?.revenueForecast]);
+
+  const paymentCollectionLabels = useMemo(() => {
+    return analyticsData?.paymentCollectionRates.map((r) => r.period) ?? [];
+  }, [analyticsData?.paymentCollectionRates]);
+
+  const paymentCollectionDatasets = useMemo(() => {
+    if (!analyticsData?.paymentCollectionRates.length) return [];
+    return [
+      {
+        label: 'Collection Rate (%)',
+        data: analyticsData.paymentCollectionRates.map((r) => r.collectionRate),
+        borderColor: '#09C97F',
+        backgroundColor: 'rgba(9, 201, 127, 0.1)',
+      },
+      {
+        label: 'Overdue Rate (%)',
+        data: analyticsData.paymentCollectionRates.map((r) => r.overdueRate),
+        borderColor: '#F95668',
+        backgroundColor: 'rgba(249, 86, 104, 0.1)',
+      },
+    ];
+  }, [analyticsData?.paymentCollectionRates]);
 
   if (loading && !stats) {
     return <Loading fullScreen message="Loading dashboard..." />;
@@ -172,18 +267,71 @@ export const DashboardPage: React.FC = () => {
     <Box className="dashboard-page">
       <Box className="dashboard-header">
         <Typography variant="h2">Dashboard</Typography>
-        <Button
-          variant="secondary"
-          startIcon={<FilterList />}
-          onClick={handleFilterClick}
-          sx={{
-            textTransform: 'none',
-            minWidth: '200px',
-            justifyContent: 'flex-start',
-          }}
-        >
-          {formatDateRange}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Button
+            variant="secondary"
+            startIcon={<FilterList />}
+            onClick={handleFilterClick}
+            sx={{
+              textTransform: 'none',
+              minWidth: '200px',
+              justifyContent: 'flex-start',
+            }}
+          >
+            {formatDateRange}
+          </Button>
+          <Button
+            variant="primary"
+            startIcon={<PictureAsPdf />}
+            onClick={async () => {
+              if (stats && analyticsData) {
+                try {
+                  await reportExportService.exportExecutiveDashboardPDF(
+                    stats,
+                    analyticsData.topCustomers,
+                    filters || { startDate: '1900-01-01', endDate: '2100-12-31' }
+                  );
+                  toast.success('Executive Dashboard PDF exported successfully');
+                } catch (error: unknown) {
+                  const err = error instanceof Error ? error : new Error('Failed to export PDF');
+                  toast.error(err.message);
+                }
+              } else {
+                toast.warning('Please wait for data to load');
+              }
+            }}
+            disabled={!stats || !analyticsData}
+          >
+            Executive Dashboard (PDF)
+          </Button>
+          <Button
+            variant="secondary"
+            startIcon={<PictureAsPdf />}
+            onClick={async () => {
+              if (stats && analyticsData) {
+                try {
+                  await reportExportService.exportMonthlyFinancialSummaryPDF(
+                    stats,
+                    analyticsData.revenueForecast,
+                    analyticsData.paymentCollectionRates,
+                    analyticsData.conversionFunnel,
+                    analyticsData.topCustomers,
+                    filters || { startDate: '1900-01-01', endDate: '2100-12-31' }
+                  );
+                  toast.success('Monthly Financial Summary PDF exported successfully');
+                } catch (error: unknown) {
+                  const err = error instanceof Error ? error : new Error('Failed to export PDF');
+                  toast.error(err.message);
+                }
+              } else {
+                toast.warning('Please wait for data to load');
+              }
+            }}
+            disabled={!stats || !analyticsData}
+          >
+            Monthly Summary (PDF)
+          </Button>
+        </Box>
         <Popover
           open={open}
           anchorEl={anchorEl}
@@ -475,6 +623,230 @@ export const DashboardPage: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Enhanced Analytics Section */}
+      <Box sx={{ mt: 4 }}>
+        <Typography variant="h2" sx={{ mb: 3 }}>
+          Enhanced Analytics
+        </Typography>
+        
+        {analyticsLoading ? (
+          <Loading message="Loading enhanced analytics..." />
+        ) : analyticsData ? (
+          <>
+            {/* Revenue Forecasting */}
+          <Grid container spacing={3} sx={{ mt: 2 }}>
+            <Grid item xs={12}>
+              <Paper className="dashboard-panel">
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h3" className="panel-title">
+                    Revenue Forecasting
+                  </Typography>
+                  <Button
+                    variant="secondary"
+                    size="small"
+                    startIcon={<TableChart />}
+                    onClick={() => {
+                      if (analyticsData.revenueForecast.length > 0) {
+                        reportExportService.exportRevenueForecast(analyticsData.revenueForecast);
+                        toast.success('Revenue forecast exported successfully');
+                      }
+                    }}
+                  >
+                    Export Excel
+                  </Button>
+                </Box>
+                {analyticsLoading ? (
+                  <Loading message="Loading revenue forecast..." />
+                ) : revenueForecastDatasets.length > 0 ? (
+                  <LineChart
+                    title=""
+                    labels={revenueForecastLabels}
+                    datasets={revenueForecastDatasets}
+                    height={300}
+                    yAxisLabel="Amount (QAR)"
+                  />
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                    No revenue forecast data available
+                  </Typography>
+                )}
+              </Paper>
+            </Grid>
+          </Grid>
+
+          {/* Conversion Funnel */}
+          <Grid container spacing={3} sx={{ mt: 2 }}>
+            <Grid item xs={12} md={6}>
+              <Paper className="dashboard-panel">
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h3" className="panel-title">
+                    Application Conversion Funnel
+                  </Typography>
+                  <Button
+                    variant="secondary"
+                    size="small"
+                    startIcon={<TableChart />}
+                    onClick={() => {
+                      if (analyticsData.conversionFunnel.length > 0) {
+                        reportExportService.exportConversionFunnel(analyticsData.conversionFunnel);
+                        toast.success('Conversion funnel exported successfully');
+                      }
+                    }}
+                  >
+                    Export
+                  </Button>
+                </Box>
+                {analyticsLoading ? (
+                  <Loading message="Loading conversion funnel..." />
+                ) : analyticsData.conversionFunnel.length > 0 ? (
+                  <FunnelChart
+                    stages={analyticsData.conversionFunnel.map((stage) => ({
+                      label: stage.stage,
+                      value: stage.count,
+                      percentage: stage.percentage,
+                      dropOffRate: stage.dropOffRate,
+                      color: stage.stage === 'Active' ? '#09C97F' : stage.stage === 'Completed' ? '#00CFA2' : '#BCB4FF',
+                    }))}
+                  />
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                    No conversion funnel data available
+                  </Typography>
+                )}
+              </Paper>
+            </Grid>
+
+            {/* Payment Collection Rates */}
+            <Grid item xs={12} md={6}>
+              <Paper className="dashboard-panel">
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h3" className="panel-title">
+                    Payment Collection Rates
+                  </Typography>
+                  <Button
+                    variant="secondary"
+                    size="small"
+                    startIcon={<TableChart />}
+                    onClick={() => {
+                      if (analyticsData.paymentCollectionRates.length > 0) {
+                        reportExportService.exportPaymentCollectionRates(analyticsData.paymentCollectionRates);
+                        toast.success('Payment collection rates exported successfully');
+                      }
+                    }}
+                  >
+                    Export
+                  </Button>
+                </Box>
+                {analyticsLoading ? (
+                  <Loading message="Loading payment collection rates..." />
+                ) : paymentCollectionDatasets.length > 0 ? (
+                  <LineChart
+                    title=""
+                    labels={paymentCollectionLabels}
+                    datasets={paymentCollectionDatasets}
+                    height={300}
+                    yAxisLabel="Percentage (%)"
+                  />
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                    No payment collection data available
+                  </Typography>
+                )}
+              </Paper>
+            </Grid>
+          </Grid>
+
+          {/* Customer Lifetime Value */}
+          <Grid container spacing={3} sx={{ mt: 2 }}>
+            <Grid item xs={12}>
+              <Paper className="dashboard-panel">
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h3" className="panel-title">
+                    Top Customers by Lifetime Value
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      startIcon={<TableChart />}
+                      onClick={() => {
+                        if (analyticsData.topCustomers.length > 0) {
+                          reportExportService.exportCustomerLifetimeValue(analyticsData.topCustomers);
+                          toast.success('Customer lifetime value exported successfully');
+                        }
+                      }}
+                    >
+                      Export Excel
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="small"
+                      startIcon={<PictureAsPdf />}
+                      onClick={() => {
+                        if (stats && analyticsData) {
+                          reportExportService.exportDashboardReport(
+                            stats,
+                            analyticsData.revenueForecast,
+                            analyticsData.conversionFunnel,
+                            analyticsData.paymentCollectionRates,
+                            analyticsData.topCustomers,
+                            filters || { startDate: '1900-01-01', endDate: '2100-12-31' }
+                          );
+                          toast.success('Dashboard report exported successfully');
+                        }
+                      }}
+                    >
+                      Export Full Report (PDF)
+                    </Button>
+                  </Box>
+                </Box>
+                {analyticsLoading ? (
+                  <Loading message="Loading customer lifetime value..." />
+                ) : analyticsData.topCustomers.length > 0 ? (
+                  <Table
+                    columns={[
+                      { id: 'customerName', label: 'Customer Name' },
+                      { id: 'totalRevenue', label: 'Total Revenue', format: (value) => formatCurrency(value) },
+                      { id: 'clv', label: 'Lifetime Value (CLV)', format: (value) => formatCurrency(value) },
+                      { id: 'totalApplications', label: 'Applications' },
+                      { id: 'averagePaymentAmount', label: 'Avg Payment', format: (value) => formatCurrency(value) },
+                      { id: 'totalPayments', label: 'Total Payments' },
+                    ]}
+                    rows={analyticsData.topCustomers.map((customer, index) => ({
+                      id: customer.customerEmail || `customer-${index}`,
+                      customerName: customer.customerName,
+                      totalRevenue: customer.totalRevenue,
+                      clv: customer.clv,
+                      totalApplications: customer.totalApplications,
+                      averagePaymentAmount: customer.averagePaymentAmount,
+                      totalPayments: customer.totalPayments,
+                    }))}
+                    rowsPerPage={10}
+                    totalRows={analyticsData.topCustomers.length}
+                  />
+                ) : (
+                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                    No customer lifetime value data available
+                  </Typography>
+                )}
+              </Paper>
+            </Grid>
+          </Grid>
+          </>
+        ) : (
+          <Paper className="dashboard-panel" sx={{ p: 4, textAlign: 'center' }}>
+            <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+              Analytics data not available
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Please ensure the analytics database functions are created in Supabase.
+              <br />
+              Run the SQL script: <code>supabase-enhanced-analytics.sql</code>
+            </Typography>
+          </Paper>
+        )}
+      </Box>
     </Box>
   );
 };

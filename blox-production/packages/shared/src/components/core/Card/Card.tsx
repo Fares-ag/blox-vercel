@@ -11,7 +11,7 @@ export interface CardPropsCustom extends React.ComponentProps<typeof MuiCard> {
   moduleType?: 'currency' | 'number' | 'percentage';
 }
 
-export const Card: React.FC<CardPropsCustom> = ({
+export const Card: React.FC<CardPropsCustom> = React.memo(({
   icon,
   title,
   value,
@@ -37,6 +37,15 @@ export const Card: React.FC<CardPropsCustom> = ({
     <MuiCard
       className={`custom-card ${onClick ? 'clickable' : ''} ${className}`}
       onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      aria-label={title ? `${title}: ${value !== undefined ? formatValue() : ''}` : undefined}
+      onKeyDown={onClick ? (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      } : undefined}
       sx={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}
       {...props}
     >
@@ -51,4 +60,10 @@ export const Card: React.FC<CardPropsCustom> = ({
       </CardContent>
     </MuiCard>
   );
-};
+}, (prevProps, nextProps) => {
+  // Memo comparison: only re-render if value, title, or onClick changes
+  return prevProps.value === nextProps.value &&
+         prevProps.title === nextProps.title &&
+         prevProps.onClick === nextProps.onClick &&
+         prevProps.moduleType === nextProps.moduleType;
+});

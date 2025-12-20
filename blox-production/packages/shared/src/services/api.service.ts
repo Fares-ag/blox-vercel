@@ -128,15 +128,25 @@ class ApiService {
     }
   }
 
-  private handleError(error: any): Error {
-    if (error.response) {
-      const apiError = error.response.data as ApiResponse;
-      return new Error(apiError.message || 'An error occurred');
-    } else if (error.request) {
-      return new Error('Network error. Please check your connection.');
-    } else {
-      return new Error(error.message || 'An unexpected error occurred');
+  private handleError(error: unknown): Error {
+    // Type guard for Axios errors
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { data?: ApiResponse } };
+      const apiError = axiosError.response?.data;
+      return new Error(apiError?.message || 'An error occurred');
     }
+    
+    // Type guard for network errors
+    if (error && typeof error === 'object' && 'request' in error) {
+      return new Error('Network error. Please check your connection.');
+    }
+    
+    // Standard Error object
+    if (error instanceof Error) {
+      return error;
+    }
+    
+    return new Error('An unexpected error occurred');
   }
 
   // File upload helper

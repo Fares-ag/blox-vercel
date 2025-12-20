@@ -7,7 +7,7 @@ export interface InputProps extends Omit<TextFieldProps, 'variant'> {
   variant?: 'outlined' | 'filled' | 'standard';
 }
 
-export const Input: React.FC<InputProps> = ({
+export const Input: React.FC<InputProps> = React.memo(({
   variant = 'outlined',
   className = '',
   sx,
@@ -48,6 +48,13 @@ export const Input: React.FC<InputProps> = ({
       fullWidth
       {...props}
       sx={mergedSx}
+      aria-label={props.label || props.placeholder || props.name || 'Input field'}
     />
   );
-};
+}, (prevProps, nextProps) => {
+  // Memo comparison: re-render if value or key props change
+  return prevProps.value === nextProps.value &&
+         prevProps.variant === nextProps.variant &&
+         prevProps.disabled === nextProps.disabled &&
+         prevProps.error === nextProps.error;
+});

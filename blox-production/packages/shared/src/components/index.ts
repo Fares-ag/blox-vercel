@@ -14,6 +14,8 @@ export { ErrorBoundary } from './shared/ErrorBoundary/ErrorBoundary';
 export { ExportButton } from './shared/ExportButton/ExportButton';
 export { FilterPanel, type FilterConfig } from './shared/FilterPanel/FilterPanel';
 export { HorizontalBarChart, SegmentedBarChart } from './shared/HorizontalBarChart/HorizontalBarChart';
+export { LineChart, type LineChartDataPoint, type LineChartDataset } from './shared/LineChart/LineChart';
+export { FunnelChart, type FunnelStage } from './shared/FunnelChart/FunnelChart';
 export { MultiStepForm, type StepConfig, type StepProps } from './shared/MultiStepForm/MultiStepForm';
 export { PDFViewer } from './shared/PDFViewer/PDFViewer';
 export { SearchBar } from './shared/SearchBar/SearchBar';

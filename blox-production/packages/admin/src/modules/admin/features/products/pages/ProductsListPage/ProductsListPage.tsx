@@ -71,10 +71,13 @@ export const ProductsListPage: React.FC = () => {
       } else {
         throw new Error(supabaseResponse.message || 'Failed to load products from Supabase');
       }
-    } catch (error: any) {
-      console.error('❌ Failed to load products:', error);
-      dispatch(setError(error.message || 'Failed to load products from Supabase'));
-      toast.error(error.message || 'Failed to load products from Supabase');
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Failed to load products from Supabase');
+      if (import.meta.env.DEV) {
+        console.error('Failed to load products:', err);
+      }
+      dispatch(setError(err.message));
+      toast.error(err.message);
     } finally {
       dispatch(setLoading(false));
     }
@@ -89,7 +92,7 @@ export const ProductsListPage: React.FC = () => {
     dispatch(setPage(1));
   }, [dispatch]);
 
-  const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
+  const handleFilterChange = useCallback((newFilters: Record<string, unknown>) => {
     dispatch(setFilters(newFilters));
   }, [dispatch]);
 

@@ -32,9 +32,10 @@ export const useAuth = () => {
         navigate('/admin/dashboard');
         
         return { success: true };
-      } catch (err: any) {
-        dispatch(setError(err.message || 'Login failed'));
-        return { success: false, error: err.message };
+      } catch (err: unknown) {
+        const error = err instanceof Error ? err : new Error('Login failed');
+        dispatch(setError(error.message));
+        return { success: false, error: error.message };
       } finally {
         dispatch(setLoading(false));
       }
@@ -58,8 +59,9 @@ export const useAuth = () => {
     try {
       await authService.forgotPassword(email);
       return { success: true };
-    } catch (err: any) {
-      return { success: false, error: err.message };
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err : new Error('Failed to send password reset email');
+      return { success: false, error: error.message };
     }
   }, []);
 

@@ -79,9 +79,12 @@ export const VehicleDetailPage: React.FC = () => {
       } else {
         throw new Error(supabaseResponse.message || 'Vehicle not found');
       }
-    } catch (error: any) {
-      console.error('❌ Failed to load vehicle details:', error);
-      toast.error(error.message || 'Failed to load vehicle details');
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Failed to load vehicle details');
+      if (import.meta.env.DEV) {
+        console.error('Failed to load vehicle details:', err);
+      }
+      toast.error(err.message);
       navigate('/customer/vehicles');
     } finally {
       setLoading(false);
@@ -148,6 +151,7 @@ export const VehicleDetailPage: React.FC = () => {
               src={imageUrl}
               alt={`${vehicle.make} ${vehicle.model}`}
               className="main-image"
+              loading="lazy"
             />
           </Paper>
 

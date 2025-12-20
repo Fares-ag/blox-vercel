@@ -19,7 +19,7 @@ export interface ButtonProps extends Omit<MuiButtonProps, 'variant'> {
   loading?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({
+export const Button: React.FC<ButtonProps> = React.memo(({
   variant = 'primary',
   loading = false,
   disabled,
@@ -76,4 +76,11 @@ export const Button: React.FC<ButtonProps> = ({
       )}
     </MuiButton>
   );
-};
+}, (prevProps, nextProps) => {
+  // Memo comparison: re-render if key props change
+  return prevProps.variant === nextProps.variant &&
+         prevProps.loading === nextProps.loading &&
+         prevProps.disabled === nextProps.disabled &&
+         prevProps.children === nextProps.children &&
+         prevProps.onClick === nextProps.onClick;
+});

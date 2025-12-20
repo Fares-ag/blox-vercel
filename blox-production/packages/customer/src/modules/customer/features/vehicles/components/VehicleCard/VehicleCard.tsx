@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardMedia, Typography, Box, Chip } from '@mui/material';
 import type { Product } from '@shared/models/product.model';
@@ -9,25 +9,40 @@ interface VehicleCardProps {
   vehicle: Product;
 }
 
-export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle }) => {
+export const VehicleCard: React.FC<VehicleCardProps> = React.memo(({ vehicle }) => {
   const navigate = useNavigate();
 
-  const handleCardClick = () => {
+  const handleCardClick = useCallback(() => {
     navigate(`/customer/vehicles/${vehicle.id}`);
-  };
+  }, [navigate, vehicle.id]);
+
+  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      handleCardClick();
+    }
+  }, [handleCardClick]);
 
   const imageUrl = vehicle.images && vehicle.images.length > 0 
     ? vehicle.images[0] 
     : '/CarImage.png';
 
   return (
-    <Card className="vehicle-card" onClick={handleCardClick}>
+    <Card 
+      className="vehicle-card" 
+      onClick={handleCardClick}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${vehicle.make} ${vehicle.model}`}
+    >
       <CardMedia
         component="img"
         height="200"
         image={imageUrl}
         alt={`${vehicle.make} ${vehicle.model}`}
         className="vehicle-image"
+        loading="lazy"
       />
       <CardContent>
         <Box className="vehicle-header">
@@ -81,5 +96,10 @@ export const VehicleCard: React.FC<VehicleCardProps> = ({ vehicle }) => {
       </CardContent>
     </Card>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison function for React.memo
+  return prevProps.vehicle.id === nextProps.vehicle.id &&
+         prevProps.vehicle.price === nextProps.vehicle.price &&
+         prevProps.vehicle.status === nextProps.vehicle.status;
+});
 

@@ -1,108 +1,184 @@
-/**
- * Analytics service for tracking user actions and events
- */
-
-import { loggingService } from './logging.service';
-
-interface AnalyticsEvent {
-  action: string;
-  category: string;
-  label?: string;
-  value?: number;
-}
+import { supabase } from './supabase.service';
+import type {
+  RevenueForecast,
+  ConversionFunnelStage,
+  PaymentCollectionRate,
+  CustomerLifetimeValue,
+  AnalyticsData,
+  DateRange,
+} from '../models/dashboard.model';
 
 class AnalyticsService {
-  private initialized = false;
-
   /**
-   * Initialize analytics (Google Analytics, etc.)
+   * Get revenue forecast data
    */
-  init(trackingId?: string) {
-    if (this.initialized || !trackingId) {
-      return;
-    }
+  async getRevenueForecast(
+    dateRange: DateRange,
+    forecastMonths: number = 6
+  ): Promise<RevenueForecast[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_revenue_forecast', {
+        start_date: dateRange.startDate,
+        end_date: dateRange.endDate,
+        forecast_months: forecastMonths,
+      });
 
-    // Initialize Google Analytics if tracking ID is provided
-    if (trackingId && typeof window !== 'undefined') {
-      // Load gtag script
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${trackingId}`;
-      document.head.appendChild(script);
-
-      // Initialize gtag
-      (window as any).dataLayer = (window as any).dataLayer || [];
-      function gtag(...args: any[]) {
-        (window as any).dataLayer.push(args);
+      if (error) {
+        console.error('Failed to load revenue forecast:', error);
+        throw new Error(error.message || 'Failed to load revenue forecast');
       }
-      (window as any).gtag = gtag;
 
-      gtag('js', new Date());
-      gtag('config', trackingId, {
-        page_path: window.location.pathname,
+      return (data || []).map((row: any) => ({
+        period: row.period,
+        projectedRevenue: Number(row.projected_revenue ?? 0),
+        actualRevenue: Number(row.actual_revenue ?? 0),
+        forecastedRevenue: Number(row.forecasted_revenue ?? 0),
+      }));
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Failed to fetch revenue forecast');
+      if (import.meta.env.DEV) {
+        console.error('Error fetching revenue forecast:', err);
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Get application conversion funnel
+   */
+  async getConversionFunnel(dateRange: DateRange): Promise<ConversionFunnelStage[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_conversion_funnel', {
+        start_date: dateRange.startDate,
+        end_date: dateRange.endDate,
       });
 
-      this.initialized = true;
+      if (error) {
+        console.error('Failed to load conversion funnel:', error);
+        throw new Error(error.message || 'Failed to load conversion funnel');
+      }
+
+      return (data || []).map((row: Record<string, unknown>) => ({
+        stage: String(row.stage ?? ''),
+        count: Number(row.count ?? 0),
+        percentage: Number(row.percentage ?? 0),
+        dropOffRate: row.drop_off_rate ? Number(row.drop_off_rate) : undefined,
+      }));
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Failed to fetch conversion funnel');
+      if (import.meta.env.DEV) {
+        console.error('Error fetching conversion funnel:', err);
+      }
+      throw err;
     }
   }
 
   /**
-   * Track page view
+   * Get payment collection rates
    */
-  trackPageView(path: string, title?: string) {
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('config', import.meta.env.VITE_GA_TRACKING_ID, {
-        page_path: path,
-        page_title: title,
+  async getPaymentCollectionRates(
+    dateRange: DateRange
+  ): Promise<PaymentCollectionRate[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_payment_collection_rates', {
+        start_date: dateRange.startDate,
+        end_date: dateRange.endDate,
       });
+
+      if (error) {
+        console.error('Failed to load payment collection rates:', error);
+        throw new Error(error.message || 'Failed to load payment collection rates');
+      }
+
+      return (data || []).map((row: Record<string, unknown>) => ({
+        period: String(row.period ?? ''),
+        totalDue: Number(row.total_due ?? 0),
+        totalCollected: Number(row.total_collected ?? 0),
+        collectionRate: Number(row.collection_rate ?? 0),
+        overdueAmount: Number(row.overdue_amount ?? 0),
+        overdueRate: Number(row.overdue_rate ?? 0),
+      }));
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Failed to fetch payment collection rates');
+      if (import.meta.env.DEV) {
+        console.error('Error fetching payment collection rates:', err);
+      }
+      throw err;
     }
   }
 
   /**
-   * Track event
+   * Get customer lifetime value data
    */
-  trackEvent(event: AnalyticsEvent) {
-    if (typeof window !== 'undefined' && (window as any).gtag) {
-      (window as any).gtag('event', event.action, {
-        event_category: event.category,
-        event_label: event.label,
-        value: event.value,
+  async getCustomerLifetimeValue(limit: number = 50): Promise<CustomerLifetimeValue[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_customer_lifetime_value', {
+        limit_count: limit,
       });
-    }
 
-    // Also log to Sentry as breadcrumb
-    if (typeof window !== 'undefined') {
-      loggingService.addBreadcrumb(
-        `${event.category}: ${event.action}`,
-        'analytics',
-        'info',
-        event
-      );
+      if (error) {
+        console.error('Failed to load customer lifetime value:', error);
+        throw new Error(error.message || 'Failed to load customer lifetime value');
+      }
+
+      return (data || []).map((row: Record<string, unknown>) => ({
+        customerEmail: String(row.customer_email ?? ''),
+        customerName: String(row.customer_name ?? row.customer_email ?? ''),
+        totalRevenue: Number(row.total_revenue ?? 0),
+        totalApplications: Number(row.total_applications ?? 0),
+        averageApplicationValue: Number(row.average_application_value ?? 0),
+        averagePaymentAmount: Number(row.average_payment_amount ?? 0),
+        totalPayments: Number(row.total_payments ?? 0),
+        lastPaymentDate: (row.last_payment_date as string | null) ?? null,
+        customerSince: String(row.customer_since ?? ''),
+        clv: Number(row.clv ?? 0),
+      }));
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Failed to fetch customer lifetime value');
+      if (import.meta.env.DEV) {
+        console.error('Error fetching customer lifetime value:', err);
+      }
+      throw err;
     }
   }
 
   /**
-   * Track user action
+   * Get all analytics data at once
    */
-  trackUserAction(action: string, details?: Record<string, any>) {
-    this.trackEvent({
-      action,
-      category: 'user_action',
-      label: JSON.stringify(details),
-    });
-  }
+  async getAllAnalyticsData(
+    dateRange: DateRange,
+    forecastMonths: number = 6,
+    clvLimit: number = 50
+  ): Promise<AnalyticsData> {
+    try {
+      const [revenueForecast, conversionFunnel, paymentCollectionRates, customerLifetimeValues] =
+        await Promise.all([
+          this.getRevenueForecast(dateRange, forecastMonths),
+          this.getConversionFunnel(dateRange),
+          this.getPaymentCollectionRates(dateRange),
+          this.getCustomerLifetimeValue(clvLimit),
+        ]);
 
-  /**
-   * Track conversion
-   */
-  trackConversion(conversionName: string, value?: number) {
-    this.trackEvent({
-      action: conversionName,
-      category: 'conversion',
-      value,
-    });
+      // Get top 10 customers by CLV
+      const topCustomers = customerLifetimeValues
+        .sort((a, b) => b.clv - a.clv)
+        .slice(0, 10);
+
+      return {
+        revenueForecast,
+        conversionFunnel,
+        paymentCollectionRates,
+        customerLifetimeValues,
+        topCustomers,
+      };
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Failed to fetch all analytics data');
+      if (import.meta.env.DEV) {
+        console.error('Error fetching all analytics data:', err);
+      }
+      throw err;
+    }
   }
 }
 
 export const analyticsService = new AnalyticsService();
-
