@@ -17,7 +17,7 @@ import {
   DialogActions,
   TextField,
 } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, Logout, DirectionsCar, Star, AddCircleOutline } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, Logout, DirectionsCar, Star, AddCircleOutline, AccountBalanceWallet, Add } from '@mui/icons-material';
 import { useAppSelector } from '../../store/hooks';
 import { useAuth } from '../../hooks/useAuth';
 import { NotificationCenter } from '../../features/notifications/components/NotificationCenter/NotificationCenter';
@@ -238,6 +238,41 @@ export const CustomerNav: React.FC = () => {
           {isAuthenticated ? (
             <>
               <NotificationCenter />
+              {/* Blox Credits Wallet */}
+              <Box 
+                className="blox-wallet"
+                onClick={handleOpenTopUp}
+                sx={{ cursor: 'pointer' }}
+              >
+                <Box className="wallet-icon-wrapper">
+                  <AccountBalanceWallet className="wallet-icon" />
+                </Box>
+                <Box className="wallet-content">
+                  <Typography variant="caption" className="wallet-label">
+                    Blox Credits
+                  </Typography>
+                  <Typography variant="h6" className="wallet-balance">
+                    {bloxCredits.toLocaleString('en-US')}
+                  </Typography>
+                </Box>
+                <IconButton 
+                  size="small" 
+                  className="wallet-add-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenTopUp();
+                  }}
+                  sx={{ 
+                    ml: 1,
+                    color: '#00CFA2',
+                    '&:hover': {
+                      backgroundColor: 'rgba(0, 207, 162, 0.1)',
+                    }
+                  }}
+                >
+                  <Add />
+                </IconButton>
+              </Box>
               <Box className="user-info" onClick={handleMenuOpen}>
                 <Avatar className="user-avatar">
                   {user?.name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
@@ -274,13 +309,9 @@ export const CustomerNav: React.FC = () => {
                   <AccountCircle sx={{ mr: 1 }} />
                   Profile
                 </MenuItem>
-                <MenuItem disabled>
-                  <Star sx={{ mr: 1, color: '#FACC15' }} />
-                  Blox Credits: {bloxCredits}
-                </MenuItem>
                 <MenuItem onClick={() => { handleMenuClose(); handleOpenTopUp(); }}>
-                  <AddCircleOutline sx={{ mr: 1 }} />
-                  Top Up Blox Credits
+                  <AccountBalanceWallet sx={{ mr: 1 }} />
+                  Manage Wallet
                 </MenuItem>
                 <MenuItem onClick={() => { handleMenuClose(); navigate('/customer/profile/change-password'); }}>
                   <AccountCircle sx={{ mr: 1 }} />

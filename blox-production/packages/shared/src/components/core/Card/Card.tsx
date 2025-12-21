@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card as MuiCard, CardContent } from '@mui/material';
+import { formatCurrency } from '@shared/utils/formatters';
 import './Card.scss';
 
 export interface CardPropsCustom extends React.ComponentProps<typeof MuiCard> {
@@ -26,11 +27,16 @@ export const Card: React.FC<CardPropsCustom> = React.memo(({
     if (value === undefined || value === null) return '';
     
     if (moduleType === 'currency') {
-      return `QAR ${Number(value).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+      // Use formatCurrency for consistency with CurrencyConfig
+      return formatCurrency(value);
     } else if (moduleType === 'percentage') {
       return `${value}%`;
     }
-    return value.toString();
+    // Format regular numbers with commas for thousands
+    return Number(value).toLocaleString('en-US', { 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 0 
+    });
   };
 
   return (
