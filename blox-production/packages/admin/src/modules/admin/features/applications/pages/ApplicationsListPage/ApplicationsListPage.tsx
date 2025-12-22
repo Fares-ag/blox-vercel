@@ -30,6 +30,8 @@ export const ApplicationsListPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [activeTab, setActiveTab] = useState(0);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  // Store full filtered list (before pagination) for metrics calculation
+  const [fullFilteredList, setFullFilteredList] = useState<Application[]>([]);
 
   // Debounce search term to avoid excessive API calls
   useEffect(() => {
@@ -76,6 +78,9 @@ export const ApplicationsListPage: React.FC = () => {
         // Apply status filter
         const filtered = filterApplicationsByStatus(applications, statusFilter);
         
+        // Store full filtered list for metrics calculation (before pagination)
+        setFullFilteredList(filtered);
+        
         // Pagination
         const total = filtered.length;
         const start = (pagination.page - 1) * pagination.limit;
@@ -113,9 +118,10 @@ export const ApplicationsListPage: React.FC = () => {
 
   // Calculate metrics
   const metrics = useMemo(() => {
-    // Use Redux state instead of localStorage
-    const allApps = list;
-    const filtered = filterApplicationsByStatus(allApps, statusFilter);
+    // Use fullFilteredList which contains ALL matching applications (before pagination)
+    // This ensures metrics reflect totals across ALL matching applications, not just current page
+    const filtered = fullFilteredList;
+    
     // Total Payable = sum of all unpaid installments for the filtered applications
     const totalPayable = filtered.reduce((sum, app) => {
       const schedule = app.installmentPlan?.schedule || [];
@@ -149,7 +155,7 @@ export const ApplicationsListPage: React.FC = () => {
       profitability: isNaN(profitability) ? 0 : profitability,
       activeApplications: filtered.filter((app) => app.status === 'active' || app.status === 'under_review').length,
     };
-  }, [list, statusFilter]);
+  }, [fullFilteredList]);
 
   // Calculate asset distribution percentage based on real ownership:
   // (down payment + sum of paid installments) / vehicle price
@@ -387,7 +393,7 @@ export const ApplicationsListPage: React.FC = () => {
       {/* Header */}
       <Box className="page-header">
         <Typography variant="h2" className="page-title">
-          Applications - {filteredList.length}
+          Applications - {fullFilteredList.length}
         </Typography>
       </Box>
 
