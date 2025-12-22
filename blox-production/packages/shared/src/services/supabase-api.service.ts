@@ -429,66 +429,25 @@ class SupabaseApiService {
   }
 
   /**
-   * Mark a specific installment as paid in both payment_schedules and the application's installmentPlan.
+   * Mark a specific installment as paid (fully or partially) in both payment_schedules and the application's installmentPlan.
    * This keeps the dashboard (which reads from payment_schedules) and the frontend views (which read from
    * application.installmentPlan.schedule) in sync.
+   * 
+   * @param applicationId - The application ID
+   * @param paymentDueDate - The due date of the payment
+   * @param paidAmount - The amount being paid (can be less than full amount for partial payments)
+   * @param receiptUrl - Optional receipt URL for the payment
    */
   async markInstallmentAsPaid(
     applicationId: string,
     paymentDueDate: string,
-    amount: number
+    paidAmount: number,
+    receiptUrl?: string
   ): Promise<ApiResponse<Application>> {
     try {
       const paidAt = new Date().toISOString();
 
-      // 1) Ensure payment_schedules reflects this payment
-      try {
-        const { data: existingRows, error: selectError } = await supabase
-          .from('payment_schedules')
-          .select('id')
-          .eq('application_id', applicationId)
-          .eq('due_date', paymentDueDate)
-          .eq('amount', amount)
-          .limit(1);
-
-        if (selectError) {
-          console.error('❌ markInstallmentAsPaid: select from payment_schedules failed', selectError);
-        } else if (existingRows && existingRows.length > 0) {
-          const existingId = existingRows[0].id;
-          const { error: updateError } = await supabase
-            .from('payment_schedules')
-            .update({
-              status: 'paid',
-              paid_date: paidAt,
-              updated_at: paidAt,
-            })
-            .eq('id', existingId);
-
-          if (updateError) {
-            console.error('❌ markInstallmentAsPaid: update payment_schedules failed', updateError);
-          }
-        } else {
-          const { error: insertError } = await supabase
-            .from('payment_schedules')
-            .insert({
-              application_id: applicationId,
-              due_date: paymentDueDate,
-              amount,
-              status: 'paid',
-              paid_date: paidAt,
-              created_at: paidAt,
-              updated_at: paidAt,
-            });
-
-          if (insertError) {
-            console.error('❌ markInstallmentAsPaid: insert into payment_schedules failed', insertError);
-          }
-        }
-      } catch (scheduleError) {
-        console.error('❌ markInstallmentAsPaid: unexpected error updating payment_schedules', scheduleError);
-      }
-
-      // 2) Update the application installmentPlan JSON so customer/admin UIs stay consistent
+      // 1) Get the application to find the payment schedule
       const appResponse = await this.getApplicationById(applicationId);
       if (appResponse.status !== 'SUCCESS' || !appResponse.data) {
         return {
@@ -509,21 +468,100 @@ class SupabaseApiService {
         };
       }
 
-      const updatedSchedule = installmentPlan.schedule.map((payment: any) => {
-        // Match by dueDate and amount; if your data model later gets a stable ID for payments,
-        // this can be tightened to use that ID instead.
-        if (
-          payment.dueDate === paymentDueDate &&
-          Number(payment.amount) === Number(amount)
-        ) {
-          return {
-            ...payment,
-            status: 'paid',
-            paidDate: paidAt,
-          };
+      // Find the payment in the schedule by dueDate
+      const paymentIndex = installmentPlan.schedule.findIndex(
+        (payment: any) => payment.dueDate === paymentDueDate
+      );
+
+      if (paymentIndex === -1) {
+        return {
+          status: 'ERROR',
+          message: 'Payment not found in schedule',
+          data: {} as Application,
+        };
+      }
+
+      const payment = installmentPlan.schedule[paymentIndex];
+      const originalAmount = Number(payment.amount) || 0;
+      const currentPaidAmount = Number(payment.paidAmount) || 0;
+      const newPaidAmount = currentPaidAmount + paidAmount;
+      const remainingAmount = originalAmount - newPaidAmount;
+      
+      // Determine status based on payment amount
+      let newStatus: string;
+      if (remainingAmount <= 0) {
+        newStatus = 'paid';
+      } else if (newPaidAmount > 0) {
+        newStatus = 'partially_paid';
+      } else {
+        newStatus = payment.status || 'due';
+      }
+
+      // 2) Update payment_schedules table
+      try {
+        const { data: existingRows, error: selectError } = await supabase
+          .from('payment_schedules')
+          .select('id, paid_amount')
+          .eq('application_id', applicationId)
+          .eq('due_date', paymentDueDate)
+          .limit(1);
+
+        if (selectError) {
+          console.error('❌ markInstallmentAsPaid: select from payment_schedules failed', selectError);
+        } else if (existingRows && existingRows.length > 0) {
+          const existingId = existingRows[0].id;
+          const existingPaidAmount = Number(existingRows[0].paid_amount) || 0;
+          const updatedPaidAmount = existingPaidAmount + paidAmount;
+          const updatedRemainingAmount = originalAmount - updatedPaidAmount;
+
+          const { error: updateError } = await supabase
+            .from('payment_schedules')
+            .update({
+              status: updatedRemainingAmount <= 0 ? 'paid' : 'partially_paid',
+              paid_date: updatedRemainingAmount <= 0 ? paidAt : (existingRows[0].paid_date || paidAt),
+              paid_amount: updatedPaidAmount,
+              remaining_amount: Math.max(0, updatedRemainingAmount),
+              updated_at: paidAt,
+            })
+            .eq('id', existingId);
+
+          if (updateError) {
+            console.error('❌ markInstallmentAsPaid: update payment_schedules failed', updateError);
+          }
+        } else {
+          const { error: insertError } = await supabase
+            .from('payment_schedules')
+            .insert({
+              application_id: applicationId,
+              due_date: paymentDueDate,
+              amount: originalAmount,
+              paid_amount: paidAmount,
+              remaining_amount: Math.max(0, remainingAmount),
+              status: remainingAmount <= 0 ? 'paid' : 'partially_paid',
+              paid_date: remainingAmount <= 0 ? paidAt : undefined,
+              created_at: paidAt,
+              updated_at: paidAt,
+            });
+
+          if (insertError) {
+            console.error('❌ markInstallmentAsPaid: insert into payment_schedules failed', insertError);
+          }
         }
-        return payment;
-      });
+      } catch (scheduleError) {
+        console.error('❌ markInstallmentAsPaid: unexpected error updating payment_schedules', scheduleError);
+      }
+
+      // 3) Update the application installmentPlan JSON
+      const updatedSchedule = [...installmentPlan.schedule];
+      updatedSchedule[paymentIndex] = {
+        ...payment,
+        status: newStatus as any,
+        paidAmount: newPaidAmount,
+        remainingAmount: Math.max(0, remainingAmount),
+        paidDate: remainingAmount <= 0 ? paidAt : (payment.paidDate || paidAt),
+        receiptUrl: receiptUrl || payment.receiptUrl,
+        receiptGeneratedAt: receiptUrl ? paidAt : (payment.receiptGeneratedAt || (remainingAmount <= 0 ? paidAt : undefined)),
+      };
 
       const updateResult = await this.updateApplication(applicationId, {
         installmentPlan: {
@@ -1600,6 +1638,207 @@ class SupabaseApiService {
         status: 'ERROR',
         message: error.message || 'Failed to fetch customer info',
         data: { customerInfo: {} },
+      };
+    }
+  }
+
+  // ==================== SETTLEMENT DISCOUNT SETTINGS ====================
+  async getSettlementDiscountSettings(): Promise<ApiResponse<any>> {
+    try {
+      const response = await supabase
+        .from('settlement_discount_settings')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (response.error && response.error.code !== 'PGRST116') {
+        throw new Error(response.error.message || 'Failed to fetch settlement discount settings');
+      }
+
+      if (!response.data) {
+        // Return default settings if none exist
+        return {
+          status: 'SUCCESS',
+          data: {
+            id: '',
+            name: 'Default Settings',
+            principalDiscountEnabled: false,
+            principalDiscountType: 'percentage',
+            principalDiscountValue: 0,
+            principalDiscountMinAmount: 0,
+            interestDiscountEnabled: false,
+            interestDiscountType: 'percentage',
+            interestDiscountValue: 0,
+            interestDiscountMinAmount: 0,
+            isActive: true,
+            minSettlementAmount: 0,
+            minRemainingPayments: 1,
+            maxDiscountAmount: 0,
+            maxDiscountPercentage: 0,
+            tieredDiscounts: [],
+          },
+          message: 'Using default settlement discount settings'
+        };
+      }
+
+      const settings = {
+        id: response.data.id,
+        name: response.data.name || 'Default Settings',
+        description: response.data.description,
+        principalDiscountEnabled: response.data.principal_discount_enabled || false,
+        principalDiscountType: response.data.principal_discount_type || 'percentage',
+        principalDiscountValue: Number(response.data.principal_discount_value) || 0,
+        principalDiscountMinAmount: Number(response.data.principal_discount_min_amount) || 0,
+        interestDiscountEnabled: response.data.interest_discount_enabled || false,
+        interestDiscountType: response.data.interest_discount_type || 'percentage',
+        interestDiscountValue: Number(response.data.interest_discount_value) || 0,
+        interestDiscountMinAmount: Number(response.data.interest_discount_min_amount) || 0,
+        isActive: response.data.is_active !== false,
+        minSettlementAmount: Number(response.data.min_settlement_amount) || 0,
+        minRemainingPayments: Number(response.data.min_remaining_payments) || 1,
+        maxDiscountAmount: response.data.max_discount_amount ? Number(response.data.max_discount_amount) : 0,
+        maxDiscountPercentage: response.data.max_discount_percentage ? Number(response.data.max_discount_percentage) : 0,
+        tieredDiscounts: Array.isArray(response.data.tiered_discounts) 
+          ? response.data.tiered_discounts.map((tier: any) => ({
+              // Support new format (minMonthsEarly) and backward compatibility with old formats
+              minMonthsEarly: tier.minMonthsEarly !== undefined 
+                ? tier.minMonthsEarly 
+                : (tier.minMonthsIntoLoan !== undefined ? tier.minMonthsIntoLoan : (tier.minPayments || 1)),
+              maxMonthsEarly: tier.maxMonthsEarly !== undefined 
+                ? tier.maxMonthsEarly 
+                : (tier.maxMonthsIntoLoan !== undefined ? tier.maxMonthsIntoLoan : (tier.maxPayments !== undefined ? tier.maxPayments : undefined)),
+              principalDiscount: tier.principalDiscount || 0,
+              interestDiscount: tier.interestDiscount || 0,
+              principalDiscountType: tier.principalDiscountType || 'percentage',
+              interestDiscountType: tier.interestDiscountType || 'percentage',
+            }))
+          : [],
+        createdAt: response.data.created_at,
+        updatedAt: response.data.updated_at,
+        createdBy: response.data.created_by,
+        updatedBy: response.data.updated_by,
+      };
+      
+      return {
+        status: 'SUCCESS',
+        data: settings,
+        message: 'Settlement discount settings fetched successfully'
+      };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch settlement discount settings';
+      return {
+        status: 'ERROR',
+        message: errorMessage,
+        data: null
+      };
+    }
+  }
+
+  async updateSettlementDiscountSettings(settings: Partial<any>): Promise<ApiResponse<any>> {
+    try {
+      const updateData: any = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (settings.name !== undefined) updateData.name = settings.name;
+      if (settings.description !== undefined) updateData.description = settings.description;
+      if (settings.principalDiscountEnabled !== undefined) updateData.principal_discount_enabled = settings.principalDiscountEnabled;
+      if (settings.principalDiscountType !== undefined) updateData.principal_discount_type = settings.principalDiscountType;
+      if (settings.principalDiscountValue !== undefined) updateData.principal_discount_value = settings.principalDiscountValue;
+      if (settings.principalDiscountMinAmount !== undefined) updateData.principal_discount_min_amount = settings.principalDiscountMinAmount;
+      if (settings.interestDiscountEnabled !== undefined) updateData.interest_discount_enabled = settings.interestDiscountEnabled;
+      if (settings.interestDiscountType !== undefined) updateData.interest_discount_type = settings.interestDiscountType;
+      if (settings.interestDiscountValue !== undefined) updateData.interest_discount_value = settings.interestDiscountValue;
+      if (settings.interestDiscountMinAmount !== undefined) updateData.interest_discount_min_amount = settings.interestDiscountMinAmount;
+      if (settings.isActive !== undefined) updateData.is_active = settings.isActive;
+      if (settings.minSettlementAmount !== undefined) updateData.min_settlement_amount = settings.minSettlementAmount;
+      if (settings.minRemainingPayments !== undefined) updateData.min_remaining_payments = settings.minRemainingPayments;
+      if (settings.maxDiscountAmount !== undefined) updateData.max_discount_amount = settings.maxDiscountAmount > 0 ? settings.maxDiscountAmount : null;
+      if (settings.maxDiscountPercentage !== undefined) updateData.max_discount_percentage = settings.maxDiscountPercentage > 0 ? settings.maxDiscountPercentage : null;
+      if (settings.tieredDiscounts !== undefined) {
+        updateData.tiered_discounts = settings.tieredDiscounts.map(tier => ({
+          // Use new format (minMonthsEarly) or fallback to old format for backward compatibility
+          minMonthsEarly: tier.minMonthsEarly !== undefined 
+            ? tier.minMonthsEarly 
+            : (tier.minMonthsIntoLoan !== undefined ? tier.minMonthsIntoLoan : 1),
+          maxMonthsEarly: tier.maxMonthsEarly !== undefined 
+            ? tier.maxMonthsEarly 
+            : (tier.maxMonthsIntoLoan !== undefined ? tier.maxMonthsIntoLoan : undefined),
+          principalDiscount: tier.principalDiscount,
+          interestDiscount: tier.interestDiscount,
+          principalDiscountType: tier.principalDiscountType,
+          interestDiscountType: tier.interestDiscountType,
+        }));
+      }
+
+      // Get current user for updated_by
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        updateData.updated_by = user.id;
+      }
+
+      let response;
+      if (settings.id) {
+        // Update existing
+        response = await supabase
+          .from('settlement_discount_settings')
+          .update(updateData)
+          .eq('id', settings.id)
+          .select()
+          .single();
+      } else {
+        // Create new
+        if (user) {
+          updateData.created_by = user.id;
+        }
+        response = await supabase
+          .from('settlement_discount_settings')
+          .insert(updateData)
+          .select()
+          .single();
+      }
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to update settlement discount settings');
+      }
+
+      const updatedSettings = {
+        id: response.data.id,
+        name: response.data.name,
+        description: response.data.description,
+        principalDiscountEnabled: response.data.principal_discount_enabled,
+        principalDiscountType: response.data.principal_discount_type,
+        principalDiscountValue: Number(response.data.principal_discount_value),
+        principalDiscountMinAmount: Number(response.data.principal_discount_min_amount),
+        interestDiscountEnabled: response.data.interest_discount_enabled,
+        interestDiscountType: response.data.interest_discount_type,
+        interestDiscountValue: Number(response.data.interest_discount_value),
+        interestDiscountMinAmount: Number(response.data.interest_discount_min_amount),
+        isActive: response.data.is_active,
+        minSettlementAmount: Number(response.data.min_settlement_amount),
+        minRemainingPayments: Number(response.data.min_remaining_payments),
+        maxDiscountAmount: response.data.max_discount_amount ? Number(response.data.max_discount_amount) : 0,
+        maxDiscountPercentage: response.data.max_discount_percentage ? Number(response.data.max_discount_percentage) : 0,
+        tieredDiscounts: Array.isArray(response.data.tiered_discounts) ? response.data.tiered_discounts : [],
+        createdAt: response.data.created_at,
+        updatedAt: response.data.updated_at,
+        createdBy: response.data.created_by,
+        updatedBy: response.data.updated_by,
+      };
+      
+      return {
+        status: 'SUCCESS',
+        data: updatedSettings,
+        message: 'Settlement discount settings updated successfully'
+      };
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update settlement discount settings';
+      return {
+        status: 'ERROR',
+        message: errorMessage,
+        data: null
       };
     }
   }

@@ -1,0 +1,2 @@
+export { SettlementDiscountSettingsPage } from './SettlementDiscountSettingsPage';
+

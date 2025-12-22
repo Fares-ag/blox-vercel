@@ -21,7 +21,14 @@ class AuthService {
           .single();
 
         // If we get a 406 error immediately, skip the email fallback
-        if (error?.code === 'PGRST116' || error?.message?.includes('406')) {
+        // Check for 406 in status, code, or message
+        const is406Error = error?.status === 406 || 
+                          error?.code === 'PGRST116' || 
+                          error?.message?.includes('406') ||
+                          error?.message?.includes('Not Acceptable');
+
+        if (is406Error) {
+          // Silently use metadata - this is expected if RLS blocks access
           return roleFromMetadata || 'customer';
         }
 
@@ -30,7 +37,7 @@ class AuthService {
         }
 
         // Only try email fallback if ID lookup didn't return 406
-        if (error && error.code !== 'PGRST116' && !error.message?.includes('406')) {
+        if (error && !is406Error) {
           const { data: emailData, error: emailError } = await supabase
             .from('users')
             .select('role')
@@ -42,7 +49,12 @@ class AuthService {
           }
 
           // If email lookup also returns 406, use metadata
-          if (emailError?.code === 'PGRST116' || emailError?.message?.includes('406')) {
+          const isEmail406Error = emailError?.status === 406 || 
+                                 emailError?.code === 'PGRST116' || 
+                                 emailError?.message?.includes('406') ||
+                                 emailError?.message?.includes('Not Acceptable');
+
+          if (isEmail406Error) {
             return roleFromMetadata || 'customer';
           }
         }
@@ -51,7 +63,12 @@ class AuthService {
         return roleFromMetadata || 'customer';
       } catch (error: any) {
         // If it's a 406 or table access error, use metadata immediately
-        if (error?.code === 'PGRST116' || error?.message?.includes('406')) {
+        const is406Error = error?.status === 406 || 
+                          error?.code === 'PGRST116' || 
+                          error?.message?.includes('406') ||
+                          error?.message?.includes('Not Acceptable');
+
+        if (is406Error) {
           return roleFromMetadata || 'customer';
         }
         return roleFromMetadata || 'customer';

@@ -7,5 +7,6 @@ export { optimizedSupabaseService } from './supabase-optimized.service';
 export { loggingService, LogLevel } from './logging.service';
 export { analyticsService } from './analytics.service';
 export { reportExportService } from './report-export.service';
+export { receiptService, ReceiptService, type ReceiptData } from './receipt.service';
 export { supabaseCache } from './supabase-cache.service';
 

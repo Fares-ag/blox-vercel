@@ -26,14 +26,18 @@ export const Card: React.FC<CardPropsCustom> = React.memo(({
   const formatValue = () => {
     if (value === undefined || value === null) return '';
     
+    // Handle NaN values
+    const numValue = Number(value);
+    if (isNaN(numValue)) return '0';
+    
     if (moduleType === 'currency') {
       // Use formatCurrency for consistency with CurrencyConfig
-      return formatCurrency(value);
+      return formatCurrency(numValue);
     } else if (moduleType === 'percentage') {
-      return `${value}%`;
+      return `${numValue}%`;
     }
     // Format regular numbers with commas for thousands
-    return Number(value).toLocaleString('en-US', { 
+    return numValue.toLocaleString('en-US', { 
       minimumFractionDigits: 0, 
       maximumFractionDigits: 0 
     });

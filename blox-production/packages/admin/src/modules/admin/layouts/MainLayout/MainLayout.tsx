@@ -20,6 +20,7 @@ const adminMenuItems: MenuItem[] = [
   { id: 'insurance-rates', label: 'Insurance & Rates', path: '/admin/insurance-rates' },
   { id: 'packages', label: 'Packages', path: '/admin/packages' },
   { id: 'ledgers', label: 'Ledgers', path: '/admin/ledgers' },
+  { id: 'settings', label: 'Settings', path: '/admin/settings/settlement-discounts' },
 ];
 
 export const MainLayout: React.FC = () => {

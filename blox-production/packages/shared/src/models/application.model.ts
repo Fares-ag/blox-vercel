@@ -135,6 +135,9 @@ export interface PaymentSchedule {
   status: PaymentStatus;
   paidDate?: string;
   transactionId?: string;
+  // Partial payment fields
+  paidAmount?: number; // Amount paid so far
+  remainingAmount?: number; // Amount still due
   // Deferral-related fields (optional; derived from payment_deferrals or computed)
   isDeferred?: boolean;
   isPartiallyDeferred?: boolean;
@@ -146,6 +149,9 @@ export interface PaymentSchedule {
     url: string;
     uploadedAt: string;
   };
+  // Receipt information
+  receiptUrl?: string; // URL to download receipt
+  receiptGeneratedAt?: string; // When receipt was generated
 }
 
 export type PaymentStatus = 'due' | 'active' | 'paid' | 'unpaid' | 'partially_paid' | 'upcoming';

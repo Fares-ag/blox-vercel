@@ -246,6 +246,53 @@ export const ApplicationDetailPage: React.FC = () => {
     });
   }, [navigate, id, selected]);
 
+  const handleSettleAllPayments = useCallback(async () => {
+    if (!selected || !id) return;
+
+    // Calculate total remaining payments
+    const remainingPayments = selected.installmentPlan?.schedule?.filter(
+      (payment: PaymentSchedule) => payment.status !== 'paid'
+    ) || [];
+
+    if (remainingPayments.length === 0) {
+      toast.info('All payments have already been settled.');
+      return;
+    }
+
+    const totalAmount = remainingPayments.reduce((sum: number, payment: PaymentSchedule) => sum + payment.amount, 0);
+
+    // Try to calculate discount (optional - don't block if it fails)
+    let finalAmount = totalAmount;
+    try {
+      const settingsResponse = await supabaseApiService.getSettlementDiscountSettings();
+      if (settingsResponse.status === 'SUCCESS' && settingsResponse.data) {
+        const { calculateSettlementDiscount } = await import('@shared/utils/settlement-discount.utils');
+        const calculation = calculateSettlementDiscount(
+          selected,
+          remainingPayments,
+          settingsResponse.data,
+          new Date()
+        );
+        if (calculation.totalDiscount > 0) {
+          finalAmount = calculation.finalAmount;
+        }
+      }
+    } catch (error) {
+      // Discount calculation failed - use original amount
+      console.debug('Could not calculate discount, using original amount:', error);
+    }
+
+    navigate(`/customer/applications/${id}/payment`, {
+      state: {
+        amount: totalAmount, // Original amount for reference
+        finalAmount, // Discounted amount if applicable
+        isSettlement: true,
+        settleAll: true,
+        remainingPayments: remainingPayments.length,
+      },
+    });
+  }, [navigate, id, selected]);
+
   if (loading) {
     return (
       <Box className="application-detail-page">
@@ -960,11 +1007,39 @@ export const ApplicationDetailPage: React.FC = () => {
 
         {activeTab === 2 && (
           <Paper className="tab-panel">
-            <Box className="section-header" sx={{ mb: 3 }}>
-              <Schedule className="section-icon" />
-              <Typography variant="h5" className="section-title">
-                Installment Schedule
-              </Typography>
+            <Box className="section-header" sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Schedule className="section-icon" />
+                <Typography variant="h5" className="section-title">
+                  Installment Schedule
+                </Typography>
+              </Box>
+              {application.status === 'active' && application.installmentPlan?.schedule && (() => {
+                const remainingPayments = application.installmentPlan.schedule.filter(
+                  (payment: PaymentSchedule) => payment.status !== 'paid'
+                );
+                const totalRemaining = remainingPayments.reduce((sum: number, payment: PaymentSchedule) => sum + payment.amount, 0);
+                
+                if (remainingPayments.length > 0) {
+                  return (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      startIcon={<AttachMoney />}
+                      onClick={handleSettleAllPayments}
+                      sx={{
+                        backgroundColor: '#00CFA2',
+                        '&:hover': {
+                          backgroundColor: '#00B892',
+                        },
+                      }}
+                    >
+                      Settle All Remaining ({formatCurrency(totalRemaining)})
+                    </Button>
+                  );
+                }
+                return null;
+              })()}
             </Box>
             <Divider sx={{ mb: 3 }} />
             {application.installmentPlan && application.installmentPlan.schedule && application.installmentPlan.schedule.length > 0 ? (
@@ -979,6 +1054,7 @@ export const ApplicationDetailPage: React.FC = () => {
                       <TableCell>Paid Date</TableCell>
                       <TableCell align="right">Customer Share</TableCell>
                       <TableCell align="right">Blox Share</TableCell>
+                      <TableCell align="center">Receipt</TableCell>
                       <TableCell align="center">Actions</TableCell>
                     </TableRow>
                   </TableHead>
@@ -1003,7 +1079,21 @@ export const ApplicationDetailPage: React.FC = () => {
                           <TableCell>{index + 1}</TableCell>
                           <TableCell>{formatDateTable(payment.dueDate)}</TableCell>
                           <TableCell sx={{ fontWeight: 600 }}>
-                            {formatCurrency(payment.amount)}
+                            <Box>
+                              {formatCurrency(payment.amount)}
+                              {payment.paidAmount !== undefined && payment.paidAmount > 0 && (
+                                <Box sx={{ mt: 0.5 }}>
+                                  <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                    Paid: {formatCurrency(payment.paidAmount)}
+                                  </Typography>
+                                  {payment.remainingAmount !== undefined && payment.remainingAmount > 0 && (
+                                    <Typography variant="caption" color="warning.main" sx={{ display: 'block' }}>
+                                      Remaining: {formatCurrency(payment.remainingAmount)}
+                                    </Typography>
+                                  )}
+                                </Box>
+                              )}
+                            </Box>
                           </TableCell>
                           <TableCell>
                             <StatusBadge status={payment.status} type="payment" />
@@ -1042,6 +1132,24 @@ export const ApplicationDetailPage: React.FC = () => {
                             >
                               {formatCurrency(bloxOwnership)}
                             </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            {payment.receiptUrl ? (
+                              <Button
+                                size="small"
+                                startIcon={<FileDownload />}
+                                onClick={() => {
+                                  window.open(payment.receiptUrl, '_blank');
+                                }}
+                                variant="outlined"
+                              >
+                                Download
+                              </Button>
+                            ) : (
+                              <Typography variant="caption" color="text.secondary">
+                                -
+                              </Typography>
+                            )}
                           </TableCell>
                           <TableCell align="center">
                             {payment.status !== 'paid' && application.status === 'active' && (

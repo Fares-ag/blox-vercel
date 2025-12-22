@@ -51,6 +51,7 @@ const LedgersListPage = React.lazy(() => import('../features/ledgers/pages/Ledge
 const ClearStoragePage = React.lazy(() => import('../features/dev-tools/pages/ClearStoragePage/ClearStoragePage').then(m => ({ default: m.ClearStoragePage })));
 const UsersListPage = React.lazy(() => import('../features/users/pages/UsersListPage/UsersListPage').then(m => ({ default: m.UsersListPage })));
 const UserDetailPage = React.lazy(() => import('../features/users/pages/UserDetailPage/UserDetailPage').then(m => ({ default: m.UserDetailPage })));
+const SettlementDiscountSettingsPage = React.lazy(() => import('../features/settings/pages/SettlementDiscountSettingsPage/SettlementDiscountSettingsPage').then(m => ({ default: m.SettlementDiscountSettingsPage })));
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -121,6 +122,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="users" element={<UsersListPage />} />
         <Route path="users/:email" element={<UserDetailPage />} />
         <Route path="ledgers" element={<LedgersListPage />} />
+        <Route path="settings/settlement-discounts" element={<SettlementDiscountSettingsPage />} />
         <Route path="dev-tools/clear-storage" element={<ClearStoragePage />} />
       </Route>
 

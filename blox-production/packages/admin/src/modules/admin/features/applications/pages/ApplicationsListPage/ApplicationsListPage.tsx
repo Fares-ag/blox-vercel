@@ -121,27 +121,32 @@ export const ApplicationsListPage: React.FC = () => {
       const schedule = app.installmentPlan?.schedule || [];
       const unpaidForApp = schedule.reduce((acc, payment) => {
         if (payment.status === 'paid') return acc;
-        return acc + (payment.amount || 0);
+        const amount = Number(payment.amount) || 0;
+        return acc + amount;
       }, 0);
       return sum + unpaidForApp;
     }, 0);
 
     // Total Receivable = total loan amount for the filtered applications
-    const totalReceivable = filtered.reduce((sum, app) => sum + (app.loanAmount || 0), 0);
+    const totalReceivable = filtered.reduce((sum, app) => {
+      const loanAmount = Number(app.loanAmount) || 0;
+      return sum + loanAmount;
+    }, 0);
 
     // Profitability: mirror the main dashboard formula using these totals:
     // (receivable - payable) / (receivable + payable), rounded to 2 decimals
     let profitability = 0;
-    if (totalPayable + totalReceivable > 0) {
+    const total = totalPayable + totalReceivable;
+    if (total > 0 && !isNaN(totalPayable) && !isNaN(totalReceivable)) {
       const raw =
-        ((totalReceivable - totalPayable) / (totalReceivable + totalPayable)) * 100;
+        ((totalReceivable - totalPayable) / total) * 100;
       profitability = Math.round(raw * 100) / 100;
     }
 
     return {
-      totalPayable,
-      totalReceivable,
-      profitability,
+      totalPayable: isNaN(totalPayable) ? 0 : totalPayable,
+      totalReceivable: isNaN(totalReceivable) ? 0 : totalReceivable,
+      profitability: isNaN(profitability) ? 0 : profitability,
       activeApplications: filtered.filter((app) => app.status === 'active' || app.status === 'under_review').length,
     };
   }, [list, statusFilter]);
@@ -390,13 +395,15 @@ export const ApplicationsListPage: React.FC = () => {
       <Box className="metrics-grid">
         <Card
           title="Total Payable"
-          value={`${metrics.totalPayable.toFixed(2)} QAR`}
+          value={metrics.totalPayable}
+          moduleType="currency"
           icon={<AttachMoney sx={{ color: '#00CFA2' }} />}
           className="metric-card payable"
         />
         <Card
           title="Total Receivable"
-          value={`${metrics.totalReceivable.toFixed(2)} QAR`}
+          value={metrics.totalReceivable}
+          moduleType="currency"
           icon={<AccountBalance sx={{ color: '#2196F3' }} />}
           className="metric-card receivable"
         />
@@ -409,7 +416,8 @@ export const ApplicationsListPage: React.FC = () => {
         />
         <Card
           title="Active Applications"
-          value={`${metrics.activeApplications} Applications`}
+          value={metrics.activeApplications}
+          moduleType="number"
           icon={<People sx={{ color: '#00CFA2' }} />}
           className="metric-card active"
         />

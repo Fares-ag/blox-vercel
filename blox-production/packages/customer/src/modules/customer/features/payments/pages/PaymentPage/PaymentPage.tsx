@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -12,6 +12,7 @@ import {
   Divider,
   Alert,
   CircularProgress,
+  Checkbox,
 } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
 import {
@@ -22,12 +23,15 @@ import {
   Lock,
   CheckCircle,
   Stars,
+  AttachMoney,
 } from '@mui/icons-material';
-import { supabaseApiService } from '@shared/services';
+import { supabaseApiService, receiptService, supabase } from '@shared/services';
 import type { PaymentMethod } from '@shared/models/payment.model';
 import type { Application, PaymentSchedule } from '@shared/models/application.model';
 import { Button as CustomButton, Loading } from '@shared/components';
 import { formatCurrency } from '@shared/utils/formatters';
+import { calculateSettlementDiscount } from '@shared/utils/settlement-discount.utils';
+import type { SettlementDiscountSettings } from '@shared/models/settlement-discount.model';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import { DeferPaymentDialog } from '../../../membership/components/DeferPaymentDialog/DeferPaymentDialog';
@@ -91,6 +95,13 @@ export const PaymentPage: React.FC = () => {
   const [hasMembership, setHasMembership] = useState(false);
   const [isDailyPayment, setIsDailyPayment] = useState(false);
   const [dailyPaymentDate, setDailyPaymentDate] = useState<string | null>(null);
+  const [isSettlement, setIsSettlement] = useState(false);
+  const [remainingPaymentsCount, setRemainingPaymentsCount] = useState(0);
+  const [customAmount, setCustomAmount] = useState<string>('');
+  const [useCustomAmount, setUseCustomAmount] = useState(false);
+  const [discountSettings, setDiscountSettings] = useState<SettlementDiscountSettings | null>(null);
+  const [discountCalculation, setDiscountCalculation] = useState<any>(null);
+  const [loadingDiscount, setLoadingDiscount] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -116,7 +127,10 @@ export const PaymentPage: React.FC = () => {
     if (location.state?.amount) {
       setAmount(location.state.amount);
     } else if (paymentSchedule) {
-      setAmount(paymentSchedule.amount);
+      // For partial payments, use remaining amount if available, otherwise full amount
+      const remainingAmount = paymentSchedule.remainingAmount ?? paymentSchedule.amount;
+      setAmount(remainingAmount);
+      setCustomAmount(remainingAmount.toString());
     }
   }, [location.state, paymentSchedule]);
 
@@ -142,7 +156,59 @@ export const PaymentPage: React.FC = () => {
       setIsDailyPayment(false);
       setDailyPaymentDate(null);
     }
+
+    // Handle settlement payment
+    if (location.state?.isSettlement || location.state?.settleAll) {
+      setIsSettlement(true);
+      setAmount(location.state.amount || 0);
+      setRemainingPaymentsCount(location.state.remainingPayments || 0);
+      // Load discount settings and calculate discount
+      if (application) {
+        loadSettlementDiscount();
+      }
+    } else {
+      setIsSettlement(false);
+      setDiscountCalculation(null);
+    }
   }, [location.state, application]);
+
+  const loadSettlementDiscount = useCallback(async () => {
+    if (!application || !isSettlement) return;
+    
+    try {
+      setLoadingDiscount(true);
+      const settingsResponse = await supabaseApiService.getSettlementDiscountSettings();
+      
+      if (settingsResponse.status === 'SUCCESS' && settingsResponse.data) {
+        setDiscountSettings(settingsResponse.data);
+        
+        // Calculate discount
+        const remainingPayments = application.installmentPlan?.schedule?.filter(
+          (p: PaymentSchedule) => p.status !== 'paid'
+        ) || [];
+        
+        if (remainingPayments.length > 0) {
+          const calculation = calculateSettlementDiscount(
+            application,
+            remainingPayments,
+            settingsResponse.data,
+            new Date()
+          );
+          setDiscountCalculation(calculation);
+          
+          // Update amount with discounted amount if discount applies
+          if (calculation.totalDiscount > 0) {
+            setAmount(calculation.finalAmount);
+          }
+        }
+      }
+    } catch (error: unknown) {
+      console.error('❌ Failed to load settlement discount:', error);
+      // Don't show error to user - discount is optional
+    } finally {
+      setLoadingDiscount(false);
+    }
+  }, [application, isSettlement]);
 
   const loadApplication = async () => {
     try {
@@ -274,14 +340,75 @@ export const PaymentPage: React.FC = () => {
       // Simulate payment processing
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      // Mark the installment as paid in Supabase for non-daily payments.
-      // Daily payments are currently treated as a separate flow and are not yet
-      // reflected at the installment level.
-      if (!isDailyPayment && paymentSchedule) {
+      // Handle settlement payment (settle all remaining payments)
+      if (isSettlement && application.installmentPlan?.schedule) {
+        const remainingPayments = application.installmentPlan.schedule.filter(
+          (payment: PaymentSchedule) => payment.status !== 'paid'
+        );
+
+        // Use discounted amount if discount was calculated
+        const finalSettlementAmount = discountCalculation && discountCalculation.totalDiscount > 0
+          ? discountCalculation.finalAmount
+          : amount;
+
+        // Mark all remaining payments as paid
+        // For settlement, we distribute the discounted amount proportionally across payments
+        let allSucceeded = true;
+        const totalOriginalAmount = remainingPayments.reduce((sum, p) => sum + p.amount, 0);
+        
+        for (const payment of remainingPayments) {
+          // Calculate proportional amount for this payment
+          const paymentProportion = payment.amount / totalOriginalAmount;
+          const discountedPaymentAmount = finalSettlementAmount * paymentProportion;
+          
+          const result = await supabaseApiService.markInstallmentAsPaid(
+            application.id,
+            payment.dueDate,
+            discountedPaymentAmount
+          );
+
+          if (result.status !== 'SUCCESS') {
+            console.error(`❌ Failed to mark installment as paid for ${payment.dueDate}:`, result.message);
+            allSucceeded = false;
+          } else {
+            // Update local application state after each successful payment
+            setApplication(result.data);
+          }
+        }
+
+        if (!allSucceeded) {
+          toast.warning('Payment processed, but some installments may not have been updated. Please contact support if this persists.');
+        } else {
+          const discountMessage = discountCalculation && discountCalculation.totalDiscount > 0
+            ? ` with ${formatCurrency(discountCalculation.totalDiscount)} early settlement discount`
+            : '';
+          toast.success(`Successfully settled all ${remainingPayments.length} remaining payments${discountMessage}!`);
+        }
+      } else if (!isDailyPayment && paymentSchedule) {
+        // Determine the amount to pay (custom amount or full amount)
+        const paidAmount = useCustomAmount && customAmount 
+          ? parseFloat(customAmount) 
+          : amount;
+        
+        // Validate paid amount
+        const maxAmount = paymentSchedule.remainingAmount ?? paymentSchedule.amount;
+        if (paidAmount > maxAmount) {
+          toast.error(`Payment amount cannot exceed ${formatCurrency(maxAmount)}`);
+          return;
+        }
+        if (paidAmount <= 0) {
+          toast.error('Payment amount must be greater than 0');
+          return;
+        }
+
+        // Generate transaction ID
+        const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Mark the installment as paid (fully or partially) in Supabase
         const result = await supabaseApiService.markInstallmentAsPaid(
           application.id,
           paymentSchedule.dueDate,
-          paymentSchedule.amount
+          paidAmount
         );
 
         if (result.status !== 'SUCCESS') {
@@ -290,12 +417,88 @@ export const PaymentPage: React.FC = () => {
         } else {
           // Refresh local application state so the UI reflects the updated schedule
           setApplication(result.data);
+          
+          // Generate and store receipt
+          try {
+            const updatedPayment = result.data.installmentPlan?.schedule?.find(
+              (p: PaymentSchedule) => p.dueDate === paymentSchedule.dueDate
+            );
+            
+            if (updatedPayment) {
+              // Generate receipt
+              const receiptDataUrl = await receiptService.generateReceipt({
+                application: result.data,
+                payment: updatedPayment,
+                paidAmount,
+                transactionId,
+                paymentMethod: selectedMethod,
+                paidDate: new Date().toISOString(),
+              });
+
+              // Store receipt URL in payment schedule
+              const receiptBlob = await receiptService.generateAsBlob({
+                application: result.data,
+                payment: updatedPayment,
+                paidAmount,
+                transactionId,
+                paymentMethod: selectedMethod,
+                paidDate: new Date().toISOString(),
+              });
+
+              // Upload receipt to Supabase Storage
+              const receiptFileName = `receipt-${transactionId}.pdf`;
+              const receiptPath = `receipts/${application.id}/${receiptFileName}`;
+              
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('documents')
+                .upload(receiptPath, receiptBlob, {
+                  cacheControl: '3600',
+                  upsert: false,
+                });
+
+              if (!uploadError && uploadData) {
+                const { data: urlData } = supabase.storage
+                  .from('documents')
+                  .getPublicUrl(receiptPath);
+
+                // Update payment schedule with receipt URL
+                const updatedSchedule = result.data.installmentPlan?.schedule?.map((p: PaymentSchedule) => {
+                  if (p.dueDate === paymentSchedule.dueDate) {
+                    return {
+                      ...p,
+                      receiptUrl: urlData.publicUrl,
+                      receiptGeneratedAt: new Date().toISOString(),
+                    };
+                  }
+                  return p;
+                });
+
+                if (updatedSchedule && result.data.installmentPlan) {
+                  await supabaseApiService.updateApplication(application.id, {
+                    installmentPlan: {
+                      ...result.data.installmentPlan,
+                      schedule: updatedSchedule,
+                    } as any,
+                  });
+                }
+              }
+            }
+          } catch (receiptError) {
+            console.error('❌ Failed to generate receipt:', receiptError);
+            // Don't fail the payment if receipt generation fails
+          }
         }
       }
 
       toast.success('Payment processed successfully!');
       navigate(`/customer/my-applications/${id}/payment-confirmation`, {
-        state: { transactionId: `TXN-${Date.now()}`, amount, method: selectedMethod },
+        state: { 
+          transactionId: `TXN-${Date.now()}`, 
+          amount, 
+          method: selectedMethod,
+          isSettlement,
+          paymentsSettled: isSettlement ? remainingPaymentsCount : 1,
+        },
       });
     } catch (error: any) {
       toast.error(error.message || 'Payment failed. Please try again.');
@@ -391,6 +594,18 @@ export const PaymentPage: React.FC = () => {
       <Typography variant="h4" className="page-title">
         Make Payment
       </Typography>
+
+      {isSettlement && (
+        <Alert severity="success" sx={{ mb: 3 }}>
+          <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
+            Settle All Remaining Payments
+          </Typography>
+          <Typography variant="body2">
+            You are about to settle all {remainingPaymentsCount} remaining payment(s) for this application. 
+            This will mark all outstanding installments as paid.
+          </Typography>
+        </Alert>
+      )}
 
       {isDailyPayment && dailyPaymentDate && (
         <Alert severity="info" sx={{ mb: 3 }}>
@@ -567,7 +782,7 @@ export const PaymentPage: React.FC = () => {
 
             <Divider sx={{ my: 3 }} />
 
-            {canDefer && (
+            {canDefer && !isSettlement && (
               <>
                 <CustomButton
                   variant="outlined"
@@ -595,7 +810,12 @@ export const PaymentPage: React.FC = () => {
               disabled={!amount || amount <= 0}
               startIcon={processing ? <CircularProgress size={20} /> : <CheckCircle />}
             >
-              {processing ? 'Processing Payment...' : `Pay ${formatCurrency(amount)}`}
+              {processing 
+                ? 'Processing Payment...' 
+                : isSettlement 
+                  ? `Settle All Payments (${formatCurrency(discountCalculation && discountCalculation.totalDiscount > 0 ? discountCalculation.finalAmount : amount)})`
+                  : `Pay ${formatCurrency(amount)}`
+              }
             </CustomButton>
           </Paper>
         </Box>
@@ -613,20 +833,217 @@ export const PaymentPage: React.FC = () => {
                 {application.id}
               </Typography>
             </Box>
-            {paymentSchedule && (
-              <Box className="summary-item">
-                <Typography variant="body2" color="text.secondary">
-                  Payment Due Date
-                </Typography>
-                <Typography variant="body1" fontWeight={600}>
-                  {new Date(paymentSchedule.dueDate).toLocaleDateString()}
-                </Typography>
+            {isSettlement ? (
+              <>
+                <Box className="summary-item">
+                  <Typography variant="body2" color="text.secondary">
+                    Payments to Settle
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    {remainingPaymentsCount} remaining payment(s)
+                  </Typography>
+                </Box>
+                {loadingDiscount ? (
+                  <Box className="summary-item">
+                    <Typography variant="body2" color="text.secondary">
+                      Calculating discount...
+                    </Typography>
+                    <CircularProgress size={20} sx={{ mt: 1 }} />
+                  </Box>
+                ) : discountCalculation && discountCalculation.totalDiscount > 0 ? (
+                  <>
+                    <Box className="summary-item">
+                      <Typography variant="body2" color="text.secondary">
+                        Original Amount
+                      </Typography>
+                      <Typography variant="body1" fontWeight={600}>
+                        {formatCurrency(discountCalculation.originalTotal)}
+                      </Typography>
+                    </Box>
+                    <Box className="summary-item">
+                      <Typography variant="body2" color="text.secondary">
+                        Early Settlement Discount
+                      </Typography>
+                      <Typography variant="body1" fontWeight={600} sx={{ color: '#10B981' }}>
+                        -{formatCurrency(discountCalculation.totalDiscount)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                        {discountCalculation.monthsEarly.toFixed(1)} months early
+                      </Typography>
+                    </Box>
+                    <Divider sx={{ my: 2 }} />
+                    <Box className="summary-item">
+                      <Typography variant="body2" color="text.secondary">
+                        Final Amount to Pay
+                      </Typography>
+                      <Typography variant="h6" fontWeight={700} sx={{ color: '#00CFA2' }}>
+                        {formatCurrency(discountCalculation.finalAmount)}
+                      </Typography>
+                    </Box>
+                  </>
+                ) : discountCalculation && discountCalculation.monthsEarly < 1 ? (
+                  <Box className="summary-item">
+                    <Alert severity="info" sx={{ mt: 1 }}>
+                      <Typography variant="body2">
+                        No discount available. You must pay at least 1 month early to qualify for early settlement discounts.
+                      </Typography>
+                    </Alert>
+                  </Box>
+                ) : null}
+                <Box className="summary-item">
+                  <Typography variant="body2" color="text.secondary">
+                    Type
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600} sx={{ color: '#00CFA2' }}>
+                    Full Settlement
+                  </Typography>
+                </Box>
+              </>
+            ) : paymentSchedule ? (
+              <>
+                <Box className="summary-item">
+                  <Typography variant="body2" color="text.secondary">
+                    Payment Due Date
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    {new Date(paymentSchedule.dueDate).toLocaleDateString()}
+                  </Typography>
+                </Box>
+                {paymentSchedule.remainingAmount !== undefined && paymentSchedule.remainingAmount > 0 && (
+                  <Box className="summary-item">
+                    <Typography variant="body2" color="text.secondary">
+                      Original Amount
+                    </Typography>
+                    <Typography variant="body1" fontWeight={600}>
+                      {formatCurrency(paymentSchedule.amount)}
+                    </Typography>
+                  </Box>
+                )}
+                {paymentSchedule.paidAmount !== undefined && paymentSchedule.paidAmount > 0 && (
+                  <Box className="summary-item">
+                    <Typography variant="body2" color="text.secondary">
+                      Already Paid
+                    </Typography>
+                    <Typography variant="body1" fontWeight={600} sx={{ color: '#00CFA2' }}>
+                      {formatCurrency(paymentSchedule.paidAmount)}
+                    </Typography>
+                  </Box>
+                )}
+                {paymentSchedule.remainingAmount !== undefined && paymentSchedule.remainingAmount > 0 && (
+                  <Box className="summary-item">
+                    <Typography variant="body2" color="text.secondary">
+                      Remaining Amount
+                    </Typography>
+                    <Typography variant="body1" fontWeight={600} sx={{ color: '#ff9800' }}>
+                      {formatCurrency(paymentSchedule.remainingAmount)}
+                    </Typography>
+                  </Box>
+                )}
+              </>
+            ) : null}
+            <Divider sx={{ my: 2 }} />
+            
+            {/* Custom Amount Input - Always Visible */}
+            {!isSettlement && paymentSchedule && (paymentSchedule.remainingAmount === undefined || paymentSchedule.remainingAmount > 0) && (
+              <Box 
+                sx={{ 
+                  mb: 3,
+                  p: 2,
+                  border: '2px solid',
+                  borderColor: useCustomAmount ? '#00CFA2' : '#e0e0e0',
+                  borderRadius: 2,
+                  backgroundColor: useCustomAmount ? 'rgba(0, 207, 162, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  transition: 'all 0.3s ease',
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <AttachMoney sx={{ color: useCustomAmount ? '#00CFA2' : '#666', fontSize: 20 }} />
+                  <Typography 
+                    variant="subtitle2" 
+                    fontWeight={600}
+                    sx={{ color: useCustomAmount ? '#00CFA2' : '#333' }}
+                  >
+                    Pay Custom Amount (Optional)
+                  </Typography>
+                </Box>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={useCustomAmount}
+                      onChange={(e) => {
+                        setUseCustomAmount(e.target.checked);
+                        if (!e.target.checked) {
+                          const remainingAmount = paymentSchedule.remainingAmount ?? paymentSchedule.amount;
+                          setAmount(remainingAmount);
+                          setCustomAmount(remainingAmount.toString());
+                        }
+                      }}
+                      sx={{
+                        color: '#00CFA2',
+                        '&.Mui-checked': {
+                          color: '#00CFA2',
+                        },
+                      }}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" fontWeight={500}>
+                      I want to pay a different amount
+                    </Typography>
+                  }
+                />
+                <TextField
+                  fullWidth
+                  type="number"
+                  label="Enter Custom Payment Amount"
+                  value={customAmount}
+                  disabled={!useCustomAmount}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setCustomAmount(value);
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue) && numValue > 0) {
+                      const maxAmount = paymentSchedule.remainingAmount ?? paymentSchedule.amount;
+                      if (numValue <= maxAmount) {
+                        setAmount(numValue);
+                      } else {
+                        setAmount(maxAmount);
+                        setCustomAmount(maxAmount.toString());
+                        toast.warning(`Maximum amount is ${formatCurrency(maxAmount)}`);
+                      }
+                    }
+                  }}
+                  inputProps={{ 
+                    min: 0.01,
+                    max: paymentSchedule.remainingAmount ?? paymentSchedule.amount,
+                    step: 0.01
+                  }}
+                  helperText={
+                    useCustomAmount 
+                      ? `Maximum: ${formatCurrency(paymentSchedule.remainingAmount ?? paymentSchedule.amount)}`
+                      : 'Enable the checkbox above to enter a custom amount'
+                  }
+                  sx={{ 
+                    mt: 2,
+                    '& .MuiInputBase-root': {
+                      backgroundColor: useCustomAmount ? '#fff' : '#f5f5f5',
+                    },
+                  }}
+                />
+                {useCustomAmount && (
+                  <Alert severity="info" sx={{ mt: 2 }}>
+                    <Typography variant="body2">
+                      You can pay any amount up to {formatCurrency(paymentSchedule.remainingAmount ?? paymentSchedule.amount)}. 
+                      The remaining balance will be due on the next payment date.
+                    </Typography>
+                  </Alert>
+                )}
               </Box>
             )}
-            <Divider sx={{ my: 2 }} />
+            
             <Box className="summary-item">
               <Typography variant="body2" color="text.secondary">
-                Amount to Pay
+                {isSettlement ? 'Total Amount to Pay' : 'Amount to Pay'}
               </Typography>
               <Typography variant="h5" className="amount">
                 {formatCurrency(amount)}
