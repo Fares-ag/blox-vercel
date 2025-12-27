@@ -34,8 +34,10 @@ export const SettlementDiscountSettingsPage: React.FC = () => {
       maxMonthsEarly?: number;
       principalDiscount: number;
       interestDiscount: number;
+      installmentDiscount?: number;
       principalDiscountType: 'percentage' | 'fixed';
       interestDiscountType: 'percentage' | 'fixed';
+      installmentDiscountType?: 'percentage' | 'fixed';
     }>,
     useTieredDiscounts: false,
   });
@@ -74,8 +76,10 @@ export const SettlementDiscountSettingsPage: React.FC = () => {
               : (tier.maxMonthsIntoLoan !== undefined ? tier.maxMonthsIntoLoan : (tier.maxPayments !== undefined ? tier.maxPayments : undefined)),
             principalDiscount: tier.principalDiscount || 0,
             interestDiscount: tier.interestDiscount || 0,
+            installmentDiscount: tier.installmentDiscount || 0,
             principalDiscountType: tier.principalDiscountType || 'percentage',
             interestDiscountType: tier.interestDiscountType || 'percentage',
+            installmentDiscountType: tier.installmentDiscountType || 'percentage',
           })),
           useTieredDiscounts: (data.tieredDiscounts && data.tieredDiscounts.length > 0) || false,
         });
@@ -435,6 +439,38 @@ export const SettlementDiscountSettingsPage: React.FC = () => {
                               fullWidth
                             />
                           </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <Select
+                              label="Installment Discount Type"
+                              value={tier.installmentDiscountType || 'percentage'}
+                              onChange={(e) => {
+                                const newTiers = [...formData.tieredDiscounts];
+                                newTiers[index].installmentDiscountType = e.target.value as 'percentage' | 'fixed';
+                                setFormData({ ...formData, tieredDiscounts: newTiers });
+                              }}
+                              options={discountTypeOptions}
+                              fullWidth
+                            />
+                          </Grid>
+                          <Grid item xs={12} sm={4}>
+                            <Input
+                              label={`Installment Discount (${(tier.installmentDiscountType || 'percentage') === 'percentage' ? '%' : 'QAR'})`}
+                              type="number"
+                              value={tier.installmentDiscount || 0}
+                              onChange={(e) => {
+                                const newTiers = [...formData.tieredDiscounts];
+                                newTiers[index].installmentDiscount = parseFloat(e.target.value) || 0;
+                                setFormData({ ...formData, tieredDiscounts: newTiers });
+                              }}
+                              inputProps={{ 
+                                min: 0, 
+                                max: (tier.installmentDiscountType || 'percentage') === 'percentage' ? 100 : undefined,
+                                step: (tier.installmentDiscountType || 'percentage') === 'percentage' ? 0.1 : 0.01
+                              }}
+                              fullWidth
+                              helperText="Discount on total installment amount (principal + interest)"
+                            />
+                          </Grid>
                         </Grid>
                       </Paper>
                     </Grid>
@@ -455,8 +491,10 @@ export const SettlementDiscountSettingsPage: React.FC = () => {
                         maxMonthsEarly: undefined,
                         principalDiscount: 0,
                         interestDiscount: 0,
+                        installmentDiscount: 0,
                         principalDiscountType: 'percentage' as 'percentage' | 'fixed',
                         interestDiscountType: 'percentage' as 'percentage' | 'fixed',
+                        installmentDiscountType: 'percentage' as 'percentage' | 'fixed',
                       };
                       setFormData({ ...formData, tieredDiscounts: [...formData.tieredDiscounts, newTier] });
                     }}

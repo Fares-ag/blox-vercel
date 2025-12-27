@@ -1711,8 +1711,10 @@ class SupabaseApiService {
                 : (tier.maxMonthsIntoLoan !== undefined ? tier.maxMonthsIntoLoan : (tier.maxPayments !== undefined ? tier.maxPayments : undefined)),
               principalDiscount: tier.principalDiscount || 0,
               interestDiscount: tier.interestDiscount || 0,
+              installmentDiscount: tier.installmentDiscount || 0,
               principalDiscountType: tier.principalDiscountType || 'percentage',
               interestDiscountType: tier.interestDiscountType || 'percentage',
+              installmentDiscountType: tier.installmentDiscountType || 'percentage',
             }))
           : [],
         createdAt: response.data.created_at,
@@ -1768,8 +1770,10 @@ class SupabaseApiService {
             : (tier.maxMonthsIntoLoan !== undefined ? tier.maxMonthsIntoLoan : undefined),
           principalDiscount: tier.principalDiscount,
           interestDiscount: tier.interestDiscount,
+          installmentDiscount: tier.installmentDiscount || 0,
           principalDiscountType: tier.principalDiscountType,
           interestDiscountType: tier.interestDiscountType,
+          installmentDiscountType: tier.installmentDiscountType || 'percentage',
         }));
       }
 

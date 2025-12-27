@@ -30,8 +30,10 @@ export interface InstallmentCalculatorData {
 
 interface PaymentScheduleYear {
   year: number;
-  installmentAmount: number;
-  annualRent: number;
+  /** Fixed monthly installment (principal + interest) */
+  monthlyInstallment: number;
+  /** Total installments paid in this year (principal + interest) */
+  totalInstallmentsYear: number;
   annualInsurance: number;
 }
 
@@ -122,49 +124,86 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
     return Math.max(0.08, Math.min(0.20, rate)); // Clamp between 8% and 20%
   }, [employmentType, durationOfResidence, salary, monthlyLiabilities]);
 
-  // Calculate principal payment (loan amount amortized over term)
-  // Using a simple calculation: principal payment = loan amount / term months
-  // This gives equal principal payments
+  // Simple principal-per-month (for display only, not used for the real schedule)
   const principalPaymentPerMonth = useMemo(() => {
     if (loanAmount <= 0 || termMonths <= 0) return 0;
     return loanAmount / termMonths;
   }, [loanAmount, termMonths]);
 
-  // Calculate initial monthly rent (first month)
-  // Rent is based on Blox's ownership percentage, which decreases as customer pays
-  // Initial rent = Blox ownership amount * (Annual Rent Rate / 12)
-  // Blox owns: Car Value - Down Payment initially
-  const initialMonthlyRent = useMemo(() => {
-    if (carValue <= 0 || annualRentalRate <= 0) return 0;
-    const bloxOwnership = carValue - downPayment; // Blox owns the loan amount initially
-    const rentPerPeriodRate = annualRentalRate / 12;
-    return bloxOwnership * rentPerPeriodRate;
-  }, [carValue, downPayment, annualRentalRate]);
-
-  // Average monthly payment (for summary display)
-  // Note: Actual payment varies month-to-month as rent decreases
-  // We'll calculate an average or show first month payment
-  const monthlyPayment = useMemo(() => {
-    return principalPaymentPerMonth + initialMonthlyRent;
-  }, [principalPaymentPerMonth, initialMonthlyRent]);
-
-  // Calculate total rent over the entire loan term
-  // Rent decreases each month as Blox ownership decreases
-  const totalRent = useMemo(() => {
-    if (loanAmount <= 0 || termMonths <= 0 || annualRentalRate <= 0) return 0;
-    const rentPerPeriodRate = annualRentalRate / 12;
-    let totalRentAmount = 0;
-    
-    // Calculate rent for each month based on Blox's ownership at that time
-    for (let month = 0; month < termMonths; month++) {
-      const customerOwnership = downPayment + (principalPaymentPerMonth * month);
-      const bloxOwnership = carValue - customerOwnership;
-      const monthlyRentForThisMonth = bloxOwnership * rentPerPeriodRate;
-      totalRentAmount += monthlyRentForThisMonth;
+  // Amortized monthly payment + first month interest (using annualRentalRate as annual interest)
+  const { monthlyPayment, firstMonthInterest } = useMemo(() => {
+    if (loanAmount <= 0 || termMonths <= 0) {
+      return { monthlyPayment: 0, firstMonthInterest: 0 };
     }
-    
-    return totalRentAmount;
-  }, [carValue, downPayment, principalPaymentPerMonth, termMonths, annualRentalRate]);
+
+    const monthlyRate = annualRentalRate > 0 ? annualRentalRate / 12 : 0;
+
+    // Zero-interest edge case
+    if (monthlyRate === 0) {
+      const payment = loanAmount / termMonths;
+      return { monthlyPayment: payment, firstMonthInterest: 0 };
+    }
+
+    const pow = Math.pow(1 + monthlyRate, termMonths);
+    const payment = loanAmount * (monthlyRate * pow) / (pow - 1);
+    const firstInterest = loanAmount * monthlyRate;
+
+    return { monthlyPayment: payment, firstMonthInterest: firstInterest };
+  }, [loanAmount, termMonths, annualRentalRate]);
+
+  // Amortized monthly schedule (principal + interest)
+  const monthlySchedule = useMemo(() => {
+    const schedule: MonthlyScheduleItem[] = [];
+    if (loanAmount <= 0 || termMonths <= 0 || monthlyPayment <= 0) return schedule;
+
+    const startDate = moment().startOf('month').add(1, 'month');
+    const monthlyRate = annualRentalRate > 0 ? annualRentalRate / 12 : 0;
+
+    let balance = loanAmount;
+
+    for (let month = 0; month < termMonths; month++) {
+      const monthNumber = month + 1;
+      const year = Math.floor(month / 12) + 1;
+      const dueDate = moment(startDate).add(month, 'months');
+
+      const interest = monthlyRate > 0 ? balance * monthlyRate : 0;
+      let principal = monthlyPayment - interest;
+
+      // Guard against rounding issues on the last payment
+      if (month === termMonths - 1) {
+        principal = balance;
+      }
+
+      const totalPayment = principal + interest;
+      balance = Math.max(0, balance - principal);
+
+      schedule.push({
+        month: monthNumber,
+        monthLabel: `${dueDate.format('MMM YYYY')} (Month ${monthNumber})`,
+        principal,
+        rent: interest, // keep field name 'rent' for compatibility
+        totalPayment,
+        customerOwnership: loanAmount - balance,
+        bloxOwnership: balance,
+        year,
+      });
+    }
+
+    return schedule;
+  }, [loanAmount, termMonths, monthlyPayment, annualRentalRate]);
+
+  // Total interest over the term (for summary display)
+  const totalRent = useMemo(() => {
+    if (monthlySchedule.length === 0) return 0;
+    return monthlySchedule.reduce((sum, item) => sum + item.rent, 0);
+  }, [monthlySchedule]);
+
+  // Total installment amount (principal + interest) over the term
+  const totalInstallmentAmount = useMemo(() => {
+    if (monthlySchedule.length === 0) return 0;
+    return monthlySchedule.reduce((sum, item) => sum + item.totalPayment, 0);
+  }, [monthlySchedule]);
+
   // Blox Membership cost calculation
   const membershipCostPerMonth = MembershipConfig.costPerMonth;
   const membershipCostPerYear = MembershipConfig.costPerYear;
@@ -174,83 +213,42 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
         : membershipCostPerMonth * termMonths)
     : 0;
 
-  // Calculate monthly payment schedule - memoized to prevent infinite loops
-  const monthlySchedule = useMemo(() => {
-    const schedule: MonthlyScheduleItem[] = [];
-    if (loanAmount <= 0 || termMonths <= 0) return schedule;
-
-    const startDate = moment().startOf('month').add(1, 'month');
-    const rentPerPeriodRate = annualRentalRate / 12;
-
-    for (let month = 0; month < termMonths; month++) {
-      const monthNumber = month + 1;
-      const year = Math.floor(month / 12) + 1;
-      const dueDate = moment(startDate).add(month, 'months');
-      
-      // Principal payment (equal each month)
-      const principal = principalPaymentPerMonth;
-      
-      // Calculate ownership shares
-      const customerOwnership = downPayment + (principalPaymentPerMonth * month);
-      const bloxOwnership = carValue - customerOwnership;
-      const rent = bloxOwnership * rentPerPeriodRate;
-      
-      const totalPayment = principal + rent;
-
-      schedule.push({
-        month: monthNumber,
-        monthLabel: `${dueDate.format('MMM YYYY')} (Month ${monthNumber})`,
-        principal,
-        rent,
-        totalPayment,
-        customerOwnership,
-        bloxOwnership,
-        year,
-      });
-    }
-
-    return schedule;
-  }, [loanAmount, termMonths, principalPaymentPerMonth, carValue, downPayment, annualRentalRate]);
-
-  // Calculate yearly summary for backward compatibility
+  // Calculate yearly summary based on total monthly payments (principal + interest)
   const paymentSchedule = useMemo(() => {
     const schedule: PaymentScheduleYear[] = [];
     if (monthlySchedule.length === 0) return schedule;
 
     let currentYear = 0;
-    let yearPrincipal = 0;
-    let yearRent = 0;
+    let yearTotal = 0; // principal + interest for that year
 
     monthlySchedule.forEach((item) => {
       if (item.year !== currentYear) {
         if (currentYear > 0) {
           schedule.push({
             year: currentYear,
-            installmentAmount: yearPrincipal,
-            annualRent: yearRent,
+            monthlyInstallment: monthlyPayment,
+            totalInstallmentsYear: yearTotal,
             annualInsurance: 0,
           });
         }
         currentYear = item.year;
-        yearPrincipal = 0;
-        yearRent = 0;
+        yearTotal = 0;
       }
-      yearPrincipal += item.principal;
-      yearRent += item.rent;
+      yearTotal += item.totalPayment;
     });
 
     // Push last year
     if (currentYear > 0) {
       schedule.push({
         year: currentYear,
-        installmentAmount: yearPrincipal,
-        annualRent: yearRent,
+        monthlyInstallment: monthlyPayment,
+        totalInstallmentsYear: yearTotal,
         annualInsurance: 0,
       });
     }
 
     return schedule;
-  }, [monthlySchedule]);
+  }, [monthlySchedule, monthlyPayment]);
 
   // Expose data to parent component - use useMemo to create stable object reference
   const calculatorData = useMemo(
@@ -265,7 +263,7 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
       membershipType,
       loanAmount,
       monthlyPayment,
-      monthlyRent: initialMonthlyRent, // First month rent for display
+      monthlyRent: firstMonthInterest, // First month interest for display
       annualRentalRate,
       principalPaymentPerMonth,
       totalRent,
@@ -283,7 +281,7 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
       membershipType,
       loanAmount,
       monthlyPayment,
-      initialMonthlyRent,
+      firstMonthInterest,
       annualRentalRate,
       principalPaymentPerMonth,
       totalRent,
@@ -502,10 +500,18 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
               </Box>
               <Box className="plan-item">
                 <Typography variant="body2" color="text.secondary">
-                  Total Rent
+                  Monthly Installment
                 </Typography>
                 <Typography variant="body1" fontWeight={600}>
-                  {formatCurrency(totalRent)}
+                  {formatCurrency(monthlyPayment)}
+                </Typography>
+              </Box>
+              <Box className="plan-item">
+                <Typography variant="body2" color="text.secondary">
+                  Total Installment Amount
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  {formatCurrency(totalInstallmentAmount)}
                 </Typography>
               </Box>
               <Box className="plan-item">
@@ -538,18 +544,18 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
                   <Box className="schedule-details">
                     <Box className="schedule-item">
                       <Typography variant="body2" color="text.secondary">
-                        Installment Amount
+                        Total Installments (Year)
                       </Typography>
                       <Typography variant="body1" fontWeight={600}>
-                        {formatCurrency(scheduleItem.installmentAmount)}
+                        {formatCurrency(scheduleItem.totalInstallmentsYear)}
                       </Typography>
                     </Box>
                     <Box className="schedule-item">
                       <Typography variant="body2" color="text.secondary">
-                        Annual Rent
+                        Monthly Installment
                       </Typography>
                       <Typography variant="body1" fontWeight={600}>
-                        {formatCurrency(scheduleItem.annualRent)}
+                        {formatCurrency(scheduleItem.monthlyInstallment)}
                       </Typography>
                     </Box>
                   </Box>

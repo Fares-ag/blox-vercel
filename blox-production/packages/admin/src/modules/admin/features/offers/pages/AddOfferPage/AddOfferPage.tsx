@@ -94,6 +94,7 @@ export const AddOfferPage: React.FC = () => {
                 type="number"
                 {...register('annualRentRate', { required: true, valueAsNumber: true })}
                 error={!!errors.annualRentRate}
+                inputProps={{ step: 0.01 }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -102,6 +103,7 @@ export const AddOfferPage: React.FC = () => {
                 type="number"
                 {...register('annualRentRateFunder', { valueAsNumber: true })}
                 error={!!errors.annualRentRateFunder}
+                inputProps={{ step: 0.01 }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -110,6 +112,7 @@ export const AddOfferPage: React.FC = () => {
                 type="number"
                 {...register('annualInsuranceRate', { valueAsNumber: true })}
                 error={!!errors.annualInsuranceRate}
+                inputProps={{ step: 0.01 }}
                 helperText={errors.annualInsuranceRate?.message}
               />
             </Grid>
@@ -119,6 +122,7 @@ export const AddOfferPage: React.FC = () => {
                 type="number"
                 {...register('annualInsuranceRateProvider', { valueAsNumber: true })}
                 error={!!errors.annualInsuranceRateProvider}
+                inputProps={{ step: 0.01 }}
                 helperText={errors.annualInsuranceRateProvider?.message}
               />
             </Grid>

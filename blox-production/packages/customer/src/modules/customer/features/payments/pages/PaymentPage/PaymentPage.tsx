@@ -162,30 +162,40 @@ export const PaymentPage: React.FC = () => {
       setIsSettlement(true);
       setAmount(location.state.amount || 0);
       setRemainingPaymentsCount(location.state.remainingPayments || 0);
-      // Load discount settings and calculate discount
-      if (application) {
-        loadSettlementDiscount();
-      }
     } else {
       setIsSettlement(false);
       setDiscountCalculation(null);
     }
-  }, [location.state, application]);
+  }, [location.state]);
+
+  // Load discount when application is loaded and it's a settlement payment
+  useEffect(() => {
+    if (application && isSettlement) {
+      loadSettlementDiscount();
+    }
+  }, [application, isSettlement, loadSettlementDiscount]);
 
   const loadSettlementDiscount = useCallback(async () => {
-    if (!application || !isSettlement) return;
+    if (!application || !isSettlement) {
+      console.debug('⚠️ Cannot load discount: application or isSettlement missing', { application: !!application, isSettlement });
+      return;
+    }
     
     try {
       setLoadingDiscount(true);
+      console.debug('📊 Loading settlement discount settings...');
       const settingsResponse = await supabaseApiService.getSettlementDiscountSettings();
       
       if (settingsResponse.status === 'SUCCESS' && settingsResponse.data) {
+        console.debug('✅ Settings loaded:', settingsResponse.data);
         setDiscountSettings(settingsResponse.data);
         
         // Calculate discount
         const remainingPayments = application.installmentPlan?.schedule?.filter(
           (p: PaymentSchedule) => p.status !== 'paid'
         ) || [];
+        
+        console.debug('📋 Remaining payments:', remainingPayments.length);
         
         if (remainingPayments.length > 0) {
           const calculation = calculateSettlementDiscount(
@@ -194,13 +204,21 @@ export const PaymentPage: React.FC = () => {
             settingsResponse.data,
             new Date()
           );
+          console.debug('💰 Discount calculation:', calculation);
           setDiscountCalculation(calculation);
           
           // Update amount with discounted amount if discount applies
           if (calculation.totalDiscount > 0) {
+            console.debug('✅ Discount applied:', calculation.totalDiscount, 'Final amount:', calculation.finalAmount);
             setAmount(calculation.finalAmount);
+          } else {
+            console.debug('ℹ️ No discount applied (totalDiscount = 0)');
           }
+        } else {
+          console.debug('⚠️ No remaining payments to calculate discount for');
         }
+      } else {
+        console.warn('⚠️ Failed to load settings:', settingsResponse.message);
       }
     } catch (error: unknown) {
       console.error('❌ Failed to load settlement discount:', error);
@@ -850,7 +868,7 @@ export const PaymentPage: React.FC = () => {
                     </Typography>
                     <CircularProgress size={20} sx={{ mt: 1 }} />
                   </Box>
-                ) : discountCalculation && discountCalculation.totalDiscount > 0 ? (
+                ) : discountCalculation ? (
                   <>
                     <Box className="summary-item">
                       <Typography variant="body2" color="text.secondary">
@@ -860,18 +878,38 @@ export const PaymentPage: React.FC = () => {
                         {formatCurrency(discountCalculation.originalTotal)}
                       </Typography>
                     </Box>
-                    <Box className="summary-item">
-                      <Typography variant="body2" color="text.secondary">
-                        Early Settlement Discount
-                      </Typography>
-                      <Typography variant="body1" fontWeight={600} sx={{ color: '#10B981' }}>
-                        -{formatCurrency(discountCalculation.totalDiscount)}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
-                        {discountCalculation.monthsEarly.toFixed(1)} months early
-                      </Typography>
-                    </Box>
-                    <Divider sx={{ my: 2 }} />
+                    {discountCalculation.totalDiscount > 0 ? (
+                      <>
+                        <Box className="summary-item">
+                          <Typography variant="body2" color="text.secondary">
+                            Early Settlement Discount
+                          </Typography>
+                          <Typography variant="body1" fontWeight={600} sx={{ color: '#10B981' }}>
+                            -{formatCurrency(discountCalculation.totalDiscount)}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                            {discountCalculation.monthsEarly.toFixed(1)} months early
+                          </Typography>
+                        </Box>
+                        <Divider sx={{ my: 2 }} />
+                      </>
+                    ) : discountCalculation.monthsEarly < 1 ? (
+                      <Box className="summary-item">
+                        <Alert severity="info" sx={{ mt: 1 }}>
+                          <Typography variant="body2">
+                            No discount available. You must pay at least 1 month early to qualify for early settlement discounts.
+                          </Typography>
+                        </Alert>
+                      </Box>
+                    ) : (
+                      <Box className="summary-item">
+                        <Alert severity="info" sx={{ mt: 1 }}>
+                          <Typography variant="body2">
+                            No discount available for this settlement.
+                          </Typography>
+                        </Alert>
+                      </Box>
+                    )}
                     <Box className="summary-item">
                       <Typography variant="body2" color="text.secondary">
                         Final Amount to Pay
@@ -881,15 +919,15 @@ export const PaymentPage: React.FC = () => {
                       </Typography>
                     </Box>
                   </>
-                ) : discountCalculation && discountCalculation.monthsEarly < 1 ? (
+                ) : (
                   <Box className="summary-item">
-                    <Alert severity="info" sx={{ mt: 1 }}>
+                    <Alert severity="warning" sx={{ mt: 1 }}>
                       <Typography variant="body2">
-                        No discount available. You must pay at least 1 month early to qualify for early settlement discounts.
+                        Discount calculation unavailable. Please contact support if you believe you qualify for an early settlement discount.
                       </Typography>
                     </Alert>
                   </Box>
-                ) : null}
+                )}
                 <Box className="summary-item">
                   <Typography variant="body2" color="text.secondary">
                     Type

@@ -166,6 +166,7 @@ export const EditOfferPage: React.FC = () => {
                 type="number"
                 {...register('annualRentRate', { required: true, valueAsNumber: true })}
                 error={!!errors.annualRentRate}
+                inputProps={{ step: 0.01 }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>
@@ -174,6 +175,7 @@ export const EditOfferPage: React.FC = () => {
                 type="number"
                 {...register('annualRentRateFunder', { valueAsNumber: true })}
                 error={!!errors.annualRentRateFunder}
+                inputProps={{ step: 0.01 }}
               />
             </Grid>
             <Grid item xs={12}>

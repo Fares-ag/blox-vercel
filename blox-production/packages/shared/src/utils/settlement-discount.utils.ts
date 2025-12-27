@@ -172,6 +172,7 @@ export function calculateSettlementDiscount(
       originalTotal,
       principalDiscount: 0,
       interestDiscount: 0,
+      installmentDiscount: 0,
       totalDiscount: 0,
       discountedPrincipal: totalPrincipal,
       discountedInterest: totalInterest,
@@ -191,6 +192,7 @@ export function calculateSettlementDiscount(
       originalTotal,
       principalDiscount: 0,
       interestDiscount: 0,
+      installmentDiscount: 0,
       totalDiscount: 0,
       discountedPrincipal: totalPrincipal,
       discountedInterest: totalInterest,
@@ -209,6 +211,7 @@ export function calculateSettlementDiscount(
       originalTotal,
       principalDiscount: 0,
       interestDiscount: 0,
+      installmentDiscount: 0,
       totalDiscount: 0,
       discountedPrincipal: totalPrincipal,
       discountedInterest: totalInterest,
@@ -227,6 +230,7 @@ export function calculateSettlementDiscount(
       originalTotal,
       principalDiscount: 0,
       interestDiscount: 0,
+      installmentDiscount: 0,
       totalDiscount: 0,
       discountedPrincipal: totalPrincipal,
       discountedInterest: totalInterest,
@@ -258,6 +262,7 @@ export function calculateSettlementDiscount(
   // 5. Calculate discounts
   let principalDiscount = 0;
   let interestDiscount = 0;
+  let installmentDiscount = 0;
 
   if (applicableTier) {
     // Use tiered discount based on months early
@@ -271,6 +276,16 @@ export function calculateSettlementDiscount(
       interestDiscount = totalInterest * (applicableTier.interestDiscount / 100);
     } else {
       interestDiscount = applicableTier.interestDiscount;
+    }
+
+    // Installment discount (on total amount)
+    if (applicableTier.installmentDiscount !== undefined && applicableTier.installmentDiscount > 0) {
+      const discountType = applicableTier.installmentDiscountType || 'percentage';
+      if (discountType === 'percentage') {
+        installmentDiscount = originalTotal * (applicableTier.installmentDiscount / 100);
+      } else {
+        installmentDiscount = applicableTier.installmentDiscount;
+      }
     }
   } else {
     // Use flat discount
@@ -292,13 +307,14 @@ export function calculateSettlementDiscount(
   }
 
   // 6. Apply maximum caps
-  const totalDiscount = principalDiscount + interestDiscount;
+  const totalDiscount = principalDiscount + interestDiscount + installmentDiscount;
 
   if (settings.maxDiscountAmount && totalDiscount > settings.maxDiscountAmount) {
     // Scale down proportionally
     const scale = settings.maxDiscountAmount / totalDiscount;
     principalDiscount *= scale;
     interestDiscount *= scale;
+    installmentDiscount *= scale;
   }
 
   if (settings.maxDiscountPercentage) {
@@ -307,6 +323,7 @@ export function calculateSettlementDiscount(
       const scale = maxDiscountByPercentage / totalDiscount;
       principalDiscount *= scale;
       interestDiscount *= scale;
+      installmentDiscount *= scale;
     }
   }
 
@@ -317,10 +334,11 @@ export function calculateSettlementDiscount(
     originalTotal: originalTotal,
     principalDiscount: Math.round(principalDiscount * 100) / 100,
     interestDiscount: Math.round(interestDiscount * 100) / 100,
-    totalDiscount: Math.round((principalDiscount + interestDiscount) * 100) / 100,
+    installmentDiscount: Math.round(installmentDiscount * 100) / 100,
+    totalDiscount: Math.round((principalDiscount + interestDiscount + installmentDiscount) * 100) / 100,
     discountedPrincipal: Math.round((totalPrincipal - principalDiscount) * 100) / 100,
     discountedInterest: Math.round((totalInterest - interestDiscount) * 100) / 100,
-    finalAmount: Math.round((originalTotal - principalDiscount - interestDiscount) * 100) / 100,
+    finalAmount: Math.round((originalTotal - principalDiscount - interestDiscount - installmentDiscount) * 100) / 100,
     monthsEarly,
     monthsIntoLoan,
     settlementDate: moment(settlementDate).toISOString(),

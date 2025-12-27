@@ -21,14 +21,22 @@ export const ResetPasswordPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState(true);
   const [sessionValid, setSessionValid] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   const validateSession = useCallback(async () => {
     try {
       // Check if there's an active session (Supabase handles this automatically when user clicks reset link)
-      const { data: { session } } = await supabase.auth.getSession();
-      setSessionValid(!!session);
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (session && session.user) {
+        setSessionValid(true);
+        setUserEmail(session.user.email || null);
+      } else {
+        setSessionValid(false);
+        setUserEmail(null);
+      }
     } catch (error) {
       setSessionValid(false);
+      setUserEmail(null);
     } finally {
       setValidating(false);
     }
@@ -95,6 +103,11 @@ export const ResetPasswordPage: React.FC = () => {
         <Box className="reset-password-header">
           <img src="/BloxLogo.png" alt="Blox Logo" className="logo-image" />
           <Typography variant="h3">Reset Password</Typography>
+          {userEmail && (
+            <Typography variant="body2" className="subtitle-text" sx={{ mt: 1, mb: 1 }}>
+              Resetting password for: <strong>{userEmail}</strong>
+            </Typography>
+          )}
           <Typography variant="body2" className="subtitle-text">
             Enter your new password
           </Typography>

@@ -44,8 +44,10 @@ export interface TieredDiscount {
   maxMonthsEarly?: number; // Maximum months early (null/undefined means unlimited)
   principalDiscount: number;
   interestDiscount: number;
+  installmentDiscount?: number; // Discount on total installment amount (optional)
   principalDiscountType: 'percentage' | 'fixed';
   interestDiscountType: 'percentage' | 'fixed';
+  installmentDiscountType?: 'percentage' | 'fixed'; // Type for installment discount
 }
 
 export interface SettlementDiscountCalculation {
@@ -55,6 +57,7 @@ export interface SettlementDiscountCalculation {
   
   principalDiscount: number;
   interestDiscount: number;
+  installmentDiscount?: number; // Discount on total installment amount
   totalDiscount: number;
   
   discountedPrincipal: number;
