@@ -363,14 +363,15 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
         currentDate = monthEnd.clone().add(1, 'day').startOf('month');
       }
     } else {
-      // Monthly payment schedule (existing logic)
-      // Set due date to the first day of each month for consistency
-      const firstDueDate = moment(startDate).startOf('month');
+      // Monthly payment schedule
+      // Use the actual start date day for monthly payments (preserve the day of month)
+      const firstDueDate = moment(startDate);
       const principalPaymentPerMonth = useDynamicRent ? (loanAmount / totalMonths) : 0;
       const rentPerPeriodRate = useDynamicRent ? (annualRentalRate / 12) : 0;
 
       for (let i = 0; i < totalMonths; i++) {
-        // Calculate due date as first day of the month (same day each month)
+        // Calculate due date using the same day of month from start date
+        // If start date is Dec 10, next payments will be Jan 10, Feb 10, etc.
         const dueDate = moment(firstDueDate).add(i, 'months');
         const dueDateFormatted = dueDate.format('YYYY-MM-DD');
 

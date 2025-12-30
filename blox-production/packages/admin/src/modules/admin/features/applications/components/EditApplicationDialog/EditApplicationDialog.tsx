@@ -18,11 +18,11 @@ import {
   FormControlLabel,
 } from '@mui/material';
 import { Edit, Calculate } from '@mui/icons-material';
-import { Button as CustomButton } from '@shared/components';
+import { Button as CustomButton, DatePicker } from '@shared/components';
 import type { Application, InstallmentPlan } from '@shared/models/application.model';
 import { formatCurrency } from '@shared/utils/formatters';
 import { parseTenureToMonths, formatMonthsToTenure } from '@shared/utils/tenure.utils';
-import moment from 'moment';
+import moment, { type Moment } from 'moment';
 import type { PaymentSchedule } from '@shared/models/application.model';
 import './EditApplicationDialog.scss';
 
@@ -59,6 +59,7 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
   const [monthlyAmount, setMonthlyAmount] = useState<number>(0);
   const [tenure, setTenure] = useState<string>('36 Months');
   const [totalAmount, setTotalAmount] = useState<number>(0);
+  const [firstPaymentDate, setFirstPaymentDate] = useState<Moment | null>(null);
   const [regenerateSchedule, setRegenerateSchedule] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -68,6 +69,20 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
       setMonthlyAmount(application.installmentPlan?.monthlyAmount || 0);
       setTenure(application.installmentPlan?.tenure || '36 Months');
       setTotalAmount(application.installmentPlan?.totalAmount || 0);
+      
+      // Get first payment date from schedule or default to next month
+      const existingSchedule = application.installmentPlan?.schedule || [];
+      if (existingSchedule.length > 0 && existingSchedule[0].dueDate) {
+        setFirstPaymentDate(moment(existingSchedule[0].dueDate));
+      } else {
+        const interval = application.installmentPlan?.interval || 'Monthly';
+        const isDailyInterval = (interval || '').toString().trim().toLowerCase() === 'daily';
+        const defaultDate = isDailyInterval
+          ? moment().startOf('day').add(1, 'day')
+          : moment().startOf('month').add(1, 'month');
+        setFirstPaymentDate(defaultDate);
+      }
+      
       setRegenerateSchedule(false);
       setErrors({});
     }
@@ -106,14 +121,22 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
     tenureMonths: number,
     vehiclePrice: number,
     downPayment: number,
-    interval: string
+    interval: string,
+    startDate?: Moment | null
   ): PaymentSchedule[] => {
     const schedule: PaymentSchedule[] = [];
     const now = moment().startOf('day');
     const isDailyInterval = (interval || '').toString().trim().toLowerCase() === 'daily';
-    const startDate = isDailyInterval
-      ? moment().startOf('day').add(1, 'day')
-      : moment().startOf('month').add(1, 'month');
+    
+    // Use provided start date or default
+    let scheduleStartDate: Moment;
+    if (startDate) {
+      scheduleStartDate = moment(startDate);
+    } else {
+      scheduleStartDate = isDailyInterval
+        ? moment().startOf('day').add(1, 'day')
+        : moment().startOf('month').add(1, 'month');
+    }
 
     // Get existing schedule to preserve payment statuses
     const existingSchedule = application?.installmentPlan?.schedule || [];
@@ -126,8 +149,8 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
 
     for (let i = 0; i < tenureMonths; i++) {
       const dueDate = isDailyInterval
-        ? moment(startDate).add(i, 'days')
-        : moment(startDate).add(i, 'months');
+        ? moment(scheduleStartDate).add(i, 'days')
+        : moment(scheduleStartDate).add(i, 'months');
       const dueDateFormatted = dueDate.format('YYYY-MM-DD');
 
       const isPast = dueDate.isBefore(now, isDailyInterval ? 'day' : 'month');
@@ -170,6 +193,43 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
       const tenureMonths = parseTenureToMonths(tenure);
       const interval = application.installmentPlan?.interval || 'Monthly';
 
+      let updatedSchedule: PaymentSchedule[] = [];
+      
+      if (regenerateSchedule) {
+        // Regenerate entire schedule with new first payment date
+        updatedSchedule = generateSchedule(monthlyAmount, tenureMonths, vehiclePrice, downPayment, interval || 'Monthly', firstPaymentDate);
+      } else if (firstPaymentDate) {
+        // Update existing schedule dates to use new first payment date (shift all dates)
+        const existingSchedule = application.installmentPlan?.schedule || [];
+        const originalFirstDate = existingSchedule.length > 0 
+          ? moment(existingSchedule[0].dueDate) 
+          : null;
+        
+        if (originalFirstDate && !firstPaymentDate.isSame(originalFirstDate, 'day')) {
+          // Calculate the difference in days/months
+          const isDailyInterval = (interval || '').toString().trim().toLowerCase() === 'daily';
+          const diff = isDailyInterval 
+            ? firstPaymentDate.diff(originalFirstDate, 'days')
+            : firstPaymentDate.diff(originalFirstDate, 'months');
+          
+          updatedSchedule = existingSchedule.map((payment) => {
+            const originalDate = moment(payment.dueDate);
+            const newDate = isDailyInterval
+              ? originalDate.clone().add(diff, 'days')
+              : originalDate.clone().add(diff, 'months');
+            
+            return {
+              ...payment,
+              dueDate: newDate.format('YYYY-MM-DD'),
+            };
+          });
+        } else {
+          updatedSchedule = existingSchedule;
+        }
+      } else {
+        updatedSchedule = application.installmentPlan?.schedule || [];
+      }
+
       const updatedInstallmentPlan: InstallmentPlan = {
         ...(application.installmentPlan || {}),
         tenure,
@@ -177,9 +237,7 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
         totalAmount,
         downPayment,
         interval: interval || 'Monthly',
-        schedule: regenerateSchedule
-          ? generateSchedule(monthlyAmount, tenureMonths, vehiclePrice, downPayment, interval || 'Monthly')
-          : application.installmentPlan?.schedule || [],
+        schedule: updatedSchedule,
       };
 
       const updates: Partial<Application> = {
@@ -326,6 +384,16 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
               InputProps={{
                 startAdornment: <Typography sx={{ mr: 1 }}>QAR</Typography>,
               }}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6}>
+            <DatePicker
+              label="First Payment Date"
+              value={firstPaymentDate}
+              onChange={(value) => setFirstPaymentDate(value)}
+              format="DD, MMMM YYYY"
+              minDate={moment().startOf('day')}
             />
           </Grid>
 
