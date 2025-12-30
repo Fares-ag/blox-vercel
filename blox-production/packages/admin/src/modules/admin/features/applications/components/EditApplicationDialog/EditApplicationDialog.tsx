@@ -393,7 +393,6 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
               value={firstPaymentDate}
               onChange={(value) => setFirstPaymentDate(value)}
               format="DD, MMMM YYYY"
-              minDate={moment().startOf('day')}
             />
           </Grid>
 
