@@ -14,6 +14,8 @@ export interface Product {
   documents: ProductDocument[];
   attributes: ProductAttribute[];
   description?: string;
+  chassisNumber?: string;
+  engineNumber?: string;
   createdAt: string;
   updatedAt: string;
 }

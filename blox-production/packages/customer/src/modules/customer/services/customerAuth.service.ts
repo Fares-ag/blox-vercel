@@ -33,12 +33,72 @@ class CustomerAuthService {
     }
   }
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    let emailToUse = credentials.email;
+
+    // Check if the input is a phone number (doesn't contain @ and matches phone pattern)
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isEmail = emailRegex.test(credentials.email);
+
+    if (!isEmail) {
+      // It's likely a phone number, try to find the user's email via RPC function
+      try {
+        // Normalize phone number (remove spaces, dashes, parentheses, etc.)
+        const normalizedPhone = credentials.email.replace(/[\s\-\(\)]/g, '');
+        
+        // Try to find user by phone number using RPC function
+        const { data: rpcData, error: rpcError } = await supabase.rpc('get_email_by_phone', {
+          phone_number: normalizedPhone
+        });
+
+        if (!rpcError && rpcData) {
+          emailToUse = rpcData;
+        } else {
+          // If RPC function doesn't exist or returns error, try with different phone formats
+          const phoneVariations = [
+            normalizedPhone,
+            credentials.email.replace(/\s/g, ''),
+            credentials.email.replace(/[\s\-\(\)]/g, ''),
+            `+${normalizedPhone.replace(/^\+/, '')}`,
+            normalizedPhone.replace(/^\+/, ''),
+          ];
+
+          for (const phoneVar of phoneVariations) {
+            const { data: lookupData, error: lookupError } = await supabase.rpc('get_email_by_phone', {
+              phone_number: phoneVar
+            });
+            
+            if (!lookupError && lookupData) {
+              emailToUse = lookupData;
+              break;
+            }
+          }
+
+          // If still no email found and RPC function doesn't exist, throw helpful error
+          if (emailToUse === credentials.email && rpcError?.message?.includes('function') && rpcError?.message?.includes('does not exist')) {
+            throw new Error('Phone number login is not configured. Please contact support or use your email address to login.');
+          }
+        }
+      } catch (lookupError: any) {
+        // If lookup fails with a specific error about function not existing, provide helpful message
+        if (lookupError?.message?.includes('function') && lookupError?.message?.includes('does not exist')) {
+          throw new Error('Phone number login requires database setup. Please use your email address to login, or contact support.');
+        }
+        // Otherwise, continue and try to login with the input as-is
+        // (might work if phone was stored as email in some edge cases)
+      }
+    }
+
+    // Attempt login with email
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: credentials.email,
+      email: emailToUse,
       password: credentials.password,
     });
 
     if (error) {
+      // Provide more helpful error message for phone number attempts
+      if (!isEmail) {
+        throw new Error('Login failed. Please check your phone number and password, or try using your email address instead.');
+      }
       throw new Error(error.message || 'Login failed');
     }
 

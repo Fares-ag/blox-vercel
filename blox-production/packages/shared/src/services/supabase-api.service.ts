@@ -90,7 +90,9 @@ class SupabaseApiService {
         images: product.images || [],
         documents: product.documents || [],
         attributes: product.attributes || [],
-        description: product.description
+        description: product.description,
+        chassis_number: product.chassisNumber,
+        engine_number: product.engineNumber
       };
 
       const response = await supabase
@@ -138,6 +140,8 @@ class SupabaseApiService {
       if (product.documents !== undefined) updateData.documents = product.documents;
       if (product.attributes !== undefined) updateData.attributes = product.attributes;
       if (product.description !== undefined) updateData.description = product.description;
+      if (product.chassisNumber !== undefined) updateData.chassis_number = product.chassisNumber;
+      if (product.engineNumber !== undefined) updateData.engine_number = product.engineNumber;
 
       const response = await supabase
         .from('products')

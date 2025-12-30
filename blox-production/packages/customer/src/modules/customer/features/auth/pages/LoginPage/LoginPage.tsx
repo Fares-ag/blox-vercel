@@ -10,7 +10,19 @@ import * as yup from 'yup';
 import './LoginPage.scss';
 
 const loginSchema = yup.object({
-  email: yup.string().email('Invalid email format').required('Email is required'),
+  email: yup
+    .string()
+    .required('Email or phone number is required')
+    .test('email-or-phone', 'Please enter a valid email or phone number', (value) => {
+      if (!value) return false;
+      // Check if it's a valid email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (emailRegex.test(value)) return true;
+      // Check if it's a valid phone number (digits, +, spaces, dashes, parentheses)
+      const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+      if (phoneRegex.test(value.replace(/\s/g, ''))) return true;
+      return false;
+    }),
   password: yup.string().required('Password is required'),
   rememberMe: yup.boolean().default(false).required(),
 });
@@ -54,8 +66,11 @@ export const LoginPage: React.FC = () => {
       // Check if error is related to email verification
       if (result.error?.toLowerCase().includes('email') && result.error?.toLowerCase().includes('confirm')) {
         toast.error('Please verify your email address before logging in. Check your inbox for the verification link.');
+      } else if (result.error?.toLowerCase().includes('phone number login')) {
+        // Specific error for phone login setup issues
+        toast.error(result.error || 'Phone number login is not available. Please use your email address.');
       } else {
-        toast.error(result.error || 'Login failed');
+        toast.error(result.error || 'Login failed. Please check your email/phone and password.');
       }
     }
   };
@@ -110,13 +125,13 @@ export const LoginPage: React.FC = () => {
 
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
             <Input
-              placeholder="fares@blox.market"
-              label="Email"
-              type="email"
+              placeholder="Email or phone number"
+              label="Email or Phone Number"
+              type="text"
               {...register('email')}
               error={!!errors.email}
-              helperText={errors.email?.message}
-              autoComplete="email"
+              helperText={errors.email?.message || 'Enter your email address or phone number'}
+              autoComplete="username"
             />
             <Input
               placeholder="••••••••••"

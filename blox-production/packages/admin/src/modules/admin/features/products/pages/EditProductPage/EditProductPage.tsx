@@ -368,6 +368,24 @@ export const EditProductPage: React.FC = () => {
                 placeholder="e.g., White, Black, Silver"
               />
             </Grid>
+            <Grid item xs={12} sm={6}>
+              <Input
+                label="Chassis Number"
+                {...register('chassisNumber')}
+                error={!!errors.chassisNumber}
+                helperText={errors.chassisNumber?.message || 'Vehicle chassis/VIN number'}
+                placeholder="e.g., JTMHV05J604123456"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Input
+                label="Engine Number"
+                {...register('engineNumber')}
+                error={!!errors.engineNumber}
+                helperText={errors.engineNumber?.message || 'Vehicle engine serial number'}
+                placeholder="e.g., ENG123456789"
+              />
+            </Grid>
           </Grid>
         </Paper>
 

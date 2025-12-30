@@ -33,6 +33,8 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
     price: 0,
     status: 'active' as 'active' | 'inactive',
     description: '',
+    chassisNumber: '',
+    engineNumber: '',
   });
 
   const searchVehicles = useCallback(async () => {
@@ -102,6 +104,8 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
       price: 0,
       status: 'active',
       description: '',
+      chassisNumber: '',
+      engineNumber: '',
     });
     setAddDialogOpen(true);
   };
@@ -138,6 +142,8 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
         documents: [],
         attributes: [],
         description: newVehicle.description || undefined,
+        chassisNumber: newVehicle.chassisNumber || undefined,
+        engineNumber: newVehicle.engineNumber || undefined,
       });
 
       if (res.status !== 'SUCCESS' || !res.data) {
@@ -282,6 +288,22 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
                 label="Color"
                 value={newVehicle.color}
                 onChange={(e) => setNewVehicle((v) => ({ ...v, color: e.target.value }))}
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Input
+                label="Chassis Number (optional)"
+                value={newVehicle.chassisNumber}
+                onChange={(e) => setNewVehicle((v) => ({ ...v, chassisNumber: e.target.value }))}
+                placeholder="e.g., JTMHV05J604123456"
+              />
+            </Grid>
+            <Grid item xs={12} sm={6}>
+              <Input
+                label="Engine Number (optional)"
+                value={newVehicle.engineNumber}
+                onChange={(e) => setNewVehicle((v) => ({ ...v, engineNumber: e.target.value }))}
+                placeholder="e.g., ENG123456789"
               />
             </Grid>
             <Grid item xs={12} sm={6}>

@@ -23,7 +23,7 @@ export interface User {
 }
 
 export interface LoginCredentials {
-  email: string;
+  email: string; // Can be email or phone number
   password: string;
   rememberMe?: boolean;
 }
