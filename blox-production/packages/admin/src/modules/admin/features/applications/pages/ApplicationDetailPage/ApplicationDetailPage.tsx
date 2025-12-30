@@ -1260,6 +1260,30 @@ export const ApplicationDetailPage: React.FC = () => {
                       </Typography>
                     </Box>
                   </Grid>
+                  {displayData.vehicle.chassisNumber && (
+                    <Grid item xs={12} sm={6}>
+                      <Box className="info-item">
+                        <Typography variant="caption" className="info-label">
+                          Chassis Number
+                        </Typography>
+                        <Typography variant="body1" className="info-value">
+                          {displayData.vehicle.chassisNumber}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  )}
+                  {displayData.vehicle.engineNumber && (
+                    <Grid item xs={12} sm={6}>
+                      <Box className="info-item">
+                        <Typography variant="caption" className="info-label">
+                          Engine Number
+                        </Typography>
+                        <Typography variant="body1" className="info-value">
+                          {displayData.vehicle.engineNumber}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                  )}
                   {displayData.vehicle.condition === 'old' && (
                     <Grid item xs={12} sm={6}>
                       <Box className="info-item">
