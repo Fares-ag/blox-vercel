@@ -965,10 +965,10 @@ export const ApplicationDetailPage: React.FC = () => {
               <Grid item xs={12} sm={6}>
                 <Box className="info-item">
                   <Typography variant="caption" className="info-label">
-                    National ID
+                    Qatar ID (QID)
                   </Typography>
                   <Typography variant="body1" className="info-value">
-                    {displayData.customerInfo?.nationalId || 'N/A'}
+                    {displayData.customerInfo?.qid || displayData.customerInfo?.nationalId || 'N/A'}
                   </Typography>
                 </Box>
               </Grid>

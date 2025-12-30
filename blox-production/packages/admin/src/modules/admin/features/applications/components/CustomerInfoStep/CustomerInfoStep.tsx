@@ -19,6 +19,7 @@ const schema = yup.object().shape({
   phone: yup.string().nullable().notRequired(),
   dateOfBirth: yup.string().nullable().notRequired(),
   nationality: yup.string().nullable().notRequired(),
+  qid: yup.string().nullable().notRequired().max(11, 'Qatar ID must be 11 digits'),
   street: yup.string().nullable().notRequired(),
   city: yup.string().nullable().notRequired(),
   country: yup.string().nullable().notRequired(),
@@ -59,6 +60,7 @@ export const CustomerInfoStep: React.FC<StepProps> = ({ data, updateData }) => {
       phone: '',
       dateOfBirth: null,
       nationality: '',
+      qid: '',
       street: '',
       city: '',
       country: '',
@@ -150,6 +152,7 @@ export const CustomerInfoStep: React.FC<StepProps> = ({ data, updateData }) => {
 
     setValue('dateOfBirth', ci.dateOfBirth || '', { shouldValidate: true });
     setValue('nationality', ci.nationality || fallbackUser?.nationality || '', { shouldValidate: true });
+    setValue('qid', ci.qid || fallbackUser?.nationalId || '', { shouldValidate: true });
 
     setValue('street', ci.street || address.street || '', { shouldValidate: true });
     setValue('city', ci.city || address.city || '', { shouldValidate: true });
@@ -182,6 +185,7 @@ export const CustomerInfoStep: React.FC<StepProps> = ({ data, updateData }) => {
           email: selected.email,
           phone: selected.phone,
           nationality: selected.nationality,
+          qid: selected.nationalId,
         },
         selected
       );
@@ -305,6 +309,16 @@ export const CustomerInfoStep: React.FC<StepProps> = ({ data, updateData }) => {
             {...register('nationality')}
             error={!!errors.nationality}
             helperText={errors.nationality?.message as string}
+          />
+        </Grid>
+        <Grid item xs={12} sm={6}>
+          <Input
+            label="Qatar ID (QID)"
+            {...register('qid')}
+            error={!!errors.qid}
+            helperText={errors.qid?.message as string || '11-digit Qatar ID number'}
+            inputProps={{ maxLength: 11 }}
+            placeholder="e.g., 12345678901"
           />
         </Grid>
       </Grid>

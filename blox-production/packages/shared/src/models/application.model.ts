@@ -79,6 +79,7 @@ export interface CustomerInformation {
   phone: string;
   dateOfBirth: string;
   nationality: string;
+  qid?: string; // Qatar ID number
   address: Address;
   employment: EmploymentInfo;
   income: IncomeInfo;
