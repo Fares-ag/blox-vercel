@@ -55,7 +55,7 @@ export const Select: React.FC<SelectProps> = ({
           // prevent overlap between label text and placeholder/value on small screens.
           shrink
           sx={{
-            color: '#16535B',
+            color: '#0E1909',
             fontSize: '14px',
             fontWeight: 500,
             fontFamily: "'IBM Plex Sans', sans-serif",
@@ -64,7 +64,7 @@ export const Select: React.FC<SelectProps> = ({
               transform: 'translate(14px, -9px) scale(0.85)',
             },
             '&.Mui-focused': {
-              color: '#00CFA2',
+              color: '#DAFF01',
             },
             '&.Mui-error': {
               color: '#F95668',
@@ -99,14 +99,14 @@ export const Select: React.FC<SelectProps> = ({
           '&:hover': {
             backgroundColor: '#ffffff',
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#00CFA2',
+              borderColor: '#DAFF01',
               borderWidth: '1px',
             },
           },
           '&.Mui-focused': {
             backgroundColor: '#ffffff',
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#00CFA2',
+              borderColor: '#DAFF01',
               borderWidth: '2px',
             },
           },

@@ -224,7 +224,7 @@ export const VehicleDetailPage: React.FC = () => {
                 label={vehicle.condition === 'new' ? 'New Vehicle' : 'Used Vehicle'}
                 icon={<CheckCircle />}
                 sx={{
-                  backgroundColor: vehicle.condition === 'new' ? '#00CFA2' : '#E5E7EA',
+                  backgroundColor: vehicle.condition === 'new' ? '#DAFF01' : '#E5E7EA',
                   color: vehicle.condition === 'new' ? '#FFFFFF' : '#000000',
                   fontWeight: 600,
                 }}
@@ -248,7 +248,7 @@ export const VehicleDetailPage: React.FC = () => {
           {activePromotions.length > 0 && (
             <Paper className="promotions-section card" sx={{ mt: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Celebration sx={{ mr: 1, color: '#00CFA2' }} />
+                <Celebration sx={{ mr: 1, color: '#DAFF01' }} />
                 <Typography variant="h6" sx={{ fontWeight: 600, color: '#FFFFFF' }}>
                   Special Promotions
                 </Typography>
@@ -263,7 +263,7 @@ export const VehicleDetailPage: React.FC = () => {
                     mb: 1,
                     backgroundColor: 'rgba(255, 255, 255, 0.15)',
                     color: '#FFFFFF',
-                    '& .MuiAlert-icon': { color: '#00CFA2' },
+                    '& .MuiAlert-icon': { color: '#DAFF01' },
                     '& .MuiAlert-message': { color: '#FFFFFF' },
                   }}
                 >

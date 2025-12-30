@@ -220,7 +220,7 @@ export const CustomerInfoStep: React.FC<StepProps> = ({ data, updateData }) => {
             <Checkbox
               checked={useExistingCustomer}
               onChange={(e) => setUseExistingCustomer(e.target.checked)}
-              sx={{ color: '#00cfa2', '&.Mui-checked': { color: '#00cfa2' } }}
+              sx={{ color: '#DAFF01', '&.Mui-checked': { color: '#DAFF01' } }}
             />
           }
           label="Select from existing customers"

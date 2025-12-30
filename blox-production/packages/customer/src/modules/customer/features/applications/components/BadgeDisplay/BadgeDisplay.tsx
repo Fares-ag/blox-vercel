@@ -150,7 +150,7 @@ export const BadgeDisplay: React.FC<BadgeDisplayProps> = ({ application }) => {
             backgroundColor: '#E0E0E0',
             '& .MuiLinearProgress-bar': {
               borderRadius: 4,
-              background: 'linear-gradient(90deg, #00CFA2 0%, #00B892 100%)',
+              background: 'linear-gradient(90deg, #DAFF01 0%, #B8E001 100%)',
             },
           }}
         />

@@ -1,0 +1,35 @@
+[33mcommit 3b9be9694bef663c963e68d0b4b79e38ee0fdb7f[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Fares Mahmoud <fmahmoud@q-auto.com>
+Date:   Sat Dec 27 18:26:26 2025 +0300
+
+    Fix password reset flow and add email setup documentation
+    
+    - Fix GuestGuard to allow access to reset password page when authenticated (Supabase creates temporary session)
+    - Display user email on reset password page for account verification
+    - Add comprehensive email setup documentation (Resend, alternatives, DNS setup)
+    - Add security and performance documentation for management
+    - Update reset password pages to show which account is being reset
+
+ .../BLOX_SECURITY_PERFORMANCE_DOCUMENTATION.html   |  593 [32m++++++++[m
+ .../BLOX_SECURITY_PERFORMANCE_DOCUMENTATION.md     |  411 [32m++++++[m
+ blox-production/CONVERT_TO_WORD_INSTRUCTIONS.md    |   41 [32m+[m
+ blox-production/EMAIL_QUICK_REFERENCE.md           |   91 [32m++[m
+ blox-production/EMAIL_SERVICE_ALTERNATIVES.md      |  464 [32m+++++++[m
+ blox-production/EMAIL_SETUP_COMPLETE.md            |  267 [32m++++[m
+ blox-production/EMAIL_SETUP_SUMMARY.md             |  118 [32m++[m
+ blox-production/RESEND_DNS_SETUP_GUIDE.md          |  198 [32m+++[m
+ blox-production/convert-to-word.js                 |  332 [32m+++++[m
+ blox-production/fix-security-warnings.sql          | 1424 [32m++++++++++++++++++++[m
+ .../pages/ResetPasswordPage/ResetPasswordPage.tsx  |   17 [32m+[m[31m-[m
+ .../offers/pages/AddOfferPage/AddOfferPage.tsx     |    4 [32m+[m
+ .../offers/pages/EditOfferPage/EditOfferPage.tsx   |    2 [32m+[m
+ .../SettlementDiscountSettingsPage.tsx             |   38 [32m+[m
+ .../admin/src/modules/admin/guards/GuestGuard.tsx  |    9 [32m+[m[31m-[m
+ .../pages/ResetPasswordPage/ResetPasswordPage.tsx  |   17 [32m+[m[31m-[m
+ .../payments/pages/PaymentPage/PaymentPage.tsx     |   84 [32m+[m[31m-[m
+ .../InstallmentCalculator.tsx                      |  174 [32m+[m[31m--[m
+ .../src/modules/customer/guards/GuestGuard.tsx     |    9 [32m+[m[31m-[m
+ .../shared/src/models/settlement-discount.model.ts |    3 [32m+[m
+ .../shared/src/services/supabase-api.service.ts    |    4 [32m+[m
+ .../shared/src/utils/settlement-discount.utils.ts  |   24 [32m+[m[31m-[m
+ 22 files changed, 4208 insertions(+), 116 deletions(-)

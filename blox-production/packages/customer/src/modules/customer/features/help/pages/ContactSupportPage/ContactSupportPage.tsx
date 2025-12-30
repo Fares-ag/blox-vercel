@@ -183,7 +183,7 @@ export const ContactSupportPage: React.FC = () => {
             </Typography>
 
             <Box className="contact-item">
-              <Phone sx={{ color: '#00cfa2', mr: 2 }} />
+              <Phone sx={{ color: '#DAFF01', mr: 2 }} />
               <Box>
                 <Typography variant="body2" color="text.secondary">
                   Phone
@@ -195,7 +195,7 @@ export const ContactSupportPage: React.FC = () => {
             </Box>
 
             <Box className="contact-item">
-              <Email sx={{ color: '#00cfa2', mr: 2 }} />
+              <Email sx={{ color: '#DAFF01', mr: 2 }} />
               <Box>
                 <Typography variant="body2" color="text.secondary">
                   Email
@@ -207,7 +207,7 @@ export const ContactSupportPage: React.FC = () => {
             </Box>
 
             <Box className="contact-item">
-              <LocationOn sx={{ color: '#00cfa2', mr: 2 }} />
+              <LocationOn sx={{ color: '#DAFF01', mr: 2 }} />
               <Box>
                 <Typography variant="body2" color="text.secondary">
                   Address

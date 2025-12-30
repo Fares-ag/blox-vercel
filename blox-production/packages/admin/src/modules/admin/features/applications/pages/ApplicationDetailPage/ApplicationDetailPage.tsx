@@ -60,6 +60,7 @@ import { ContractGenerationForm, type ContractFormData } from '../../components/
 import { ContractReviewDialog, type ReviewAction } from '../../components/ContractReviewDialog/ContractReviewDialog';
 import { ResubmissionDialog } from '../../components/ResubmissionDialog/ResubmissionDialog';
 import { PaymentConfirmationDialog, type PaymentMethod } from '../../components/PaymentConfirmationDialog/PaymentConfirmationDialog';
+import { EditApplicationDialog } from '../../components/EditApplicationDialog/EditApplicationDialog';
 import { ContractPdfService } from '@shared/services';
 import { supabase } from '@shared/services/supabase.service';
 import './ApplicationDetailPage.scss';
@@ -83,6 +84,8 @@ export const ApplicationDetailPage: React.FC = () => {
   const [markingPaymentPaid, setMarkingPaymentPaid] = useState(false);
   const [convertScheduleDialogOpen, setConvertScheduleDialogOpen] = useState(false);
   const [convertingSchedule, setConvertingSchedule] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const loadApplicationDetails = useCallback(async (applicationId: string) => {
     try {
@@ -747,6 +750,35 @@ export const ApplicationDetailPage: React.FC = () => {
     }
   };
 
+  const handleEditApplication = async (updates: Partial<Application>) => {
+    if (!id || !displayData) return;
+
+    try {
+      setSavingEdit(true);
+
+      const supabaseResponse = await supabaseApiService.updateApplication(id, updates);
+
+      if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
+        dispatch(updateApplication(supabaseResponse.data));
+        dispatch(setSelected(supabaseResponse.data));
+        toast.success('Application updated successfully!');
+        setEditDialogOpen(false);
+        
+        // Reload application details to ensure we have the latest data
+        await loadApplicationDetails(id);
+      } else {
+        throw new Error(supabaseResponse.message || 'Failed to update application');
+      }
+    } catch (error: unknown) {
+      console.error('❌ Failed to update application:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update application';
+      toast.error(errorMessage);
+      throw error; // Re-throw so the dialog can handle it
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
   const handleReject = async () => {
     if (!id || !displayData) return;
 
@@ -806,6 +838,9 @@ export const ApplicationDetailPage: React.FC = () => {
         </Box>
         <Box className="header-actions">
           <StatusBadge status={statusMap[displayData.status] || displayData.status} type="application" />
+          <Button variant="secondary" startIcon={<Edit />} onClick={() => setEditDialogOpen(true)}>
+            Edit Installments
+          </Button>
           {displayData.status === 'draft' && (
             <Button variant="primary" startIcon={<CheckCircle />} onClick={handleActivateDraft}>
               Activate
@@ -1242,7 +1277,7 @@ export const ApplicationDetailPage: React.FC = () => {
                       <Typography variant="caption" className="info-label">
                         Price
                       </Typography>
-                      <Typography variant="body1" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                      <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                         {formatCurrency(displayData.vehicle.price)}
                       </Typography>
                     </Box>
@@ -1353,7 +1388,7 @@ export const ApplicationDetailPage: React.FC = () => {
                         ? 'Monthly Payment'
                         : 'First Month Payment'}
                     </Typography>
-                    <Typography variant="body1" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                    <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                       {formatCurrency(displayData.installmentPlan.monthlyAmount)}
                     </Typography>
                     {displayData.installmentPlan.calculationMethod !== 'amortized_fixed' && (
@@ -1371,7 +1406,7 @@ export const ApplicationDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Total Amount
                     </Typography>
-                    <Typography variant="body1" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                    <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                       {formatCurrency(displayData.installmentPlan.totalAmount)}
                     </Typography>
                   </Box>
@@ -1381,7 +1416,7 @@ export const ApplicationDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Down Payment
                     </Typography>
-                    <Typography variant="body1" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                    <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                       {formatCurrency(displayData.downPayment)}
                     </Typography>
                   </Box>
@@ -1391,7 +1426,7 @@ export const ApplicationDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Loan Amount
                     </Typography>
-                    <Typography variant="body1" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                    <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                       {formatCurrency(displayData.loanAmount)}
                     </Typography>
                   </Box>
@@ -1457,10 +1492,10 @@ export const ApplicationDetailPage: React.FC = () => {
 
           {/* Signed Contract Section - Show when contract is submitted */}
           {displayData.status === 'contracts_submitted' && displayData.contractSigned && (
-            <Paper className="detail-section" sx={{ border: '2px solid #00CFA2', backgroundColor: '#F0FDFA' }}>
+            <Paper className="detail-section" sx={{ border: '2px solid #DAFF01', backgroundColor: '#F0FDFA' }}>
               <Box className="section-header">
-                <CheckCircle className="section-icon" sx={{ color: '#00CFA2' }} />
-                <Typography variant="h5" className="section-title" sx={{ color: '#00CFA2' }}>
+                <CheckCircle className="section-icon" sx={{ color: '#DAFF01' }} />
+                <Typography variant="h5" className="section-title" sx={{ color: '#DAFF01' }}>
                   Signed Contract - Awaiting Review
                 </Typography>
               </Box>
@@ -1625,7 +1660,7 @@ export const ApplicationDetailPage: React.FC = () => {
                 label="Total Assets Ownership"
                 value={100}
                 maxValue={100}
-                color="#008A6C"
+                color="#787663"
               />
               <Box sx={{ mt: 3 }}>
                 <SegmentedBarChart
@@ -1692,7 +1727,7 @@ export const ApplicationDetailPage: React.FC = () => {
           <Box className="tab-panel">
             <Box sx={{ mb: 3 }}>
               <Box className="section-header" sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                <Receipt className="section-icon" sx={{ color: '#00CFA2', fontSize: 24 }} />
+                <Receipt className="section-icon" sx={{ color: '#DAFF01', fontSize: 24 }} />
                 <Typography variant="h5" className="section-title" sx={{ fontWeight: 700, color: '#000000', fontFamily: "'IBM Plex Sans', sans-serif", margin: 0 }}>
                   Transactions
                 </Typography>
@@ -1766,7 +1801,7 @@ export const ApplicationDetailPage: React.FC = () => {
                 sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, justifyContent: 'space-between' }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Schedule className="section-icon" sx={{ color: '#00CFA2', fontSize: 24 }} />
+                  <Schedule className="section-icon" sx={{ color: '#DAFF01', fontSize: 24 }} />
                   <Typography
                     variant="h5"
                     className="section-title"
@@ -2088,6 +2123,14 @@ export const ApplicationDetailPage: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <EditApplicationDialog
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        onSave={handleEditApplication}
+        application={displayData}
+        loading={savingEdit}
+      />
     </Box>
   );
 };

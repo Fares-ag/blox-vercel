@@ -90,7 +90,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 backgroundColor: 'var(--primary-btn-bg)',
                 color: 'white',
                 '&:hover': {
-                  backgroundColor: '#00b892',
+                  backgroundColor: '#B8E001',
                 },
               }}
             >

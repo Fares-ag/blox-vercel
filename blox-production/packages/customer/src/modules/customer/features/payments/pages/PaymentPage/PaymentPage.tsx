@@ -914,7 +914,7 @@ export const PaymentPage: React.FC = () => {
                       <Typography variant="body2" color="text.secondary">
                         Final Amount to Pay
                       </Typography>
-                      <Typography variant="h6" fontWeight={700} sx={{ color: '#00CFA2' }}>
+                      <Typography variant="h6" fontWeight={700} sx={{ color: '#DAFF01' }}>
                         {formatCurrency(discountCalculation.finalAmount)}
                       </Typography>
                     </Box>
@@ -932,7 +932,7 @@ export const PaymentPage: React.FC = () => {
                   <Typography variant="body2" color="text.secondary">
                     Type
                   </Typography>
-                  <Typography variant="body1" fontWeight={600} sx={{ color: '#00CFA2' }}>
+                  <Typography variant="body1" fontWeight={600} sx={{ color: '#DAFF01' }}>
                     Full Settlement
                   </Typography>
                 </Box>
@@ -962,7 +962,7 @@ export const PaymentPage: React.FC = () => {
                     <Typography variant="body2" color="text.secondary">
                       Already Paid
                     </Typography>
-                    <Typography variant="body1" fontWeight={600} sx={{ color: '#00CFA2' }}>
+                    <Typography variant="body1" fontWeight={600} sx={{ color: '#DAFF01' }}>
                       {formatCurrency(paymentSchedule.paidAmount)}
                     </Typography>
                   </Box>
@@ -988,18 +988,18 @@ export const PaymentPage: React.FC = () => {
                   mb: 3,
                   p: 2,
                   border: '2px solid',
-                  borderColor: useCustomAmount ? '#00CFA2' : '#e0e0e0',
+                  borderColor: useCustomAmount ? '#DAFF01' : '#e0e0e0',
                   borderRadius: 2,
-                  backgroundColor: useCustomAmount ? 'rgba(0, 207, 162, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  backgroundColor: useCustomAmount ? 'rgba(218, 255, 1, 0.05)' : 'rgba(0, 0, 0, 0.02)',
                   transition: 'all 0.3s ease',
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <AttachMoney sx={{ color: useCustomAmount ? '#00CFA2' : '#666', fontSize: 20 }} />
+                  <AttachMoney sx={{ color: useCustomAmount ? '#DAFF01' : '#666', fontSize: 20 }} />
                   <Typography 
                     variant="subtitle2" 
                     fontWeight={600}
-                    sx={{ color: useCustomAmount ? '#00CFA2' : '#333' }}
+                    sx={{ color: useCustomAmount ? '#DAFF01' : '#333' }}
                   >
                     Pay Custom Amount (Optional)
                   </Typography>
@@ -1017,9 +1017,9 @@ export const PaymentPage: React.FC = () => {
                         }
                       }}
                       sx={{
-                        color: '#00CFA2',
+                        color: '#DAFF01',
                         '&.Mui-checked': {
-                          color: '#00CFA2',
+                          color: '#DAFF01',
                         },
                       }}
                     />

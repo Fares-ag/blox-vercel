@@ -5,7 +5,7 @@
 
   .back-button {
     margin-bottom: 24px;
-    color: #16535B;
+    color: #0E1909;
     
     &:hover {
       background-color: rgba(22, 83, 91, 0.08);
@@ -15,7 +15,7 @@
   .page-title {
     margin-bottom: 32px;
     font-weight: 600;
-    color: #16535B;
+    color: #0E1909;
   }
 
   .document-upload-section {
@@ -90,12 +90,12 @@
       min-height: 120px;
 
       &:hover {
-        border-color: #00CFA2;
+        border-color: #DAFF01;
         background-color: #F0FDF9;
       }
 
       .upload-button {
-        color: #00CFA2;
+        color: #DAFF01;
         padding: 12px;
         
         svg {
@@ -103,7 +103,7 @@
         }
 
         &:hover {
-          background-color: rgba(0, 207, 162, 0.1);
+          background-color: rgba(218, 255, 1, 0.1);
         }
 
         &:disabled {

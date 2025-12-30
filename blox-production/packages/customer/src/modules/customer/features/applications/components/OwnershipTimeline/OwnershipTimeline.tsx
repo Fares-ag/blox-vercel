@@ -95,7 +95,7 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
               backgroundColor: '#E0E0E0',
               '& .MuiLinearProgress-bar': {
                 borderRadius: 6,
-                background: 'linear-gradient(90deg, #00CFA2 0%, #00B892 100%)',
+                background: 'linear-gradient(90deg, #DAFF01 0%, #B8E001 100%)',
               },
             }}
           />

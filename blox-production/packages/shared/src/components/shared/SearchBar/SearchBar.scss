@@ -6,17 +6,17 @@
 
     // Default state: look like the old hover state
     .MuiOutlinedInput-notchedOutline {
-      border-color: #00cfa2;
+      border-color: #DAFF01;
     }
 
     // Hover keeps the same look so there is no jump
     &:hover .MuiOutlinedInput-notchedOutline {
-      border-color: #00cfa2;
+      border-color: #DAFF01;
     }
 
     // Focus only thickens the border slightly
     &.Mui-focused .MuiOutlinedInput-notchedOutline {
-      border-color: #00cfa2;
+      border-color: #DAFF01;
       border-width: 2px;
     }
   }

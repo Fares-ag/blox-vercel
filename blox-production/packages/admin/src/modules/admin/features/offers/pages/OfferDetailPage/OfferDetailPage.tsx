@@ -198,7 +198,7 @@ export const OfferDetailPage: React.FC = () => {
                   <Typography variant="caption" className="info-label">
                     Annual Rent Rate
                   </Typography>
-                  <Typography variant="h5" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                  <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                     {displayData.annualRentRate}%
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -211,7 +211,7 @@ export const OfferDetailPage: React.FC = () => {
                   <Typography variant="caption" className="info-label">
                     Annual Rent Rate (Funder)
                   </Typography>
-                  <Typography variant="h5" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                  <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                     {displayData.annualRentRateFunder}%
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -271,7 +271,7 @@ export const OfferDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Annual Insurance Rate
                     </Typography>
-                    <Typography variant="h5" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                    <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                       {insuranceRate.annualRate}%
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -284,7 +284,7 @@ export const OfferDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Annual Insurance Rate (Provider)
                     </Typography>
-                    <Typography variant="h5" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                    <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                       {insuranceRate.providerRate}%
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -308,7 +308,7 @@ export const OfferDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Annual Insurance Rate
                     </Typography>
-                    <Typography variant="h5" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                    <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                       {displayData.annualInsuranceRate}%
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -321,7 +321,7 @@ export const OfferDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Annual Insurance Rate (Provider)
                     </Typography>
-                    <Typography variant="h5" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                    <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                       {displayData.annualInsuranceRateProvider}%
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>

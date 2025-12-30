@@ -227,8 +227,9 @@ export const OfferSelectionStep: React.FC<StepProps> = ({ data, updateData }) =>
               <Input
                 label="Annual Rent Rate (%)"
                 type="number"
-                inputProps={{ step: '0.01' }}
-                placeholder="(optional)"
+                inputProps={{ step: '0.01', min: 0 }}
+                placeholder="0 for interest-free"
+                helperText="Enter 0 for interest-free offers"
                 value={newOffer.annualRentRate}
                 onChange={(e) => setNewOffer((v) => ({ ...v, annualRentRate: e.target.value }))}
               />
@@ -237,8 +238,9 @@ export const OfferSelectionStep: React.FC<StepProps> = ({ data, updateData }) =>
               <Input
                 label="Annual Rent Rate Funder (%)"
                 type="number"
-                inputProps={{ step: '0.01' }}
-                placeholder="(optional)"
+                inputProps={{ step: '0.01', min: 0 }}
+                placeholder="0 for interest-free"
+                helperText="Enter 0 for interest-free offers"
                 value={newOffer.annualRentRateFunder}
                 onChange={(e) => setNewOffer((v) => ({ ...v, annualRentRateFunder: e.target.value }))}
               />

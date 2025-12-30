@@ -208,7 +208,7 @@ export const DeferPaymentDialog: React.FC<DeferPaymentDialogProps> = ({
                       }}
                       sx={{ mb: 2 }}
                     />
-                    <Box sx={{ p: 2, bgcolor: 'rgba(0, 207, 162, 0.05)', borderRadius: 1 }}>
+                    <Box sx={{ p: 2, bgcolor: 'rgba(218, 255, 1, 0.05)', borderRadius: 1 }}>
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                         <Typography variant="body2" color="text.secondary">
                           Amount to Pay Now:
@@ -221,7 +221,7 @@ export const DeferPaymentDialog: React.FC<DeferPaymentDialogProps> = ({
                         <Typography variant="body2" color="text.secondary">
                           Amount to Defer:
                         </Typography>
-                        <Typography variant="body2" fontWeight={600} color="#00CFA2">
+                        <Typography variant="body2" fontWeight={600} color="#DAFF01">
                           {formatCurrency(partialAmountNum)}
                         </Typography>
                       </Box>
@@ -229,7 +229,7 @@ export const DeferPaymentDialog: React.FC<DeferPaymentDialogProps> = ({
                         <Typography variant="body2" color="text.secondary">
                           Deferred Payment Due Date:
                         </Typography>
-                        <Typography variant="body2" fontWeight={600} color="#00CFA2">
+                        <Typography variant="body2" fontWeight={600} color="#DAFF01">
                           {formatDate(newDueDate)}
                         </Typography>
                       </Box>
@@ -243,7 +243,7 @@ export const DeferPaymentDialog: React.FC<DeferPaymentDialogProps> = ({
                       <Typography variant="body2" color="text.secondary">
                         New Due Date:
                       </Typography>
-                      <Typography variant="body2" fontWeight={600} color="#00CFA2">
+                      <Typography variant="body2" fontWeight={600} color="#DAFF01">
                         {formatDate(newDueDate)}
                       </Typography>
                     </Box>

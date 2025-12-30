@@ -38,13 +38,13 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             backgroundColor: '#ffffff',
             boxShadow: '0 0 0 1px rgba(15, 23, 42, 0.06)',
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#00cfa2',
+              borderColor: '#DAFF01',
             },
             '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#00cfa2',
+              borderColor: '#DAFF01',
             },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#00cfa2',
+              borderColor: '#DAFF01',
               borderWidth: 2,
             },
           },

@@ -78,7 +78,7 @@ export const FAQPage: React.FC = () => {
   return (
     <Box className="faq-page">
       <Box className="faq-header">
-        <Help sx={{ fontSize: 64, color: '#00cfa2', mb: 2 }} />
+        <Help sx={{ fontSize: 64, color: '#DAFF01', mb: 2 }} />
         <Typography variant="h3" className="page-title">
           Frequently Asked Questions
         </Typography>

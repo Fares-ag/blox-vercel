@@ -88,7 +88,7 @@ export const ChangePasswordPage: React.FC = () => {
 
       <Paper className="password-card">
         <Box className="header-icon">
-          <Lock sx={{ fontSize: 48, color: '#00cfa2' }} />
+          <Lock sx={{ fontSize: 48, color: '#DAFF01' }} />
         </Box>
 
         <Alert severity="info" sx={{ mb: 3 }}>

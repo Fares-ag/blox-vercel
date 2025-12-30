@@ -42,7 +42,7 @@ export const calculateBadges = (application: Application): Badge[] => {
     name: 'First Payment Hero',
     description: 'Made your first payment',
     icon: '🎯',
-    color: '#00CFA2',
+    color: '#DAFF01',
     category: 'payment',
     unlocked: !!firstPayment,
     unlockedDate: firstPayment?.paidDate,

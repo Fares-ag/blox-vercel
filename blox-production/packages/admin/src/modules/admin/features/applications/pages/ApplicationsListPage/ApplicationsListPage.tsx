@@ -403,7 +403,7 @@ export const ApplicationsListPage: React.FC = () => {
           title="Total Payable"
           value={metrics.totalPayable}
           moduleType="currency"
-          icon={<AttachMoney sx={{ color: '#00CFA2' }} />}
+          icon={<AttachMoney sx={{ color: '#DAFF01' }} />}
           className="metric-card payable"
         />
         <Card
@@ -424,7 +424,7 @@ export const ApplicationsListPage: React.FC = () => {
           title="Active Applications"
           value={metrics.activeApplications}
           moduleType="number"
-          icon={<People sx={{ color: '#00CFA2' }} />}
+          icon={<People sx={{ color: '#DAFF01' }} />}
           className="metric-card active"
         />
       </Box>

@@ -163,7 +163,7 @@ export const PromotionDetailPage: React.FC = () => {
                   <Typography variant="caption" className="info-label">
                     Discount Value
                   </Typography>
-                  <Typography variant="h5" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                  <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                     {displayData.discountValue}
                     {displayData.discountType === 'percentage' ? '%' : ' QAR'}
                   </Typography>

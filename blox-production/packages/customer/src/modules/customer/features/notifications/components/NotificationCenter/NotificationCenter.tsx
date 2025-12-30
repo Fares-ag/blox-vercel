@@ -200,7 +200,7 @@ export const NotificationCenter: React.FC = () => {
                   label={unreadCount}
                   size="small"
                   sx={{
-                    backgroundColor: '#00CFA2',
+                    backgroundColor: '#DAFF01',
                     color: '#FFFFFF',
                     fontWeight: 700,
                     fontSize: '11px',

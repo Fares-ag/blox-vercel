@@ -258,7 +258,7 @@ export const ContractSigningPage: React.FC = () => {
             <Card>
               <CardContent>
                 <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Description sx={{ fontSize: 64, color: '#00CFA2', mb: 2 }} />
+                  <Description sx={{ fontSize: 64, color: '#DAFF01', mb: 2 }} />
                   <Typography variant="h5" gutterBottom>
                     Step 1: Download Your Contract
                   </Typography>
@@ -271,14 +271,14 @@ export const ContractSigningPage: React.FC = () => {
                     startIcon={<FileDownload />}
                     onClick={handleDownloadContract}
                     sx={{
-                      backgroundColor: '#00CFA2',
+                      backgroundColor: '#DAFF01',
                       color: '#FFFFFF',
                       fontWeight: 600,
                       textTransform: 'none',
                       px: 4,
                       py: 1.5,
                       '&:hover': {
-                        backgroundColor: '#00B892',
+                        backgroundColor: '#B8E001',
                       },
                     }}
                   >
@@ -296,7 +296,7 @@ export const ContractSigningPage: React.FC = () => {
             <Card>
               <CardContent>
                 <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Print sx={{ fontSize: 64, color: '#00CFA2', mb: 2 }} />
+                  <Print sx={{ fontSize: 64, color: '#DAFF01', mb: 2 }} />
                   <Typography variant="h5" gutterBottom>
                     Step 2: Print & Sign Your Contract
                   </Typography>
@@ -310,15 +310,15 @@ export const ContractSigningPage: React.FC = () => {
                       startIcon={<Print />}
                       onClick={handlePrint}
                       sx={{
-                        borderColor: '#00CFA2',
-                        color: '#00CFA2',
+                        borderColor: '#DAFF01',
+                        color: '#DAFF01',
                         fontWeight: 600,
                         textTransform: 'none',
                         px: 4,
                         py: 1.5,
                         '&:hover': {
-                          borderColor: '#00B892',
-                          backgroundColor: 'rgba(0, 207, 162, 0.1)',
+                          borderColor: '#B8E001',
+                          backgroundColor: 'rgba(218, 255, 1, 0.1)',
                         },
                       }}
                     >
@@ -330,14 +330,14 @@ export const ContractSigningPage: React.FC = () => {
                       startIcon={<Upload />}
                       onClick={() => setActiveStep(2)}
                       sx={{
-                        backgroundColor: '#00CFA2',
+                        backgroundColor: '#DAFF01',
                         color: '#FFFFFF',
                         fontWeight: 600,
                         textTransform: 'none',
                         px: 4,
                         py: 1.5,
                         '&:hover': {
-                          backgroundColor: '#00B892',
+                          backgroundColor: '#B8E001',
                         },
                       }}
                     >
@@ -356,7 +356,7 @@ export const ContractSigningPage: React.FC = () => {
             <Card>
               <CardContent>
                 <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <CloudUpload sx={{ fontSize: 64, color: '#00CFA2', mb: 2 }} />
+                  <CloudUpload sx={{ fontSize: 64, color: '#DAFF01', mb: 2 }} />
                   <Typography variant="h5" gutterBottom>
                     Step 3: Upload Signed Contract
                   </Typography>
@@ -379,8 +379,8 @@ export const ContractSigningPage: React.FC = () => {
                         size="large"
                         startIcon={<CloudUpload />}
                         sx={{
-                          borderColor: '#00CFA2',
-                          color: '#00CFA2',
+                          borderColor: '#DAFF01',
+                          color: '#DAFF01',
                           fontWeight: 600,
                           textTransform: 'none',
                           px: 4,
@@ -388,8 +388,8 @@ export const ContractSigningPage: React.FC = () => {
                           width: '100%',
                           mb: 2,
                           '&:hover': {
-                            borderColor: '#00B892',
-                            backgroundColor: 'rgba(0, 207, 162, 0.1)',
+                            borderColor: '#B8E001',
+                            backgroundColor: 'rgba(218, 255, 1, 0.1)',
                           },
                         }}
                       >
@@ -409,7 +409,7 @@ export const ContractSigningPage: React.FC = () => {
                           onClick={handleSubmitSignedContract}
                           disabled={uploading}
                           sx={{
-                            backgroundColor: '#00CFA2',
+                            backgroundColor: '#DAFF01',
                             color: '#FFFFFF',
                             fontWeight: 600,
                             textTransform: 'none',
@@ -417,10 +417,10 @@ export const ContractSigningPage: React.FC = () => {
                             py: 1.5,
                             width: '100%',
                             '&:hover': {
-                              backgroundColor: '#00B892',
+                              backgroundColor: '#B8E001',
                             },
                             '&:disabled': {
-                              backgroundColor: '#00CFA2',
+                              backgroundColor: '#DAFF01',
                               opacity: 0.7,
                             },
                           }}

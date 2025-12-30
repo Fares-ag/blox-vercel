@@ -206,7 +206,7 @@ export const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps>
                 control={<Radio />}
                 label={
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Box sx={{ color: '#00CFA2' }}>{option.icon}</Box>
+                    <Box sx={{ color: '#DAFF01' }}>{option.icon}</Box>
                     <Box>
                       <Typography variant="body1" sx={{ fontWeight: 500 }}>
                         {option.label}
@@ -223,11 +223,11 @@ export const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps>
                   padding: '12px 16px',
                   marginBottom: 1,
                   '&:hover': {
-                    borderColor: '#00CFA2',
+                    borderColor: '#DAFF01',
                     backgroundColor: '#F0FDFA',
                   },
                   '&.Mui-checked': {
-                    borderColor: '#00CFA2',
+                    borderColor: '#DAFF01',
                     backgroundColor: '#F0FDFA',
                   },
                 }}
@@ -256,7 +256,7 @@ export const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps>
                   cursor: 'pointer',
                   transition: 'all 200ms',
                   '&:hover': {
-                    borderColor: '#00CFA2',
+                    borderColor: '#DAFF01',
                     backgroundColor: '#F0FDFA',
                   },
                 }}
@@ -269,7 +269,7 @@ export const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps>
                   onChange={handleFileChange}
                 />
                 <label htmlFor="proof-upload-input">
-                  <CloudUpload sx={{ fontSize: 48, color: '#00CFA2', mb: 1, cursor: 'pointer' }} />
+                  <CloudUpload sx={{ fontSize: 48, color: '#DAFF01', mb: 1, cursor: 'pointer' }} />
                   <Typography variant="body2" sx={{ color: '#6B7280', cursor: 'pointer' }}>
                     Click to upload or drag and drop
                   </Typography>
@@ -292,7 +292,7 @@ export const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps>
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <CloudUpload sx={{ color: '#00CFA2' }} />
+                  <CloudUpload sx={{ color: '#DAFF01' }} />
                   <Box>
                     <Typography variant="body2" sx={{ fontWeight: 500 }}>
                       {proofFile.name}

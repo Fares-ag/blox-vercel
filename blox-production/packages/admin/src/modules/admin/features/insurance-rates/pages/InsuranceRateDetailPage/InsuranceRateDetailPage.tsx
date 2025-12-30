@@ -174,7 +174,7 @@ export const InsuranceRateDetailPage: React.FC = () => {
                   <Typography variant="caption" className="info-label">
                     Annual Rate (%)
                   </Typography>
-                  <Typography variant="body1" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                  <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                     {insuranceRate.annualRate}%
                   </Typography>
                 </Box>
@@ -184,7 +184,7 @@ export const InsuranceRateDetailPage: React.FC = () => {
                   <Typography variant="caption" className="info-label">
                     Provider Rate (%)
                   </Typography>
-                  <Typography variant="body1" className="info-value" sx={{ color: '#00CFA2', fontWeight: 600 }}>
+                  <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
                     {insuranceRate.providerRate}%
                   </Typography>
                 </Box>

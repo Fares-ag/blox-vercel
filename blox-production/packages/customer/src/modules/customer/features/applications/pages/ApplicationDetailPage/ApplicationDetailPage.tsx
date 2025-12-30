@@ -418,12 +418,12 @@ export const ApplicationDetailPage: React.FC = () => {
                     startIcon={<FileDownload />}
                     onClick={handleDownloadContract}
                     sx={{
-                      backgroundColor: '#00CFA2',
+                      backgroundColor: '#DAFF01',
                       color: '#FFFFFF',
                       fontWeight: 600,
                       textTransform: 'none',
                       '&:hover': {
-                        backgroundColor: '#00B892',
+                        backgroundColor: '#B8E001',
                       },
                     }}
                   >
@@ -434,13 +434,13 @@ export const ApplicationDetailPage: React.FC = () => {
                     startIcon={<Print />}
                     onClick={handlePrintContract}
                     sx={{
-                      borderColor: '#00CFA2',
-                      color: '#00CFA2',
+                      borderColor: '#DAFF01',
+                      color: '#DAFF01',
                       fontWeight: 600,
                       textTransform: 'none',
                       '&:hover': {
-                        borderColor: '#00B892',
-                        backgroundColor: 'rgba(0, 207, 162, 0.1)',
+                        borderColor: '#B8E001',
+                        backgroundColor: 'rgba(218, 255, 1, 0.1)',
                       },
                     }}
                   >
@@ -475,15 +475,15 @@ export const ApplicationDetailPage: React.FC = () => {
                       fullWidth
                       startIcon={<CloudUpload />}
                       sx={{
-                        borderColor: '#00CFA2',
-                        color: '#00CFA2',
+                        borderColor: '#DAFF01',
+                        color: '#DAFF01',
                         fontWeight: 600,
                         textTransform: 'none',
                         py: 1.5,
                         mb: 2,
                         '&:hover': {
-                          borderColor: '#00B892',
-                          backgroundColor: 'rgba(0, 207, 162, 0.1)',
+                          borderColor: '#B8E001',
+                          backgroundColor: 'rgba(218, 255, 1, 0.1)',
                         },
                       }}
                     >
@@ -503,16 +503,16 @@ export const ApplicationDetailPage: React.FC = () => {
                         onClick={handleSubmitSignedContract}
                         disabled={uploading}
                         sx={{
-                          backgroundColor: '#00CFA2',
+                          backgroundColor: '#DAFF01',
                           color: '#FFFFFF',
                           fontWeight: 600,
                           textTransform: 'none',
                           py: 1.5,
                           '&:hover': {
-                            backgroundColor: '#00B892',
+                            backgroundColor: '#B8E001',
                           },
                           '&:disabled': {
-                            backgroundColor: '#00CFA2',
+                            backgroundColor: '#DAFF01',
                             opacity: 0.7,
                           },
                         }}
@@ -549,7 +549,7 @@ export const ApplicationDetailPage: React.FC = () => {
             onClick={handleDownloadContract}
             className="download-contract-button"
             sx={{
-              backgroundColor: '#16535B',
+              backgroundColor: '#0E1909',
               color: '#FFFFFF',
               fontWeight: 600,
               textTransform: 'none',
@@ -1028,9 +1028,9 @@ export const ApplicationDetailPage: React.FC = () => {
                       startIcon={<AttachMoney />}
                       onClick={handleSettleAllPayments}
                       sx={{
-                        backgroundColor: '#00CFA2',
+                        backgroundColor: '#DAFF01',
                         '&:hover': {
-                          backgroundColor: '#00B892',
+                          backgroundColor: '#B8E001',
                         },
                       }}
                     >

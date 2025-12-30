@@ -441,11 +441,11 @@ export const PaymentCalendarPage: React.FC = () => {
                 py: 1,
                 border: '1px solid #E5E7EB',
                 '&.Mui-selected': {
-                  backgroundColor: '#00CFA2',
+                  backgroundColor: '#DAFF01',
                   color: '#FFFFFF',
-                  borderColor: '#00CFA2',
+                  borderColor: '#DAFF01',
                   '&:hover': {
-                    backgroundColor: '#00B892',
+                    backgroundColor: '#B8E001',
                   },
                 },
                 '&:not(.Mui-selected)': {

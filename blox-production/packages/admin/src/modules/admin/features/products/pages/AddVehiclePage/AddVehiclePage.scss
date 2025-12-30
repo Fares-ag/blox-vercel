@@ -16,8 +16,8 @@
       font-weight: 600;
       text-transform: none;
       padding: 10px 20px;
-      border: 1px solid #00cfa2;
-      color: #00cfa2;
+      border: 1px solid #DAFF01;
+      color: #DAFF01;
       background-color: #ffffff;
 
       &:hover {
@@ -56,7 +56,7 @@
       margin-bottom: 24px;
 
       .section-icon {
-        color: #00cfa2;
+        color: #DAFF01;
         font-size: 32px;
         margin-top: 4px;
       }
@@ -96,13 +96,13 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(135deg, rgba(0, 207, 162, 0.05) 0%, rgba(0, 207, 162, 0.02) 100%);
+        background: linear-gradient(135deg, rgba(218, 255, 1, 0.05) 0%, rgba(218, 255, 1, 0.02) 100%);
         opacity: 0;
         transition: opacity 0.3s ease;
       }
 
       &:hover {
-        border-color: #00cfa2;
+        border-color: #DAFF01;
         background: linear-gradient(to bottom, #f0fdfa, #ffffff);
 
         &::before {
@@ -110,7 +110,7 @@
         }
 
         .upload-icon {
-          color: #00cfa2;
+          color: #DAFF01;
           transform: scale(1.1);
         }
       }
@@ -160,8 +160,8 @@
         transition: all 0.3s ease;
 
         &:hover {
-          border-color: #00cfa2;
-          box-shadow: 0 4px 12px rgba(0, 207, 162, 0.2);
+          border-color: #DAFF01;
+          box-shadow: 0 4px 12px rgba(218, 255, 1, 0.2);
           transform: translateY(-2px);
 
           .remove-image-button {
@@ -212,7 +212,7 @@
       transition: all 0.2s ease;
 
       &:hover {
-        border-color: #00cfa2;
+        border-color: #DAFF01;
         background: #f0fdfa;
       }
 

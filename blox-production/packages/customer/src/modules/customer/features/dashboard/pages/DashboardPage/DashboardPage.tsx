@@ -271,7 +271,7 @@ export const DashboardPage: React.FC = () => {
   const getActivityColor = (type: RecentActivity['type']) => {
     switch (type) {
       case 'payment':
-        return '#00CFA2';
+        return '#DAFF01';
       case 'application':
         return '#2196F3';
       case 'contract':
@@ -504,8 +504,8 @@ export const DashboardPage: React.FC = () => {
                   onClick={() => navigate('/customer/vehicles')}
                   className="quick-action-btn"
                   sx={{ 
-                    backgroundColor: '#00CFA2',
-                    '&:hover': { backgroundColor: '#00B892' }
+                    backgroundColor: '#DAFF01',
+                    '&:hover': { backgroundColor: '#B8E001' }
                   }}
                 >
                   Browse Vehicles
@@ -569,8 +569,8 @@ export const DashboardPage: React.FC = () => {
                     }
                   }}
                   sx={{ 
-                    backgroundColor: '#00CFA2',
-                    '&:hover': { backgroundColor: '#00B892' }
+                    backgroundColor: '#DAFF01',
+                    '&:hover': { backgroundColor: '#B8E001' }
                   }}
                 >
                   Pay Now

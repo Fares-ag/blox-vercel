@@ -11,14 +11,14 @@
     &:hover {
       background-color: #ffffff;
       .MuiOutlinedInput-notchedOutline {
-        border-color: #00CFA2;
+        border-color: #DAFF01;
       }
     }
 
     &.Mui-focused {
       background-color: #ffffff;
       .MuiOutlinedInput-notchedOutline {
-        border-color: #00CFA2;
+        border-color: #DAFF01;
         border-width: 2px;
       }
     }
@@ -67,7 +67,7 @@
   }
 
   .MuiInputLabel-root {
-    color: #16535B;
+    color: #0E1909;
     font-weight: 500;
     font-size: 14px;
     font-family: 'IBM Plex Sans', sans-serif;
@@ -78,7 +78,7 @@
     }
 
     &.Mui-focused {
-      color: #00CFA2;
+      color: #DAFF01;
     }
 
     &.Mui-error {

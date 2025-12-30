@@ -959,8 +959,9 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                     type="number"
                     value={annualRatePercent.toString()}
                     onChange={(e) => setAnnualRatePercent(parseFloat(e.target.value) || 0)}
-                    placeholder="e.g., 12.06"
-                    helperText="Used to compute fixed monthly installment (amortized)"
+                    placeholder="e.g., 12.06 or 0 for interest-free"
+                    helperText="Used to compute fixed monthly installment (amortized). Enter 0 for interest-free loans."
+                    inputProps={{ step: 0.01, min: 0 }}
                   />
                 </Grid>
               )}

@@ -164,9 +164,14 @@ export const EditOfferPage: React.FC = () => {
               <Input
                 label="Annual Rent Rate (%)"
                 type="number"
-                {...register('annualRentRate', { required: true, valueAsNumber: true })}
+                {...register('annualRentRate', { 
+                  required: 'Annual rent rate is required',
+                  valueAsNumber: true,
+                  min: { value: 0, message: 'Rate cannot be negative' }
+                })}
                 error={!!errors.annualRentRate}
-                inputProps={{ step: 0.01 }}
+                helperText={errors.annualRentRate?.message || 'Enter 0 for interest-free offers'}
+                inputProps={{ step: 0.01, min: 0 }}
               />
             </Grid>
             <Grid item xs={12} sm={6}>

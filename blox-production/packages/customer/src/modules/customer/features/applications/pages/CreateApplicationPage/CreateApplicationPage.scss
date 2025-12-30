@@ -5,13 +5,13 @@
   margin: 0 auto;
 
   .back-button {
-    color: #00cfa2;
+    color: #DAFF01;
     font-weight: 600;
     margin-bottom: 24px;
     text-transform: none;
 
     &:hover {
-      background-color: rgba(0, 207, 162, 0.1);
+      background-color: rgba(218, 255, 1, 0.1);
     }
   }
 
@@ -76,12 +76,12 @@
           min-height: 48px;
 
           &.Mui-selected {
-            color: #00cfa2;
+            color: #DAFF01;
           }
         }
 
         .MuiTabs-indicator {
-          background-color: #00cfa2;
+          background-color: #DAFF01;
           height: 3px;
         }
       }
@@ -99,7 +99,7 @@
           cursor: pointer;
 
           &.drag-active {
-            border-color: #00cfa2;
+            border-color: #DAFF01;
             background-color: #f0fdfa;
           }
 
@@ -125,7 +125,7 @@
               color: #374151;
 
               .browse-link {
-                color: #00cfa2;
+                color: #DAFF01;
                 text-decoration: underline;
                 cursor: pointer;
 
@@ -148,7 +148,7 @@
           align-items: center;
           padding: 16px;
           background-color: #f0fdfa;
-          border: 1px solid #00cfa2;
+          border: 1px solid #DAFF01;
           border-radius: 8px;
 
           .document-info {
@@ -183,7 +183,7 @@
         }
 
         .terms-link {
-          color: #00cfa2;
+          color: #DAFF01;
           text-decoration: none;
 
           &:hover {
@@ -195,7 +195,7 @@
           color: #9ca3af;
 
           &.Mui-checked {
-            color: #00cfa2;
+            color: #DAFF01;
           }
         }
       }
@@ -207,7 +207,7 @@
       gap: 16px;
 
       .submit-button {
-        background-color: #00cfa2;
+        background-color: #DAFF01;
         color: #ffffff;
         text-transform: none;
         font-weight: 600;

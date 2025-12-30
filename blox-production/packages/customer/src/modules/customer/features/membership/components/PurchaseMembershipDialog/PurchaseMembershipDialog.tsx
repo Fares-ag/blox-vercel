@@ -74,7 +74,7 @@ export const PurchaseMembershipDialog: React.FC<PurchaseMembershipDialogProps> =
               sx={{
                 p: 2,
                 mb: 2,
-                border: membershipType === 'monthly' ? '2px solid #00CFA2' : '1px solid #e0e0e0',
+                border: membershipType === 'monthly' ? '2px solid #DAFF01' : '1px solid #e0e0e0',
                 borderRadius: 2,
                 cursor: 'pointer',
                 '&:hover': {
@@ -106,7 +106,7 @@ export const PurchaseMembershipDialog: React.FC<PurchaseMembershipDialogProps> =
             <Box
               sx={{
                 p: 2,
-                border: membershipType === 'yearly' ? '2px solid #00CFA2' : '1px solid #e0e0e0',
+                border: membershipType === 'yearly' ? '2px solid #DAFF01' : '1px solid #e0e0e0',
                 borderRadius: 2,
                 cursor: 'pointer',
                 backgroundColor: membershipType === 'yearly' ? '#f0fdf4' : 'transparent',
@@ -131,7 +131,7 @@ export const PurchaseMembershipDialog: React.FC<PurchaseMembershipDialogProps> =
                           sx={{
                             px: 1,
                             py: 0.5,
-                            backgroundColor: '#00CFA2',
+                            backgroundColor: '#DAFF01',
                             color: 'white',
                             borderRadius: 1,
                             fontWeight: 600,
@@ -160,7 +160,7 @@ export const PurchaseMembershipDialog: React.FC<PurchaseMembershipDialogProps> =
             <Typography variant="body2" fontWeight={600}>
               Total Cost:
             </Typography>
-            <Typography variant="h6" color="#00CFA2" fontWeight={700}>
+            <Typography variant="h6" color="#DAFF01" fontWeight={700}>
               {formatCurrency(totalCost)}
             </Typography>
           </Box>
