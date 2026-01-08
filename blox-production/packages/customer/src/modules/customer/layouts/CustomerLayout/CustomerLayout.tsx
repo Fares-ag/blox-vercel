@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Box, Fab, Tooltip } from '@mui/material';
+import React from 'react';
+import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import { CustomerNav } from '../../components/CustomerNav/CustomerNav';
 // import { Chat } from '@mui/icons-material';
@@ -10,7 +10,7 @@ import './CustomerLayout.scss';
 const CHATBOT_ENABLED = false;
 
 export const CustomerLayout: React.FC = () => {
-  const [chatOpen, setChatOpen] = useState(false);
+  // const [chatOpen, setChatOpen] = useState(false);
 
   return (
     <Box className="customer-layout">
@@ -21,17 +21,17 @@ export const CustomerLayout: React.FC = () => {
       {/* Chatbot temporarily disabled */}
       {CHATBOT_ENABLED && (
         <>
-          <Tooltip title="Chat with BLOX AI">
+          {/* <Tooltip title="Chat with BLOX AI">
             <Fab
               color="primary"
               aria-label="chat"
               className="fab-chat"
               onClick={() => setChatOpen(true)}
             >
-              {/* <Chat /> */}
+              <Chat />
             </Fab>
           </Tooltip>
-          {/* <ChatModal open={chatOpen} onClose={() => setChatOpen(false)} /> */}
+          <ChatModal open={chatOpen} onClose={() => setChatOpen(false)} /> */}
         </>
       )}
     </Box>
