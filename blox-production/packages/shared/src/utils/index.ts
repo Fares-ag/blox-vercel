@@ -14,3 +14,4 @@ export * from './web-vitals';
 export * from './health-check';
 export * from './debounce';
 export * from './settlement-discount.utils';
+export * from './logger.util';

@@ -4,13 +4,21 @@ import { setCredentials, logout, setInitialized } from '../../store/slices/auth.
 import type { User } from '@shared/models/user.model';
 import { supabase } from '@shared/services/supabase.service';
 import { loggingService } from '@shared/services/logging.service';
+import { devLogger } from '@shared/utils/logger.util';
 
 /**
  * Helper function to fetch user role from the users table
  * Falls back to user_metadata if table is not accessible
  * Optimized with timeout to prevent long loading times
  */
-const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?: any): Promise<string> => {
+interface UserMetadata {
+  role?: string;
+  user_role?: string;
+  userRole?: string;
+  [key: string]: unknown;
+}
+
+const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?: UserMetadata): Promise<string> => {
   // First, check user_metadata immediately (fast path)
   const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
   
@@ -38,10 +46,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
 
       if (is406Error) {
         // Silently use metadata - this is expected if RLS blocks access
-        // Only log in development mode
-        if (import.meta.env.DEV) {
-          console.debug('Users table not accessible (406), using user_metadata (this is expected if RLS policies are not set up)');
-        }
+        devLogger.debug('Users table not accessible (406), using user_metadata (this is expected if RLS policies are not set up)');
         return roleFromMetadata || 'customer';
       }
 
@@ -68,10 +73,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
                                emailError?.message?.includes('Not Acceptable');
 
         if (isEmail406Error) {
-          // Only log in development mode
-          if (import.meta.env.DEV) {
-            console.debug('Users table not accessible (406), using user_metadata');
-          }
+          devLogger.debug('Users table not accessible (406), using user_metadata');
           return roleFromMetadata || 'customer';
         }
       }
@@ -86,10 +88,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
                         error?.message?.includes('Not Acceptable');
 
       if (is406Error) {
-        // Only log in development mode
-        if (import.meta.env.DEV) {
-          console.debug('Users table not accessible (406), using user_metadata');
-        }
+        devLogger.debug('Users table not accessible (406), using user_metadata');
         return roleFromMetadata || 'customer';
       }
       return roleFromMetadata || 'customer';
@@ -106,10 +105,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
   
   // If timeout, use metadata immediately
   if (result === 'timeout') {
-    // Only log in development mode to reduce console noise in production
-    if (import.meta.env.DEV) {
-      console.debug('Users table query timed out, using user_metadata (this is expected if users table is not accessible)');
-    }
+    devLogger.debug('Users table query timed out, using user_metadata (this is expected if users table is not accessible)');
     return roleFromMetadata || 'customer';
   }
 
@@ -178,7 +174,7 @@ export const AuthInitializer: React.FC = () => {
               }
             }).catch((err) => {
               // Silently fail - we already have metadata role
-              console.debug('Background role fetch failed:', err);
+              devLogger.debug('Background role fetch failed:', err);
             });
           } else {
             // Non-admin user detected - sign them out immediately

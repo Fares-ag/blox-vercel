@@ -25,12 +25,13 @@ import {
   Stars,
   AttachMoney,
 } from '@mui/icons-material';
-import { supabaseApiService, receiptService, supabase } from '@shared/services';
+import { supabaseApiService, receiptService, supabase, skipCashService } from '@shared/services';
 import type { PaymentMethod } from '@shared/models/payment.model';
 import type { Application, PaymentSchedule } from '@shared/models/application.model';
 import { Button as CustomButton, Loading } from '@shared/components';
 import { formatCurrency } from '@shared/utils/formatters';
 import { calculateSettlementDiscount } from '@shared/utils/settlement-discount.utils';
+import { devLogger } from '@shared/utils/logger.util';
 import type { SettlementDiscountSettings } from '@shared/models/settlement-discount.model';
 import { toast } from 'react-toastify';
 import moment from 'moment';
@@ -168,26 +169,19 @@ export const PaymentPage: React.FC = () => {
     }
   }, [location.state]);
 
-  // Load discount when application is loaded and it's a settlement payment
-  useEffect(() => {
-    if (application && isSettlement) {
-      loadSettlementDiscount();
-    }
-  }, [application, isSettlement, loadSettlementDiscount]);
-
   const loadSettlementDiscount = useCallback(async () => {
     if (!application || !isSettlement) {
-      console.debug('⚠️ Cannot load discount: application or isSettlement missing', { application: !!application, isSettlement });
+      devLogger.debug('Cannot load discount: application or isSettlement missing', { application: !!application, isSettlement });
       return;
     }
     
     try {
       setLoadingDiscount(true);
-      console.debug('📊 Loading settlement discount settings...');
+      devLogger.debugWithEmoji('📊', 'Loading settlement discount settings...');
       const settingsResponse = await supabaseApiService.getSettlementDiscountSettings();
       
       if (settingsResponse.status === 'SUCCESS' && settingsResponse.data) {
-        console.debug('✅ Settings loaded:', settingsResponse.data);
+        devLogger.debugWithEmoji('✅', 'Settings loaded:', settingsResponse.data);
         setDiscountSettings(settingsResponse.data);
         
         // Calculate discount
@@ -195,7 +189,7 @@ export const PaymentPage: React.FC = () => {
           (p: PaymentSchedule) => p.status !== 'paid'
         ) || [];
         
-        console.debug('📋 Remaining payments:', remainingPayments.length);
+        devLogger.debugWithEmoji('📋', 'Remaining payments:', remainingPayments.length);
         
         if (remainingPayments.length > 0) {
           const calculation = calculateSettlementDiscount(
@@ -204,29 +198,36 @@ export const PaymentPage: React.FC = () => {
             settingsResponse.data,
             new Date()
           );
-          console.debug('💰 Discount calculation:', calculation);
+          devLogger.debugWithEmoji('💰', 'Discount calculation:', calculation);
           setDiscountCalculation(calculation);
           
           // Update amount with discounted amount if discount applies
           if (calculation.totalDiscount > 0) {
-            console.debug('✅ Discount applied:', calculation.totalDiscount, 'Final amount:', calculation.finalAmount);
+            devLogger.debugWithEmoji('✅', 'Discount applied:', calculation.totalDiscount, 'Final amount:', calculation.finalAmount);
             setAmount(calculation.finalAmount);
           } else {
-            console.debug('ℹ️ No discount applied (totalDiscount = 0)');
+            devLogger.debug('No discount applied (totalDiscount = 0)');
           }
         } else {
-          console.debug('⚠️ No remaining payments to calculate discount for');
+          devLogger.debug('No remaining payments to calculate discount for');
         }
       } else {
-        console.warn('⚠️ Failed to load settings:', settingsResponse.message);
+        devLogger.warn('Failed to load settings:', settingsResponse.message);
       }
     } catch (error: unknown) {
-      console.error('❌ Failed to load settlement discount:', error);
+      devLogger.error('Failed to load settlement discount:', error);
       // Don't show error to user - discount is optional
     } finally {
       setLoadingDiscount(false);
     }
   }, [application, isSettlement]);
+
+  // Load discount when application is loaded and it's a settlement payment
+  useEffect(() => {
+    if (application && isSettlement) {
+      loadSettlementDiscount();
+    }
+  }, [application, isSettlement, loadSettlementDiscount]);
 
   const loadApplication = async () => {
     try {
@@ -340,23 +341,71 @@ export const PaymentPage: React.FC = () => {
     try {
       setProcessing(true);
 
-      // TODO: Replace with actual API call
-      // const paymentRequest: PaymentRequest = {
-      //   applicationId: application.id,
-      //   paymentScheduleId: paymentId,
-      //   amount,
-      //   method: selectedMethod,
-      //   ...(selectedMethod === 'card' ? { cardDetails } : { bankTransferDetails }),
-      // };
-      // const response = await apiService.post('/customer/payments/process', paymentRequest);
-      // if (response.status === 'SUCCESS') {
-      //   navigate(`/customer/my-applications/${id}/payment-confirmation`, {
-      //     state: { transactionId: response.data.transactionId },
-      //   });
-      // }
+      // Handle card payments through SkipCash
+      if (selectedMethod === 'card') {
+        // Generate transaction ID
+        const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Determine payment amount
+        let paymentAmount: number;
+        if (isSettlement && application.installmentPlan?.schedule) {
+          // Calculate total from remaining payments
+          const remainingPayments = application.installmentPlan.schedule.filter(
+            (payment: PaymentSchedule) => payment.status !== 'paid'
+          );
+          const totalOriginalAmount = remainingPayments.reduce((sum, p) => sum + p.amount, 0);
+          // Use discounted amount if available, otherwise use original total
+          paymentAmount = discountCalculation?.finalAmount || totalOriginalAmount || amount;
+        } else {
+          // Regular payment - use custom amount if specified, otherwise use schedule amount
+          paymentAmount = useCustomAmount && customAmount 
+            ? parseFloat(customAmount) 
+            : amount;
+        }
 
-      // Simulate payment processing
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+        // Parse customer name
+        const nameParts = (application.customerName || '').split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || firstName;
+
+        // Prepare SkipCash payment request
+        // Build return URL for payment callback
+        const returnUrl = `${window.location.origin}/customer/applications/${application.id}/payment-callback?transactionId=${encodeURIComponent(transactionId)}&applicationId=${encodeURIComponent(application.id)}`;
+        
+        const skipCashRequest = {
+          amount: paymentAmount,
+          firstName: firstName,
+          lastName: lastName,
+          phone: application.customerPhone || '',
+          email: application.customerEmail || '',
+          transactionId: transactionId,
+          returnUrl: returnUrl,
+          subject: `Payment for Application ${application.id}`,
+          description: isSettlement 
+            ? `Settlement payment for application ${application.id}`
+            : `Payment installment for application ${application.id}`,
+          custom1: JSON.stringify({
+            applicationId: application.id,
+            paymentScheduleId: paymentSchedule?.id,
+            isSettlement: isSettlement,
+            paymentId: paymentId,
+            transactionId: transactionId, // Include for webhook lookup
+          }),
+        };
+
+        // Process payment through SkipCash
+        const result = await skipCashService.processPayment(skipCashRequest);
+
+        if (result.status === 'SUCCESS' && result.data?.resultObj?.paymentUrl) {
+          // Redirect to SkipCash payment page
+          window.location.href = result.data.resultObj.paymentUrl;
+          return; // Don't continue with other logic, user will be redirected
+        } else {
+          toast.error(result.message || 'Failed to initiate payment. Please try again.');
+          setProcessing(false);
+          return;
+        }
+      }
 
       // Handle settlement payment (settle all remaining payments)
       if (isSettlement && application.installmentPlan?.schedule) {

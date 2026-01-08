@@ -64,8 +64,9 @@ export const ChangePasswordPage: React.FC = () => {
 
       toast.success('Password changed successfully');
       navigate(-1);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to change password');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to change password';
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

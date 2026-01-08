@@ -14,15 +14,15 @@ import { TableSkeleton } from '../Skeleton/Skeleton';
 import { EmptyState } from '../EmptyState/EmptyState';
 import './Table.scss';
 
-export interface Column<T = any> {
+export interface Column<T extends Record<string, unknown> = Record<string, unknown>> {
   id: string;
   label: string;
   minWidth?: number;
   align?: 'right' | 'left' | 'center';
-  format?: (value: any, row: T) => React.ReactNode;
+  format?: (value: unknown, row: T) => React.ReactNode;
 }
 
-export interface TableProps<T = any> {
+export interface TableProps<T extends Record<string, unknown> = Record<string, unknown>> {
   columns: Column<T>[];
   rows: T[];
   loading?: boolean;
@@ -35,8 +35,9 @@ export interface TableProps<T = any> {
   emptyMessage?: string;
 }
 
-// Memoized table row component for performance
-const TableRowComponent = <T extends Record<string, any>>({
+// Table row component for performance
+// Note: Cannot use React.memo directly with generic functions, so we rely on useCallback for optimization
+const TableRowComponent = <T extends Record<string, unknown>>({
   row,
   columns,
   onRowClick,
@@ -68,7 +69,7 @@ const TableRowComponent = <T extends Record<string, any>>({
   );
 };
 
-export function Table<T extends Record<string, any>>({
+export function Table<T extends Record<string, unknown>>({
   columns,
   rows,
   loading = false,

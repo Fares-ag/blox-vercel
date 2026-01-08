@@ -18,6 +18,7 @@ import {
 import { Button as CustomButton } from '@shared/components';
 import { toast } from 'react-toastify';
 import { supabaseApiService } from '@shared/services';
+import { devLogger } from '@shared/utils/logger.util';
 import { supabase } from '@shared/services/supabase.service';
 import type { Application } from '@shared/models/application.model';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
@@ -158,9 +159,10 @@ export const DocumentUploadPage: React.FC = () => {
       }));
 
       toast.success('Document uploaded successfully');
-    } catch (error: any) {
-      console.error(`❌ Failed to upload document:`, error);
-      toast.error(error.message || 'Failed to upload document');
+    } catch (error: unknown) {
+      devLogger.error('Failed to upload document:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload document';
+      toast.error(errorMessage);
     } finally {
       setUploading((prev) => ({ ...prev, [category]: false }));
     }

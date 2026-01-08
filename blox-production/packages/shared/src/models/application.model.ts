@@ -1,5 +1,16 @@
 import type { Product } from './product.model';
 import type { Offer } from './offer.model';
+import type { ContractFormData } from '../services/contractPdf.service';
+
+/**
+ * Extended customer information with optional fields
+ * Allows for additional fields beyond the base CustomerInformation interface
+ */
+export interface ExtendedCustomerInformation extends CustomerInformation {
+  gender?: string;
+  nationalId?: string; // Legacy field name, use qid instead
+  [key: string]: unknown; // Allow additional fields for flexibility
+}
 
 export interface Application {
   id: string;
@@ -21,7 +32,7 @@ export interface Application {
   submissionDate?: string;
   contractGenerated?: boolean;
   contractSigned?: boolean;
-  contractData?: any; // ContractFormData from ContractGenerationForm
+  contractData?: ContractFormData;
   contractReviewComments?: string; // Comments from admin review
   contractReviewDate?: string; // Date of review
   contractSignature?: string; // Customer's signature
@@ -33,7 +44,7 @@ export interface Application {
   cancelledByCustomer?: boolean; // True if cancelled by customer
   cancelledAt?: string; // Date when application was cancelled
   bloxMembership?: BloxMembership;
-  customerInfo?: CustomerInformation | any; // Extended customer information (nationalId, gender, employment, etc.)
+  customerInfo?: ExtendedCustomerInformation;
 }
 
 export interface BloxMembership {

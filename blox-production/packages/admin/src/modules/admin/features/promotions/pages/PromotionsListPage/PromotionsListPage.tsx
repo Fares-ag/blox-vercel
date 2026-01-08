@@ -7,6 +7,7 @@ import { supabaseApiService } from '@shared/services';
 import type { Promotion } from '@shared/models/promotion.model';
 import { Table, type Column, Button, StatusBadge, SearchBar, ExportButton, ConfirmDialog } from '@shared/components';
 import { formatDate } from '@shared/utils/formatters';
+import { devLogger } from '@shared/utils/logger.util';
 import { toast } from 'react-toastify';
 import './PromotionsListPage.scss';
 
@@ -86,9 +87,10 @@ export const PromotionsListPage: React.FC = () => {
       } else {
         throw new Error(supabaseResponse.message || 'Failed to delete promotion');
       }
-    } catch (error: any) {
-      console.error('❌ Failed to delete promotion:', error);
-      toast.error(error.message || 'Failed to delete promotion from Supabase');
+    } catch (error: unknown) {
+      devLogger.error('Failed to delete promotion:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete promotion from Supabase';
+      toast.error(errorMessage);
     } finally {
       setDeleteDialogOpen(false);
       setPromotionToDelete(null);

@@ -38,6 +38,7 @@ import type { Offer } from '@shared/models/offer.model';
 import { Loading, EmptyState } from '@shared/components';
 import { supabaseApiService } from '@shared/services';
 import { supabase } from '@shared/services/supabase.service';
+import { devLogger } from '@shared/utils/logger.util';
 import { vehicleService } from '../../../../services/vehicle.service';
 import { customerAuthService } from '../../../../services/customerAuth.service';
 import { toast } from 'react-toastify';
@@ -175,10 +176,10 @@ export const CreateApplicationPage: React.FC = () => {
   const nationalityOptions: SelectOption[] = React.useMemo(() => {
     try {
       const options = getAllNationalityOptions();
-      console.log('Nationality options loaded:', options.length);
+      devLogger.debug('Nationality options loaded:', options.length);
       return options;
-    } catch (error) {
-      console.error('Error loading nationality options:', error);
+    } catch (error: unknown) {
+      devLogger.error('Error loading nationality options:', error);
       return [];
     }
   }, []);
@@ -425,8 +426,8 @@ export const CreateApplicationPage: React.FC = () => {
   };
 
   const onSubmit = async (data: ApplicationFormData) => {
-    console.log('Form submitted with data:', data);
-    console.log('Form errors:', errors);
+    devLogger.debug('Form submitted with data:', data);
+    devLogger.debug('Form errors:', errors);
     
     // Check for blocking existing application
     const customerEmail = data.email.toLowerCase();
@@ -737,22 +738,23 @@ export const CreateApplicationPage: React.FC = () => {
       } else {
         throw new Error(supabaseResponse.message || 'Failed to create application');
       }
-    } catch (error: any) {
-      console.error('Error submitting application:', error);
-      toast.error(error.message || 'Failed to submit application');
+    } catch (error: unknown) {
+      devLogger.error('Error submitting application:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit application';
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Debug function to check form state
+  // Debug function to check form state (dev only)
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submit event triggered');
-    console.log('Form values:', watch());
-    console.log('Form errors:', errors);
-    console.log('Authorize credit check:', authorizeCreditCheck);
-    console.log('Accept terms:', acceptTerms);
+    devLogger.debug('Form submit event triggered');
+    devLogger.debug('Form values:', watch());
+    devLogger.debug('Form errors:', errors);
+    devLogger.debug('Authorize credit check:', authorizeCreditCheck);
+    devLogger.debug('Accept terms:', acceptTerms);
     handleSubmit(onSubmit)();
   };
 

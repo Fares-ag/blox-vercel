@@ -1,10 +1,11 @@
 import type { LoginCredentials, AuthResponse, User } from '../models/user.model';
 import { supabase } from './supabase.service';
+import { devLogger } from '../utils/logger.util';
 
 class AuthService {
   private readonly storageKey = 'blox-supabase-auth';
 
-  private async fetchUserRoleFromDB(userId: string, email: string, userMetadata?: any): Promise<string> {
+  private async fetchUserRoleFromDB(userId: string, email: string, userMetadata?: { role?: string; user_role?: string; userRole?: string; [key: string]: unknown }): Promise<string> {
     // First, check user_metadata immediately (fast path)
     const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
     
@@ -90,10 +91,7 @@ class AuthService {
     
     // If timeout, use metadata immediately
     if (result === 'timeout') {
-      // Only log in development mode
-      if (import.meta.env.DEV) {
-        console.debug('Users table query timed out, using user_metadata (this is expected if users table is not accessible)');
-      }
+      devLogger.debug('Users table query timed out, using user_metadata (this is expected if users table is not accessible)');
       return roleFromMetadata || 'customer';
     }
 

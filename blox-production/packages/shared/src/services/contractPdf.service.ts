@@ -1,11 +1,13 @@
 ﻿import type { Application } from '../models/application.model';
 import moment from 'moment';
 import { formatCurrency } from '../utils/formatters';
+import { devLogger } from '../utils/logger.util';
 
 // Dynamic import for jsPDF
-let jsPDFModule: Promise<any> | null = null;
+// Note: jsPDF types are complex and vary by version, so we use unknown and type guards
+let jsPDFModule: Promise<unknown> | null = null;
 
-const getJsPDF = async (): Promise<any> => {
+const getJsPDF = async (): Promise<unknown> => {
   try {
     if (!jsPDFModule) {
       jsPDFModule = import('jspdf');
@@ -26,8 +28,8 @@ const getJsPDF = async (): Promise<any> => {
     }
     // Fallback to the module itself
     return module;
-  } catch (error) {
-    console.error('Failed to import jsPDF:', error);
+  } catch (error: unknown) {
+    devLogger.error('Failed to import jsPDF:', error);
     throw new Error('Failed to load PDF library. Please ensure jspdf is installed.');
   }
 };
@@ -47,8 +49,8 @@ export interface ContractFormData {
 
   // Service Contract
   hasServiceContract: 'yes' | 'no';
-  warrantyStartDate: any;
-  warrantyEndDate: any;
+  warrantyStartDate: string | null; // ISO date string
+  warrantyEndDate: string | null; // ISO date string
 
   // Pricing
   vehiclePrice: number;

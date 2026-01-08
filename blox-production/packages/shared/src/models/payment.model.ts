@@ -39,4 +39,14 @@ export interface PaymentRequest {
   };
 }
 
+export interface SkipCashPaymentStatus {
+  paymentId: string;
+  transactionId: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  amount: number;
+  paymentUrl?: string;
+  completedAt?: string;
+  failureReason?: string;
+}
+
 

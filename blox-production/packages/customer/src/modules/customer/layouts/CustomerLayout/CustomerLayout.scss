@@ -16,5 +16,17 @@
     // Avoid nested scroll containers (common mobile UX bug); let the document scroll.
     overflow-y: visible;
   }
+
+  .fab-chat {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background-color: #00CFA2;
+    z-index: 1300; // Above most content, below critical overlays if any
+
+    &:hover {
+      background-color: #0A6B6A;
+    }
+  }
 }
 

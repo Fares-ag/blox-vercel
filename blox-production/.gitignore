@@ -52,6 +52,11 @@ coverage
 *.backup
 *.bak
 
+# Credentials and sensitive files
+SKIPCASH_CREDENTIALS.txt
+*_CREDENTIALS.txt
+*_SECRETS.txt
+
 # TypeScript incremental build info
 *.tsbuildinfo
 

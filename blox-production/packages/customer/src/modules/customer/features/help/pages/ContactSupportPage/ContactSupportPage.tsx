@@ -78,8 +78,9 @@ export const ContactSupportPage: React.FC = () => {
         email: '',
         phone: '',
       });
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to send message. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setSubmitting(false);
     }

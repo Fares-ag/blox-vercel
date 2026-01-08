@@ -10,6 +10,8 @@ import {
   Chip,
   Divider,
   LinearProgress,
+  Fab,
+  Tooltip,
 } from '@mui/material';
 import {
   DescriptionOutlined,
@@ -21,6 +23,7 @@ import {
   Schedule,
   AttachMoney,
   Star,
+  Chat,
 } from '@mui/icons-material';
 import { formatCurrency, formatDate } from '@shared/utils/formatters';
 import { StatusBadge, Loading } from '@shared/components';
@@ -800,6 +803,21 @@ export const DashboardPage: React.FC = () => {
         }}
         termMonths={36}
       />
+
+      {/* Floating Action Button */}
+      <Tooltip title="Chat with Support">
+        <Fab
+          color="primary"
+          aria-label="chat"
+          className="fab-chat"
+          onClick={() => {
+            // TODO: Open chat/help
+            toast.info('Chat feature coming soon');
+          }}
+        >
+          <Chat />
+        </Fab>
+      </Tooltip>
     </Box>
   );
 };

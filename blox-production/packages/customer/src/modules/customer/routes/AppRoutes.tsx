@@ -18,6 +18,7 @@ const CreateApplicationPage = React.lazy(() => import('../features/applications/
 
 // Payment Routes
 const PaymentPage = React.lazy(() => import('../features/payments/pages/PaymentPage/PaymentPage').then(m => ({ default: m.PaymentPage })));
+const PaymentCallbackPage = React.lazy(() => import('../features/payments/pages/PaymentCallbackPage/PaymentCallbackPage').then(m => ({ default: m.PaymentCallbackPage })));
 const PaymentConfirmationPage = React.lazy(() => import('../features/payments/pages/PaymentConfirmationPage/PaymentConfirmationPage').then(m => ({ default: m.PaymentConfirmationPage })));
 const PaymentCalendarPage = React.lazy(() => import('../features/payments/pages/PaymentCalendarPage/PaymentCalendarPage').then(m => ({ default: m.PaymentCalendarPage })));
 const PaymentHistoryPage = React.lazy(() => import('../features/payments/pages/PaymentHistoryPage/PaymentHistoryPage').then(m => ({ default: m.PaymentHistoryPage })));
@@ -125,6 +126,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="applications/new" element={<CreateApplicationPage />} />
         <Route path="applications/:id/payment" element={<PaymentPage />} />
         <Route path="applications/:id/payment/:paymentId" element={<PaymentPage />} />
+        <Route path="applications/:id/payment-callback" element={<PaymentCallbackPage />} />
         <Route path="applications/:id/payment-confirmation" element={<PaymentConfirmationPage />} />
         <Route path="applications/:id/documents/upload" element={<DocumentUploadPage />} />
         <Route path="applications/:id/contract/sign" element={<ContractSigningPage />} />

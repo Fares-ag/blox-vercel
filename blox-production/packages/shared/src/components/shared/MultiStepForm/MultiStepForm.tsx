@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Stepper, Step, StepLabel } from '@mui/material';
 import { Button as CustomButton } from '../../core/Button/Button';
+import { devLogger } from '../../../utils/logger.util';
 import './MultiStepForm.scss';
 
 export interface StepConfig {
@@ -9,8 +10,8 @@ export interface StepConfig {
 }
 
 export interface StepProps {
-  data: any;
-  updateData: (data: any) => void;
+  data: Record<string, unknown>;
+  updateData: (data: Record<string, unknown>) => void;
   onNext: () => void;
   onPrevious: () => void;
   isFirstStep: boolean;
@@ -19,8 +20,8 @@ export interface StepProps {
 
 interface MultiStepFormProps {
   steps: StepConfig[];
-  initialData?: any;
-  onSubmit: (data: any) => void | Promise<void>;
+  initialData?: Record<string, unknown>;
+  onSubmit: (data: Record<string, unknown>) => void | Promise<void>;
   onCancel?: () => void;
 }
 
@@ -45,15 +46,15 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
 
-  const handleUpdateData = (stepData: any) => {
-    setFormData((prev: any) => ({ ...prev, ...stepData }));
+  const handleUpdateData = (stepData: Record<string, unknown>) => {
+    setFormData((prev: Record<string, unknown>) => ({ ...prev, ...stepData }));
   };
 
   const handleSubmit = async () => {
     try {
       await onSubmit(formData);
-    } catch (error) {
-      console.error('Form submission error:', error);
+    } catch (error: unknown) {
+      devLogger.error('Form submission error:', error);
     }
   };
 

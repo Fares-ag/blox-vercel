@@ -50,6 +50,7 @@ import type { PaymentStatus } from '@shared/models/application.model';
 import { formatDate, formatDateTable, formatCurrency } from '@shared/utils/formatters';
 import { parseTenureToMonths } from '@shared/utils/tenure.utils';
 import { calculateOwnership } from '@shared/utils/ownership.utils';
+import { devLogger } from '@shared/utils/logger.util';
 import { toast } from 'react-toastify';
 import { ApplicationTimeline } from '../../components/ApplicationTimeline/ApplicationTimeline';
 import type { TimelineEvent } from '../../components/ApplicationTimeline/ApplicationTimeline';
@@ -121,7 +122,7 @@ export const ApplicationDetailPage: React.FC = () => {
       );
       toast.success('Contract downloaded successfully! Please print and sign it.');
     } catch (error: unknown) {
-      console.error('Error generating contract PDF:', error);
+      devLogger.error('Error generating contract PDF:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to generate contract PDF';
       toast.error(errorMessage);
     }
@@ -277,9 +278,9 @@ export const ApplicationDetailPage: React.FC = () => {
           finalAmount = calculation.finalAmount;
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // Discount calculation failed - use original amount
-      console.debug('Could not calculate discount, using original amount:', error);
+      devLogger.debug('Could not calculate discount, using original amount:', error);
     }
 
     navigate(`/customer/applications/${id}/payment`, {

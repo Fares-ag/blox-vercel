@@ -1,7 +1,7 @@
 /**
  * Storage utility for managing localStorage across the application
  */
-
+import { devLogger } from './logger.util';
 
 /**
  * List of all localStorage keys used in the application
@@ -147,7 +147,7 @@ export const getStorageInfo = (): {
  */
 export const exportStorage = (): string => {
   try {
-    const data: Record<string, any> = {};
+    const data: Record<string, unknown> = {};
     
     // Export all known keys
     Object.entries(STORAGE_KEYS).forEach(([, key]) => {
@@ -162,8 +162,8 @@ export const exportStorage = (): string => {
     });
     
     return JSON.stringify(data, null, 2);
-  } catch (error) {
-    console.error('❌ Error exporting storage:', error);
+  } catch (error: unknown) {
+    devLogger.error('Error exporting storage:', error);
     throw error;
   }
 };
@@ -183,9 +183,14 @@ export const importStorage = (jsonData: string, merge: boolean = false): void =>
           const existingArray = JSON.parse(existing);
           const merged = [...existingArray, ...value];
           // Remove duplicates by ID if objects have id property
-          const unique = merged.filter((item: any, index: number, self: any[]) => 
-            index === self.findIndex((t: any) => t.id === item.id)
-          );
+          const unique = merged.filter((item: unknown, index: number, self: unknown[]) => {
+            const itemObj = item && typeof item === 'object' && 'id' in item ? item as { id: unknown } : null;
+            if (!itemObj) return true;
+            return index === self.findIndex((t: unknown) => {
+              const tObj = t && typeof t === 'object' && 'id' in t ? t as { id: unknown } : null;
+              return tObj?.id === itemObj.id;
+            });
+          });
           localStorage.setItem(key, JSON.stringify(unique));
         } else {
           localStorage.setItem(key, JSON.stringify(value));
@@ -195,9 +200,9 @@ export const importStorage = (jsonData: string, merge: boolean = false): void =>
       }
     });
     
-    console.log('✅ Storage imported successfully');
-  } catch (error) {
-    console.error('❌ Error importing storage:', error);
+    devLogger.info('Storage imported successfully');
+  } catch (error: unknown) {
+    devLogger.error('Error importing storage:', error);
     throw error;
   }
 };

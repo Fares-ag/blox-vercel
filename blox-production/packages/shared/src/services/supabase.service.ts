@@ -25,7 +25,7 @@ export const supabase: SupabaseClient = (() => {
 })();
 
 // Helper function to handle Supabase responses
-export const handleSupabaseResponse = <T>(response: any): T => {
+export const handleSupabaseResponse = <T>(response: { error?: { message?: string }; data?: T }): T => {
   if (response.error) {
     throw new Error(response.error.message || 'An error occurred');
   }

@@ -8,7 +8,7 @@ export interface StatusBadgeProps {
   type?: 'application' | 'payment';
 }
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type = 'application' }) => {
+export const StatusBadge: React.FC<StatusBadgeProps> = React.memo(({ status, type = 'application' }) => {
   const getColor = () => {
     if (type === 'payment') {
       // Payment status colors
@@ -44,4 +44,4 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type = 'applic
       }}
     />
   );
-};
+});

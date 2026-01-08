@@ -14,10 +14,10 @@ class OptimizedSupabaseService {
    * Execute query with automatic retry on connection errors
    */
   private async executeWithRetry<T>(
-    queryFn: () => PromiseLike<{ data: T | null; error: any }>,
+    queryFn: () => PromiseLike<{ data: T | null; error: { code?: string; message?: string } | null }>,
     retries = 2
-  ): Promise<{ data: T | null; error: any }> {
-    let lastError: any = null;
+  ): Promise<{ data: T | null; error: { code?: string; message?: string } | null }> {
+    let lastError: { code?: string; message?: string } | null = null;
 
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
@@ -34,8 +34,11 @@ class OptimizedSupabaseService {
         if (attempt < retries) {
           await this.delay(Math.pow(2, attempt) * 100);
         }
-      } catch (error: any) {
-        lastError = error;
+      } catch (error: unknown) {
+        const errorObj = error && typeof error === 'object' && ('code' in error || 'message' in error)
+          ? error as { code?: string; message?: string }
+          : { message: error instanceof Error ? error.message : 'Unknown error' };
+        lastError = errorObj;
         if (attempt < retries) {
           await this.delay(Math.pow(2, attempt) * 100);
         }
@@ -48,7 +51,7 @@ class OptimizedSupabaseService {
   /**
    * Check if error is non-retryable (e.g., validation error)
    */
-  private isNonRetryableError(error: any): boolean {
+  private isNonRetryableError(error: { code?: string; message?: string } | null): boolean {
     if (!error) return false;
     
     // Non-retryable error codes
@@ -71,7 +74,7 @@ class OptimizedSupabaseService {
    */
   async batchQuery<T>(
     table: string,
-    filters: Record<string, any> = {},
+    filters: Record<string, unknown> = {},
     pageSize = 100,
     maxPages = 10
   ): Promise<ApiResponse<T[]>> {
@@ -97,7 +100,7 @@ class OptimizedSupabaseService {
           }
         }
 
-        const { data, error } = await this.executeWithRetry<any[]>(() => query as any);
+        const { data, error } = await this.executeWithRetry<unknown[]>(() => query as PromiseLike<{ data: unknown[] | null; error: { code?: string; message?: string } | null }>);
 
         if (error) {
           loggingService.error(`Batch query error on page ${page}`, { table, error });
@@ -122,11 +125,12 @@ class OptimizedSupabaseService {
         data: allResults,
         message: `Fetched ${allResults.length} records`,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch data';
       loggingService.error('Batch query failed', { table, error });
       return {
         status: 'ERROR',
-        message: error.message || 'Failed to fetch data',
+        message: errorMessage,
         data: [],
       };
     }
@@ -138,7 +142,7 @@ class OptimizedSupabaseService {
    */
   async count(
     table: string,
-    filters: Record<string, any> = {},
+    filters: Record<string, unknown> = {},
     useEstimate = false
   ): Promise<ApiResponse<number>> {
     try {
@@ -161,11 +165,12 @@ class OptimizedSupabaseService {
       }
 
       return this.exactCount(table, filters);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to count records';
       loggingService.error('Count query failed', { table, error });
       return {
         status: 'ERROR',
-        message: error.message || 'Failed to count records',
+        message: errorMessage,
         data: 0,
       };
     }
@@ -176,7 +181,7 @@ class OptimizedSupabaseService {
    */
   private async exactCount(
     table: string,
-    filters: Record<string, any> = {}
+    filters: Record<string, unknown> = {}
   ): Promise<ApiResponse<number>> {
     try {
       let query = supabase
@@ -201,10 +206,11 @@ class OptimizedSupabaseService {
         data: count || 0,
         message: 'Count retrieved successfully',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to count records';
       return {
         status: 'ERROR',
-        message: error.message || 'Failed to count records',
+        message: errorMessage,
         data: 0,
       };
     }
@@ -236,11 +242,12 @@ class OptimizedSupabaseService {
         data: result as T,
         message: 'Record upserted successfully',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upsert record';
       loggingService.error('Upsert failed', { table, error });
       return {
         status: 'ERROR',
-        message: error.message || 'Failed to upsert record',
+        message: errorMessage,
         data: {} as T,
       };
     }
