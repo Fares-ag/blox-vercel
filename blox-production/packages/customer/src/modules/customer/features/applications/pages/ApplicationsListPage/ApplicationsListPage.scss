@@ -5,42 +5,43 @@
   .page-title {
     font-family: 'IBM Plex Sans', sans-serif;
     font-weight: 700;
-    color: #000000;
-    margin-bottom: 8px;
+    color: var(--primary-text);
+    margin-bottom: var(--spacing-sm);
   }
 
   .page-subtitle {
-    color: rgba(0, 0, 0, 0.7);
-    margin-bottom: 32px;
+    color: var(--secondary-text);
+    margin-bottom: var(--spacing-xl);
   }
 
   .applications-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
-    gap: 24px;
+    gap: var(--spacing-lg);
 
     .application-card {
-      background-color: #FFFFFF;
-      border-radius: 10px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      background-color: var(--card-background);
+      border-radius: var(--radius-card);
+      box-shadow: var(--card-shadow);
+      transition: all var(--transition-base);
 
       &:hover {
         transform: translateY(-4px);
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        box-shadow: var(--card-shadow-hover);
+        background-color: var(--card-hover);
       }
 
       .card-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 20px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #E5E7EA;
+        margin-bottom: var(--spacing-lg);
+        padding-bottom: var(--spacing-md);
+        border-bottom: 1px solid var(--divider-color);
 
         .application-id {
           font-weight: 700;
-          color: #000000;
+          color: var(--primary-text);
           margin-bottom: 4px;
         }
       }
@@ -48,8 +49,8 @@
       .card-details {
         display: flex;
         flex-direction: column;
-        gap: 12px;
-        margin-bottom: 20px;
+        gap: var(--spacing-md);
+        margin-bottom: var(--spacing-lg);
 
         .detail-row {
           display: flex;
@@ -60,29 +61,31 @@
 
       .card-actions {
         display: flex;
-        gap: 12px;
+        gap: var(--spacing-md);
         flex-wrap: wrap;
 
         .view-button {
-          color: #16535B;
-          border-color: #16535B;
+          color: var(--secondary-neutral-color);
+          border-color: var(--outline-btn-border);
           text-transform: none;
           font-weight: 600;
 
           &:hover {
-            border-color: #00CFA2;
-            background-color: #EAF7F3;
+            border-color: var(--primary-color);
+            background-color: var(--card-hover);
+            color: var(--primary-color);
           }
         }
 
         .download-button {
-          color: #00CFA2;
-          border-color: #00CFA2;
+          color: var(--primary-color);
+          border-color: var(--primary-color);
           text-transform: none;
           font-weight: 600;
 
           &:hover {
-            background-color: #EAF7F3;
+            background-color: var(--primary-color);
+            color: var(--primary-btn-color);
           }
         }
       }
