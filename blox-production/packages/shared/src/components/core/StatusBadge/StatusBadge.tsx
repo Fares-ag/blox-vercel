@@ -33,15 +33,16 @@ export const StatusBadge: React.FC<StatusBadgeProps> = React.memo(({ status, typ
 
   const backgroundColor = getColor();
   // Determine text color based on background for proper contrast
-  // Lime Yellow (#DAFF01) needs dark text, others use white
+  // Lime Yellow needs dark text, others use white
   const getTextColor = (bgColor: string): string => {
-    if (bgColor === 'var(--status-due)' || bgColor === 'var(--status-active)' || bgColor === '#DAFF01') {
-      return '#0E1909'; // Blox Black for Lime Yellow backgrounds
+    if (bgColor === 'var(--status-due)' || bgColor === 'var(--status-active)' || bgColor.includes('DAFF01')) {
+      return 'var(--blox-black)'; // Blox Black for Lime Yellow backgrounds
     }
-    if (bgColor === 'var(--status-paid)' || bgColor === '#787663' || bgColor === '#C9C4B7') {
-      return '#FFFFFF'; // White for grey backgrounds
+    if (bgColor === 'var(--status-paid)' || bgColor === 'var(--status-draft)' || bgColor === 'var(--status-completed)' || 
+        bgColor.includes('787663') || bgColor.includes('C9C4B7')) {
+      return 'var(--background-secondary)'; // White for grey backgrounds
     }
-    return '#FFFFFF'; // Default to white
+    return 'var(--background-secondary)'; // Default to white
   };
 
   return (

@@ -55,7 +55,7 @@ export const Select: React.FC<SelectProps> = ({
           // prevent overlap between label text and placeholder/value on small screens.
           shrink
           sx={{
-            color: '#0E1909',
+            color: 'var(--field-lable-color)',
             fontSize: '14px',
             fontWeight: 500,
             fontFamily: "'IBM Plex Sans', sans-serif",
@@ -64,10 +64,10 @@ export const Select: React.FC<SelectProps> = ({
               transform: 'translate(14px, -9px) scale(0.85)',
             },
             '&.Mui-focused': {
-              color: '#DAFF01',
+              color: 'var(--field-border-focus)',
             },
             '&.Mui-error': {
-              color: '#F95668',
+              color: 'var(--blox-black)',
             },
           }}
         >
@@ -81,7 +81,7 @@ export const Select: React.FC<SelectProps> = ({
         displayEmpty
         renderValue={(selected: unknown) => {
           if (selected === '' || selected === null || selected === undefined) {
-            return <span style={{ color: '#9CA3AF' }}>{placeholder || 'Select an option'}</span>;
+            return <span style={{ color: 'var(--field-placeholder)' }}>{placeholder || 'Select an option'}</span>;
           }
           const selectedOption = options.find(opt => String(opt.value) === String(selected));
           return selectedOption ? selectedOption.label : String(selected);
@@ -90,36 +90,36 @@ export const Select: React.FC<SelectProps> = ({
         sx={{
           height: '48px',
           borderRadius: '8px',
-          backgroundColor: '#ffffff',
+          backgroundColor: 'var(--card-background)',
           transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
           '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#E5E7EB',
+            borderColor: 'var(--field-border-color)',
             borderWidth: '1px',
           },
           '&:hover': {
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--card-background)',
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#DAFF01',
+              borderColor: 'var(--field-border-focus)',
               borderWidth: '1px',
             },
           },
           '&.Mui-focused': {
-            backgroundColor: '#ffffff',
+            backgroundColor: 'var(--card-background)',
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#DAFF01',
+              borderColor: 'var(--field-border-focus)',
               borderWidth: '2px',
             },
           },
           '&.Mui-error': {
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#F95668',
+              borderColor: 'var(--blox-black)',
               borderWidth: '1px',
             },
           },
           '&.Mui-disabled': {
-            backgroundColor: '#F9FAFB',
+            backgroundColor: 'var(--disabled-bg)',
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#E5E7EB',
+              borderColor: 'var(--field-border-color)',
             },
           },
           '& .MuiSelect-select': {
@@ -129,12 +129,12 @@ export const Select: React.FC<SelectProps> = ({
             alignItems: 'center',
             fontSize: '14px',
             lineHeight: '1.5',
-            color: '#000000',
+            color: 'var(--primary-text)',
             fontFamily: "'IBM Plex Sans', sans-serif",
             fontWeight: 400,
           },
           '& .MuiSelect-icon': {
-            color: '#6B7280',
+            color: 'var(--secondary-text)',
             right: '12px',
           },
         }}
@@ -156,7 +156,7 @@ export const Select: React.FC<SelectProps> = ({
             fontSize: '12px',
             marginTop: '6px',
             marginLeft: '0',
-            color: error ? '#F95668' : '#6B7280',
+            color: error ? 'var(--blox-black)' : 'var(--secondary-text)',
             fontFamily: "'IBM Plex Sans', sans-serif",
             fontWeight: 400,
           }}

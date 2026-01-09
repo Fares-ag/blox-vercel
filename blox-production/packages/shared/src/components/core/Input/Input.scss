@@ -5,34 +5,34 @@
     height: 48px;
     min-height: 48px;
     border-radius: 8px;
-    background-color: #ffffff;
+    background-color: var(--card-background);
     transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
     &:hover {
-      background-color: #ffffff;
+      background-color: var(--card-background);
       .MuiOutlinedInput-notchedOutline {
-        border-color: #DAFF01;
+        border-color: var(--field-border-focus);
       }
     }
 
     &.Mui-focused {
-      background-color: #ffffff;
+      background-color: var(--card-background);
       .MuiOutlinedInput-notchedOutline {
-        border-color: #DAFF01;
+        border-color: var(--field-border-focus);
         border-width: 2px;
       }
     }
 
     &.Mui-error {
       .MuiOutlinedInput-notchedOutline {
-        border-color: #F95668;
+        border-color: var(--blox-black);
       }
     }
 
     &.Mui-disabled {
-      background-color: #F9FAFB;
+      background-color: var(--disabled-bg);
       .MuiOutlinedInput-notchedOutline {
-        border-color: #E5E7EB;
+        border-color: var(--field-border-color);
       }
     }
 
@@ -48,12 +48,12 @@
       height: 48px;
       font-size: 14px;
       line-height: 1.5;
-      color: #000000;
+      color: var(--primary-text);
       font-family: 'IBM Plex Sans', sans-serif;
       font-weight: 400;
       
       &::placeholder {
-        color: #9CA3AF;
+        color: var(--field-placeholder);
         opacity: 1;
         font-weight: 400;
       }
@@ -67,7 +67,7 @@
   }
 
   .MuiInputLabel-root {
-    color: #0E1909;
+    color: var(--field-lable-color);
     font-weight: 500;
     font-size: 14px;
     font-family: 'IBM Plex Sans', sans-serif;
@@ -78,16 +78,16 @@
     }
 
     &.Mui-focused {
-      color: #DAFF01;
+      color: var(--field-border-focus);
     }
 
     &.Mui-error {
-      color: #F95668;
+      color: var(--blox-black);
     }
   }
 
   .MuiFormHelperText-root {
-    color: #6B7280;
+    color: var(--secondary-text);
     font-size: 12px;
     margin-top: 6px;
     margin-left: 0;
@@ -96,7 +96,7 @@
     font-weight: 400;
 
     &.Mui-error {
-      color: #F95668;
+      color: var(--blox-black);
     }
   }
 }
