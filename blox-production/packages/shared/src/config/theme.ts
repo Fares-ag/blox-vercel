@@ -1,27 +1,42 @@
 import { createTheme } from '@mui/material/styles';
 
+// Blox Brand Colors
+// Primary: Lime Yellow (#DAFF01) - Hero color for CTAs and highlights
+// Blox Black (#0E1909) - Primary text and headers
+// Dark Grey (#787663) - Secondary text and borders
+// Mid Grey (#C9C4B7) - Dividers and secondary backgrounds
+// Light Grey (#F3F0ED) - Main backgrounds and cards
+
 export const theme = createTheme({
   palette: {
     primary: {
-      main: '#00CFA2',
-      dark: '#00B892',
-      light: '#00E6C2',
-      contrastText: '#FFFFFF',
+      main: '#DAFF01',      // Lime Yellow - Hero color
+      dark: '#B8D900',      // Darker shade for hover states
+      light: '#E8FF33',     // Lighter shade for light backgrounds
+      contrastText: '#0E1909', // Blox Black for text on Lime Yellow
     },
     secondary: {
-      main: '#2E2C34',
-      dark: '#1a1a1f',
-      light: '#3a3844',
+      main: '#787663',      // Dark Grey - Secondary actions
+      dark: '#5A5849',      // Darker shade
+      light: '#9A9880',     // Lighter shade
+      contrastText: '#FFFFFF',
     },
     background: {
-      default: '#F1F2F4',
-      paper: '#FFFFFF',
+      default: '#F3F0ED',   // Light Grey - Main background
+      paper: '#FFFFFF',     // White for cards
     },
     text: {
-      primary: '#111827',   // near-black for readability
-      secondary: '#4B5563', // darker grey for secondary text
+      primary: '#0E1909',   // Blox Black - Primary text
+      secondary: '#787663', // Dark Grey - Secondary text
     },
-    divider: '#e5e7eb',
+    divider: '#C9C4B7',     // Mid Grey - Dividers
+    grey: {
+      50: '#F3F0ED',        // Light Grey
+      100: '#C9C4B7',       // Mid Grey
+      200: '#787663',       // Dark Grey
+      300: '#5A5849',       // Darker Grey
+      900: '#0E1909',       // Blox Black
+    },
   },
   typography: {
     fontFamily: '"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
@@ -146,10 +161,10 @@ export const theme = createTheme({
             borderRadius: '10px',
             transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
             '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#00CFA2',
+              borderColor: '#C9C4B7', // Mid Grey
             },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#00CFA2',
+              borderColor: '#DAFF01', // Lime Yellow
               borderWidth: '2px',
             },
           },
@@ -163,10 +178,10 @@ export const theme = createTheme({
           borderRadius: '4px',
           transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
           '&.Mui-checked': {
-            color: '#00CFA2',
+            color: '#DAFF01', // Lime Yellow
           },
           '&:hover': {
-            backgroundColor: 'rgba(0, 207, 162, 0.08)',
+            backgroundColor: 'rgba(218, 255, 1, 0.08)', // Lime Yellow with opacity
           },
         },
       },
@@ -174,49 +189,65 @@ export const theme = createTheme({
     MuiDivider: {
       styleOverrides: {
         root: {
-          borderColor: '#e5e7eb',
+          borderColor: '#C9C4B7', // Mid Grey
         },
       },
     },
   },
 });
 
-// CSS Variables for brand colors
+// CSS Variables for brand colors - Blox Brand Palette
 export const brandColors = {
-  primary: '#00CFA2',
-  primaryDark: '#00B892',
-  primaryLight: '#00E6C2',
-  secondary: '#2E2C34',
-  secondaryDark: '#1a1a1f',
-  secondaryLight: '#3a3844',
-  primaryBtnBg: '#00CFA2',
-  primaryBtnColor: '#FFFFFF',
-  secondaryBtnBg: '#FFFFFF',
-  secondaryBtnColor: '#16535B',
-  fieldLabelColor: '#16535B',
-  tableHeader: '#008A6C',
-  tableHeaderColor: '#FFFFFF',
-  customTextColor: '#6B7280',
-  fieldBorderColor: '#9CA3AF',
-  fieldBorderFocus: '#00CFA2',
-  primaryText: '#111827',
-  secondaryText: '#4B5563',
-  fieldPlaceholder: '#648C92',
-  background: '#F1F2F4',
-  backgroundSecondary: '#f3f4f6',
-  cardBackground: '#FFFFFF',
-  cardHover: '#fafafa',
-  disabledBg: '#EDEDEF',
-  dividerColor: '#e5e7eb',
-  // Status colors
-  statusDue: '#E2B13C',
-  statusActive: '#007AFF',
-  statusPaid: '#09C97F',
-  statusUnpaid: '#F95668',
-  statusPartiallyPaid: '#F95668',
-  statusDraft: '#E2B13C',
-  statusCompleted: '#09C97F',
-  statusUnderReview: '#CF8900',
-  statusRejected: '#D65D5D',
-  statusContractSigning: '#16535B',
+  // Primary Brand Colors
+  primary: '#DAFF01',           // Lime Yellow - Hero color
+  primaryDark: '#B8D900',        // Darker Lime Yellow for hover
+  primaryLight: '#E8FF33',       // Lighter Lime Yellow
+  bloxBlack: '#0E1909',         // Blox Black - Primary text
+  darkGrey: '#787663',          // Dark Grey - Secondary text
+  midGrey: '#C9C4B7',           // Mid Grey - Dividers
+  lightGrey: '#F3F0ED',         // Light Grey - Backgrounds
+  
+  // Button Colors
+  primaryBtnBg: '#DAFF01',       // Lime Yellow
+  primaryBtnColor: '#0E1909',    // Blox Black text on Lime Yellow
+  secondaryBtnBg: '#FFFFFF',     // White
+  secondaryBtnColor: '#0E1909',  // Blox Black text
+  outlineBtnBorder: '#787663',   // Dark Grey border
+  
+  // Form Colors
+  fieldLabelColor: '#0E1909',    // Blox Black
+  fieldBorderColor: '#C9C4B7',   // Mid Grey
+  fieldBorderFocus: '#DAFF01',   // Lime Yellow focus
+  fieldPlaceholder: '#787663',    // Dark Grey
+  fieldBackground: '#FFFFFF',     // White
+  
+  // Table Colors
+  tableHeader: '#0E1909',        // Blox Black
+  tableHeaderColor: '#DAFF01',   // Lime Yellow text on Blox Black
+  tableRowHover: '#F3F0ED',      // Light Grey
+  
+  // Text Colors
+  primaryText: '#0E1909',         // Blox Black
+  secondaryText: '#787663',      // Dark Grey
+  customTextColor: '#787663',     // Dark Grey
+  
+  // Background Colors
+  background: '#F3F0ED',          // Light Grey
+  backgroundSecondary: '#FFFFFF', // White
+  cardBackground: '#FFFFFF',      // White
+  cardHover: '#F3F0ED',           // Light Grey
+  disabledBg: '#C9C4B7',          // Mid Grey
+  dividerColor: '#C9C4B7',        // Mid Grey
+  
+  // Status colors - Adjusted to work with new palette
+  statusDue: '#DAFF01',           // Lime Yellow for due/upcoming
+  statusActive: '#DAFF01',        // Lime Yellow for active
+  statusPaid: '#787663',          // Dark Grey for paid (neutral)
+  statusUnpaid: '#0E1909',       // Blox Black for unpaid (strong)
+  statusPartiallyPaid: '#787663', // Dark Grey
+  statusDraft: '#C9C4B7',         // Mid Grey for draft
+  statusCompleted: '#787663',    // Dark Grey for completed
+  statusUnderReview: '#DAFF01',  // Lime Yellow for review
+  statusRejected: '#0E1909',      // Blox Black for rejected
+  statusContractSigning: '#787663', // Dark Grey
 };

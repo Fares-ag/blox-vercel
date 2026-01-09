@@ -42,29 +42,29 @@ export const Config = {
   ],
 
   paymentStatuses: [
-    { status: 'Due', color: '#E2B13C' },
-    { status: 'Active', color: '#007AFF' },
-    { status: 'Paid', color: '#09C97F' },
-    { status: 'Upcoming', color: '#007AFF' },
-    { status: 'Partially Paid', color: '#F95668' },
-    { status: 'Unpaid', color: '#F95668' },
-    { status: 'Over Paid', color: '#00CFA2' },
-    { status: 'Instant Paid', color: '#00CFA2' },
+    { status: 'Due', color: '#DAFF01' },           // Lime Yellow
+    { status: 'Active', color: '#DAFF01' },       // Lime Yellow
+    { status: 'Paid', color: '#787663' },         // Dark Grey
+    { status: 'Upcoming', color: '#DAFF01' },     // Lime Yellow
+    { status: 'Partially Paid', color: '#787663' }, // Dark Grey
+    { status: 'Unpaid', color: '#0E1909' },       // Blox Black
+    { status: 'Over Paid', color: '#787663' },    // Dark Grey
+    { status: 'Instant Paid', color: '#787663' }, // Dark Grey
   ],
 
   statusConfig: [
-    { status: 'Draft', color: '#E2B13C' },
-    { status: 'Active', color: '#007AFF' },
-    { status: 'Completed', color: '#09C97F' },
-    { status: 'Under Review', color: '#CF8900' },
-    { status: 'Rejected', color: '#D65D5D' },
-    { status: 'Contract Signing Required', color: '#16535B' },
-    { status: 'Resubmission Required', color: '#16535B' },
-    { status: 'Contracts Submitted', color: '#CF8900' },
-    { status: 'Contract Under Review', color: '#CF8900' },
-    { status: 'Down Payment Required', color: '#16535B' },
-    { status: 'Down Payment Submitted', color: '#16535B' },
-    { status: 'Submission Cancelled', color: '#E7626C' },
+    { status: 'Draft', color: '#C9C4B7' },                    // Mid Grey
+    { status: 'Active', color: '#DAFF01' },                  // Lime Yellow
+    { status: 'Completed', color: '#787663' },                // Dark Grey
+    { status: 'Under Review', color: '#DAFF01' },            // Lime Yellow
+    { status: 'Rejected', color: '#0E1909' },              // Blox Black
+    { status: 'Contract Signing Required', color: '#787663' }, // Dark Grey
+    { status: 'Resubmission Required', color: '#787663' },  // Dark Grey
+    { status: 'Contracts Submitted', color: '#DAFF01' },    // Lime Yellow
+    { status: 'Contract Under Review', color: '#DAFF01' },  // Lime Yellow
+    { status: 'Down Payment Required', color: '#787663' },  // Dark Grey
+    { status: 'Down Payment Submitted', color: '#787663' }, // Dark Grey
+    { status: 'Submission Cancelled', color: '#0E1909' },    // Blox Black
   ],
 
   tenure: ['1 Year', '2 Years', '3 Years', '4 Years', '5 Years'],

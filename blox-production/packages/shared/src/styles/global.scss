@@ -2,50 +2,58 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  /* Primary Colors */
-  --primary-color: #00CFA2;
-  --primary-dark: #00B892;
-  --primary-light: #00E6C2;
-  --secondary-color: #2e2c34;
-  --secondary-dark: #1a1a1f;
-  --secondary-light: #3a3844;
-  --primary-btn-bg: #00cfa2;
-  --primary-btn-color: #ffffff;
-  --secondary-btn-bg: #ffffff;
-  --secondary-btn-color: #16535b;
+  /* Blox Brand Colors - Primary Palette */
+  --primary-color: #DAFF01;        /* Lime Yellow - Hero color */
+  --primary-dark: #B8D900;         /* Darker Lime Yellow */
+  --primary-light: #E8FF33;        /* Lighter Lime Yellow */
+  --blox-black: #0E1909;           /* Blox Black - Primary text */
+  --dark-grey: #787663;            /* Dark Grey - Secondary text */
+  --mid-grey: #C9C4B7;             /* Mid Grey - Dividers */
+  --light-grey: #F3F0ED;           /* Light Grey - Backgrounds */
+  
+  /* Secondary Colors (for compatibility) */
+  --secondary-color: #787663;       /* Dark Grey */
+  --secondary-dark: #5A5849;       /* Darker Grey */
+  --secondary-light: #9A9880;       /* Lighter Grey */
+  
+  /* Button Colors */
+  --primary-btn-bg: #DAFF01;       /* Lime Yellow */
+  --primary-btn-color: #0E1909;    /* Blox Black text on Lime Yellow */
+  --secondary-btn-bg: #ffffff;      /* White */
+  --secondary-btn-color: #0E1909;   /* Blox Black text */
+  --outline-btn-border: #787663;    /* Dark Grey border */
 
-  /* UI Colors */
-  --field-lable-color: #16535b;
-  --table-header: #008a6c;
-  --table-header-color: #ffffff;
-  /* Text & border colors tuned for higher contrast */
-  --custom-text-color: #6b7280; /* was #bcbcbc */
-  --field-border-color: #9ca3af; /* was #bcbcbc */
-  --field-border-focus: #00cfa2;
-  --primary-text: #111827; /* near-black for better readability */
-  --secondary-text: #4b5563; /* darker grey for body text */
-  --field-placeholder: #648c92;
-  --divider-color: #e5e7eb;
+  /* Form & UI Colors */
+  --field-lable-color: #0E1909;     /* Blox Black */
+  --table-header: #0E1909;          /* Blox Black */
+  --table-header-color: #DAFF01;    /* Lime Yellow text on Blox Black */
+  --custom-text-color: #787663;     /* Dark Grey */
+  --field-border-color: #C9C4B7;   /* Mid Grey */
+  --field-border-focus: #DAFF01;    /* Lime Yellow focus */
+  --primary-text: #0E1909;          /* Blox Black */
+  --secondary-text: #787663;        /* Dark Grey */
+  --field-placeholder: #787663;     /* Dark Grey */
+  --divider-color: #C9C4B7;         /* Mid Grey */
 
-  /* Status Colors */
-  --status-due: #e2b13c;
-  --status-active: #007aff;
-  --status-paid: #09c97f;
-  --status-unpaid: #f95668;
-  --status-partially-paid: #f95668;
-  --status-draft: #e2b13c;
-  --status-completed: #09c97f;
-  --status-under-review: #cf8900;
-  --status-rejected: #d65d5d;
-  --status-contract-signing: #16535b;
+  /* Status Colors - Adjusted for new palette */
+  --status-due: #DAFF01;             /* Lime Yellow */
+  --status-active: #DAFF01;         /* Lime Yellow */
+  --status-paid: #787663;           /* Dark Grey */
+  --status-unpaid: #0E1909;         /* Blox Black */
+  --status-partially-paid: #787663; /* Dark Grey */
+  --status-draft: #C9C4B7;          /* Mid Grey */
+  --status-completed: #787663;      /* Dark Grey */
+  --status-under-review: #DAFF01;   /* Lime Yellow */
+  --status-rejected: #0E1909;       /* Blox Black */
+  --status-contract-signing: #787663; /* Dark Grey */
 
   /* Background Colors */
-  --background: #f1f2f4;
-  --background-secondary: #f3f4f6;
-  --card-background: #ffffff;
-  --card-hover: #fafafa;
-  --disabled-bg: #ededef;
-  --overlay: rgba(0, 0, 0, 0.4);
+  --background: #F3F0ED;            /* Light Grey */
+  --background-secondary: #ffffff;   /* White */
+  --card-background: #ffffff;       /* White */
+  --card-hover: #F3F0ED;            /* Light Grey */
+  --disabled-bg: #C9C4B7;           /* Mid Grey */
+  --overlay: rgba(14, 25, 9, 0.4);  /* Blox Black with opacity */
 
   /* Spacing - Premium Scale */
   --spacing-xs: 4px;
@@ -149,13 +157,13 @@ h5 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #d1d5db;
+  background: #C9C4B7; /* Mid Grey */
   border-radius: 4px;
   transition: background var(--transition-base);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+  background: #787663; /* Dark Grey */
 }
 
 /* Utility Classes */

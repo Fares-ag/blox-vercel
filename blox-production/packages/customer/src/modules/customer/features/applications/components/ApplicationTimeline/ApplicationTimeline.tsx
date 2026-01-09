@@ -22,48 +22,49 @@ interface ApplicationTimelineProps {
   currentStatus: ApplicationStatus;
 }
 
+// Blox Brand Colors
 const STATUS_CONFIG: Record<
   ApplicationStatus,
   { label: string; color: string; icon: React.ReactNode }
 > = {
-  draft: { label: 'Draft Created', color: '#757575', icon: <Pending /> },
-  under_review: { label: 'Under Review', color: '#ff9800', icon: <AccessTime /> },
-  active: { label: 'Approved', color: '#4caf50', icon: <CheckCircle /> },
-  completed: { label: 'Completed', color: '#4caf50', icon: <CheckCircle /> },
-  rejected: { label: 'Rejected', color: '#f44336', icon: <Cancel /> },
+  draft: { label: 'Draft Created', color: '#C9C4B7', icon: <Pending /> }, // Mid Grey
+  under_review: { label: 'Under Review', color: '#DAFF01', icon: <AccessTime /> }, // Lime Yellow
+  active: { label: 'Approved', color: '#787663', icon: <CheckCircle /> }, // Dark Grey
+  completed: { label: 'Completed', color: '#787663', icon: <CheckCircle /> }, // Dark Grey
+  rejected: { label: 'Rejected', color: '#0E1909', icon: <Cancel /> }, // Blox Black
   contract_signing_required: {
     label: 'Contract Signing Required',
-    color: '#2196f3',
+    color: '#787663', // Dark Grey
     icon: <AccessTime />,
   },
   resubmission_required: {
     label: 'Resubmission Required',
-    color: '#ff9800',
+    color: '#787663', // Dark Grey
     icon: <Pending />,
   },
   contracts_submitted: {
     label: 'Contracts Submitted',
-    color: '#4caf50',
+    color: '#DAFF01', // Lime Yellow
     icon: <CheckCircle />,
   },
   contract_under_review: {
     label: 'Contract Under Review',
-    color: '#ff9800',
+    color: '#DAFF01', // Lime Yellow
     icon: <AccessTime />,
   },
   down_payment_required: {
     label: 'Down Payment Required',
-    color: '#ff9800',
+    color: '#787663', // Dark Grey
     icon: <AccessTime />,
   },
   down_payment_submitted: {
     label: 'Down Payment Submitted',
-    color: '#4caf50',
+    color: '#787663', // Dark Grey
     icon: <CheckCircle />,
   },
   submission_cancelled: {
     label: 'Cancelled',
-    color: '#f44336',
+    color: '#0E1909', // Blox Black
     icon: <Cancel />,
   },
 };
@@ -92,8 +93,10 @@ export const ApplicationTimeline: React.FC<ApplicationTimelineProps> = ({
               <TimelineSeparator>
                 <TimelineDot
                   sx={{
-                    backgroundColor: isActive ? config.color : '#e0e0e0',
-                    color: isActive ? '#fff' : '#757575',
+                    backgroundColor: isActive ? config.color : '#C9C4B7', // Mid Grey for inactive
+                    color: isActive 
+                      ? (config.color === '#DAFF01' ? '#0E1909' : '#FFFFFF') // Blox Black for Lime Yellow, white for others
+                      : '#787663', // Dark Grey for inactive icons
                   }}
                 >
                   {config.icon}
