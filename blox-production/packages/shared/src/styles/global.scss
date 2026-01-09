@@ -19,15 +19,25 @@
   /* Button Colors - Following Design Guidelines */
   --primary-btn-bg: #DAFF01;       /* Lime Yellow - Primary buttons */
   --primary-btn-color: #0E1909;    /* Blox Black text on Lime Yellow */
+  --primary-btn-hover: #B8D900;     /* Darker Lime Yellow for hover */
   --secondary-btn-bg: #E6FFE6;      /* Light Green - Secondary buttons */
   --secondary-btn-color: #008000;  /* Dark Green text on Light Green */
+  --secondary-btn-hover: #D4FFD4;   /* Slightly darker light green for hover */
   --secondary-neutral-bg: #F3F0ED; /* Light Grey - Secondary Neutral buttons */
   --secondary-neutral-color: #787663; /* Dark Grey text on Light Grey */
+  --secondary-neutral-hover: #E8E5DF; /* Slightly darker light grey for hover */
   --destructive-btn-bg: #ffffff;     /* White - Destructive buttons */
   --destructive-btn-border: #F44336; /* Red border for destructive */
   --destructive-btn-color: #F44336;  /* Red text for destructive */
+  --destructive-btn-hover-bg: #FFF5F5; /* Very light red tint for hover */
+  --destructive-btn-hover-border: #D32F2F; /* Darker red for hover */
   --tertiary-btn-color: #787663;     /* Dark Grey - Tertiary (text only) */
   --outline-btn-border: #787663;     /* Dark Grey border */
+  
+  /* Focus States */
+  --focus-ring-primary: rgba(218, 255, 1, 0.4); /* Lime Yellow focus ring */
+  --focus-ring-secondary: rgba(0, 128, 0, 0.2); /* Dark Green focus ring */
+  --focus-ring-neutral: rgba(120, 118, 99, 0.2); /* Dark Grey focus ring */
 
   /* Form & UI Colors */
   --field-lable-color: #0E1909;     /* Blox Black */
