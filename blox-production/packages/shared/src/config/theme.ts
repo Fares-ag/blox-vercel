@@ -210,11 +210,17 @@ export const brandColors = {
   midGrey: '#C9C4B7',           // Mid Grey - Dividers
   lightGrey: '#F3F0ED',         // Light Grey - Backgrounds
   
-  // Button Colors
-  primaryBtnBg: '#DAFF01',       // Lime Yellow
+  // Button Colors - Following Design Guidelines
+  primaryBtnBg: '#DAFF01',       // Lime Yellow - Primary buttons
   primaryBtnColor: '#0E1909',    // Blox Black text on Lime Yellow
-  secondaryBtnBg: '#FFFFFF',     // White
-  secondaryBtnColor: '#0E1909',  // Blox Black text
+  secondaryBtnBg: '#E6FFE6',     // Light Green - Secondary buttons
+  secondaryBtnColor: '#008000',  // Dark Green text on Light Green
+  secondaryNeutralBg: '#F3F0ED', // Light Grey - Secondary Neutral buttons
+  secondaryNeutralColor: '#787663', // Dark Grey text on Light Grey
+  destructiveBtnBg: '#FFFFFF',    // White - Destructive buttons
+  destructiveBtnBorder: '#F44336', // Red border for destructive
+  destructiveBtnColor: '#F44336',  // Red text for destructive
+  tertiaryBtnColor: '#787663',    // Dark Grey - Tertiary (text only)
   outlineBtnBorder: '#787663',   // Dark Grey border
   
   // Form Colors
