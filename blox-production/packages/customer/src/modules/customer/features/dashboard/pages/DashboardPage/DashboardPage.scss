@@ -66,22 +66,22 @@
 
     &.stat-card-primary {
       .stat-icon {
-        color: #2196F3;
+        color: var(--primary-color); /* Lime Yellow */
       }
       .stat-value {
-        color: #2196F3;
+        color: var(--primary-color); /* Lime Yellow */
       }
     }
 
     &.stat-card-warning {
       .stat-icon {
-        color: #FF9800;
+        color: var(--primary-color); /* Lime Yellow */
       }
       .stat-value {
-        color: #FF9800;
+        color: var(--primary-color); /* Lime Yellow */
       }
       .overdue-notice {
-        color: #F44336;
+        color: var(--blox-black); /* Blox Black */
         font-weight: 600;
         margin-top: 4px;
         display: block;
@@ -90,19 +90,19 @@
 
     &.stat-card-success {
       .stat-icon {
-        color: #00CFA2;
+        color: var(--dark-grey); /* Dark Grey */
       }
       .stat-value {
-        color: #00CFA2;
+        color: var(--dark-grey); /* Dark Grey */
       }
     }
 
     &.stat-card-info {
       .stat-icon {
-        color: #00CFA2;
+        color: var(--primary-color); /* Lime Yellow */
       }
       .stat-value {
-        color: #00CFA2;
+        color: var(--primary-color); /* Lime Yellow */
       }
     }
   }

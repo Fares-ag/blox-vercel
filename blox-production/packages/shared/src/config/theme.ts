@@ -210,26 +210,26 @@ export const brandColors = {
   midGrey: '#C9C4B7',           // Mid Grey - Dividers
   lightGrey: '#F3F0ED',         // Light Grey - Backgrounds
   
-  // Button Colors - Following Design Guidelines
+  // Button Colors - Following Design Guidelines (No Green)
   primaryBtnBg: '#DAFF01',       // Lime Yellow - Primary buttons
   primaryBtnColor: '#0E1909',    // Blox Black text on Lime Yellow
   primaryBtnHover: '#B8D900',     // Darker Lime Yellow for hover
-  secondaryBtnBg: '#E6FFE6',     // Light Green - Secondary buttons
-  secondaryBtnColor: '#008000',  // Dark Green text on Light Green
-  secondaryBtnHover: '#D4FFD4',   // Slightly darker light green for hover
+  secondaryBtnBg: '#F3F0ED',     // Light Grey - Secondary buttons
+  secondaryBtnColor: '#0E1909',  // Blox Black text on Light Grey
+  secondaryBtnHover: '#E8E5DF',   // Slightly darker light grey for hover
   secondaryNeutralBg: '#F3F0ED', // Light Grey - Secondary Neutral buttons
   secondaryNeutralColor: '#787663', // Dark Grey text on Light Grey
   secondaryNeutralHover: '#E8E5DF', // Slightly darker light grey for hover
   destructiveBtnBg: '#FFFFFF',    // White - Destructive buttons
-  destructiveBtnBorder: '#F44336', // Red border for destructive
-  destructiveBtnColor: '#F44336',  // Red text for destructive
-  destructiveBtnHoverBg: '#FFF5F5', // Very light red tint for hover
-  destructiveBtnHoverBorder: '#D32F2F', // Darker red for hover
+  destructiveBtnBorder: '#787663', // Dark Grey border for destructive
+  destructiveBtnColor: '#0E1909',  // Blox Black text for destructive
+  destructiveBtnHoverBg: '#F3F0ED', // Light Grey for hover
+  destructiveBtnHoverBorder: '#787663', // Dark Grey border for hover
   tertiaryBtnColor: '#787663',    // Dark Grey - Tertiary (text only)
   outlineBtnBorder: '#787663',   // Dark Grey border
   // Focus States
   focusRingPrimary: 'rgba(218, 255, 1, 0.4)', // Lime Yellow focus ring
-  focusRingSecondary: 'rgba(0, 128, 0, 0.2)', // Dark Green focus ring
+  focusRingSecondary: 'rgba(14, 25, 9, 0.2)', // Blox Black focus ring
   focusRingNeutral: 'rgba(120, 118, 99, 0.2)', // Dark Grey focus ring
   
   // Form Colors
