@@ -14,25 +14,56 @@
   }
 
   .category-section {
-    margin-bottom: 32px;
+    margin-bottom: var(--spacing-xl);
 
     .category-title {
-      margin-bottom: 16px;
-      font-weight: 600;
-      color: #DAFF01;
+      margin-bottom: var(--spacing-md);
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--primary-color); /* Lime Yellow */
+      letter-spacing: -0.01em;
     }
 
     .faq-accordion {
-      box-shadow: none;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
+      // Clean, minimal design matching vehicle cards
+      box-shadow: var(--card-shadow);
+      border: none; /* No border for clean look */
+      border-radius: var(--radius-card);
       overflow: hidden;
+      background-color: var(--card-background); /* Light Grey */
+      margin-bottom: var(--spacing-md);
 
       .MuiAccordion-root {
-        border-bottom: 1px solid #e0e0e0;
+        background-color: var(--card-background); /* Light Grey */
+        border-bottom: 1px solid var(--divider-color); /* Mid Grey */
+        box-shadow: none;
+        transition: all var(--transition-base);
 
         &:last-child {
           border-bottom: none;
+        }
+
+        &:hover {
+          background-color: var(--card-hover); /* Slightly darker on hover */
+        }
+
+        &.Mui-expanded {
+          background-color: var(--card-background); /* Light Grey */
+        }
+
+        .MuiAccordionSummary-root {
+          color: var(--primary-text); /* Blox Black */
+          font-weight: 600;
+
+          &:hover {
+            background-color: var(--card-hover); /* Slightly darker on hover */
+          }
+        }
+
+        .MuiAccordionDetails-root {
+          color: var(--secondary-text); /* Dark Grey */
+          padding: var(--spacing-md) var(--spacing-lg);
+          background-color: var(--background); /* Light Grey */
         }
       }
     }

@@ -114,9 +114,9 @@
     }
   }
 
-  /* DESTRUCTIVE - White with Dark Grey border and Blox Black text */
+  /* DESTRUCTIVE - Light Grey with Dark Grey border and Blox Black text */
   &.btn-destructive {
-    background-color: var(--destructive-btn-bg); /* White */
+    background-color: var(--destructive-btn-bg); /* Light Grey */
     color: var(--destructive-btn-color); /* Blox Black */
     border: 1.5px solid var(--destructive-btn-border); /* Dark Grey border */
     height: 44px;
@@ -144,7 +144,7 @@
     }
 
     &:disabled {
-      background-color: var(--destructive-btn-bg); /* White */
+      background-color: var(--destructive-btn-bg); /* Light Grey */
       border-color: var(--field-border-color); /* Mid Grey */
       color: var(--field-border-color); /* Mid Grey */
       transform: none;

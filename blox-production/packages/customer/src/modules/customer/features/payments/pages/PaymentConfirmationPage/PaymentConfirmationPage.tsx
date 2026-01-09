@@ -21,26 +21,26 @@ export const PaymentConfirmationPage: React.FC = () => {
     <Box className="payment-confirmation-page">
       <Paper className="confirmation-card">
         <Box className="success-icon">
-          <CheckCircle sx={{ fontSize: 80, color: '#4caf50' }} />
+          <CheckCircle sx={{ fontSize: 80 }} />
         </Box>
         <Typography variant="h4" className="success-title">
           Payment Successful!
         </Typography>
-        <Typography variant="body1" color="text.secondary" className="success-message">
+        <Typography variant="body1" className="success-message">
           Your payment has been processed successfully.
         </Typography>
 
         <Box className="transaction-details">
           <Box className="detail-row">
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" className="label">
               Transaction ID:
             </Typography>
-            <Typography variant="body1" fontWeight={600}>
+            <Typography variant="body1" className="value">
               {transactionId || 'N/A'}
             </Typography>
           </Box>
           <Box className="detail-row">
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" className="label">
               Amount Paid:
             </Typography>
             <Typography variant="h6" className="amount">
@@ -48,18 +48,18 @@ export const PaymentConfirmationPage: React.FC = () => {
             </Typography>
           </Box>
           <Box className="detail-row">
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" className="label">
               Payment Method:
             </Typography>
-            <Typography variant="body1" fontWeight={600}>
+            <Typography variant="body1" className="value">
               {method === 'card' ? 'Credit/Debit Card' : method === 'bank_transfer' ? 'Bank Transfer' : 'N/A'}
             </Typography>
           </Box>
           <Box className="detail-row">
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" className="label">
               Date:
             </Typography>
-            <Typography variant="body1" fontWeight={600}>
+            <Typography variant="body1" className="value">
               {new Date().toLocaleString()}
             </Typography>
           </Box>

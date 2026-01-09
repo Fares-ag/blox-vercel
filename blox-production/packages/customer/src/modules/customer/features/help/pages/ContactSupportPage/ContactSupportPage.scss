@@ -9,27 +9,45 @@
   }
 
   .contact-form-card {
-    padding: 32px;
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    padding: var(--spacing-lg);
+    background-color: var(--card-background); /* Light Grey */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+    transition: all var(--transition-base);
+
+    &:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
   }
 
   .contact-info-card {
-    padding: 24px;
+    // Clean, minimal design matching vehicle cards
+    padding: var(--spacing-lg);
+    background-color: var(--card-background); /* Light Grey */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
 
     .section-title {
-      margin-bottom: 24px;
-      font-weight: 600;
+      margin-bottom: var(--spacing-lg);
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--primary-text); /* Blox Black */
+      letter-spacing: -0.01em;
     }
 
     .contact-item {
       display: flex;
       align-items: flex-start;
-      margin-bottom: 24px;
+      margin-bottom: var(--spacing-lg);
     }
 
     .business-hours {
-      margin-top: 32px;
-      padding-top: 24px;
-      border-top: 1px solid #e0e0e0;
+      margin-top: var(--spacing-xl);
+      padding-top: var(--spacing-lg);
+      border-top: 1px solid var(--divider-color); /* Mid Grey border */
     }
   }
 

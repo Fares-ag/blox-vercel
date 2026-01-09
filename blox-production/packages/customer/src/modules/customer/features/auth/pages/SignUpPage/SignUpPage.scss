@@ -3,13 +3,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: var(--background); /* Solid background - no gradient */
   padding: var(--spacing-md, 24px);
 
   .signup-container {
     width: 100%;
     max-width: 600px;
-    background: white;
+    background: var(--card-background); /* Light Grey */
     border-radius: 12px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
     padding: var(--spacing-xl, 40px);
@@ -27,13 +27,13 @@
       }
 
       .welcome-text {
-        color: #DAFF01;
+        color: var(--primary-color); /* Lime Yellow */
         font-weight: 600;
         margin-bottom: var(--spacing-xs, 8px);
       }
 
       .subtitle-text {
-        color: var(--text-secondary, #666);
+        color: var(--secondary-text); /* Dark Grey */
       }
     }
 
@@ -57,7 +57,7 @@
         margin-top: var(--spacing-sm, 8px);
 
         a {
-          color: #DAFF01;
+          color: var(--primary-color); /* Lime Yellow */
           text-decoration: none;
           font-weight: 500;
 

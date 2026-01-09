@@ -90,7 +90,7 @@ export const ApplicationsListPage: React.FC = () => {
                     <Typography variant="h6" className="application-id">
                       Application #{application.id}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" className="vehicle-info" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
                       {application.vehicle
                         ? `${application.vehicle.make} ${application.vehicle.model} ${application.vehicle.trim}`
                         : 'Vehicle Information'}
@@ -101,36 +101,36 @@ export const ApplicationsListPage: React.FC = () => {
 
                 <Box className="card-details">
                   <Box className="detail-row">
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
                       Vehicle Price
                     </Typography>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" className="detail-value" fontWeight={600} sx={{ color: 'var(--primary-text)' }}>
                       {application.vehicle
                         ? formatCurrency(application.vehicle.price)
                         : 'N/A'}
                     </Typography>
                   </Box>
                   <Box className="detail-row">
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
                       Down Payment
                     </Typography>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" className="detail-value" fontWeight={600} sx={{ color: 'var(--primary-text)' }}>
                       {formatCurrency(application.downPayment)}
                     </Typography>
                   </Box>
                   <Box className="detail-row">
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
                       Loan Amount
                     </Typography>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" className="detail-value" fontWeight={600} sx={{ color: 'var(--primary-text)' }}>
                       {formatCurrency(application.loanAmount)}
                     </Typography>
                   </Box>
                   <Box className="detail-row">
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
                       Created
                     </Typography>
-                    <Typography variant="body2" fontWeight={600}>
+                    <Typography variant="body2" className="detail-value" fontWeight={600} sx={{ color: 'var(--primary-text)' }}>
                       {application.createdAt ? formatDateTime(application.createdAt) : 'N/A'}
                     </Typography>
                   </Box>

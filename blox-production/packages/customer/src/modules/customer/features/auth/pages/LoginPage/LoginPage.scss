@@ -3,12 +3,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #d9f5eb 0%, #9be2c7 50%, #7ad9c4 100%);
+  background: var(--background); /* Solid background - no gradient */
   padding: clamp(16px, 4vw, 32px);
 
   .login-shell {
     width: min(1100px, 100%);
-    background: #ffffff;
+    background: var(--card-background); /* Light Grey */
     border-radius: 16px;
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
     overflow: hidden;
@@ -19,8 +19,8 @@
   }
 
   .banner {
-    background: linear-gradient(90deg, #0a6b6a 0%, #009f84 60%, #DAFF01 100%);
-    color: #fff;
+    background: var(--blox-black); /* Dark theme - no gradient */
+    color: var(--background-secondary);
     border-radius: 12px;
     padding: clamp(16px, 3vw, 24px);
     position: relative;
@@ -36,7 +36,8 @@
       bottom: -80px;
       width: 200px;
       height: 200px;
-      background: radial-gradient(circle at center, rgba(255, 255, 255, 0.25), transparent 60%);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
     }
 
     .banner-kicker {
@@ -52,16 +53,17 @@
     .banner-cta {
       width: fit-content;
       margin-top: 4px;
-      background: #0a6b6a;
+      background: var(--primary-color); /* Lime Yellow */
+      color: var(--primary-btn-color);
       &:hover {
-        background: #07534f;
+        background: var(--primary-btn-hover);
       }
     }
   }
 
   .login-form-card {
-    background: #fdfefe;
-    border: 1px solid #e7f2ed;
+    background: var(--card-background); /* Light Grey */
+    border: 1px solid var(--divider-color); /* Mid Grey */
     border-radius: 12px;
     padding: clamp(20px, 3vw, 28px);
     display: flex;
@@ -86,7 +88,7 @@
     gap: 12px;
 
     .forgot-link {
-      color: #0a6b6a;
+      color: var(--primary-color); /* Lime Yellow */
       text-decoration: none;
       font-size: 14px;
 
@@ -110,7 +112,7 @@
     margin-top: 4px;
 
     a {
-      color: #0a6b6a;
+      color: var(--primary-color); /* Lime Yellow */
       font-weight: 600;
       text-decoration: none;
 

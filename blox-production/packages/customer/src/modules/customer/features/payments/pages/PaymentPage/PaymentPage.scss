@@ -1,6 +1,8 @@
 .payment-page {
   padding: 24px;
   width: 100%;
+  background-color: var(--background); /* Light Grey background */
+  min-height: 100vh;
 
   .back-button {
     margin-bottom: 24px;
@@ -9,6 +11,7 @@
   .page-title {
     margin-bottom: 32px;
     font-weight: 600;
+    color: var(--primary-text); /* Blox Black */
   }
 
   .payment-layout {
@@ -39,25 +42,57 @@
   }
 
   .payment-card {
-    padding: 32px;
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    padding: var(--spacing-lg);
+    background-color: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
   }
 
   .summary-card {
-    padding: 24px;
+    // Clean, minimal design matching vehicle cards
+    padding: var(--spacing-lg);
     position: sticky;
-    top: 24px;
+    top: var(--spacing-lg);
+    background-color: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+    transition: all var(--transition-base);
+
+    &:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
 
     .section-title {
-      margin-bottom: 24px;
-      font-weight: 600;
+      margin-bottom: var(--spacing-lg);
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--primary-text); /* Blox Black */
+      letter-spacing: -0.01em;
     }
 
     .summary-item {
-      margin-bottom: 16px;
+      margin-bottom: var(--spacing-md);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-sm) 0;
+
+      .label {
+        font-size: 14px;
+        color: var(--secondary-text); /* Dark Grey */
+        opacity: 0.8;
+      }
 
       .amount {
-        color: #DAFF01;
-        font-weight: 600;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--primary-color); /* Lime Yellow for emphasis */
+        letter-spacing: -0.01em;
       }
     }
   }

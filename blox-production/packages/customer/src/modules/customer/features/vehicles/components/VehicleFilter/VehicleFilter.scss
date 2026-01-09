@@ -1,35 +1,38 @@
 .vehicle-filter {
   font-family: 'IBM Plex Sans', sans-serif;
-  padding: 20px;
+  padding: var(--spacing-md);
+  background-color: var(--card-background);
+  border-radius: var(--radius-card);
 
   .filter-title {
     font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 16px;
-    font-weight: 600;
-    color: #000000;
-    margin-bottom: 20px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #DAFF01;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary-text);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid var(--primary-color);
   }
 
   .filter-group {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--spacing-sm);
   }
 
   .MuiAccordion-root {
     box-shadow: none;
-    border: 1px solid rgba(0, 0, 0, 0.08);
-    border-radius: 8px !important;
-    margin-bottom: 10px;
-    background-color: rgba(255, 255, 255, 0.8);
+    border: 1px solid var(--divider-color);
+    border-radius: var(--radius-md) !important;
+    margin-bottom: var(--spacing-sm);
+    background-color: var(--card-background);
     font-family: 'IBM Plex Sans', sans-serif;
-    transition: all 0.2s ease;
+    transition: all var(--transition-base);
 
     &:hover {
-      border-color: rgba(218, 255, 1, 0.3);
-      background-color: rgba(255, 255, 255, 0.95);
+      border-color: var(--primary-color);
+      background-color: var(--card-hover);
+      box-shadow: var(--shadow-sm);
     }
 
     &:before {
@@ -37,7 +40,7 @@
     }
 
     .MuiAccordionSummary-root {
-      padding: 12px 16px;
+      padding: var(--spacing-sm) var(--spacing-md);
       min-height: 48px;
 
       .MuiAccordionSummary-content {
@@ -47,64 +50,64 @@
           font-family: 'IBM Plex Sans', sans-serif;
           font-size: 14px;
           font-weight: 600;
-          color: #000000;
+          color: var(--primary-text);
         }
       }
 
       .MuiAccordionSummary-expandIconWrapper {
-        color: #DAFF01;
+        color: var(--primary-color);
       }
     }
 
     .MuiAccordionDetails-root {
-      padding: 16px;
-      padding-top: 12px;
-      background-color: rgba(249, 250, 251, 0.6);
+      padding: var(--spacing-md);
+      padding-top: var(--spacing-sm);
+      background-color: var(--card-background);
     }
   }
 
   .filter-actions {
-    margin-top: 24px;
+    margin-top: var(--spacing-lg);
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: var(--spacing-sm);
 
     button {
       font-family: 'IBM Plex Sans', sans-serif;
       font-size: 14px;
       font-weight: 500;
-      border-radius: 6px;
+      border-radius: var(--radius-sm);
       text-transform: none;
     }
   }
 
   // Mobile adjustments
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: var(--spacing-md);
 
     .filter-title {
       font-size: 16px;
-      margin-bottom: 16px;
+      margin-bottom: var(--spacing-md);
     }
 
     .filter-group {
-      gap: 10px;
+      gap: var(--spacing-xs);
     }
 
     .MuiAccordion-root {
       .MuiAccordionSummary-root {
-        padding: 10px 14px;
+        padding: var(--spacing-xs) var(--spacing-sm);
         min-height: 44px;
       }
 
       .MuiAccordionDetails-root {
-        padding: 12px;
+        padding: var(--spacing-sm);
       }
     }
 
     .filter-actions {
-      margin-top: 20px;
-      gap: 10px;
+      margin-top: var(--spacing-md);
+      gap: var(--spacing-xs);
     }
   }
 }

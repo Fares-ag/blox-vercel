@@ -4,9 +4,9 @@
   .MuiOutlinedInput-root {
     height: 48px;
     min-height: 48px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background-color: var(--card-background);
-    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all var(--transition-base);
 
     &:hover {
       background-color: var(--card-background);
@@ -44,7 +44,7 @@
     }
 
     .MuiInputBase-input {
-      padding: 0 16px;
+      padding: 0 var(--spacing-md);
       height: 48px;
       font-size: 14px;
       line-height: 1.5;
@@ -60,7 +60,7 @@
     }
 
     .MuiInputBase-inputMultiline {
-      padding: 12px 16px;
+      padding: var(--spacing-md);
       min-height: 48px;
       height: auto;
     }

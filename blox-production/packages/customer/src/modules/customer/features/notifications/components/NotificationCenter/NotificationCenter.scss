@@ -1,22 +1,24 @@
 .notification-button {
   color: inherit;
-  transition: all 0.2s ease;
+  transition: all var(--transition-base);
 
   &:hover {
-    background-color: rgba(0, 207, 162, 0.1);
+    background-color: rgba(218, 255, 1, 0.1); /* Lime Yellow tint */
   }
 
   .MuiBadge-badge {
-    background-color: #F44336;
+    background-color: var(--primary-color); /* Lime Yellow for badge */
     font-weight: 700;
     font-size: 10px;
     min-width: 18px;
     height: 18px;
+    color: var(--primary-btn-color); /* Blox Black text */
   }
 }
 
 .notification-center {
-  background: rgba(255, 255, 255, 0.98);
+  background: var(--blox-black); /* Black card */
+  color: var(--background-secondary); /* Light Grey text */
   backdrop-filter: blur(10px);
 
   .notification-header {
@@ -24,8 +26,8 @@
     justify-content: space-between;
     align-items: center;
     padding: 20px;
-    background: linear-gradient(135deg, rgba(0, 207, 162, 0.05) 0%, rgba(10, 107, 106, 0.05) 100%);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(218, 255, 1, 0.1); /* Lime Yellow tint - no gradient */
+    border-bottom: 1px solid var(--divider-color); /* Mid Grey border */
 
     .header-content {
       display: flex;
@@ -34,7 +36,7 @@
 
       .header-title {
         font-weight: 700;
-        color: #1a1a1a;
+        color: var(--background-secondary); /* Light Grey text on black */
         font-size: 18px;
       }
     }
@@ -42,12 +44,12 @@
     .mark-all-read-btn {
       text-transform: none;
       font-size: 12px;
-      color: #00CFA2;
+      color: var(--primary-color); /* Lime Yellow */
       font-weight: 600;
       padding: 4px 12px;
 
       &:hover {
-        background-color: rgba(0, 207, 162, 0.1);
+        background-color: rgba(218, 255, 1, 0.15); /* Brighter Lime Yellow tint */
       }
     }
   }
@@ -57,12 +59,13 @@
     text-align: center;
 
     .MuiTypography-body2 {
-      color: #666666;
+      color: var(--secondary-text); /* Dark Grey */
       font-size: 14px;
     }
 
     .MuiTypography-caption {
-      color: #999999;
+      color: var(--secondary-text); /* Dark Grey */
+      opacity: 0.7;
       font-size: 12px;
     }
   }
@@ -73,30 +76,31 @@
     }
 
     &::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.05);
+      background: rgba(243, 240, 237, 0.1); /* Light Grey with opacity */
       border-radius: 3px;
     }
 
     &::-webkit-scrollbar-thumb {
-      background: rgba(0, 207, 162, 0.3);
+      background: rgba(218, 255, 1, 0.3); /* Lime Yellow with opacity */
       border-radius: 3px;
 
       &:hover {
-        background: rgba(0, 207, 162, 0.5);
+        background: rgba(218, 255, 1, 0.5); /* Brighter Lime Yellow */
       }
     }
   }
 
   .notification-item {
     position: relative;
-    transition: all 0.2s ease;
+    transition: all var(--transition-base);
+    color: var(--background-secondary); /* Light Grey text */
 
     &:hover {
-      background-color: rgba(0, 207, 162, 0.05) !important;
+      background-color: rgba(218, 255, 1, 0.1) !important; /* Lime Yellow tint */
     }
 
     &.unread {
-      background-color: rgba(0, 207, 162, 0.03);
+      background-color: rgba(218, 255, 1, 0.05); /* Lime Yellow tint */
 
       &::before {
         content: '';
@@ -105,7 +109,7 @@
         top: 0;
         bottom: 0;
         width: 3px;
-        background-color: #00CFA2;
+        background-color: var(--primary-color); /* Lime Yellow */
       }
     }
 
@@ -137,7 +141,7 @@
         .unread-dot {
           width: 8px;
           height: 8px;
-          background-color: #00CFA2;
+          background-color: var(--primary-color); /* Lime Yellow */
           border-radius: 50%;
           flex-shrink: 0;
           animation: pulse 2s infinite;

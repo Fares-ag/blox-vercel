@@ -227,7 +227,7 @@ export const PaymentCalendarPage: React.FC = () => {
         <Box className="calendar-header">
           {weekDays.map((day, index) => (
             <Box key={`weekday-${index}-${day}`} className="weekday-header">
-              <Typography variant="caption" fontWeight={600}>
+              <Typography variant="caption" fontWeight={600} sx={{ color: 'var(--primary-text)' }}>
                 {day}
               </Typography>
             </Box>
@@ -296,7 +296,7 @@ export const PaymentCalendarPage: React.FC = () => {
                               </Typography>
                             )}
                             {dayPayments.length <= maxIndicators && dayPayments.length > 1 && (
-                              <Typography variant="caption" className="more-indicator" sx={{ fontSize: '0.65rem', color: '#666' }}>
+                              <Typography variant="caption" className="more-indicator" sx={{ fontSize: '0.65rem', color: 'var(--primary-text)', fontWeight: 600 }}>
                                 Total: {formatCurrency(totalAmount)}
                               </Typography>
                             )}
@@ -409,7 +409,7 @@ export const PaymentCalendarPage: React.FC = () => {
       </Button>
 
       <Box className="page-header">
-        <Typography variant="h4" className="page-title">
+        <Typography variant="h4" className="page-title" sx={{ color: 'var(--primary-text)' }}>
           Payment Calendar
         </Typography>
         <Box
@@ -439,20 +439,20 @@ export const PaymentCalendarPage: React.FC = () => {
                 justifyContent: 'center',
                 px: { xs: 1.5, sm: 2 },
                 py: 1,
-                border: '1px solid #E5E7EB',
+                border: '1px solid var(--divider-color)',
                 '&.Mui-selected': {
-                  backgroundColor: '#DAFF01',
-                  color: '#FFFFFF',
-                  borderColor: '#DAFF01',
+                  backgroundColor: 'var(--primary-color)', /* Lime Yellow */
+                  color: 'var(--primary-btn-color)', /* Blox Black text */
+                  borderColor: 'var(--primary-color)',
                   '&:hover': {
-                    backgroundColor: '#B8E001',
+                    backgroundColor: 'var(--primary-btn-hover)',
                   },
                 },
                 '&:not(.Mui-selected)': {
-                  backgroundColor: '#FFFFFF',
-                  color: '#6B7280',
+                  backgroundColor: 'var(--card-background)', /* Light Grey */
+                  color: 'var(--secondary-text)', /* Dark Grey text */
                   '&:hover': {
-                    backgroundColor: '#F9FAFB',
+                    backgroundColor: 'var(--card-hover)',
                   },
                 },
               },
@@ -472,7 +472,7 @@ export const PaymentCalendarPage: React.FC = () => {
             <IconButton onClick={() => setCurrentDate(currentDate.clone().subtract(1, 'month'))}>
               <ChevronLeft />
             </IconButton>
-            <Typography variant="h6" className="current-month">
+            <Typography variant="h6" className="current-month" sx={{ color: 'var(--primary-text)' }}>
               {currentDate.format('MMMM YYYY')}
             </Typography>
             <IconButton onClick={() => setCurrentDate(currentDate.clone().add(1, 'month'))}>
@@ -487,10 +487,10 @@ export const PaymentCalendarPage: React.FC = () => {
           <Paper className="calendar-paper">
             {payments.length === 0 ? (
               <Box sx={{ p: 4, textAlign: 'center' }}>
-                <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="h6" sx={{ mb: 2, color: 'var(--primary-text)', fontWeight: 700 }}>
                   No Payments Found
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9 }}>
                   {viewMode === 'daily' 
                     ? 'No payments scheduled for this month. Try switching to Monthly view or navigate to a different month.'
                     : 'No monthly payments scheduled for this month. Try navigating to a different month.'}
@@ -508,7 +508,7 @@ export const PaymentCalendarPage: React.FC = () => {
               Upcoming Payments
             </Typography>
             {upcomingPayments.length === 0 ? (
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
                 No upcoming payments
               </Typography>
             ) : (
@@ -517,7 +517,7 @@ export const PaymentCalendarPage: React.FC = () => {
                   <Card key={idx} className="payment-card" sx={{ mb: 2 }}>
                     <CardContent>
                       <Box className="payment-card-header">
-                        <Typography variant="body2" fontWeight={600}>
+                        <Typography variant="body2" fontWeight={600} sx={{ color: 'var(--primary-text)' }}>
                           {payment.applicationName}
                         </Typography>
                         <StatusBadge status={payment.status} type="payment" />
@@ -527,7 +527,7 @@ export const PaymentCalendarPage: React.FC = () => {
                         {payment.isDeferred && ' ⏱️'}
                         {payment.isPartiallyDeferred && ' ⏸️'}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography variant="caption" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
                         Due: {formatDate(payment.date)}
                         {payment.isDeferred && payment.originalDueDate && (
                           <Box component="span" sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}>

@@ -89,9 +89,9 @@ export const Select: React.FC<SelectProps> = ({
         {...props}
         sx={{
           height: '48px',
-          borderRadius: '8px',
+          borderRadius: 'var(--radius-sm)',
           backgroundColor: 'var(--card-background)',
-          transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'all var(--transition-base)',
           '& .MuiOutlinedInput-notchedOutline': {
             borderColor: 'var(--field-border-color)',
             borderWidth: '1px',
@@ -123,7 +123,7 @@ export const Select: React.FC<SelectProps> = ({
             },
           },
           '& .MuiSelect-select': {
-            padding: '0 16px',
+            padding: `0 var(--spacing-md)`,
             height: '48px',
             display: 'flex',
             alignItems: 'center',
@@ -135,7 +135,7 @@ export const Select: React.FC<SelectProps> = ({
           },
           '& .MuiSelect-icon': {
             color: 'var(--secondary-text)',
-            right: '12px',
+            right: 'var(--spacing-md)',
           },
         }}
       >

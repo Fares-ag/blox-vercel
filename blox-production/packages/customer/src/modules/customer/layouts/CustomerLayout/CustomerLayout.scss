@@ -17,6 +17,34 @@
     overflow-y: visible;
   }
 
+  // Standard background for all pages except dashboard
+  &.with-green-background {
+    background: var(--background);
+    position: relative;
+
+    &::before {
+      display: none;
+    }
+
+    // Blox Black accent block in bottom-right corner (20% height, ~50% width)
+    &::after {
+      content: '';
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 50%;
+      height: 20%;
+      background: var(--blox-black); /* Blox Black */
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .customer-content {
+      position: relative;
+      z-index: 1;
+    }
+  }
+
   .fab-chat {
     position: fixed;
     bottom: 24px;

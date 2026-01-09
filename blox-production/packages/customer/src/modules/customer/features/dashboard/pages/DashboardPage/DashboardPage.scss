@@ -154,8 +154,9 @@
   }
 
   .next-payment-card {
-    background: linear-gradient(135deg, #00CFA2 0%, #0A6B6A 100%);
-    color: #FFFFFF;
+    background: var(--card-background);
+    color: var(--primary-text);
+    border: 1px solid rgba(0, 0, 0, 0.06);
 
     .next-payment-header {
       display: flex;
@@ -164,13 +165,14 @@
     }
 
     .section-title {
-      color: #FFFFFF;
+      color: var(--primary-text);
     }
 
     .next-payment-details {
       .payment-amount {
         text-align: center;
         padding: 16px 0;
+        color: var(--primary-color);
       }
     }
   }
@@ -184,7 +186,7 @@
       transition: background-color 0.2s ease;
 
       &:hover {
-        background-color: rgba(0, 207, 162, 0.05);
+        background-color: var(--card-hover);
         border-radius: 8px;
         padding: 12px;
         margin: 0 -12px;

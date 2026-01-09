@@ -1,41 +1,53 @@
 .custom-card {
-  background-color: var(--card-background);
-  backdrop-filter: blur(10px);
-  border-radius: var(--radius-card);
+  /* Default: Clean Light Grey background (matching vehicle card design) */
+  background-color: var(--card-background); /* Light Grey */
+  color: var(--primary-text); /* Blox Black */
+  border-radius: var(--radius-card); /* 16px */
   box-shadow: var(--card-shadow);
-  padding: var(--spacing-lg);
   transition: all var(--transition-base);
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--divider-color);
+  border: none; /* No border for clean, minimal look */
+  position: relative;
+  overflow: hidden;
 
-  /* Card Theme Variants - Following Design Examples */
+  /* Card Theme Variants - Following Clean Design */
   &.card-light {
     background-color: var(--light-grey);
+    color: var(--primary-text);
     border: none;
   }
 
   &.card-dark {
     background-color: var(--blox-black);
-    color: var(--background-secondary);
+    color: var(--background-secondary); /* Light Grey text */
     border: none;
   }
 
   &.card-border {
     background-color: var(--light-grey);
-    border: 1px solid var(--divider-color);
+    color: var(--primary-text);
+    border: 1px solid var(--divider-color); /* Subtle border */
   }
 
   &.clickable {
     cursor: pointer;
 
     &:hover {
-      transform: translateY(-4px);
+      transform: translateY(-4px); /* Subtle lift */
       box-shadow: var(--card-shadow-hover);
-      border-color: var(--primary-color);
-      background-color: var(--card-hover);
+      
+      /* Dark cards stay dark on hover */
+      &.card-dark {
+        background-color: var(--blox-black);
+      }
+      
+      /* Light cards get slightly darker on hover */
+      &:not(.card-dark) {
+        background-color: var(--card-hover); /* Slightly darker light grey */
+      }
     }
   }
 
@@ -55,32 +67,65 @@
     svg {
       width: 36px;
       height: 36px;
-      color: var(--primary-color);
+      color: var(--primary-color); /* Lime Yellow for icons */
     }
   }
 
   .card-title {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--secondary-text);
+    font-size: 12px; /* Slightly larger for readability */
+    font-weight: 400;
+    color: var(--secondary-text); /* Dark Grey - default for light cards */
     margin-bottom: var(--spacing-xs);
     letter-spacing: 0.01em;
-    text-transform: uppercase;
+    opacity: 0.8;
+  }
+
+  /* Dark card variant needs different text colors */
+  &.card-dark {
+    .card-title {
+      color: var(--background-secondary); /* Light Grey on dark cards */
+      opacity: 0.8;
+    }
   }
 
   .card-value {
-    font-size: 28px;
+    font-size: 32px; /* Larger, bolder like design */
     font-weight: 700;
-    color: var(--primary-text);
+    color: var(--primary-text); /* Blox Black - default for light cards */
     margin-bottom: var(--spacing-xs);
     letter-spacing: -0.02em;
     line-height: 1.2;
   }
 
+  /* Highlight important values with Lime Yellow */
+  .card-value.highlight {
+    color: var(--primary-color); /* Lime Yellow for emphasis */
+  }
+
+  /* Dark card variant needs different text colors */
+  &.card-dark {
+    .card-value {
+      color: var(--background-secondary); /* Light Grey on dark cards */
+      
+      &.highlight {
+        color: var(--primary-color); /* Lime Yellow for emphasis even on dark */
+      }
+    }
+  }
+
   .card-subtitle {
     font-size: 12px;
     font-weight: 400;
-    color: var(--custom-text-color);
+    color: var(--secondary-text); /* Dark Grey - default for light cards */
     line-height: 1.5;
+    opacity: 0.8;
+  }
+
+  /* Dark card variant needs different text colors */
+  &.card-dark {
+    .card-subtitle {
+      color: var(--background-secondary); /* Light Grey on dark cards */
+      opacity: 0.7;
+    }
   }
 }

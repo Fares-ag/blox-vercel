@@ -192,7 +192,7 @@ export const ProfilePage: React.FC = () => {
             <Typography variant="h5">
               {formData.firstName} {formData.lastName}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: 'var(--secondary-text)' }}>
               {formData.email}
             </Typography>
           </Box>

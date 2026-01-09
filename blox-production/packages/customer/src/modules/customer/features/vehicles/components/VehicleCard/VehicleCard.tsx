@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardMedia, Typography, Box, Chip } from '@mui/material';
+import { Card, CardContent, CardMedia, Typography, Box, Button, Divider } from '@mui/material';
 import type { Product } from '@shared/models/product.model';
 import { formatCurrency } from '@shared/utils/formatters';
 import './VehicleCard.scss';
@@ -9,8 +9,28 @@ interface VehicleCardProps {
   vehicle: Product;
 }
 
+// Mock available colors - in real app, this would come from vehicle data
+// For now, we'll show a few color options. In production, this would come from vehicle.colorOptions array
+const getAvailableColors = (vehicle: Product): string[] => {
+  // Map vehicle color to available color options
+  // In production, this would come from vehicle.colorOptions or similar field
+  const colorMap: Record<string, string[]> = {
+    'black': ['#0E1909', '#787663', '#C9C4B7'], // Blox Black, Dark Grey, Mid Grey
+    'silver': ['#C9C4B7', '#F3F0ED', '#787663'], // Mid Grey, Light Grey, Dark Grey
+    'white': ['#F3F0ED', '#C9C4B7', '#787663'], // Light Grey, Mid Grey, Dark Grey
+  };
+  
+  const vehicleColor = vehicle.color?.toLowerCase() || 'silver';
+  return colorMap[vehicleColor] || ['#0E1909', '#787663', '#C9C4B7']; // Default to brand colors
+};
+
 export const VehicleCard: React.FC<VehicleCardProps> = React.memo(({ vehicle }) => {
   const navigate = useNavigate();
+
+  const handleSendRequest = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    navigate(`/customer/vehicles/${vehicle.id}`);
+  }, [navigate, vehicle.id]);
 
   const handleCardClick = useCallback(() => {
     navigate(`/customer/vehicles/${vehicle.id}`);
@@ -27,6 +47,16 @@ export const VehicleCard: React.FC<VehicleCardProps> = React.memo(({ vehicle }) 
     ? vehicle.images[0] 
     : '/CarImage.png';
 
+  const availableColors = getAvailableColors(vehicle);
+  // Always show at least 3 colors, with count if more available
+  const totalColors = 6; // Mock: assume 6 total colors available
+  const displayColors = availableColors.slice(0, 3);
+  const additionalColorsCount = totalColors > 3 ? totalColors - 3 : 0;
+  
+  // Fallback description if none provided
+  const description = vehicle.description || 
+    `A comfortable car with great mileage${vehicle.condition === 'old' && vehicle.mileage ? ` • ${vehicle.mileage?.toLocaleString()} km` : ''}`;
+
   return (
     <Card 
       className="vehicle-card" 
@@ -36,63 +66,81 @@ export const VehicleCard: React.FC<VehicleCardProps> = React.memo(({ vehicle }) 
       tabIndex={0}
       aria-label={`View details for ${vehicle.make} ${vehicle.model}`}
     >
-      <CardMedia
-        component="img"
-        height="200"
-        image={imageUrl}
-        alt={`${vehicle.make} ${vehicle.model}`}
-        className="vehicle-image"
-        loading="lazy"
-      />
-      <CardContent>
-        <Box className="vehicle-header">
-          <Box>
-            <Typography variant="h6" className="vehicle-title">
-              {vehicle.make} {vehicle.model}
+      <Box className="vehicle-image-wrapper">
+        {/* Color Indicators */}
+        <Box className="color-indicators">
+          {displayColors.map((color, index) => (
+            <Box
+              key={index}
+              className="color-dot"
+              sx={{ backgroundColor: color }}
+              title={`Available in ${color}`}
+            />
+          ))}
+          {additionalColorsCount > 0 && (
+            <Typography variant="caption" className="color-count">
+              +{additionalColorsCount}
             </Typography>
-            <Typography variant="body2" color="text.secondary" className="vehicle-trim">
-              {vehicle.trim} • {vehicle.modelYear}
-            </Typography>
-          </Box>
-          <Chip
-            label={vehicle.condition === 'new' ? 'New' : 'Used'}
-            size="small"
-            color={vehicle.condition === 'new' ? 'primary' : 'default'}
-            className="condition-chip"
-          />
-        </Box>
-
-        <Box className="vehicle-details">
-          <Box className="detail-item">
-            <Typography variant="caption" color="text.secondary">
-              Engine
-            </Typography>
-            <Typography variant="body2">{vehicle.engine}</Typography>
-          </Box>
-          <Box className="detail-item">
-            <Typography variant="caption" color="text.secondary">
-              Color
-            </Typography>
-            <Typography variant="body2">{vehicle.color}</Typography>
-          </Box>
-          {vehicle.condition === 'old' && (
-            <Box className="detail-item">
-              <Typography variant="caption" color="text.secondary">
-                Mileage
-              </Typography>
-              <Typography variant="body2">{vehicle.mileage?.toLocaleString()} km</Typography>
-            </Box>
           )}
         </Box>
+        <CardMedia
+          component="img"
+          image={imageUrl}
+          alt={`${vehicle.make} ${vehicle.model}`}
+          className="vehicle-image"
+          loading="lazy"
+        />
+      </Box>
+      <CardContent>
+        {/* Brand Name */}
+        <Typography variant="caption" className="vehicle-brand">
+          {vehicle.make}
+        </Typography>
 
-        <Box className="vehicle-price">
-          <Typography variant="h5" className="price">
-            {formatCurrency(vehicle.price)}
-          </Typography>
-          <Typography variant="caption" color="text.secondary">
-            Starting from
-          </Typography>
-        </Box>
+        {/* Model Name */}
+        <Typography variant="h6" className="vehicle-model">
+          {vehicle.model}
+        </Typography>
+
+        {/* Description */}
+        <Typography variant="body2" className="vehicle-description">
+          {description}
+        </Typography>
+
+        {/* Divider */}
+        <Divider className="vehicle-divider" />
+
+        {/* Price */}
+        <Typography variant="h6" className="vehicle-price">
+          {formatCurrency(vehicle.price)}
+        </Typography>
+
+        {/* Send Request Button */}
+        <Button
+          variant="contained"
+          fullWidth
+          className="send-request-button"
+          onClick={handleSendRequest}
+          sx={{
+            backgroundColor: 'var(--primary-color)',
+            color: 'var(--primary-btn-color)',
+            fontWeight: 600,
+            textTransform: 'none',
+            borderRadius: 'var(--radius-md)',
+            padding: '10px 20px',
+            minHeight: '44px',
+            fontSize: '14px',
+            '&:hover': {
+              backgroundColor: 'var(--primary-btn-hover)',
+            },
+            '&:focus-visible': {
+              outline: '2px solid var(--focus-ring-primary)',
+              outlineOffset: '2px',
+            },
+          }}
+        >
+          Send Request
+        </Button>
       </CardContent>
     </Card>
   );

@@ -1,6 +1,7 @@
 .applications-list-page {
   padding: var(--spacing-lg);
   min-height: 100vh;
+  background-color: var(--background); /* Light Grey background */
 
   .page-title {
     font-family: 'IBM Plex Sans', sans-serif;
@@ -20,42 +21,66 @@
     gap: var(--spacing-lg);
 
     .application-card {
-      background-color: var(--card-background);
-      border-radius: var(--radius-card);
+      // Clean, minimal design matching vehicle cards - Light Grey background
+      background-color: var(--card-background); /* Light Grey - matching vehicle cards */
+      color: var(--primary-text); /* Blox Black text */
+      border-radius: var(--radius-card); /* 16px */
       box-shadow: var(--card-shadow);
+      border: none; /* No border for clean look */
       transition: all var(--transition-base);
+      cursor: pointer;
 
       &:hover {
-        transform: translateY(-4px);
+        transform: translateY(-4px); /* Subtle lift */
         box-shadow: var(--card-shadow-hover);
-        background-color: var(--card-hover);
+        background-color: var(--card-hover); /* Slightly darker on hover */
+      }
+
+      .MuiCardContent-root {
+        padding: var(--spacing-lg);
       }
 
       .card-header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: var(--spacing-lg);
+        margin-bottom: var(--spacing-md);
         padding-bottom: var(--spacing-md);
         border-bottom: 1px solid var(--divider-color);
+        opacity: 0.6;
 
         .application-id {
           font-weight: 700;
-          color: var(--primary-text);
+          font-size: 18px;
+          color: var(--primary-text); /* Blox Black */
           margin-bottom: 4px;
+          letter-spacing: -0.01em;
         }
       }
 
       .card-details {
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-md);
-        margin-bottom: var(--spacing-lg);
+        gap: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
 
         .detail-row {
           display: flex;
           justify-content: space-between;
           align-items: center;
+          padding: var(--spacing-xs) 0;
+        }
+
+        .detail-label {
+          font-size: 12px;
+          color: var(--secondary-text); /* Dark Grey */
+          opacity: 0.8;
+        }
+
+        .detail-value {
+          font-size: 14px;
+          color: var(--primary-text); /* Blox Black */
+          font-weight: 600;
         }
       }
 
@@ -63,29 +88,39 @@
         display: flex;
         gap: var(--spacing-md);
         flex-wrap: wrap;
+        margin-top: var(--spacing-sm);
 
-        .view-button {
-          color: var(--secondary-neutral-color);
-          border-color: var(--outline-btn-border);
+        .view-button,
+        .download-button {
+          flex: 1;
+          min-width: 120px;
           text-transform: none;
           font-weight: 600;
+          font-size: 14px;
+          padding: 10px 20px;
+          border-radius: var(--radius-md);
+          transition: all var(--transition-base);
+        }
+
+        .view-button {
+          color: var(--primary-text); /* Blox Black */
+          border-color: var(--divider-color); /* Mid Grey border */
 
           &:hover {
-            border-color: var(--primary-color);
-            background-color: var(--card-hover);
-            color: var(--primary-color);
+            border-color: var(--primary-color); /* Lime Yellow */
+            background-color: rgba(218, 255, 1, 0.1); /* Subtle Lime Yellow tint */
+            color: var(--primary-color); /* Lime Yellow text */
           }
         }
 
         .download-button {
-          color: var(--primary-color);
+          color: var(--primary-color); /* Lime Yellow */
           border-color: var(--primary-color);
-          text-transform: none;
-          font-weight: 600;
+          background-color: transparent;
 
           &:hover {
-            background-color: var(--primary-color);
-            color: var(--primary-btn-color);
+            background-color: var(--primary-color); /* Lime Yellow */
+            color: var(--primary-btn-color); /* Blox Black text */
           }
         }
       }

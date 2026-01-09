@@ -2,6 +2,7 @@
   min-height: 100vh;
   padding: 24px;
   width: 100%;
+  background-color: var(--background); /* Light Grey background */
 
   .page-header {
     margin-bottom: 32px;
@@ -11,7 +12,7 @@
       font-size: 32px;
       font-weight: 700;
       line-height: 1.2;
-      color: #1a1a1a;
+      color: var(--primary-text); /* Blox Black */
       margin-bottom: 8px;
       letter-spacing: -0.02em;
     }
@@ -20,7 +21,7 @@
       font-family: 'IBM Plex Sans', sans-serif;
       font-size: 15px;
       font-weight: 500;
-      color: #666666;
+      color: var(--secondary-text); /* Dark Grey */
     }
   }
 
@@ -44,11 +45,11 @@
     overflow-y: auto;
 
     .MuiPaper-root {
-      background-color: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
-      border-radius: 12px;
-      border: 1px solid rgba(0, 0, 0, 0.06);
+      background-color: var(--card-background); /* Light Grey card */
+      color: var(--primary-text); /* Blox Black text */
+      box-shadow: var(--card-shadow);
+      border-radius: var(--radius-card);
+      border: 1px solid var(--divider-color); /* Mid Grey border */
     }
   }
 
@@ -68,10 +69,10 @@
     justify-content: center;
     align-items: center;
     min-height: 400px;
-    background-color: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(8px);
-    border-radius: 12px;
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    background-color: var(--card-background); /* Light Grey card */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    border: 1px solid var(--divider-color); /* Mid Grey border */
     padding: 40px;
   }
 
@@ -79,17 +80,17 @@
     margin-top: 40px;
     padding: 24px;
     text-align: center;
-    background-color: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(8px);
-    border-radius: 12px;
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    background-color: var(--card-background); /* Light Grey card */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    border: 1px solid var(--divider-color); /* Mid Grey border */
+    box-shadow: var(--card-shadow);
 
     .pagination-text {
       font-family: 'IBM Plex Sans', sans-serif;
       font-size: 13px;
       font-weight: 500;
-      color: #666666;
+      color: var(--secondary-text); /* Dark Grey */
     }
   }
 

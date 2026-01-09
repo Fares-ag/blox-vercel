@@ -26,10 +26,10 @@
   --secondary-neutral-bg: #F3F0ED; /* Light Grey - Secondary Neutral buttons */
   --secondary-neutral-color: #787663; /* Dark Grey text on Light Grey */
   --secondary-neutral-hover: #E8E5DF; /* Slightly darker light grey for hover */
-  --destructive-btn-bg: #ffffff;     /* White - Destructive buttons */
+  --destructive-btn-bg: #F3F0ED;     /* Light Grey - Destructive buttons */
   --destructive-btn-border: #787663; /* Dark Grey border for destructive */
   --destructive-btn-color: #0E1909;  /* Blox Black text for destructive */
-  --destructive-btn-hover-bg: #F3F0ED; /* Light Grey for hover */
+  --destructive-btn-hover-bg: #E8E5DF; /* Slightly darker light grey for hover */
   --destructive-btn-hover-border: #787663; /* Dark Grey border for hover */
   --tertiary-btn-color: #787663;     /* Dark Grey - Tertiary (text only) */
   --outline-btn-border: #787663;     /* Dark Grey border */
@@ -65,9 +65,9 @@
 
   /* Background Colors */
   --background: #F3F0ED;            /* Light Grey */
-  --background-secondary: #ffffff;   /* White */
-  --card-background: #ffffff;       /* White */
-  --card-hover: #F3F0ED;            /* Light Grey */
+  --background-secondary: #F3F0ED;   /* Light Grey (replaces white) */
+  --card-background: #F3F0ED;       /* Light Grey (replaces white) */
+  --card-hover: #E8E5DF;            /* Slightly darker light grey for hover */
   --disabled-bg: #C9C4B7;           /* Mid Grey */
   --overlay: rgba(14, 25, 9, 0.4);  /* Blox Black with opacity */
 
@@ -123,7 +123,7 @@ body {
   line-height: 1.6;
   letter-spacing: -0.01em;
   color: var(--primary-text);
-  background-color: var(--background);
+  background-color: var(--background); /* Light Grey background - dark theme only for specific pages */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -272,4 +272,173 @@ p, .body-copy {
 
 .p-4 {
   padding: var(--spacing-lg);
+}
+
+/* ============================================
+   Clean Card Design System - Matching Vehicle Cards
+   ============================================ */
+
+/* Standard Content Card - Light Grey Background (Default) */
+.content-card,
+.MuiPaper-root.content-card {
+  background-color: var(--card-background); /* Light Grey */
+  border-radius: var(--radius-card); /* 16px */
+  box-shadow: var(--card-shadow);
+  border: none; /* No border for clean look */
+  padding: var(--spacing-lg); /* 24px */
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-4px); /* Subtle lift */
+    box-shadow: var(--card-shadow-hover);
+    background-color: var(--card-hover); /* Slightly darker on hover */
+  }
+}
+
+/* Section Card - Dark Background (for content sections) */
+.section-card,
+.MuiPaper-root.section-card {
+  background-color: var(--blox-black); /* Blox Black */
+  color: var(--background-secondary); /* Light Grey text */
+  border-radius: var(--radius-card); /* 16px */
+  box-shadow: var(--card-shadow);
+  border: none; /* No border for clean look */
+  padding: var(--spacing-lg); /* 24px */
+  transition: all var(--transition-base);
+  position: relative;
+
+  &:hover {
+    transform: translateY(-4px); /* Subtle lift */
+    box-shadow: var(--card-shadow-hover);
+    background-color: var(--blox-black); /* Stay dark on hover */
+  }
+
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--background-secondary); /* Light Grey text */
+    letter-spacing: -0.01em;
+    margin-bottom: var(--spacing-md);
+  }
+}
+
+/* Stat Card - For dashboard statistics */
+.stat-card {
+  background-color: var(--card-background); /* Light Grey default */
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  border: none;
+  padding: var(--spacing-lg);
+  transition: all var(--transition-base);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  &.stat-card-dark {
+    background-color: var(--blox-black);
+    color: var(--background-secondary);
+
+    .stat-value,
+    .stat-label {
+      color: var(--background-secondary);
+    }
+
+    .stat-icon {
+      color: var(--primary-color); /* Lime Yellow */
+    }
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--primary-text); /* Blox Black */
+    letter-spacing: -0.02em;
+    margin-bottom: var(--spacing-xs);
+    line-height: 1.2;
+
+    &.highlight {
+      color: var(--primary-color); /* Lime Yellow for emphasis */
+    }
+  }
+
+  .stat-label {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--secondary-text); /* Dark Grey */
+    opacity: 0.8;
+  }
+
+  .stat-icon {
+    font-size: 32px;
+    color: var(--primary-color); /* Lime Yellow */
+    opacity: 0.9;
+  }
+}
+
+/* Clean Paper Override - Apply minimal design to all Papers */
+.MuiPaper-root:not(.content-card):not(.section-card):not(.stat-card) {
+  &.card-light,
+  &.card {
+    background-color: var(--card-background); /* Light Grey */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none;
+    padding: var(--spacing-lg);
+    transition: all var(--transition-base);
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--card-shadow-hover);
+      background-color: var(--card-hover);
+    }
+  }
+}
+
+/* Page Container Pattern */
+.page-container {
+  padding: var(--spacing-lg);
+  background-color: var(--background); /* Light Grey */
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* Page Header Pattern */
+.page-header {
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+
+  .page-title {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--primary-text); /* Blox Black */
+    letter-spacing: -0.02em;
+    margin-bottom: var(--spacing-sm);
+    line-height: 1.2;
+  }
+
+  .page-subtitle {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--secondary-text); /* Dark Grey */
+    opacity: 0.8;
+    line-height: 1.5;
+  }
+}
+
+/* Clean Divider Style */
+.clean-divider {
+  border-color: var(--divider-color); /* Mid Grey */
+  opacity: 0.5;
+  margin: var(--spacing-md) 0;
 }

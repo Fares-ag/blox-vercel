@@ -19,11 +19,11 @@ export const theme = createTheme({
       main: '#787663',      // Dark Grey - Secondary actions
       dark: '#5A5849',      // Darker shade
       light: '#9A9880',     // Lighter shade
-      contrastText: '#FFFFFF',
+      contrastText: '#F3F0ED', // Light Grey (replaces white)
     },
     background: {
       default: '#F3F0ED',   // Light Grey - Main background
-      paper: '#FFFFFF',     // White for cards
+      paper: '#F3F0ED',     // Light Grey for cards (replaces white)
     },
     text: {
       primary: '#0E1909',   // Blox Black - Primary text

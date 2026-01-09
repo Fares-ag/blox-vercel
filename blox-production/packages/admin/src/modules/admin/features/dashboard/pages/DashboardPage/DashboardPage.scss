@@ -15,12 +15,12 @@
   .stats-grid-container {
     width: 100%;
     display: flex;
-    gap: 24px;
+    gap: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
     
     @media (max-width: 960px) {
       flex-wrap: wrap;
-      gap: 16px;
+      gap: var(--spacing-md);
       
       > * {
         flex: 1 1 calc(50% - 8px);
@@ -39,13 +39,13 @@
     width: 100%;
     display: flex;
     align-items: stretch;
-    gap: 24px;
+    gap: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
     
     @media (max-width: 960px) {
       flex-direction: column;
       align-items: stretch;
-      gap: 16px;
+      gap: var(--spacing-md);
       
       > * {
         flex: 1 1 100% !important;
@@ -58,19 +58,20 @@
   }
 
   .dashboard-panel {
-    background: rgba(255, 255, 255, 0.95);
+    background: var(--card-background);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 12px;
+    border: 1px solid var(--divider-color);
+    border-radius: var(--radius-card);
     padding: var(--spacing-lg);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--card-shadow);
     display: flex;
     flex-direction: column;
     align-self: stretch;
-    transition: all 0.3s ease;
+    transition: all var(--transition-base);
 
     &:hover {
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: var(--card-shadow-hover);
+      background-color: var(--card-hover);
     }
 
     .panel-title {

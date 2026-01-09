@@ -6,44 +6,72 @@
   padding: 24px;
 
   .confirmation-card {
+    // Clean, minimal design matching vehicle cards - Light Grey background
     max-width: 600px;
     width: 100%;
-    padding: 48px;
+    padding: var(--spacing-2xl);
     text-align: center;
+    background-color: var(--card-background); /* Light Grey */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+    transition: all var(--transition-base);
+
+    &:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
 
     .success-icon {
-      margin-bottom: 24px;
+      margin-bottom: var(--spacing-lg);
+      color: var(--primary-color); /* Lime Yellow */
     }
 
     .success-title {
-      margin-bottom: 16px;
-      font-weight: 600;
-      color: #4caf50;
+      margin-bottom: var(--spacing-md);
+      font-weight: 700;
+      font-size: 24px;
+      color: var(--primary-color); /* Lime Yellow */
+      letter-spacing: -0.01em;
     }
 
     .success-message {
-      margin-bottom: 32px;
+      margin-bottom: var(--spacing-xl);
+      color: var(--primary-text); /* Blox Black */
     }
 
     .transaction-details {
-      background-color: #f5f5f5;
-      border-radius: 8px;
-      padding: 24px;
-      margin-bottom: 32px;
+      // Clean, minimal design
+      background-color: var(--background); /* Light Grey */
+      border-radius: var(--radius-sm);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-xl);
 
       .detail-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 12px 0;
-        border-bottom: 1px solid #e0e0e0;
+        padding: var(--spacing-md) 0;
+        border-bottom: 1px solid var(--divider-color); /* Mid Grey */
 
         &:last-child {
           border-bottom: none;
         }
 
+        .label {
+          color: var(--secondary-text); /* Dark Grey */
+          font-size: 14px;
+        }
+
+        .value {
+          color: var(--primary-text); /* Blox Black */
+          font-weight: 600;
+          font-size: 14px;
+        }
+
         .amount {
-          color: #DAFF01;
+          color: var(--primary-color); /* Lime Yellow */
+          font-weight: 700;
+          font-size: 18px;
         }
       }
     }

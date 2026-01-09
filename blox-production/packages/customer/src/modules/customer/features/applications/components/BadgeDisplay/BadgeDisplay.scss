@@ -1,9 +1,8 @@
 .badge-display {
   .badge-card {
     &.unlocked {
-      border: 2px solid transparent;
-      background: linear-gradient(white, white) padding-box,
-                  linear-gradient(135deg, #DAFF01, #B8E001) border-box;
+      border: 2px solid var(--primary-color); /* Solid Lime Yellow border - no gradient */
+      background: var(--card-background);
     }
 
     &.locked {

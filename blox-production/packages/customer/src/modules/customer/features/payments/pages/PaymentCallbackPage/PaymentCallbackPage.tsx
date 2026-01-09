@@ -94,10 +94,10 @@ export const PaymentCallbackPage: React.FC = () => {
         <Paper className="callback-card">
           <Box className="loading-container">
             <CircularProgress size={60} />
-            <Typography variant="h6" sx={{ mt: 2 }}>
+            <Typography variant="h6" sx={{ mt: 2, color: 'var(--primary-text)' }}>
               Verifying Payment...
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            <Typography variant="body2" sx={{ mt: 1, color: 'var(--secondary-text)' }}>
               Please wait while we verify your payment status.
             </Typography>
           </Box>
@@ -111,29 +111,29 @@ export const PaymentCallbackPage: React.FC = () => {
       <Paper className="callback-card">
         {status === 'success' && (
           <>
-            <Box className="success-icon">
-              <CheckCircle sx={{ fontSize: 80, color: '#4caf50' }} />
+            <Box className="success-icon status-icon">
+              <CheckCircle sx={{ fontSize: 80 }} />
             </Box>
             <Typography variant="h4" className="success-title">
               Payment Successful!
             </Typography>
-            <Typography variant="body1" color="text.secondary" className="success-message">
+            <Typography variant="body1" className="success-message">
               Your payment has been processed successfully.
             </Typography>
 
             {paymentData && (
               <Box className="transaction-details">
                 <Box className="detail-row">
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" className="label">
                     Transaction ID:
                   </Typography>
-                  <Typography variant="body1" fontWeight={600}>
+                  <Typography variant="body1" className="value">
                     {transactionId || 'N/A'}
                   </Typography>
                 </Box>
                 {paymentData.amount && (
                   <Box className="detail-row">
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography variant="body2" className="label">
                       Amount Paid:
                     </Typography>
                     <Typography variant="h6" className="amount">
@@ -142,18 +142,18 @@ export const PaymentCallbackPage: React.FC = () => {
                   </Box>
                 )}
                 <Box className="detail-row">
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" className="label">
                     Payment Method:
                   </Typography>
-                  <Typography variant="body1" fontWeight={600}>
+                  <Typography variant="body1" className="value">
                     {paymentData.cardType || 'Card Payment'}
                   </Typography>
                 </Box>
                 <Box className="detail-row">
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" className="label">
                     Date:
                   </Typography>
-                  <Typography variant="body1" fontWeight={600}>
+                  <Typography variant="body1" className="value">
                     {new Date().toLocaleString()}
                   </Typography>
                 </Box>
@@ -173,23 +173,23 @@ export const PaymentCallbackPage: React.FC = () => {
 
         {status === 'failed' && (
           <>
-            <Box className="error-icon">
-              <ErrorIcon sx={{ fontSize: 80, color: '#f44336' }} />
+            <Box className="error-icon status-icon">
+              <ErrorIcon sx={{ fontSize: 80 }} />
             </Box>
             <Typography variant="h4" className="error-title">
               Payment Failed
             </Typography>
-            <Typography variant="body1" color="text.secondary" className="error-message">
+            <Typography variant="body1" className="error-message">
               {error || 'Your payment could not be processed. Please try again.'}
             </Typography>
 
             {transactionId && (
               <Box className="transaction-details">
                 <Box className="detail-row">
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" className="label">
                     Transaction ID:
                   </Typography>
-                  <Typography variant="body1" fontWeight={600}>
+                  <Typography variant="body1" className="value">
                     {transactionId}
                   </Typography>
                 </Box>
@@ -223,17 +223,17 @@ export const PaymentCallbackPage: React.FC = () => {
             <Typography variant="h4" className="pending-title">
               Payment Processing
             </Typography>
-            <Typography variant="body1" color="text.secondary" className="pending-message">
+            <Typography variant="body1" className="pending-message">
               {error || 'Your payment is being processed. This may take a few moments.'}
             </Typography>
 
             {transactionId && (
               <Box className="transaction-details">
                 <Box className="detail-row">
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" className="label">
                     Transaction ID:
                   </Typography>
-                  <Typography variant="body1" fontWeight={600}>
+                  <Typography variant="body1" className="value">
                     {transactionId}
                   </Typography>
                 </Box>

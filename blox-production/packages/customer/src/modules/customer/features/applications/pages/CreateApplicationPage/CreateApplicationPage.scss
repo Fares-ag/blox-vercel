@@ -5,36 +5,47 @@
   margin: 0 auto;
 
   .back-button {
-    color: #DAFF01;
+    color: var(--primary-color); /* Lime Yellow */
     font-weight: 600;
-    margin-bottom: 24px;
+    margin-bottom: var(--spacing-lg);
     text-transform: none;
 
     &:hover {
-      background-color: rgba(218, 255, 1, 0.1);
+      background-color: rgba(218, 255, 1, 0.1); /* Subtle Lime Yellow tint */
     }
   }
 
   .application-form {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: var(--spacing-lg);
 
     .form-section {
-      background-color: #ffffff;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      // Clean, minimal design matching vehicle cards - Light Grey background
+      background-color: var(--card-background); /* Light Grey */
+      border-radius: var(--radius-card); /* 16px */
+      box-shadow: var(--card-shadow);
+      border: none; /* No border for clean look */
+      padding: var(--spacing-lg);
+      transition: all var(--transition-base);
+
+      &:hover {
+        box-shadow: var(--card-shadow-hover);
+      }
 
       .section-title {
         font-weight: 700;
-        color: #000000;
+        font-size: 20px;
+        color: var(--primary-text); /* Blox Black */
         font-family: 'IBM Plex Sans', sans-serif;
-        margin-bottom: 8px;
+        margin-bottom: var(--spacing-xs);
+        letter-spacing: -0.01em;
       }
 
       .section-subtitle {
-        color: #666666;
+        color: var(--secondary-text); /* Dark Grey */
         font-size: 14px;
+        opacity: 0.8;
       }
 
       .form-grid {
@@ -66,22 +77,26 @@
       }
 
       .document-tabs {
-        margin-top: 24px;
-        border-bottom: 2px solid #e5e7ea;
+        margin-top: var(--spacing-lg);
+        border-bottom: 2px solid var(--divider-color); /* Mid Grey */
 
         .MuiTab-root {
           text-transform: none;
           font-weight: 600;
-          color: #666666;
+          color: var(--secondary-text); /* Dark Grey */
           min-height: 48px;
 
           &.Mui-selected {
-            color: #DAFF01;
+            color: var(--primary-color); /* Lime Yellow */
+          }
+
+          &:hover {
+            background-color: rgba(218, 255, 1, 0.05); /* Subtle Lime Yellow tint */
           }
         }
 
         .MuiTabs-indicator {
-          background-color: #DAFF01;
+          background-color: var(--primary-color); /* Lime Yellow */
           height: 3px;
         }
       }
@@ -90,17 +105,17 @@
         margin-top: 24px;
 
         .drag-drop-area {
-          border: 2px dashed #d1d5db;
-          border-radius: 8px;
-          padding: 48px 24px;
+          border: 2px dashed var(--divider-color); /* Mid Grey dashed border */
+          border-radius: var(--radius-sm);
+          padding: var(--spacing-2xl) var(--spacing-lg);
           text-align: center;
-          background-color: #fafafa;
-          transition: all 0.3s ease;
+          background-color: var(--background); /* Light Grey */
+          transition: all var(--transition-base);
           cursor: pointer;
 
           &.drag-active {
-            border-color: #DAFF01;
-            background-color: #f0fdfa;
+            border-color: var(--primary-color); /* Lime Yellow */
+            background-color: rgba(218, 255, 1, 0.05); /* Subtle Lime Yellow tint */
           }
 
           &.uploading {
@@ -112,32 +127,32 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 12px;
+            gap: var(--spacing-md);
             cursor: pointer;
 
             .upload-icon {
               font-size: 48px;
-              color: #9ca3af;
+              color: var(--mid-grey); /* Mid Grey */
             }
 
             .upload-text {
               font-weight: 500;
-              color: #374151;
+              color: var(--primary-text); /* Blox Black */
 
               .browse-link {
-                color: #DAFF01;
+                color: var(--primary-color); /* Lime Yellow */
                 text-decoration: underline;
                 cursor: pointer;
 
                 &:hover {
-                  color: #0a6b6a;
+                  color: var(--primary-btn-hover); /* Darker Lime Yellow */
                 }
               }
             }
 
             .upload-hint {
               font-size: 12px;
-              color: #9ca3af;
+              color: var(--secondary-text); /* Dark Grey */
             }
           }
         }
@@ -146,8 +161,8 @@
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 16px;
-          background-color: #f0fdfa;
+          padding: var(--spacing-md);
+          background-color: var(--background); /* Light Grey */
           border: 1px solid #DAFF01;
           border-radius: 8px;
 

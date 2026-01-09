@@ -1,21 +1,11 @@
 .customer-app-wrapper {
   min-height: 100vh;
   width: 100%;
-  background-image: url('/top-gradient.svg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
+  background-color: var(--background); /* Solid background - no gradient image */
   
   // Ensure content is above background
   position: relative;
   z-index: 0;
-
-  // Mobile browsers (especially iOS Safari) often render `background-attachment: fixed`
-  // poorly (jank/blank areas). Use normal scrolling background on smaller screens.
-  @media (max-width: 768px) {
-    background-attachment: scroll;
-  }
   
   // Add a subtle overlay if needed for better text readability (optional)
   // &::before {

@@ -10,10 +10,11 @@
   box-sizing: border-box;
   position: relative;
   overflow-x: hidden;
+  background-color: var(--background); /* Light Grey background */
 
   .back-button {
     align-self: flex-start;
-    color: #0E1909;
+    color: var(--primary-text); /* Blox Black */
     font-weight: 600;
   }
 
@@ -35,52 +36,75 @@
   }
 
   .card {
-    background: #FFFFFF;
-    border-radius: 10px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+    // Clean, minimal design matching vehicle cards - Light Grey background (default)
+    background: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+    transition: all var(--transition-base);
+
+    &:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
   }
 
   .image-section {
     padding: 20px;
     text-align: center;
-    background: linear-gradient(135deg, #EAF7F3 0%, #D6F1E8 100%);
+    background: var(--card-background); /* Light Grey background - no gradient */
 
     .main-image {
       width: 100%;
       max-height: 480px;
       object-fit: contain;
-      border-radius: 8px;
-      background: #FFFFFF;
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.06);
+      border-radius: var(--radius-md);
+      background: var(--card-background); /* Light Grey */
+      box-shadow: var(--shadow-md);
     }
   }
 
   .specifications-section,
   .description-section {
-    padding: 24px;
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    padding: var(--spacing-lg);
+    background: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
 
     .section-title {
-      margin-bottom: 16px;
+      margin-bottom: var(--spacing-md);
       font-weight: 700;
-      color: #000000;
+      font-size: 20px;
+      color: var(--primary-text); /* Blox Black */
       font-family: 'IBM Plex Sans', sans-serif;
+      letter-spacing: -0.01em;
     }
 
     .spec-list {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-      gap: 12px;
+      gap: var(--spacing-md);
     }
 
     .spec-item {
-      padding: 10px 8px;
-      background: #F9FAFB;
-      border-radius: 8px;
-      border: 1px solid #E5E7EA;
+      padding: var(--spacing-md) var(--spacing-sm);
+      background: var(--background); /* Light Grey */
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--divider-color); /* Mid Grey */
+      transition: all var(--transition-base);
+
+      &:hover {
+        background-color: var(--card-hover); /* Slightly darker on hover */
+        transform: translateY(-2px);
+      }
 
       .MuiTypography-caption {
         font-size: 11px;
-        color: #BCBCBC;
+        color: var(--secondary-text); /* Dark Grey */
+        opacity: 0.8;
         text-transform: uppercase;
         letter-spacing: 0.4px;
       }
@@ -88,47 +112,58 @@
       .MuiTypography-body1 {
         font-size: 14px;
         font-weight: 600;
-        color: #000000;
+        color: var(--primary-text); /* Blox Black */
       }
     }
   }
 
   .description-section {
     .section-title {
-      margin-bottom: 12px;
+      margin-bottom: var(--spacing-sm);
     }
 
     p {
-      color: #0E1909;
+      color: var(--primary-text); /* Blox Black */
       line-height: 1.6;
       font-size: 14px;
     }
   }
 
   .pricing-section {
-    padding: 24px;
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    padding: var(--spacing-lg);
     position: sticky;
-    top: 24px;
-    background: linear-gradient(180deg, #DAFF01 0%, #0A6B6A 100%);
-    color: #FFFFFF;
+    top: var(--spacing-lg);
+    background: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+    transition: all var(--transition-base);
+
+    &:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
 
     .price-header {
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: var(--spacing-xs);
+      margin-bottom: var(--spacing-md);
 
       .price {
         font-weight: 800;
         font-size: 28px;
         line-height: 32px;
-        color: #FFFFFF;
+        color: var(--primary-color); /* Lime Yellow */
+        letter-spacing: -0.02em;
       }
     }
 
     .action-buttons {
       display: flex;
       flex-direction: column;
-      gap: 20px;
+      gap: var(--spacing-md);
 
       button {
         text-transform: none;
@@ -137,30 +172,45 @@
     }
 
     .features-box {
-      padding: 14px;
-      background-color: rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: var(--spacing-md);
+      background-color: rgba(218, 255, 1, 0.1); /* Subtle Lime Yellow tint */
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(218, 255, 1, 0.2); /* Lime Yellow border */
+      margin-top: var(--spacing-md);
 
       .MuiTypography-body2 {
-        color: #EAF7F3;
+        color: var(--primary-text); /* Blox Black */
+        opacity: 0.9;
       }
     }
   }
 
   .calculator-section {
-    padding: 24px;
+    // Clean, minimal design matching vehicle cards
+    padding: var(--spacing-lg);
+    background: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
 
     .section-title {
       font-weight: 700;
-      color: #000000;
+      font-size: 20px;
+      color: var(--primary-text); /* Blox Black */
+      letter-spacing: -0.01em;
+      margin-bottom: var(--spacing-md);
     }
   }
 
   .promotions-section {
-    padding: 20px;
-    background: linear-gradient(180deg, #DAFF01 0%, #0A6B6A 100%);
-    color: #FFFFFF;
+    // Clean, minimal design matching vehicle cards
+    padding: var(--spacing-lg);
+    background: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
   }
 
   @media (max-width: 1024px) {

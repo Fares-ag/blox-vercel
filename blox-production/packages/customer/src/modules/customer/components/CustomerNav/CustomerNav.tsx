@@ -180,9 +180,13 @@ export const CustomerNav: React.FC = () => {
             sx: {
               mt: 1,
               minWidth: 200,
+              backgroundColor: 'var(--card-background)',
+              color: 'var(--primary-text)',
+              boxShadow: 'var(--card-shadow-hover)',
               '& .MuiMenuItem-root': {
+                color: 'var(--primary-text)',
                 '&:hover': {
-                  backgroundColor: '#EAF7F3',
+                  backgroundColor: 'var(--card-hover)',
                 },
               },
             },
@@ -264,9 +268,9 @@ export const CustomerNav: React.FC = () => {
                   }}
                   sx={{ 
                     ml: 1,
-                    color: '#00CFA2',
+                    color: 'var(--primary-color)',
                     '&:hover': {
-                      backgroundColor: 'rgba(0, 207, 162, 0.1)',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
                     }
                   }}
                 >
@@ -297,9 +301,14 @@ export const CustomerNav: React.FC = () => {
                   sx: {
                     mt: 1,
                     minWidth: 200,
+                    backgroundColor: 'var(--card-background)',
+                    color: 'var(--primary-text)',
+                    boxShadow: 'var(--card-shadow-hover)',
                     '& .MuiMenuItem-root': {
+                      color: 'var(--primary-text)',
                       '&:hover': {
-                        backgroundColor: '#EAF7F3',
+                        backgroundColor: 'var(--card-hover)',
+                        color: 'var(--primary-text)',
                       },
                     },
                   },

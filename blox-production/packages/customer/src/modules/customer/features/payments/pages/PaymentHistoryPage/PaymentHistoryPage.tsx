@@ -355,8 +355,9 @@ export const PaymentHistoryPage: React.FC = () => {
               onClick={() => downloadPDF()}
               disabled={filteredTransactions.length === 0}
               sx={{
-                backgroundColor: '#DAFF01',
-                '&:hover': { backgroundColor: '#B8E001' },
+                backgroundColor: 'var(--primary-color)',
+                color: 'var(--primary-btn-color)',
+                '&:hover': { backgroundColor: 'var(--primary-btn-hover)' },
               }}
             >
               Download PDF
@@ -421,26 +422,26 @@ export const PaymentHistoryPage: React.FC = () => {
       {/* Summary Cards */}
       <Box className="summary-cards" sx={{ mb: 3 }}>
         <Paper className="summary-card">
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
             Total Transactions
           </Typography>
-          <Typography variant="h5" fontWeight={700}>
+          <Typography variant="h5" fontWeight={700} sx={{ color: 'var(--primary-text)' }}>
             {filteredTransactions.length}
           </Typography>
         </Paper>
         <Paper className="summary-card">
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
             Total Amount
           </Typography>
-          <Typography variant="h5" fontWeight={700} color="primary">
+          <Typography variant="h5" fontWeight={700} className="highlight" sx={{ color: 'var(--primary-color)' }}>
             {formatCurrency(totalAmount)}
           </Typography>
         </Paper>
         <Paper className="summary-card">
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
             Paid Amount
           </Typography>
-          <Typography variant="h5" fontWeight={700} color="success.main">
+          <Typography variant="h5" fontWeight={700} sx={{ color: 'var(--primary-text)' }}>
             {formatCurrency(paidAmount)}
           </Typography>
         </Paper>
@@ -464,8 +465,8 @@ export const PaymentHistoryPage: React.FC = () => {
             <TableBody>
               {filteredTransactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                    <Typography variant="body2" color="text.secondary">
+                  <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'var(--background-secondary)' }}>
+                    <Typography variant="body2" sx={{ color: 'var(--background-secondary)', opacity: 0.8 }}>
                       No transactions found
                     </Typography>
                   </TableCell>
@@ -473,13 +474,13 @@ export const PaymentHistoryPage: React.FC = () => {
               ) : (
                 filteredTransactions.map((transaction) => (
                   <TableRow key={transaction.id} hover>
-                    <TableCell>{transaction.applicationName}</TableCell>
-                    <TableCell>{transaction.vehicleName}</TableCell>
-                    <TableCell>{formatDate(transaction.dueDate)}</TableCell>
-                    <TableCell>
+                    <TableCell sx={{ color: 'var(--background-secondary)' }}>{transaction.applicationName}</TableCell>
+                    <TableCell sx={{ color: 'var(--background-secondary)' }}>{transaction.vehicleName}</TableCell>
+                    <TableCell sx={{ color: 'var(--background-secondary)' }}>{formatDate(transaction.dueDate)}</TableCell>
+                    <TableCell sx={{ color: 'var(--background-secondary)' }}>
                       {transaction.paidDate ? formatDate(transaction.paidDate) : '-'}
                     </TableCell>
-                    <TableCell align="right" sx={{ fontWeight: 600 }}>
+                    <TableCell align="right" sx={{ fontWeight: 600, color: 'var(--background-secondary)' }}>
                       {formatCurrency(transaction.amount)}
                     </TableCell>
                     <TableCell>

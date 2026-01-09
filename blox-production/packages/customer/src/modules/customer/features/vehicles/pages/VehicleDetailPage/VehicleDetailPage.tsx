@@ -159,7 +159,7 @@ export const VehicleDetailPage: React.FC = () => {
             <Typography variant="h5" className="section-title">
               Specifications
             </Typography>
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 2, borderColor: 'var(--divider-color)' }} />
             <Box className="spec-list">
               <Box className="spec-item">
                 <Typography variant="caption">Make</Typography>
@@ -207,8 +207,8 @@ export const VehicleDetailPage: React.FC = () => {
               <Typography variant="h5" className="section-title">
                 Description
               </Typography>
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="body1">{vehicle.description}</Typography>
+              <Divider sx={{ my: 2, borderColor: 'var(--divider-color)' }} />
+              <Typography variant="body1" sx={{ color: 'var(--background-secondary)' }}>{vehicle.description}</Typography>
             </Paper>
           )}
         </Box>
@@ -224,21 +224,21 @@ export const VehicleDetailPage: React.FC = () => {
                 label={vehicle.condition === 'new' ? 'New Vehicle' : 'Used Vehicle'}
                 icon={<CheckCircle />}
                 sx={{
-                  backgroundColor: vehicle.condition === 'new' ? '#DAFF01' : '#E5E7EA',
-                  color: vehicle.condition === 'new' ? '#FFFFFF' : '#000000',
+                  backgroundColor: vehicle.condition === 'new' ? 'var(--primary-color)' : 'var(--mid-grey)',
+                  color: vehicle.condition === 'new' ? 'var(--primary-btn-color)' : 'var(--background-secondary)',
                   fontWeight: 600,
                 }}
               />
             </Box>
 
-            <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.2)' }} />
+            <Divider sx={{ my: 2, borderColor: 'var(--divider-color)' }} />
 
             <Box className="features-box">
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+              <Typography variant="subtitle2" sx={{ mb: 1, color: 'var(--background-secondary)' }}>
                 <LocalOffer sx={{ mr: 1, verticalAlign: 'middle' }} />
                 Available Offers
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" sx={{ color: 'var(--background-secondary)', opacity: 0.8 }}>
                 Competitive financing options available. Calculate your monthly installments below.
               </Typography>
             </Box>
@@ -248,12 +248,12 @@ export const VehicleDetailPage: React.FC = () => {
           {activePromotions.length > 0 && (
             <Paper className="promotions-section card" sx={{ mt: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Celebration sx={{ mr: 1, color: '#DAFF01' }} />
-                <Typography variant="h6" sx={{ fontWeight: 600, color: '#FFFFFF' }}>
+                <Celebration sx={{ mr: 1, color: 'var(--primary-color)' }} />
+                <Typography variant="h6" sx={{ fontWeight: 600, color: 'var(--background-secondary)' }}>
                   Special Promotions
                 </Typography>
               </Box>
-              <Divider sx={{ my: 1, borderColor: 'rgba(255,255,255,0.2)' }} />
+              <Divider sx={{ my: 1, borderColor: 'var(--divider-color)' }} />
               {activePromotions.map((promo) => (
                 <Alert
                   key={promo.id}
@@ -261,19 +261,20 @@ export const VehicleDetailPage: React.FC = () => {
                   icon={<Celebration />}
                   sx={{
                     mb: 1,
-                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                    color: '#FFFFFF',
-                    '& .MuiAlert-icon': { color: '#DAFF01' },
-                    '& .MuiAlert-message': { color: '#FFFFFF' },
+                    backgroundColor: 'rgba(218, 255, 1, 0.1)',
+                    color: 'var(--background-secondary)',
+                    border: '1px solid rgba(218, 255, 1, 0.2)',
+                    '& .MuiAlert-icon': { color: 'var(--primary-color)' },
+                    '& .MuiAlert-message': { color: 'var(--background-secondary)' },
                   }}
                 >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5, color: 'var(--background-secondary)' }}>
                     {promo.name}
                   </Typography>
-                  <Typography variant="body2">
+                  <Typography variant="body2" sx={{ color: 'var(--background-secondary)', opacity: 0.9 }}>
                     {promo.description}
                   </Typography>
-                  <Typography variant="caption" sx={{ display: 'block', mt: 0.5, opacity: 0.9 }}>
+                  <Typography variant="caption" sx={{ display: 'block', mt: 0.5, opacity: 0.8, color: 'var(--background-secondary)' }}>
                     {promo.discountType === 'percentage' 
                       ? `${promo.discountValue}% off`
                       : `Save ${formatCurrency(promo.discountValue)}`
@@ -289,7 +290,7 @@ export const VehicleDetailPage: React.FC = () => {
             <Typography variant="h6" className="section-title">
               Calculate Installments
             </Typography>
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 2, borderColor: 'var(--divider-color)' }} />
             <InstallmentCalculator vehiclePrice={vehicle.price} onDataChange={setCalculatorData} />
           </Paper>
 

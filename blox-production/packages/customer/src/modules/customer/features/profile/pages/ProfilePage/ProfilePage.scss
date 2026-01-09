@@ -13,17 +13,33 @@
   }
 
   .profile-card {
-    padding: 32px;
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    padding: var(--spacing-lg);
+    background-color: var(--card-background); /* Light Grey */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+    transition: all var(--transition-base);
+
+    &:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
   }
 
   .profile-header {
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: var(--spacing-lg);
     flex-wrap: wrap;
+    margin-bottom: var(--spacing-lg);
 
     .MuiAvatar-root {
-      background: linear-gradient(135deg, #DAFF01 0%, #00a085 100%);
+      background: var(--primary-color); /* Lime Yellow - no gradient */
+      color: var(--primary-btn-color); /* Blox Black text */
+      font-weight: 700;
+      width: 80px;
+      height: 80px;
+      font-size: 32px;
     }
   }
 

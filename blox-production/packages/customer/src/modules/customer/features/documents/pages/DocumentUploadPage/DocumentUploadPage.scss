@@ -23,17 +23,21 @@
   }
 
   .document-card {
-    padding: 24px;
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    padding: var(--spacing-lg);
     min-height: 180px;
     display: flex;
     flex-direction: column;
-    border: 1px solid #E5E7EB;
-    border-radius: 8px;
-    background-color: #FFFFFF;
-    transition: all 0.2s ease;
+    border: none; /* No border for clean look */
+    border-radius: var(--radius-card); /* 16px */
+    background-color: var(--card-background); /* Light Grey */
+    box-shadow: var(--card-shadow);
+    transition: all var(--transition-base);
 
     &:hover {
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      transform: translateY(-4px); /* Subtle lift */
+      box-shadow: var(--card-shadow-hover);
+      background-color: var(--card-hover); /* Slightly darker on hover */
     }
 
     .document-header {
@@ -42,11 +46,11 @@
       .document-name {
         font-weight: 600;
         font-size: 14px;
-        color: #1F2937;
+        color: var(--primary-text); /* Blox Black */
         font-family: 'IBM Plex Sans', sans-serif;
 
         .required {
-          color: #F95668;
+          color: var(--primary-color); /* Lime Yellow for required indicator */
           margin-left: 4px;
           font-weight: 700;
         }
@@ -57,11 +61,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px;
-      background: #F9FAFB;
-      border-radius: 6px;
+      padding: var(--spacing-md);
+      background: var(--background); /* Light Grey */
+      border-radius: var(--radius-sm);
       margin-top: auto;
-      border: 1px solid #E5E7EB;
+      border: 1px solid var(--divider-color); /* Mid Grey border */
 
       .document-file-name {
         flex: 1;
@@ -69,7 +73,7 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: 12px;
-        color: #374151;
+        color: var(--primary-text); /* Blox Black */
         font-weight: 500;
       }
     }
@@ -80,23 +84,23 @@
       align-items: center;
       justify-content: center;
       flex: 1;
-      gap: 8px;
-      padding: 32px 16px;
-      border: 2px dashed #D1D5DB;
-      border-radius: 8px;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-xl) var(--spacing-md);
+      border: 2px dashed var(--divider-color); /* Mid Grey dashed border */
+      border-radius: var(--radius-sm);
       cursor: pointer;
-      transition: all 0.2s ease;
-      background-color: #FAFAFA;
+      transition: all var(--transition-base);
+      background-color: var(--background); /* Light Grey */
       min-height: 120px;
 
       &:hover {
-        border-color: #DAFF01;
-        background-color: #F0FDF9;
+        border-color: var(--primary-color); /* Lime Yellow on hover */
+        background-color: rgba(218, 255, 1, 0.05); /* Subtle Lime Yellow tint */
       }
 
       .upload-button {
-        color: #DAFF01;
-        padding: 12px;
+        color: var(--primary-color); /* Lime Yellow */
+        padding: var(--spacing-md);
         
         svg {
           font-size: 40px;
@@ -107,15 +111,15 @@
         }
 
         &:disabled {
-          color: #9CA3AF;
+          color: var(--mid-grey); /* Mid Grey for disabled */
         }
       }
 
       .MuiTypography-caption {
-        color: #6B7280;
+        color: var(--secondary-text); /* Dark Grey */
         font-size: 12px;
         font-weight: 400;
-        margin-top: 8px;
+        margin-top: var(--spacing-sm);
       }
     }
   }
