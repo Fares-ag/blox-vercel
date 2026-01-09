@@ -136,30 +136,61 @@ body {
   overflow-x: hidden;
 }
 
+/* Typography Hierarchy - Following Design Guidelines */
+/* Note: Using IBM Plex Sans (app font) instead of BDO Grotesk from design examples */
 h1 {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 36.4px;
+  font-size: 32px; /* Headline size */
+  font-weight: 700; /* Bold for Headline */
+  line-height: 40px;
+  letter-spacing: -0.02em;
+  color: var(--primary-text);
 }
 
 h2 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: 28px; /* Subline size */
+  font-weight: 600; /* Medium weight for Subline */
+  line-height: 36px;
+  letter-spacing: -0.02em;
+  color: var(--primary-text);
 }
 
 h3 {
-  font-size: 16px;
+  font-size: 20px;
   font-weight: 600;
+  line-height: 28px;
+  letter-spacing: -0.01em;
+  color: var(--primary-text);
 }
 
 h4 {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
+  line-height: 24px;
+  letter-spacing: -0.01em;
+  color: var(--primary-text);
 }
 
 h5 {
   font-size: 14px;
-  font-weight: 400;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--primary-text);
+}
+
+/* Body copy - Following Design Guidelines */
+p, .body-copy {
+  font-size: 14px; /* Body copy size */
+  font-weight: 400; /* Regular for Body copy */
+  line-height: 22px;
+  color: var(--primary-text);
+}
+
+/* Annotation - Following Design Guidelines */
+.annotation, small, .annotation-text {
+  font-size: 12px; /* Annotation size */
+  font-weight: 400; /* Regular for Annotation */
+  line-height: 18px;
+  color: var(--secondary-text);
 }
 
 /* Scrollbar Styles - Premium */
@@ -173,13 +204,13 @@ h5 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #C9C4B7; /* Mid Grey */
+  background: var(--mid-grey);
   border-radius: 4px;
   transition: background var(--transition-base);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #787663; /* Dark Grey */
+  background: var(--dark-grey);
 }
 
 /* Utility Classes */

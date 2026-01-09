@@ -1,5 +1,5 @@
 .applications-list-page {
-  padding: 24px;
+  padding: var(--spacing-lg);
   min-height: 100vh;
 
   .page-title {
@@ -90,11 +90,11 @@
   }
 
   @media (max-width: 768px) {
-    padding: 16px;
+    padding: var(--spacing-md);
 
     .applications-grid {
       grid-template-columns: 1fr;
-      gap: 16px;
+      gap: var(--spacing-md);
     }
   }
 }
