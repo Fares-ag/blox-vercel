@@ -174,11 +174,14 @@ export const theme = createTheme({
     MuiCheckbox: {
       styleOverrides: {
         root: {
-          color: '#9ca3af',
+          color: '#C9C4B7', // Mid Grey for unchecked
           borderRadius: '4px',
           transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
           '&.Mui-checked': {
-            color: '#DAFF01', // Lime Yellow
+            color: '#DAFF01', // Lime Yellow for checked
+            '& .MuiSvgIcon-root': {
+              color: '#DAFF01', // Ensure checkmark is Lime Yellow
+            },
           },
           '&:hover': {
             backgroundColor: 'rgba(218, 255, 1, 0.08)', // Lime Yellow with opacity

@@ -8,6 +8,9 @@ import './Button.scss';
 export type ButtonVariant =
   | 'primary'
   | 'secondary'
+  | 'secondary-neutral'
+  | 'destructive'
+  | 'tertiary'
   | 'outlined'
   | 'contained'
   | 'text'
@@ -33,15 +36,21 @@ export const Button: React.FC<ButtonProps> = React.memo(({
         return 'btn-primary';
       case 'secondary':
         return 'btn-secondary';
+      case 'secondary-neutral':
+        return 'btn-secondary-neutral';
+      case 'destructive':
+        return 'btn-destructive';
+      case 'tertiary':
+        return 'btn-tertiary';
       case 'outlined':
-        // Backward-compat alias (maps to our secondary styling)
-        return 'btn-secondary';
+        // Backward-compat alias (maps to our secondary-neutral styling)
+        return 'btn-secondary-neutral';
       case 'contained':
         // MUI alias → primary
         return 'btn-primary';
       case 'text':
-        // MUI alias → secondary (lightweight)
-        return 'btn-secondary';
+        // MUI alias → tertiary (text only)
+        return 'btn-tertiary';
       case 'icon':
         return 'btn-icon';
       case 'small':

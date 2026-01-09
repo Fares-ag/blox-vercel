@@ -16,12 +16,18 @@
   --secondary-dark: #5A5849;       /* Darker Grey */
   --secondary-light: #9A9880;       /* Lighter Grey */
   
-  /* Button Colors */
-  --primary-btn-bg: #DAFF01;       /* Lime Yellow */
+  /* Button Colors - Following Design Guidelines */
+  --primary-btn-bg: #DAFF01;       /* Lime Yellow - Primary buttons */
   --primary-btn-color: #0E1909;    /* Blox Black text on Lime Yellow */
-  --secondary-btn-bg: #ffffff;      /* White */
-  --secondary-btn-color: #0E1909;   /* Blox Black text */
-  --outline-btn-border: #787663;    /* Dark Grey border */
+  --secondary-btn-bg: #E6FFE6;      /* Light Green - Secondary buttons */
+  --secondary-btn-color: #008000;  /* Dark Green text on Light Green */
+  --secondary-neutral-bg: #F3F0ED; /* Light Grey - Secondary Neutral buttons */
+  --secondary-neutral-color: #787663; /* Dark Grey text on Light Grey */
+  --destructive-btn-bg: #ffffff;     /* White - Destructive buttons */
+  --destructive-btn-border: #F44336; /* Red border for destructive */
+  --destructive-btn-color: #F44336;  /* Red text for destructive */
+  --tertiary-btn-color: #787663;     /* Dark Grey - Tertiary (text only) */
+  --outline-btn-border: #787663;     /* Dark Grey border */
 
   /* Form & UI Colors */
   --field-lable-color: #0E1909;     /* Blox Black */
