@@ -286,7 +286,7 @@ export class ContractPdfService {
     
     try {
       // Try to add logo from public folder
-      const logoUrl = '/BloxLogoDark.png';
+      const logoUrl = '/BloxLogoNav.png';
       const img = new Image();
       img.crossOrigin = 'Anonymous';
       

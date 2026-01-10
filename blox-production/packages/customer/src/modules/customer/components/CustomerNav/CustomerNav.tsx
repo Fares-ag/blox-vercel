@@ -115,7 +115,14 @@ export const CustomerNav: React.FC = () => {
 
         {/* Logo */}
         <Box className="logo-section" onClick={() => navigate('/customer/home')}>
-          <img src="/BloxLogoDark.png" alt="Blox Logo" className="logo-image" />
+          <img 
+            src="/BloxLogoNav.png" 
+            alt="Blox Logo" 
+            className="logo-image"
+            onError={(e) => {
+              console.error('Failed to load logo at /BloxLogoNav.png');
+            }}
+          />
         </Box>
 
         {/* Navigation Links */}
@@ -270,7 +277,7 @@ export const CustomerNav: React.FC = () => {
                     ml: 1,
                     color: 'var(--primary-color)',
                     '&:hover': {
-                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      backgroundColor: 'rgba(218, 255, 1, 0.2)',
                     }
                   }}
                 >

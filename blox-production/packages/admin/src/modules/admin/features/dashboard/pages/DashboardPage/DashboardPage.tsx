@@ -230,7 +230,7 @@ export const DashboardPage: React.FC = () => {
     return (
       <Box className="dashboard-page">
         <Box className="dashboard-header">
-          <Typography variant="h2">Dashboard</Typography>
+          <Typography variant="h2" sx={{ fontWeight: 700, color: 'var(--primary-text)', fontSize: 32, letterSpacing: '-0.02em' }}>Dashboard</Typography>
         </Box>
         <Paper
           className="dashboard-panel"
@@ -241,10 +241,10 @@ export const DashboardPage: React.FC = () => {
             textAlign: 'center',
           }}
         >
-          <Typography variant="h3" sx={{ mb: 2 }}>
+          <Typography variant="h3" sx={{ mb: 2, fontWeight: 700, color: 'var(--primary-text)', fontSize: 24 }}>
             No dashboard data available
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 15, fontWeight: 500 }}>
             {error || 'The dashboard API did not return any data for the selected date range.'}
           </Typography>
         </Paper>
@@ -266,8 +266,8 @@ export const DashboardPage: React.FC = () => {
   return (
     <Box className="dashboard-page">
       <Box className="dashboard-header">
-        <Typography variant="h2">Dashboard</Typography>
-        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+        <Typography variant="h2" sx={{ fontWeight: 700, color: 'var(--primary-text)', fontSize: 32, letterSpacing: '-0.02em', marginBottom: 0 }}>Dashboard</Typography>
+        <Box sx={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center', flexWrap: 'wrap' }}>
           <Button
             variant="secondary"
             startIcon={<FilterList />}
@@ -388,8 +388,8 @@ export const DashboardPage: React.FC = () => {
         sx={{
           width: '100%',
           display: 'flex',
-          gap: '24px',
-          marginBottom: 'var(--spacing-lg)',
+          gap: 'var(--spacing-md)',
+          marginBottom: 'var(--spacing-md)',
           '& > *': {
             flex: '1 1 0',
             minWidth: 0,
@@ -428,8 +428,8 @@ export const DashboardPage: React.FC = () => {
         sx={{
           width: '100%',
           display: 'flex',
-          gap: '24px',
-          marginBottom: 'var(--spacing-lg)',
+          gap: 'var(--spacing-md)',
+          marginBottom: 'var(--spacing-md)',
           '& > *': {
             flex: '1 1 0',
             minWidth: 0,
@@ -457,12 +457,12 @@ export const DashboardPage: React.FC = () => {
           width: '100%',
           display: 'flex',
           alignItems: 'stretch',
-          gap: '24px',
-          marginBottom: 'var(--spacing-lg)',
+          gap: 'var(--spacing-md)',
+          marginBottom: 'var(--spacing-md)',
           '@media (max-width: 960px)': {
             flexDirection: 'column',
             alignItems: 'stretch',
-            gap: '16px',
+            gap: 'var(--spacing-sm)',
           },
         }}
       >
@@ -570,8 +570,8 @@ export const DashboardPage: React.FC = () => {
             </Box>
             <Box className="active-applications">
               <Box className="applications-info">
-                <Person sx={{ fontSize: 20, mr: 1, color: '#008A6C' }} />
-                <Typography variant="body2">
+                <Person sx={{ fontSize: 20, mr: 1, color: 'var(--primary-color)' }} />
+                <Typography variant="body2" sx={{ color: 'var(--primary-text)', fontSize: 15, fontWeight: 600 }}>
                   {stats.activeApplications} Active Applications
                 </Typography>
               </Box>
@@ -626,7 +626,7 @@ export const DashboardPage: React.FC = () => {
 
       {/* Enhanced Analytics Section */}
       <Box sx={{ mt: 4 }}>
-        <Typography variant="h2" sx={{ mb: 3 }}>
+        <Typography variant="h2" sx={{ mb: 3, fontWeight: 700, color: 'var(--primary-text)', fontSize: 28, letterSpacing: '-0.02em' }}>
           Enhanced Analytics
         </Typography>
         
@@ -667,7 +667,7 @@ export const DashboardPage: React.FC = () => {
                     yAxisLabel="Amount (QAR)"
                   />
                 ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography variant="body2" sx={{ textAlign: 'center', py: 4, color: 'var(--primary-text)', opacity: 1, fontSize: 15, fontWeight: 600 }}>
                     No revenue forecast data available
                   </Typography>
                 )}

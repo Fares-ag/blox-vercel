@@ -300,6 +300,7 @@ class ReportExportService {
    */
   private async loadLogo(): Promise<string | null> {
     const logoPaths = [
+      '/BloxLogoNav.png',
       '/BloxLogo.png',
       '/admin/BloxLogo.png',
       '/customer/BloxLogo.png',

@@ -69,7 +69,7 @@ export const ApplicationsListPage: React.FC = () => {
       <Typography variant="h4" className="page-title">
         My Applications
       </Typography>
-      <Typography variant="body2" color="text.secondary" className="page-subtitle">
+      <Typography variant="body2" className="page-subtitle" sx={{ color: 'var(--secondary-text)', opacity: 0.95, fontSize: 15 }}>
         View and manage your vehicle financing applications
       </Typography>
 
@@ -90,7 +90,7 @@ export const ApplicationsListPage: React.FC = () => {
                     <Typography variant="h6" className="application-id">
                       Application #{application.id}
                     </Typography>
-                    <Typography variant="body2" className="vehicle-info" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
+                    <Typography variant="body2" className="vehicle-info" sx={{ color: 'var(--secondary-text)', opacity: 0.95, fontSize: 14, fontWeight: 500 }}>
                       {application.vehicle
                         ? `${application.vehicle.make} ${application.vehicle.model} ${application.vehicle.trim}`
                         : 'Vehicle Information'}
@@ -101,36 +101,36 @@ export const ApplicationsListPage: React.FC = () => {
 
                 <Box className="card-details">
                   <Box className="detail-row">
-                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
+                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.95, fontSize: 13, fontWeight: 500 }}>
                       Vehicle Price
                     </Typography>
-                    <Typography variant="body2" className="detail-value" fontWeight={600} sx={{ color: 'var(--primary-text)' }}>
+                    <Typography variant="body2" className="detail-value" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 15 }}>
                       {application.vehicle
                         ? formatCurrency(application.vehicle.price)
                         : 'N/A'}
                     </Typography>
                   </Box>
                   <Box className="detail-row">
-                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
+                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.95, fontSize: 13, fontWeight: 500 }}>
                       Down Payment
                     </Typography>
-                    <Typography variant="body2" className="detail-value" fontWeight={600} sx={{ color: 'var(--primary-text)' }}>
+                    <Typography variant="body2" className="detail-value" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 15 }}>
                       {formatCurrency(application.downPayment)}
                     </Typography>
                   </Box>
                   <Box className="detail-row">
-                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
+                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.95, fontSize: 13, fontWeight: 500 }}>
                       Loan Amount
                     </Typography>
-                    <Typography variant="body2" className="detail-value" fontWeight={600} sx={{ color: 'var(--primary-text)' }}>
+                    <Typography variant="body2" className="detail-value" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 15 }}>
                       {formatCurrency(application.loanAmount)}
                     </Typography>
                   </Box>
                   <Box className="detail-row">
-                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.8 }}>
+                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.95, fontSize: 13, fontWeight: 500 }}>
                       Created
                     </Typography>
-                    <Typography variant="body2" className="detail-value" fontWeight={600} sx={{ color: 'var(--primary-text)' }}>
+                    <Typography variant="body2" className="detail-value" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 15 }}>
                       {application.createdAt ? formatDateTime(application.createdAt) : 'N/A'}
                     </Typography>
                   </Box>

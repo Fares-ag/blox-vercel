@@ -34,21 +34,6 @@
 
   &.clickable {
     cursor: pointer;
-
-    &:hover {
-      transform: translateY(-4px); /* Subtle lift */
-      box-shadow: var(--card-shadow-hover);
-      
-      /* Dark cards stay dark on hover */
-      &.card-dark {
-        background-color: var(--blox-black);
-      }
-      
-      /* Light cards get slightly darker on hover */
-      &:not(.card-dark) {
-        background-color: var(--card-hover); /* Slightly darker light grey */
-      }
-    }
   }
 
   .MuiCardContent-root {
@@ -72,19 +57,20 @@
   }
 
   .card-title {
-    font-size: 12px; /* Slightly larger for readability */
-    font-weight: 400;
-    color: var(--secondary-text); /* Dark Grey - default for light cards */
+    font-size: 13px; /* Slightly larger for readability */
+    font-weight: 600;
+    color: var(--primary-text); /* Blox Black - darker for better readability */
     margin-bottom: var(--spacing-xs);
     letter-spacing: 0.01em;
-    opacity: 0.8;
+    opacity: 1;
+    text-transform: uppercase;
   }
 
   /* Dark card variant needs different text colors */
   &.card-dark {
     .card-title {
       color: var(--background-secondary); /* Light Grey on dark cards */
-      opacity: 0.8;
+      opacity: 1;
     }
   }
 
@@ -114,18 +100,18 @@
   }
 
   .card-subtitle {
-    font-size: 12px;
-    font-weight: 400;
-    color: var(--secondary-text); /* Dark Grey - default for light cards */
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--primary-text); /* Blox Black - darker for better readability */
     line-height: 1.5;
-    opacity: 0.8;
+    opacity: 1;
   }
 
   /* Dark card variant needs different text colors */
   &.card-dark {
     .card-subtitle {
       color: var(--background-secondary); /* Light Grey on dark cards */
-      opacity: 0.7;
+      opacity: 1;
     }
   }
 }

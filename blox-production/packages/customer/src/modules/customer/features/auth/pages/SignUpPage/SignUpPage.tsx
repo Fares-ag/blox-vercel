@@ -95,7 +95,7 @@ export const SignUpPage: React.FC = () => {
     <Box className="signup-page">
       <Box className="signup-container">
         <Box className="signup-header">
-          <img src="/BloxLogoDark.png" alt="Blox Logo" className="logo-image" />
+          <img src="/BloxLogoNav.png" alt="Blox Logo" className="logo-image" />
           <Typography variant="h3" className="welcome-text">
             Create Account
           </Typography>

@@ -203,10 +203,10 @@ export const ApplicationsListPage: React.FC = () => {
                 px: 1.5,
                 py: 0.5,
                 borderRadius: 999,
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: 600,
-                bgcolor: '#E5E7EA',
-                color: '#4B5563',
+                bgcolor: 'var(--card-hover)',
+                color: 'var(--secondary-text)',
               }}
             >
               No Schedule
@@ -234,7 +234,7 @@ export const ApplicationsListPage: React.FC = () => {
               px: 1.5,
               py: 0.5,
               borderRadius: 999,
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: 600,
               bgcolor: colors.bg,
               color: colors.fg,
@@ -289,7 +289,7 @@ export const ApplicationsListPage: React.FC = () => {
               px: 1.5,
               py: 0.5,
               borderRadius: 999,
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: 600,
               bgcolor: colors.bg,
               color: colors.fg,

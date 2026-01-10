@@ -101,7 +101,7 @@ export const ResetPasswordPage: React.FC = () => {
     <Box className="reset-password-page">
       <Box className="reset-password-container">
         <Box className="reset-password-header">
-          <img src="/BloxLogoDark.png" alt="Blox Logo" className="logo-image" />
+          <img src="/BloxLogoNav.png" alt="Blox Logo" className="logo-image" />
           <Typography variant="h3">Reset Password</Typography>
           {userEmail && (
             <Typography variant="body2" className="subtitle-text" sx={{ mt: 1, mb: 1 }}>

@@ -22,49 +22,49 @@ interface ApplicationTimelineProps {
   currentStatus: ApplicationStatus;
 }
 
-// Blox Brand Colors
+// Status Colors - Colorful and clear
 const STATUS_CONFIG: Record<
   ApplicationStatus,
   { label: string; color: string; icon: React.ReactNode }
 > = {
-  draft: { label: 'Draft Created', color: '#C9C4B7', icon: <Pending /> }, // Mid Grey
-  under_review: { label: 'Under Review', color: '#DAFF01', icon: <AccessTime /> }, // Lime Yellow
-  active: { label: 'Approved', color: '#787663', icon: <CheckCircle /> }, // Dark Grey
-  completed: { label: 'Completed', color: '#787663', icon: <CheckCircle /> }, // Dark Grey
-  rejected: { label: 'Rejected', color: '#0E1909', icon: <Cancel /> }, // Blox Black
+  draft: { label: 'Draft Created', color: '#FF9800', icon: <Pending /> }, // Orange
+  under_review: { label: 'Under Review', color: '#FFC107', icon: <AccessTime /> }, // Amber/Yellow
+  active: { label: 'Approved', color: '#2196F3', icon: <CheckCircle /> }, // Blue - Approved status
+  completed: { label: 'Completed', color: '#4CAF50', icon: <CheckCircle /> }, // Green
+  rejected: { label: 'Rejected', color: '#F44336', icon: <Cancel /> }, // Red
   contract_signing_required: {
     label: 'Contract Signing Required',
-    color: '#787663', // Dark Grey
+    color: '#9C27B0', // Purple
     icon: <AccessTime />,
   },
   resubmission_required: {
     label: 'Resubmission Required',
-    color: '#787663', // Dark Grey
+    color: '#FF9800', // Orange
     icon: <Pending />,
   },
   contracts_submitted: {
     label: 'Contracts Submitted',
-    color: '#DAFF01', // Lime Yellow
+    color: '#2196F3', // Blue
     icon: <CheckCircle />,
   },
   contract_under_review: {
     label: 'Contract Under Review',
-    color: '#DAFF01', // Lime Yellow
+    color: '#FFC107', // Amber/Yellow
     icon: <AccessTime />,
   },
   down_payment_required: {
     label: 'Down Payment Required',
-    color: '#787663', // Dark Grey
+    color: '#FF9800', // Orange
     icon: <AccessTime />,
   },
   down_payment_submitted: {
     label: 'Down Payment Submitted',
-    color: '#787663', // Dark Grey
+    color: '#2196F3', // Blue
     icon: <CheckCircle />,
   },
   submission_cancelled: {
     label: 'Cancelled',
-    color: '#0E1909', // Blox Black
+    color: '#757575', // Grey
     icon: <Cancel />,
   },
 };
@@ -95,7 +95,7 @@ export const ApplicationTimeline: React.FC<ApplicationTimelineProps> = ({
                   sx={{
                     backgroundColor: isActive ? config.color : '#C9C4B7', // Mid Grey for inactive
                     color: isActive 
-                      ? (config.color === '#DAFF01' ? '#0E1909' : '#FFFFFF') // Blox Black for Lime Yellow, white for others
+                      ? (config.color === '#FFC107' || config.color === '#FF9800' ? '#0E1909' : '#FFFFFF') // Black for yellow/orange, white for others
                       : '#787663', // Dark Grey for inactive icons
                   }}
                 >

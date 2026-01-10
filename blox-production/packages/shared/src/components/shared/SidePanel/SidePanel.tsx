@@ -41,7 +41,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   menuItems,
   user,
   onLogout,
-  logoPath = '/BloxLogo.png'
+  logoPath = '/BloxLogoNav.png'
 }) => {
   const [internalCollapsed, setInternalCollapsed] = useState(false);
   const collapsed = collapsedProp !== undefined ? collapsedProp : internalCollapsed;

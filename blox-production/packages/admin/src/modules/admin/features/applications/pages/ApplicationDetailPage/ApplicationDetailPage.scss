@@ -179,15 +179,16 @@
       margin-bottom: 16px;
 
       .section-icon {
-        color: #00CFA2;
+        color: var(--primary-color);
         font-size: 24px;
       }
 
       .section-title {
         font-weight: 700;
-        color: #000000;
+        color: var(--primary-text);
         font-family: 'IBM Plex Sans', sans-serif;
         margin: 0;
+        opacity: 1;
       }
     }
 
@@ -203,22 +204,24 @@
 
       .info-label {
         display: block;
-        color: #9CA3AF;
-        font-size: 11px;
-        font-weight: 600;
+        color: var(--primary-text);
+        font-size: 12px;
+        font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.08em;
+        opacity: 1;
       }
 
       .info-value {
-        color: #111827;
+        color: var(--primary-text);
         font-size: 15px;
         font-weight: 600;
         line-height: 1.4;
         word-break: break-word;
+        opacity: 1;
 
         &.highlight {
-          color: #00CFA2;
+          color: var(--primary-color);
           font-weight: 700;
           font-size: 20px;
         }

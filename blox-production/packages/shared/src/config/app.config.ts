@@ -53,18 +53,18 @@ export const Config = {
   ],
 
   statusConfig: [
-    { status: 'Draft', color: '#C9C4B7' },                    // Mid Grey
-    { status: 'Active', color: '#DAFF01' },                  // Lime Yellow
-    { status: 'Completed', color: '#787663' },                // Dark Grey
-    { status: 'Under Review', color: '#DAFF01' },            // Lime Yellow
-    { status: 'Rejected', color: '#0E1909' },              // Blox Black
-    { status: 'Contract Signing Required', color: '#787663' }, // Dark Grey
-    { status: 'Resubmission Required', color: '#787663' },  // Dark Grey
-    { status: 'Contracts Submitted', color: '#DAFF01' },    // Lime Yellow
-    { status: 'Contract Under Review', color: '#DAFF01' },  // Lime Yellow
-    { status: 'Down Payment Required', color: '#787663' },  // Dark Grey
-    { status: 'Down Payment Submitted', color: '#787663' }, // Dark Grey
-    { status: 'Submission Cancelled', color: '#0E1909' },    // Blox Black
+    { status: 'Draft', color: '#FF9800' },                    // Orange
+    { status: 'Active', color: '#2196F3' },                   // Blue
+    { status: 'Completed', color: '#4CAF50' },                // Green
+    { status: 'Under Review', color: '#FFC107' },            // Amber/Yellow
+    { status: 'Rejected', color: '#F44336' },                 // Red
+    { status: 'Contract Signing Required', color: '#9C27B0' }, // Purple
+    { status: 'Resubmission Required', color: '#FF9800' },   // Orange
+    { status: 'Contracts Submitted', color: '#2196F3' },     // Blue
+    { status: 'Contract Under Review', color: '#FFC107' },   // Amber/Yellow
+    { status: 'Down Payment Required', color: '#FF9800' },   // Orange
+    { status: 'Down Payment Submitted', color: '#2196F3' },  // Blue
+    { status: 'Submission Cancelled', color: '#757575' },    // Grey
   ],
 
   tenure: ['1 Year', '2 Years', '3 Years', '4 Years', '5 Years'],

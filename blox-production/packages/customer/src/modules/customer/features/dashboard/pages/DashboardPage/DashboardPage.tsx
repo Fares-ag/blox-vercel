@@ -308,8 +308,8 @@ export const DashboardPage: React.FC = () => {
         sx={{
           width: '100%',
           display: 'flex',
-          gap: '24px',
-          marginBottom: 'var(--spacing-lg)',
+          gap: 'var(--spacing-md)',
+          marginBottom: 'var(--spacing-md)',
           '& > *': {
             flex: '1 1 0',
             minWidth: 0,
@@ -332,34 +332,44 @@ export const DashboardPage: React.FC = () => {
         <Card className="stat-card stat-card-primary">
           <CardContent>
             <Box className="stat-header">
-              <DescriptionOutlined className="stat-icon" />
-              <Chip label={stats.activeApplications} color="primary" size="small" />
+              <DescriptionOutlined className="stat-icon" sx={{ color: 'var(--primary-text)', opacity: 1 }} />
+              <Chip 
+                label={stats.activeApplications} 
+                sx={{ 
+                  backgroundColor: 'var(--primary-color)', 
+                  color: '#0E1909', 
+                  fontWeight: 700,
+                  fontSize: '12px',
+                  height: '24px'
+                }} 
+                size="small" 
+              />
             </Box>
-            <Typography variant="h6" className="stat-value">
+            <Typography variant="h6" className="stat-value" sx={{ color: 'var(--primary-text)', opacity: 1, fontWeight: 700 }}>
               {stats.activeApplications}
             </Typography>
-            <Typography variant="body2" className="stat-label">
+            <Typography variant="body2" className="stat-label" sx={{ color: 'var(--primary-text)', opacity: 1, fontWeight: 600 }}>
               Active Applications
             </Typography>
           </CardContent>
         </Card>
 
-        <Card className="stat-card stat-card-warning">
+        <Card className="stat-card stat-card-warning" sx={{ backgroundColor: '#0E1909' }}>
           <CardContent>
             <Box className="stat-header">
-              <Schedule className="stat-icon" />
+              <Schedule className="stat-icon" sx={{ color: 'var(--primary-color)' }} />
               {stats.overduePayments > 0 && (
-                <Chip label={stats.overduePayments} color="error" size="small" />
+                <Chip label={stats.overduePayments} sx={{ backgroundColor: '#F95668', color: '#FFFFFF', fontWeight: 600 }} size="small" />
               )}
             </Box>
-            <Typography variant="h6" className="stat-value">
+            <Typography variant="h6" className="stat-value" sx={{ color: 'var(--primary-color)' }}>
               {stats.upcomingPayments}
             </Typography>
-            <Typography variant="body2" className="stat-label">
+            <Typography variant="body2" className="stat-label" sx={{ color: 'var(--background-secondary)', opacity: 1 }}>
               Upcoming Payments
             </Typography>
             {stats.overduePayments > 0 && (
-              <Typography variant="caption" className="overdue-notice">
+              <Typography variant="caption" className="overdue-notice" sx={{ color: 'var(--background-secondary)', opacity: 1, fontWeight: 600 }}>
                 {stats.overduePayments} overdue
               </Typography>
             )}
@@ -369,26 +379,26 @@ export const DashboardPage: React.FC = () => {
         <Card className="stat-card stat-card-success">
           <CardContent>
             <Box className="stat-header">
-              <TrendingUp className="stat-icon" />
+              <TrendingUp className="stat-icon" sx={{ color: 'var(--primary-text)', opacity: 1 }} />
             </Box>
-            <Typography variant="h6" className="stat-value">
+            <Typography variant="h6" className="stat-value" sx={{ color: 'var(--primary-text)', opacity: 1, fontWeight: 700 }}>
               {formatCurrency(stats.totalPaid)}
             </Typography>
-            <Typography variant="body2" className="stat-label">
+            <Typography variant="body2" className="stat-label" sx={{ color: 'var(--primary-text)', opacity: 1, fontWeight: 600 }}>
               Total Paid
             </Typography>
           </CardContent>
         </Card>
 
-        <Card className="stat-card stat-card-info">
+        <Card className="stat-card stat-card-info" sx={{ backgroundColor: '#0E1909' }}>
           <CardContent>
             <Box className="stat-header">
-              <CreditCard className="stat-icon" />
+              <CreditCard className="stat-icon" sx={{ color: 'var(--primary-color)' }} />
             </Box>
-            <Typography variant="h6" className="stat-value">
+            <Typography variant="h6" className="stat-value" sx={{ color: 'var(--primary-color)' }}>
               {formatCurrency(stats.remainingBalance)}
             </Typography>
-            <Typography variant="body2" className="stat-label">
+            <Typography variant="body2" className="stat-label" sx={{ color: 'var(--background-secondary)', opacity: 1 }}>
               Remaining Balance
             </Typography>
           </CardContent>
@@ -400,54 +410,59 @@ export const DashboardPage: React.FC = () => {
         <Paper
           className="blox-membership-cta"
           sx={{
-            mb: 3,
+            mb: 2,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: 3,
-            background: 'linear-gradient(90deg, #0EA5E9 0%, #22C55E 100%)',
-            color: '#ffffff',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.25)',
-            borderRadius: '16px',
-            padding: '18px 24px',
+            gap: 2,
+            background: 'var(--card-background)',
+            color: 'var(--primary-text)',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
+            borderRadius: 'var(--radius-card)',
+            padding: 'var(--spacing-md)',
+            border: '1px solid var(--primary-color)',
+            transition: 'all var(--transition-base)',
+            '&:hover': {
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08)',
+            },
           }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box
               sx={{
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 borderRadius: '50%',
-                backgroundColor: 'rgba(255,255,255,0.15)',
+                backgroundColor: 'var(--card-hover)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <Star sx={{ color: '#FACC15' }} />
+              <Star sx={{ color: 'var(--primary-color)', fontSize: 20 }} />
             </Box>
             <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: 'var(--primary-text)', fontSize: 16 }}>
                 Become a Blox Member
               </Typography>
-              <Typography variant="body2" sx={{ opacity: 0.9 }}>
+              <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
                 Unlock up to 3 payment deferrals per year across all your applications.
               </Typography>
             </Box>
           </Box>
           <Button
             variant="contained"
-            color="inherit"
             onClick={() => setPurchaseDialogOpen(true)}
             sx={{
-              color: '#0F172A',
+              backgroundColor: 'var(--primary-color)',
+              color: 'var(--primary-btn-color)',
               fontWeight: 700,
               px: 3,
               py: 1,
               borderRadius: 999,
               textTransform: 'none',
               '&:hover': {
-                backgroundColor: '#ffffff',
+                backgroundColor: 'var(--primary-btn-hover)',
               },
             }}
           >
@@ -461,11 +476,11 @@ export const DashboardPage: React.FC = () => {
         sx={{
           width: '100%',
           display: 'flex',
-          gap: '24px',
+          gap: 'var(--spacing-md)',
           alignItems: 'stretch',
           '@media (max-width: 960px)': {
             flexDirection: 'column',
-            gap: '16px',
+            gap: 'var(--spacing-sm)',
           },
         }}
       >
@@ -482,16 +497,16 @@ export const DashboardPage: React.FC = () => {
           }}
         >
           {/* Quick Actions */}
-          <Paper className="section-card quick-actions-card" sx={{ mb: 3 }}>
+          <Paper className="section-card quick-actions-card" sx={{ mb: 2 }}>
             <Typography variant="h6" className="section-title">
               Quick Actions
             </Typography>
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
             <Box
               sx={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                gap: '16px',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                gap: 'var(--spacing-sm)',
                 '@media (max-width: 600px)': {
                   gridTemplateColumns: '1fr',
                 },
@@ -516,6 +531,20 @@ export const DashboardPage: React.FC = () => {
                 startIcon={<DescriptionOutlined />}
                 onClick={() => navigate('/customer/my-applications')}
                 className="quick-action-btn"
+                sx={{
+                  backgroundColor: '#0E1909',
+                  color: 'var(--background-secondary)',
+                  borderColor: 'var(--primary-color)',
+                  borderWidth: '1.5px',
+                  '&:hover': {
+                    backgroundColor: '#0E1909',
+                    borderColor: 'var(--primary-color)',
+                    opacity: 0.9,
+                  },
+                  '& .MuiSvgIcon-root': {
+                    color: 'var(--primary-color)',
+                  },
+                }}
               >
                 My Applications
               </Button>
@@ -525,6 +554,20 @@ export const DashboardPage: React.FC = () => {
                 startIcon={<CreditCard />}
                 onClick={() => navigate('/customer/payment-calendar')}
                 className="quick-action-btn"
+                sx={{
+                  backgroundColor: '#0E1909',
+                  color: 'var(--background-secondary)',
+                  borderColor: 'var(--primary-color)',
+                  borderWidth: '1.5px',
+                  '&:hover': {
+                    backgroundColor: '#0E1909',
+                    borderColor: 'var(--primary-color)',
+                    opacity: 0.9,
+                  },
+                  '& .MuiSvgIcon-root': {
+                    color: 'var(--primary-color)',
+                  },
+                }}
               >
                 Payment Calendar
               </Button>
@@ -534,6 +577,20 @@ export const DashboardPage: React.FC = () => {
                 startIcon={<CreditCard />}
                 onClick={() => navigate('/customer/payment-history')}
                 className="quick-action-btn"
+                sx={{
+                  backgroundColor: '#0E1909',
+                  color: 'var(--background-secondary)',
+                  borderColor: 'var(--primary-color)',
+                  borderWidth: '1.5px',
+                  '&:hover': {
+                    backgroundColor: '#0E1909',
+                    borderColor: 'var(--primary-color)',
+                    opacity: 0.9,
+                  },
+                  '& .MuiSvgIcon-root': {
+                    color: 'var(--primary-color)',
+                  },
+                }}
               >
                 Payment History
               </Button>
@@ -542,13 +599,13 @@ export const DashboardPage: React.FC = () => {
 
           {/* Next Payment */}
           {stats.nextPaymentDate && (
-            <Paper className="section-card next-payment-card" sx={{ mb: 3 }}>
+            <Paper className="section-card next-payment-card" sx={{ mb: 2 }}>
               <Box className="next-payment-header">
                 <Box>
                   <Typography variant="h6" className="section-title">
                     Next Payment
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                  <Typography variant="body2" sx={{ mt: 0.5, color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
                     Due {moment(stats.nextPaymentDate).format('MMM D, YYYY')}
                   </Typography>
                 </Box>
@@ -569,14 +626,18 @@ export const DashboardPage: React.FC = () => {
                     }
                   }}
                   sx={{ 
-                    backgroundColor: '#DAFF01',
-                    '&:hover': { backgroundColor: '#B8E001' }
+                    backgroundColor: 'var(--primary-color)',
+                    color: 'var(--primary-btn-color)',
+                    fontWeight: 700,
+                    '&:hover': { 
+                      backgroundColor: 'var(--primary-btn-hover)',
+                    }
                   }}
                 >
                   Pay Now
                 </Button>
               </Box>
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
               <Box className="next-payment-details">
                 <Box className="payment-amount">
                   <Box
@@ -587,17 +648,17 @@ export const DashboardPage: React.FC = () => {
                       px: 3,
                       py: 1.5,
                       borderRadius: 999,
-                      backgroundColor: 'rgba(255,255,255,0.12)',
-                      backdropFilter: 'blur(6px)',
+                      backgroundColor: 'var(--card-hover)',
+                      border: '2px solid var(--primary-color)',
                     }}
                   >
                     <Typography
                       variant="h4"
                       fontWeight={800}
                       sx={{
-                        color: '#FFFFFF',
-                        letterSpacing: '0.04em',
-                        textShadow: '0 2px 6px rgba(0,0,0,0.35)',
+                        color: 'var(--primary-color)',
+                        letterSpacing: '0.02em',
+                        fontSize: 32,
                       }}
                     >
                       {formatCurrency(stats.nextPaymentAmount)}
@@ -609,14 +670,20 @@ export const DashboardPage: React.FC = () => {
           )}
 
           {/* Recent Activity */}
-          <Paper className="section-card" sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
+          <Paper className="section-card" sx={{ 
+            flex: 1, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            minHeight: 0, 
+            height: '100%'
+          }}>
             <Typography variant="h6" className="section-title">
               Recent Activity
             </Typography>
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
             {recentActivity.length === 0 ? (
-              <Box className="empty-state" sx={{ py: 4, textAlign: 'center', flex: 1 }}>
-                <Typography variant="body2" color="text.secondary">
+              <Box className="empty-state" sx={{ py: 3, textAlign: 'center', flex: 1 }}>
+                <Typography variant="body2" sx={{ color: 'var(--primary-text)', opacity: 1, fontSize: 15, fontWeight: 500 }}>
                   No recent activity
                 </Typography>
               </Box>
@@ -627,24 +694,52 @@ export const DashboardPage: React.FC = () => {
                     <Box
                       className="activity-item"
                       onClick={() => activity.link && navigate(activity.link)}
-                      sx={{ cursor: activity.link ? 'pointer' : 'default' }}
+                      sx={{ 
+                        cursor: activity.link ? 'pointer' : 'default',
+                        transition: 'background-color 0.2s ease',
+                        '&:hover': {
+                          backgroundColor: '#0E1909',
+                          '& .activity-title, & .activity-description, & .activity-timestamp, & .MuiTypography-root': {
+                            color: '#FFFFFF',
+                            opacity: 1,
+                            transition: 'color 0.2s ease, opacity 0.2s ease',
+                          },
+                        },
+                      }}
                     >
                       <Box
                         className="activity-icon-wrapper"
-                        sx={{ backgroundColor: `${getActivityColor(activity.type)}20` }}
+                        sx={{ 
+                          backgroundColor: `${getActivityColor(activity.type)}30`, 
+                          opacity: 1,
+                          transition: 'background-color 0.2s ease',
+                        }}
                       >
-                        <Box sx={{ color: getActivityColor(activity.type) }}>
+                        <Box sx={{ color: getActivityColor(activity.type), opacity: 1 }}>
                           {getActivityIcon(activity.type)}
                         </Box>
                       </Box>
                       <Box className="activity-content" sx={{ flex: 1 }}>
-                        <Typography variant="subtitle2" fontWeight={600}>
+                        <Typography 
+                          variant="subtitle2" 
+                          fontWeight={700} 
+                          className="activity-title"
+                          sx={{ fontSize: 15, opacity: 1, marginBottom: '4px', transition: 'color 0.2s ease' }}
+                        >
                           {activity.title}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography 
+                          variant="body2" 
+                          className="activity-description"
+                          sx={{ opacity: 1, fontSize: 13, fontWeight: 500, marginBottom: '4px', transition: 'color 0.2s ease' }}
+                        >
                           {activity.description}
                         </Typography>
-                        <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
+                        <Typography 
+                          variant="caption" 
+                          className="activity-timestamp"
+                          sx={{ mt: 0.5, opacity: 0.9, fontSize: 12, fontWeight: 500, transition: 'color 0.2s ease, opacity 0.2s ease' }}
+                        >
                           {moment(activity.date).fromNow()}
                         </Typography>
                       </Box>
@@ -653,7 +748,7 @@ export const DashboardPage: React.FC = () => {
                         type={activity.type === 'payment' ? 'payment' : 'application'}
                       />
                     </Box>
-                    {index < recentActivity.length - 1 && <Divider sx={{ my: 1 }} />}
+                    {index < recentActivity.length - 1 && <Divider sx={{ my: 0.5, borderColor: 'var(--divider-color)' }} />}
                   </React.Fragment>
                 ))}
               </Box>
@@ -675,26 +770,26 @@ export const DashboardPage: React.FC = () => {
           }}
         >
           {/* Application Status Overview */}
-          <Paper className="section-card" sx={{ mb: 3 }}>
+          <Paper className="section-card" sx={{ mb: 2 }}>
             <Typography variant="h6" className="section-title">
               Application Overview
             </Typography>
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
             <Box className="application-stats">
               <Box className="stat-item">
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
                   Total Applications
                 </Typography>
-                <Typography variant="h6" fontWeight={700}>
+                <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 18 }}>
                   {stats.totalApplications}
                 </Typography>
               </Box>
-              <Divider sx={{ my: 1.5 }} />
+              <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
               <Box className="stat-item">
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
                   Active Applications
                 </Typography>
-                <Typography variant="h6" fontWeight={700} color="primary">
+                <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-color)', fontSize: 18 }}>
                   {stats.activeApplications}
                 </Typography>
               </Box>
@@ -704,7 +799,13 @@ export const DashboardPage: React.FC = () => {
               variant="text"
               endIcon={<ArrowForward />}
               onClick={() => navigate('/customer/my-applications')}
-              sx={{ mt: 2 }}
+              sx={{ 
+                mt: 2,
+                color: 'var(--primary-color)',
+                '&:hover': {
+                  backgroundColor: 'var(--card-hover)',
+                }
+              }}
             >
               View All Applications
             </Button>
@@ -715,51 +816,51 @@ export const DashboardPage: React.FC = () => {
             <Typography variant="h6" className="section-title">
               Payment Overview
             </Typography>
-            <Divider sx={{ my: 2 }} />
+            <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
             <Box className="payment-overview" sx={{ flex: 1 }}>
               <Box className="payment-stat-item">
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
                   Total Paid
                 </Typography>
-                <Typography variant="h6" fontWeight={700} color="success.main">
+                <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 18 }}>
                   {formatCurrency(stats.totalPaid)}
                 </Typography>
               </Box>
-              <Divider sx={{ my: 1.5 }} />
+              <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
               <Box className="payment-stat-item">
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
                   Remaining Balance
                 </Typography>
-                <Typography variant="h6" fontWeight={700} color="info.main">
+                <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 18 }}>
                   {formatCurrency(stats.remainingBalance)}
                 </Typography>
               </Box>
-              <Divider sx={{ my: 1.5 }} />
+              <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
               <Box className="payment-stat-item">
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
                   Ownership
                 </Typography>
-                <Typography variant="h6" fontWeight={700}>
+                <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-color)', fontSize: 18 }}>
                   {stats.ownershipPercentage.toFixed(2)}%
                 </Typography>
               </Box>
-              <Divider sx={{ my: 1.5 }} />
+              <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
               <Box className="payment-stat-item">
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
                   Upcoming Payments
                 </Typography>
-                <Typography variant="h6" fontWeight={700}>
+                <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-color)', fontSize: 18 }}>
                   {stats.upcomingPayments}
                 </Typography>
               </Box>
               {stats.overduePayments > 0 && (
                 <>
-                  <Divider sx={{ my: 1.5 }} />
+                  <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
                   <Box className="payment-stat-item">
-                    <Typography variant="body2" color="error">
+                    <Typography variant="body2" sx={{ color: '#F44336', fontSize: 13, fontWeight: 500 }}>
                       Overdue Payments
                     </Typography>
-                    <Typography variant="h6" fontWeight={700} color="error">
+                    <Typography variant="h6" fontWeight={700} sx={{ color: '#F44336', fontSize: 18 }}>
                       {stats.overduePayments}
                     </Typography>
                   </Box>
@@ -771,7 +872,13 @@ export const DashboardPage: React.FC = () => {
               variant="text"
               endIcon={<ArrowForward />}
               onClick={() => navigate('/customer/payment-history')}
-              sx={{ mt: 2 }}
+              sx={{ 
+                mt: 2,
+                color: 'var(--primary-color)',
+                '&:hover': {
+                  backgroundColor: 'var(--card-hover)',
+                }
+              }}
             >
               View Payment History
             </Button>

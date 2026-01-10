@@ -44,7 +44,7 @@ export const ForgotPasswordPage: React.FC = () => {
     <Box className="forgot-password-page">
       <Box className="forgot-password-container">
         <Box className="forgot-password-header">
-          <img src="/BloxLogoDark.png" alt="Blox Logo" className="logo-image" />
+          <img src="/BloxLogoNav.png" alt="Blox Logo" className="logo-image" />
           <Typography variant="h3">Forgot Password</Typography>
           <Typography variant="body2" className="subtitle-text">
             Enter your email address and we'll send you a link to reset your password

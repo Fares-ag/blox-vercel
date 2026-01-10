@@ -51,7 +51,7 @@ export const LoginPage: React.FC = () => {
     <Box className="login-page">
       <Box className="login-container">
         <Box className="login-header">
-          <img src="/BloxLogo.png" alt="Blox Logo" className="logo-image" />
+          <img src="/BloxLogoNav.png" alt="Blox Logo" className="logo-image" />
           <Typography variant="h3" className="welcome-text">
             Welcome Back
           </Typography>

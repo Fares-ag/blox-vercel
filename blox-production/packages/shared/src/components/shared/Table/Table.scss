@@ -23,13 +23,15 @@
     cursor: pointer;
 
     &:hover {
-      background-color: rgba(0, 0, 0, 0.04);
+      background-color: var(--card-hover);
     }
   }
 
   .MuiTableCell-root {
     font-family: 'IBM Plex Sans', sans-serif;
     font-size: 14px;
+    color: var(--primary-text);
+    font-weight: 500;
     border-bottom: 1px solid rgba(224, 224, 224, 1);
   }
 

@@ -13,6 +13,23 @@ import type {
 import type { ApiResponse } from '../models/api.model';
 
 class SupabaseApiService {
+  // Helper to detect and format DNS errors
+  private detectDnsError(error: any): string | null {
+    const errorMessage = error?.message || error?.toString() || '';
+    const errorString = String(errorMessage).toLowerCase();
+    
+    if (errorString.includes('err_name_not_resolved') || 
+        errorString.includes('failed to fetch') ||
+        errorString.includes('networkerror') ||
+        errorString.includes('network request failed')) {
+      return 'DNS Resolution Error: Cannot connect to Supabase. ' +
+        'Your DNS is redirecting *.supabase.co to *.supabase.co.q-auto.com. ' +
+        'SOLUTION: Change DNS to 8.8.8.8 (Google DNS) or contact IT to whitelist *.supabase.co. ' +
+        'See FIX_DNS_ERROR.md for detailed instructions.';
+    }
+    return null;
+  }
+
   // ==================== PRODUCTS ====================
   async getProducts(): Promise<ApiResponse<Product[]>> {
     const cacheKey = 'products:all';
@@ -1321,6 +1338,18 @@ class SupabaseApiService {
       };
     } catch (error: any) {
       console.error('❌ getNotifications error:', error);
+      
+      // Check for DNS resolution errors
+      const dnsError = this.detectDnsError(error);
+      if (dnsError) {
+        console.error('❌ ' + dnsError);
+        return {
+          status: 'ERROR',
+          message: dnsError,
+          data: []
+        };
+      }
+      
       return {
         status: 'ERROR',
         message: error.message || 'Failed to fetch notifications',
