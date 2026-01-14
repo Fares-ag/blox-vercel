@@ -45,13 +45,13 @@ import {
   Info,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
-import { setSelected, setLoading, updateApplication, removeApplication } from '../../../../store/slices/applications.slice';
+import { setSelected, setLoading, updateApplication, removeApplication, setList } from '../../../../store/slices/applications.slice';
 import { supabaseApiService } from '@shared/services';
 import type { Application, PaymentSchedule } from '@shared/models/application.model';
 import { Button, StatusBadge, Loading, HorizontalBarChart, SegmentedBarChart } from '@shared/components';
 import { formatDate, formatCurrency, formatDateTable } from '@shared/utils/formatters';
 import { parseTenureToMonths } from '@shared/utils/tenure.utils';
-import { calculateOwnership } from '@shared/utils/ownership.utils';
+import { calculateOwnership, calculateBalloonOwnership } from '@shared/utils/ownership.utils';
 import { aggregateDailyScheduleToMonthly, isScheduleLikelyDaily, normalizeInstallmentInterval } from '@shared/utils';
 import { toast } from 'react-toastify';
 import moment from 'moment';
@@ -728,25 +728,73 @@ export const ApplicationDetailPage: React.FC = () => {
   };
 
   const handleDeleteApplication = async () => {
-    if (!id || !displayData) return;
+    if (!id || !displayData) {
+      console.error('❌ Cannot delete: Missing id or displayData', { id, hasDisplayData: !!displayData });
+      toast.error('Cannot delete application: Missing required information');
+      return;
+    }
 
     const confirmed = window.confirm(
       `Delete application ${id.slice(0, 8)}? This action cannot be undone.`
     );
-    if (!confirmed) return;
+    if (!confirmed) {
+      console.log('Delete cancelled by user');
+      return;
+    }
 
     try {
+      console.log('🗑️ Attempting to delete application:', id);
+      
       const resp = await supabaseApiService.deleteApplication(id);
+      
+      console.log('Delete response:', resp);
+      
       if (resp.status !== 'SUCCESS') {
-        throw new Error(resp.message || 'Failed to delete application');
+        const errorMessage = resp.message || 'Failed to delete application';
+        console.error('❌ Delete failed:', errorMessage, resp);
+        
+        // If the error is "not found or already deleted", treat it as success
+        // because the end result is the same - the application is gone
+        if (errorMessage.toLowerCase().includes('not found') || errorMessage.toLowerCase().includes('already deleted')) {
+          console.log('⚠️ Application already deleted, treating as success');
+          dispatch(removeApplication(id));
+          toast.success('Application deleted successfully');
+          setTimeout(() => {
+            navigate('/admin/applications');
+          }, 100);
+          return;
+        }
+        
+        toast.error(errorMessage);
+        return;
       }
 
+      console.log('✅ Application deleted successfully');
+      
+      // Remove from Redux state immediately
       dispatch(removeApplication(id));
-      toast.success('Application deleted');
-      navigate('/admin/applications');
+      
+      // Clear the selected application
+      dispatch(setSelected(null));
+      
+      // Force reload applications list by clearing the list and letting it reload
+      // This ensures the UI updates immediately
+      dispatch(setList({ applications: [], total: 0 }));
+      
+      toast.success('Application deleted successfully');
+      
+      // Navigate to list page - it will reload fresh data from server
+      navigate('/admin/applications', { replace: true });
     } catch (error: any) {
-      console.error('❌ Failed to delete application:', error);
-      toast.error(error.message || 'Failed to delete application');
+      console.error('❌ Exception during delete:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        error: error
+      });
+      
+      const errorMessage = error?.message || 'Failed to delete application. Please check the console for details.';
+      toast.error(errorMessage);
     }
   };
 
@@ -1878,14 +1926,27 @@ export const ApplicationDetailPage: React.FC = () => {
                         const downPayment = displayData.downPayment || displayData.installmentPlan?.downPayment || 0;
                         const tenureStr = displayData.installmentPlan?.tenure || '12 Months';
                         
+                        // Check if this is a balloon payment structure
+                        const balloonAmount = displayData.installmentPlan?.balloonPayment?.amount || 0;
+                        const isBalloonPayment = schedule.isBalloon || schedule.paymentType === 'balloon_payment';
+                        
                         // Use utility functions for parsing and calculation
                         const tenureMonths = parseTenureToMonths(tenureStr);
-                        const { customerOwnership, bloxOwnership } = calculateOwnership(
-                          vehiclePrice,
-                          downPayment,
-                          tenureMonths,
-                          index
-                        );
+                        const { customerOwnership, bloxOwnership } = balloonAmount > 0
+                          ? calculateBalloonOwnership(
+                              vehiclePrice,
+                              downPayment,
+                              tenureMonths,
+                              index,
+                              balloonAmount,
+                              isBalloonPayment || false
+                            )
+                          : calculateOwnership(
+                              vehiclePrice,
+                              downPayment,
+                              tenureMonths,
+                              index
+                            );
                         
                         return (
                           <TableRow key={index}>

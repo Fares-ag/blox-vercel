@@ -20,6 +20,7 @@ export interface User {
   activeApplications?: number;
   totalPayments?: number;
   membershipStatus?: 'active' | 'inactive' | 'none';
+  creditsBalance?: number; // Blox Credits balance
 }
 
 export interface LoginCredentials {

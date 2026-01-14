@@ -40,6 +40,9 @@ const ContactSupportPage = React.lazy(() => import('../features/help/pages/Conta
 // Contract Routes
 const ContractSigningPage = React.lazy(() => import('../features/contracts/pages/ContractSigningPage/ContractSigningPage').then(m => ({ default: m.ContractSigningPage })));
 
+// Membership Routes
+const CreditTopUpCallbackPage = React.lazy(() => import('../features/membership/pages/CreditTopUpCallbackPage/CreditTopUpCallbackPage').then(m => ({ default: m.CreditTopUpCallbackPage })));
+
 // Home/Landing Routes (Public - No Auth Required)
 const LandingPage = React.lazy(() => import('../features/home/pages/LandingPage/LandingPage').then(m => ({ default: m.LandingPage })));
 
@@ -134,6 +137,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="payment-history" element={<PaymentHistoryPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="profile/change-password" element={<ChangePasswordPage />} />
+        <Route path="credit-topup-callback" element={<CreditTopUpCallbackPage />} />
       </Route>
 
       {/* Help Routes - Can be accessed without auth */}

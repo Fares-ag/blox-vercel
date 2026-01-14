@@ -14,14 +14,18 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  IconButton,
+  Tooltip,
 } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
-import { ArrowBack, Person, Email, Phone, Badge as BadgeIcon, Public, People, AttachMoney, WorkspacePremium } from '@mui/icons-material';
-import { supabaseApiService } from '@shared/services';
+import { ArrowBack, Person, Email, Phone, Badge as BadgeIcon, Public, People, AttachMoney, WorkspacePremium, AccountBalance, Edit } from '@mui/icons-material';
+import { supabaseApiService, creditsService, supabase } from '@shared/services';
 import type { User, Application } from '@shared/models';
 import { Button, StatusBadge, Loading } from '@shared/components';
 import { formatDate, formatCurrency } from '@shared/utils/formatters';
 import { toast } from 'react-toastify';
+import { ManageCreditsDialog, type CreditsAction } from '../../components/ManageCreditsDialog';
+import type { CreditTransaction } from '@shared/services/credits.service';
 import './UserDetailPage.scss';
 
 export const UserDetailPage: React.FC = () => {
@@ -30,6 +34,10 @@ export const UserDetailPage: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
+  const [creditsBalance, setCreditsBalance] = useState<number>(0);
+  const [creditsTransactions, setCreditsTransactions] = useState<CreditTransaction[]>([]);
+  const [manageCreditsOpen, setManageCreditsOpen] = useState(false);
+  const [creditsLoading, setCreditsLoading] = useState(false);
 
   const loadUserDetails = useCallback(async () => {
     if (!email) return;
@@ -40,7 +48,12 @@ export const UserDetailPage: React.FC = () => {
       // Load user
       const userResponse = await supabaseApiService.getUserByEmail(decodeURIComponent(email));
       if (userResponse.status === 'SUCCESS' && userResponse.data) {
-        setUser(userResponse.data);
+        const userData = userResponse.data;
+        setUser(userData);
+        // Set credits balance from user data
+        if (userData.creditsBalance !== undefined) {
+          setCreditsBalance(userData.creditsBalance);
+        }
       } else {
         throw new Error(userResponse.message || 'Failed to load user');
       }
@@ -53,6 +66,19 @@ export const UserDetailPage: React.FC = () => {
         );
         setApplications(userApps);
       }
+
+      // Load user's credits (after user is loaded)
+      const emailDecoded = decodeURIComponent(email);
+      const creditsResponse = await creditsService.getUserCredits(emailDecoded);
+      if (creditsResponse.status === 'SUCCESS' && creditsResponse.data) {
+        setCreditsBalance(creditsResponse.data.balance || 0);
+      }
+
+      // Load credit transactions
+      const transactionsResponse = await creditsService.getUserCreditTransactions(emailDecoded, 20);
+      if (transactionsResponse.status === 'SUCCESS' && transactionsResponse.data) {
+        setCreditsTransactions(transactionsResponse.data);
+      }
     } catch (error: unknown) {
       console.error('❌ Failed to load user details:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to load user details';
@@ -61,6 +87,46 @@ export const UserDetailPage: React.FC = () => {
       setLoading(false);
     }
   }, [email]);
+
+
+  const handleManageCredits = async (action: CreditsAction, amount: number, description: string) => {
+    if (!email) return;
+
+    try {
+      setCreditsLoading(true);
+      const emailDecoded = decodeURIComponent(email);
+      
+      // Get admin email from auth
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const adminEmail = authUser?.email || null;
+
+      let result;
+      switch (action) {
+        case 'add':
+          result = await creditsService.addCredits(emailDecoded, amount, description, adminEmail || undefined);
+          break;
+        case 'subtract':
+          result = await creditsService.subtractCredits(emailDecoded, amount, description, adminEmail || undefined);
+          break;
+        case 'set':
+          result = await creditsService.setCredits(emailDecoded, amount, description, adminEmail || undefined);
+          break;
+      }
+
+      if (result.status === 'SUCCESS' && result.data) {
+        toast.success(result.data.message || 'Credits updated successfully');
+      // Reload user details to update credits balance
+      await loadUserDetails();
+      } else {
+        throw new Error(result.message || 'Failed to update credits');
+      }
+    } catch (error: any) {
+      console.error('Failed to manage credits:', error);
+      toast.error(error.message || 'Failed to update credits');
+    } finally {
+      setCreditsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (email) {
@@ -253,7 +319,116 @@ export const UserDetailPage: React.FC = () => {
                 </CardContent>
               </Card>
             </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card className="stat-card">
+                <CardContent>
+                  <Box className="stat-header" sx={{ justifyContent: 'space-between', mb: 1 }}>
+                    <AccountBalance color="primary" />
+                    <Tooltip title="Manage Credits">
+                      <IconButton
+                        size="small"
+                        onClick={() => setManageCreditsOpen(true)}
+                        sx={{ ml: 'auto' }}
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                  <Typography variant="h4" className="stat-value">
+                    {creditsBalance.toLocaleString()}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Blox Credits
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
+
+          {/* Credits Transactions */}
+          <Paper className="credits-transactions-card" sx={{ mt: 3 }}>
+            <Box display="flex" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+              <Typography variant="h6" className="card-title">
+                Credit Transactions ({creditsTransactions.length})
+              </Typography>
+              <Button
+                variant="primary"
+                startIcon={<Edit />}
+                onClick={() => setManageCreditsOpen(true)}
+                size="small"
+              >
+                Manage Credits
+              </Button>
+            </Box>
+            <Divider sx={{ mb: 2 }} />
+            
+            {creditsTransactions.length === 0 ? (
+              <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+                No credit transactions found
+              </Typography>
+            ) : (
+              <TableContainer>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Type</TableCell>
+                      <TableCell align="right">Amount</TableCell>
+                      <TableCell align="right">Balance Before</TableCell>
+                      <TableCell align="right">Balance After</TableCell>
+                      <TableCell>Description</TableCell>
+                      <TableCell>Admin</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {creditsTransactions.map((transaction) => (
+                      <TableRow key={transaction.id} hover>
+                        <TableCell>{formatDate(transaction.createdAt)}</TableCell>
+                        <TableCell>
+                          <Chip
+                            label={transaction.transactionType.toUpperCase()}
+                            color={
+                              transaction.transactionType === 'add' || transaction.transactionType === 'topup'
+                                ? 'success'
+                                : transaction.transactionType === 'subtract' || transaction.transactionType === 'payment'
+                                ? 'error'
+                                : 'default'
+                            }
+                            size="small"
+                          />
+                        </TableCell>
+                        <TableCell align="right">
+                          <Typography
+                            variant="body2"
+                            fontWeight={600}
+                            color={
+                              transaction.transactionType === 'add' || transaction.transactionType === 'topup'
+                                ? 'success.main'
+                                : transaction.transactionType === 'subtract' || transaction.transactionType === 'payment'
+                                ? 'error.main'
+                                : 'text.primary'
+                            }
+                          >
+                            {transaction.transactionType === 'add' || transaction.transactionType === 'topup' ? '+' : '-'}
+                            {transaction.amount.toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell align="right">{transaction.balanceBefore.toLocaleString()}</TableCell>
+                        <TableCell align="right">
+                          <Typography variant="body2" fontWeight={600} color="primary">
+                            {transaction.balanceAfter.toLocaleString()}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>{transaction.description || 'N/A'}</TableCell>
+                        <TableCell>{transaction.adminEmail || 'System'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </Paper>
 
           {/* Applications List */}
           <Paper className="applications-card" sx={{ mt: 3 }}>
@@ -309,6 +484,18 @@ export const UserDetailPage: React.FC = () => {
           </Paper>
         </Grid>
       </Grid>
+
+      {/* Manage Credits Dialog */}
+      {user && (
+        <ManageCreditsDialog
+          open={manageCreditsOpen}
+          onClose={() => setManageCreditsOpen(false)}
+          onSave={handleManageCredits}
+          userEmail={user.email || ''}
+          currentBalance={creditsBalance}
+          loading={creditsLoading}
+        />
+      )}
     </Box>
   );
 };

@@ -556,10 +556,20 @@ export const PaymentCalendarPage: React.FC = () => {
                           </CustomButton>
                         )}
                         <Button
-                          variant="outlined"
+                          variant="contained"
                           size="small"
                           fullWidth={!canDeferPayment(payment)}
-                          sx={{ flex: canDeferPayment(payment) ? 1 : 'none' }}
+                          sx={{ 
+                            flex: canDeferPayment(payment) ? 1 : 'none',
+                            backgroundColor: '#0E1909',
+                            color: 'var(--primary-color)',
+                            border: '1px solid var(--primary-color)',
+                            '&:hover': {
+                              backgroundColor: '#0E1909',
+                              borderColor: 'var(--primary-color)',
+                              opacity: 0.9,
+                            }
+                          }}
                           onClick={() => navigate(`/customer/applications/${payment.applicationId}/payment`)}
                         >
                           Pay Now

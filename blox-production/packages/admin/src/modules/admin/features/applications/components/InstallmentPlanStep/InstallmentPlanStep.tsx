@@ -28,6 +28,11 @@ import moment from 'moment';
 type Moment = moment.Moment;
 import type { PaymentSchedule, PaymentStatus } from '@shared/models/application.model';
 import { toast } from 'react-toastify';
+import { 
+  calculateBalloonPaymentSchedule, 
+  validatePaymentStructure,
+  type BalloonPaymentConfig 
+} from '@shared/utils/balloon-payment.utils';
 import './InstallmentPlanStep.scss';
 
 export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) => {
@@ -41,7 +46,9 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
   const [monthlyAmount, setMonthlyAmount] = useState<number>(data.installmentPlan?.monthlyAmount || 0);
   const [totalAmount, setTotalAmount] = useState<number>(data.installmentPlan?.totalAmount || 0);
   const [hasExistingLoan, setHasExistingLoan] = useState<boolean>(data.existingLoan?.enabled || false);
-  const [entryMode, setEntryMode] = useState<'auto' | 'fixed' | 'manual'>(data.existingLoan?.entryMode || 'manual');
+  const [entryMode, setEntryMode] = useState<'auto' | 'fixed' | 'manual'>(
+    (data.existingLoan?.entryMode === 'balloon' ? 'fixed' : (data.existingLoan?.entryMode as 'auto' | 'fixed' | 'manual')) || 'manual'
+  );
   const [loanStartDate, setLoanStartDate] = useState<Moment | null>(
     data.existingLoan?.startDate ? moment(data.existingLoan.startDate) : null
   );
@@ -62,6 +69,20 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
     data.installmentPlan?.schedule || []
   );
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  
+  // Balloon payment state
+  const [useBalloonPayment, setUseBalloonPayment] = useState<boolean>(
+    data.installmentPlan?.calculationMethod === 'balloon_payment'
+  );
+  const [downPaymentPercent, setDownPaymentPercent] = useState<number>(
+    data.installmentPlan?.paymentStructure?.downPaymentPercent || 20
+  );
+  const [installmentPercent, setInstallmentPercent] = useState<number>(
+    data.installmentPlan?.paymentStructure?.installmentPercent || 60
+  );
+  const [balloonPercent, setBalloonPercent] = useState<number>(
+    data.installmentPlan?.paymentStructure?.balloonPercent || 20
+  );
 
   // Validation Functions
   const validatePaymentSchedule = (schedule: PaymentSchedule[]): { isValid: boolean; errors: string[] } => {
@@ -200,82 +221,16 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
   const tenureOptions: SelectOption[] = Config.tenure.map((t) => ({ value: t, label: t }));
   const intervalOptions: SelectOption[] = Config.Interval.map((i) => ({ value: i, label: i }));
 
-  // Normal (non-existing-loan) installment calculations
-  useEffect(() => {
-    if (hasExistingLoan) return;
-    calculateInstallments();
-  }, [tenure, interval, data.vehicle, data.offer, downPayment, hasExistingLoan]);
+  // Define helper functions BEFORE the functions that use them
+  const calculateAmortizedMonthlyPayment = (principal: number, annualPercent: number, months: number): number => {
+    if (principal <= 0 || months <= 0) return 0;
+    const r = (annualPercent / 100) / 12;
+    if (r <= 0) return principal / months;
+    const pow = Math.pow(1 + r, months);
+    return (principal * r * pow) / (pow - 1);
+  };
 
-  // Existing-loan auto/fixed modes: generate schedule when inputs change.
-  // IMPORTANT: do NOT depend on `paymentSchedule` here, since schedule generation itself updates it.
-  useEffect(() => {
-    if (!hasExistingLoan) return;
-
-    if (
-      entryMode === 'auto' &&
-      loanStartDate &&
-      totalLoanMonths > 0 &&
-      data.vehicle &&
-      data.offer &&
-      downPayment >= 0
-    ) {
-        generateExistingLoanSchedule();
-    }
-
-    if (
-      entryMode === 'fixed' &&
-      loanStartDate &&
-      totalLoanMonths > 0 &&
-      data.vehicle &&
-      downPayment >= 0
-    ) {
-      generateFixedAmortizedSchedule();
-      }
-  }, [
-    hasExistingLoan,
-    entryMode,
-    loanStartDate,
-    totalLoanMonths,
-    downPayment,
-    annualRatePercent,
-    interval,
-    data.vehicle,
-    data.offer,
-  ]);
-
-  // Helper function to update data with current schedule (for manual mode)
-  const updateDataWithSchedule = useCallback(() => {
-    if (!hasExistingLoan || entryMode !== 'manual' || paymentSchedule.length === 0) return;
-    
-    const updatedPlan = {
-      ...data.installmentPlan,
-      schedule: paymentSchedule,
-      monthlyAmount: manualMonthlyPayment || data.installmentPlan?.monthlyAmount || 0,
-    };
-    
-    const updatedExistingLoan = {
-      ...data.existingLoan,
-      entryMode: 'manual' as const,
-      monthlyPaymentAmount: manualMonthlyPayment,
-      totalMonths: totalLoanMonths,
-      startDate: loanStartDate?.format('YYYY-MM-DD'),
-      downPayment: downPayment,
-    };
-    
-    updateData({
-      installmentPlan: updatedPlan,
-      existingLoan: updatedExistingLoan,
-    });
-  }, [hasExistingLoan, entryMode, paymentSchedule, loanStartDate, totalLoanMonths, downPayment, manualMonthlyPayment, data.installmentPlan, data.existingLoan, updateData]);
-
-  // Existing-loan manual mode: propagate manual edits when schedule changes.
-  useEffect(() => {
-    if (!hasExistingLoan) return;
-    if (entryMode !== 'manual') return;
-    if (paymentSchedule.length === 0) return;
-    updateDataWithSchedule();
-  }, [hasExistingLoan, entryMode, paymentSchedule, loanStartDate, totalLoanMonths, downPayment, manualMonthlyPayment, updateDataWithSchedule]);
-
+  // Define generateSchedule BEFORE the functions that use it
   const generateSchedule = (
     monthlyPayment: number,
     startDate: Moment,
@@ -412,14 +367,297 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
     return schedule;
   };
 
-  const calculateAmortizedMonthlyPayment = (principal: number, annualPercent: number, months: number): number => {
-    if (principal <= 0 || months <= 0) return 0;
-    const r = (annualPercent / 100) / 12;
-    if (r <= 0) return principal / months;
-    const pow = Math.pow(1 + r, months);
-    return (principal * r * pow) / (pow - 1);
-  };
+  // Define generateExistingLoanSchedule and generateFixedAmortizedSchedule BEFORE the useEffect that uses them
+  const generateExistingLoanSchedule = useCallback(() => {
+    if (!loanStartDate || totalLoanMonths <= 0 || !data.vehicle) return;
 
+    const carValue = data.vehicle.price || 0;
+    
+    // Balloon payment is now only available in fixed mode, not in auto mode
+    // This function handles auto mode only (standard dynamic rent calculation)
+    if (!data.offer) {
+      toast.error('Please select an offer to calculate loan details');
+      return;
+    }
+
+    const loanAmount = carValue - downPayment;
+    
+    if (loanAmount <= 0) return;
+
+    // Use stored annualRentalRate from installmentPlan if available, otherwise use offer's rate
+    const annualRentalRate = data.installmentPlan?.annualRentalRate !== undefined
+      ? data.installmentPlan.annualRentalRate
+      : (data.offer.annualRentRate || 0) / 100; // Convert percentage to decimal
+    
+    // Principal payment per month (equal principal payments)
+    const principalPaymentPerMonth = loanAmount / totalLoanMonths;
+    
+    // Calculate initial monthly rent (first month)
+    // Rent is based on Blox's ownership, which decreases over time
+    const rentPerPeriodRate = annualRentalRate / 12;
+    const initialBloxOwnership = loanAmount; // Blox owns the loan amount initially
+    const initialMonthlyRent = initialBloxOwnership * rentPerPeriodRate;
+    
+    // First month payment = Principal + Initial Rent
+    const firstMonthPayment = principalPaymentPerMonth + initialMonthlyRent;
+    
+    // Calculate total rent over loan term (decreases each month)
+    let totalRent = 0;
+    for (let month = 0; month < totalLoanMonths; month++) {
+      const customerOwnership = downPayment + (principalPaymentPerMonth * month);
+      const bloxOwnership = carValue - customerOwnership;
+      const monthlyRentForThisMonth = bloxOwnership * rentPerPeriodRate;
+      totalRent += monthlyRentForThisMonth;
+    }
+    
+    // Generate schedule with dynamic rent calculation
+    const schedule = generateSchedule(firstMonthPayment, loanStartDate, totalLoanMonths, carValue, downPayment, annualRentalRate, interval);
+    setPaymentSchedule(schedule);
+    setManualMonthlyPayment(firstMonthPayment);
+    
+    updateData({
+      existingLoan: {
+        enabled: true,
+        startDate: loanStartDate.format('YYYY-MM-DD'),
+        totalMonths: totalLoanMonths,
+        downPayment,
+        carValue,
+        loanAmount,
+        annualRentalRate: annualRentalRate * 100, // Store as percentage
+        monthlyRent: initialMonthlyRent, // First month rent
+        principalPaymentPerMonth,
+        monthlyAmount: firstMonthPayment, // First month payment
+        totalRent,
+      },
+      installmentPlan: {
+        ...(data.installmentPlan || {}),
+        tenure: formatMonthsToTenure(totalLoanMonths),
+        interval: 'Monthly',
+        monthlyAmount: firstMonthPayment, // First month payment (varies per month)
+        totalAmount: carValue + totalRent,
+        schedule,
+        calculationMethod: 'dynamic_rent',
+      },
+      paymentHistory: schedule
+        .filter((s) => s.status === 'paid')
+        .map((s, index) => ({
+          id: `payment-${index}`,
+          amount: s.amount,
+          type: 'Installment',
+          status: 'paid' as PaymentStatus,
+          date: s.paidDate || s.dueDate,
+        })),
+    });
+  }, [loanStartDate, totalLoanMonths, data.vehicle, data.offer, downPayment, annualRatePercent, interval, data.installmentPlan, updateData, formatMonthsToTenure, generateSchedule]);
+
+  const generateFixedAmortizedSchedule = useCallback(() => {
+    if (!loanStartDate || totalLoanMonths <= 0 || !data.vehicle) return;
+
+    const carValue = data.vehicle.price || 0;
+    const principal = carValue - downPayment;
+    if (principal <= 0) return;
+
+    // Handle balloon payment in fixed mode
+    if (useBalloonPayment && entryMode === 'fixed') {
+      // Validate payment structure
+      const validation = validatePaymentStructure(downPaymentPercent, installmentPercent, balloonPercent);
+      if (!validation.isValid) {
+        toast.error(validation.error || 'Invalid payment structure');
+        return;
+      }
+
+      // For balloon payment, calculate everything from percentages to ensure consistency
+      // Use percentage-based down payment to match the payment structure
+      const downPaymentFromPercent = carValue * (downPaymentPercent / 100);
+      const actualPrincipal = carValue - downPaymentFromPercent;
+      
+      // Calculate balloon amount as percentage of vehicle price
+      const balloonAmount = carValue * (balloonPercent / 100);
+      
+      // Principal to be paid through installments (excluding balloon)
+      const installmentPrincipal = actualPrincipal - balloonAmount;
+      
+      if (installmentPrincipal <= 0) {
+        toast.error('Balloon payment cannot exceed the loan amount. Please adjust the percentages.');
+        return;
+      }
+      
+      // Update down payment state to match percentage (for consistency)
+      if (Math.abs(downPayment - downPaymentFromPercent) > 1) {
+        setDownPayment(downPaymentFromPercent);
+      }
+
+      // Calculate amortized monthly payment for the installment portion
+      const rawPayment = calculateAmortizedMonthlyPayment(installmentPrincipal, annualRatePercent, totalLoanMonths);
+      const monthlyPayment = Math.max(0, Math.floor(rawPayment));
+
+      // Generate schedule for installments (fixed amounts, no dynamic rent)
+      // Pass undefined for carValue, downPayment, and annualRentalRate to ensure fixed payments
+      const installmentSchedule = generateSchedule(
+        monthlyPayment,
+        loanStartDate,
+        totalLoanMonths,
+        undefined, // carValue - undefined means no dynamic rent
+        undefined, // downPayment - undefined means no dynamic rent
+        undefined, // annualRentalRate - undefined means no dynamic rent
+        'Monthly'
+      );
+      
+      // Verify all installment amounts are the same (fixed mode requirement)
+      const firstAmount = installmentSchedule[0]?.amount;
+      const allSame = installmentSchedule.every(p => Math.abs(p.amount - firstAmount) < 0.01);
+      if (!allSame && installmentSchedule.length > 0) {
+        console.warn('Fixed amortized schedule has varying amounts - regenerating with fixed amounts');
+        // Regenerate with truly fixed amounts
+        const fixedSchedule = installmentSchedule.map((payment, index) => ({
+          ...payment,
+          amount: monthlyPayment, // Force all to be the same
+        }));
+        installmentSchedule.length = 0;
+        installmentSchedule.push(...fixedSchedule);
+      }
+
+      // Add balloon payment at the end
+      const balloonDueDate = moment(loanStartDate).add(totalLoanMonths, 'months').startOf('month').add(1, 'month');
+      const now = moment().startOf('day');
+      const isPast = balloonDueDate.isBefore(now, 'month');
+      const isCurrent = balloonDueDate.isSame(now, 'month');
+
+      const schedule: PaymentSchedule[] = [
+        ...installmentSchedule,
+        {
+          dueDate: balloonDueDate.format('YYYY-MM-DD'),
+          amount: balloonAmount,
+          status: isPast ? 'paid' : isCurrent ? 'active' : 'upcoming',
+          paidDate: isPast ? balloonDueDate.format('YYYY-MM-DD') : undefined,
+          paymentType: 'balloon_payment',
+          isBalloon: true,
+        },
+      ];
+
+      setPaymentSchedule(schedule);
+      setManualMonthlyPayment(monthlyPayment);
+
+      updateData({
+        existingLoan: {
+          enabled: true,
+          entryMode: 'fixed',
+          startDate: loanStartDate.format('YYYY-MM-DD'),
+          totalMonths: totalLoanMonths,
+          downPayment: downPaymentFromPercent,
+          annualRatePercent,
+          loanAmount: actualPrincipal,
+          monthlyAmount: monthlyPayment,
+        },
+        installmentPlan: {
+          ...(data.installmentPlan || {}),
+          tenure: formatMonthsToTenure(totalLoanMonths),
+          interval: 'Monthly',
+          monthlyAmount: monthlyPayment,
+          totalAmount: downPaymentFromPercent + (monthlyPayment * totalLoanMonths) + balloonAmount,
+          downPayment: downPaymentFromPercent,
+          annualInterestRate: (annualRatePercent / 100),
+          calculationMethod: 'amortized_fixed',
+          schedule,
+          paymentStructure: {
+            downPaymentPercent,
+            installmentPercent,
+            balloonPercent,
+          },
+          balloonPayment: {
+            amount: balloonAmount,
+            percentage: balloonPercent,
+          },
+        },
+        loanAmount: actualPrincipal,
+        downPayment: downPaymentFromPercent,
+        paymentHistory: schedule
+          .filter((s) => s.status === 'paid')
+          .map((s, index) => ({
+            id: `payment-${index}`,
+            amount: s.amount,
+            type: 'Installment',
+            status: 'paid' as PaymentStatus,
+            date: s.paidDate || s.dueDate,
+          })),
+      });
+      return;
+    }
+
+    // Standard fixed amortized (no balloon)
+    const rawPayment = calculateAmortizedMonthlyPayment(principal, annualRatePercent, totalLoanMonths);
+
+    // Currency precision is 0 in this repo; floor avoids rounding up (e.g. 1622.6 -> 1622)
+    const monthlyPayment = Math.max(0, Math.floor(rawPayment));
+
+    // Generate schedule with fixed amounts (no dynamic rent)
+    // Pass undefined for carValue, downPayment, and annualRentalRate to ensure fixed payments
+    const schedule = generateSchedule(
+      monthlyPayment,
+      loanStartDate,
+      totalLoanMonths,
+      undefined, // carValue - undefined means no dynamic rent
+      undefined, // downPayment - undefined means no dynamic rent
+      undefined, // annualRentalRate - undefined means no dynamic rent
+      'Monthly'
+    );
+    
+    // Verify all amounts are the same (fixed mode requirement)
+    const firstAmount = schedule[0]?.amount;
+    const allSame = schedule.every(p => Math.abs(p.amount - firstAmount) < 0.01);
+    if (!allSame && schedule.length > 0) {
+      console.warn('Fixed amortized schedule has varying amounts - regenerating with fixed amounts');
+      // Regenerate with truly fixed amounts
+      const fixedSchedule = schedule.map((payment) => ({
+        ...payment,
+        amount: monthlyPayment, // Force all to be the same
+      }));
+      schedule.length = 0;
+      schedule.push(...fixedSchedule);
+    }
+
+    setPaymentSchedule(schedule);
+    setManualMonthlyPayment(monthlyPayment);
+
+    updateData({
+      existingLoan: {
+        enabled: true,
+        entryMode: 'fixed',
+        startDate: loanStartDate.format('YYYY-MM-DD'),
+        totalMonths: totalLoanMonths,
+        downPayment,
+        annualRatePercent,
+        loanAmount: principal,
+        monthlyAmount: monthlyPayment,
+      },
+      installmentPlan: {
+        ...(data.installmentPlan || {}),
+        tenure: formatMonthsToTenure(totalLoanMonths),
+        interval: 'Monthly',
+        monthlyAmount: monthlyPayment,
+        // Total cost (consistent with other flows that include vehicle price / down payment):
+        // downPayment + sum(monthly payments)
+        totalAmount: downPayment + (monthlyPayment * totalLoanMonths),
+        downPayment,
+        annualInterestRate: (annualRatePercent / 100),
+        calculationMethod: 'amortized_fixed',
+        schedule,
+      },
+      loanAmount: principal,
+      downPayment,
+      paymentHistory: schedule
+        .filter((s) => s.status === 'paid')
+        .map((s, index) => ({
+          id: `payment-${index}`,
+          amount: s.amount,
+          type: 'Installment',
+          status: 'paid' as PaymentStatus,
+          date: s.paidDate || s.dueDate,
+        })),
+    });
+  }, [loanStartDate, totalLoanMonths, data.vehicle, downPayment, annualRatePercent, updateData, formatMonthsToTenure, generateSchedule, calculateAmortizedMonthlyPayment, useBalloonPayment, entryMode, downPaymentPercent, installmentPercent, balloonPercent, toast, validatePaymentStructure]);
+
+  // Define calculateInstallments BEFORE the useEffect that uses it
   const calculateInstallments = useCallback(() => {
     if (!data.vehicle || !data.offer) return;
 
@@ -433,6 +671,76 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
     // Parse tenure consistently: handle both "X Years" and "X Months" formats
     const tenureMonths = parseTenureToMonths(tenure);
     
+    // Handle balloon payment structure
+    if (useBalloonPayment && !hasExistingLoan) {
+      // Validate payment structure
+      const validation = validatePaymentStructure(downPaymentPercent, installmentPercent, balloonPercent);
+      if (!validation.isValid) {
+        toast.error(validation.error || 'Invalid payment structure');
+        return;
+      }
+
+      // Validate that we have a rental rate
+      if (annualRentRate <= 0) {
+        toast.error('Annual rental rate is required for balloon payment calculation. Please select an offer with a valid rate.');
+        return;
+      }
+
+      // Calculate down payment amount from percentage
+      const downPaymentForCalc = vehiclePrice * (downPaymentPercent / 100);
+      
+      // Generate balloon payment schedule
+      const balloonConfig: BalloonPaymentConfig = {
+        vehiclePrice,
+        downPayment: downPaymentForCalc,
+        downPaymentPercent,
+        installmentPercent,
+        balloonPercent,
+        termMonths: tenureMonths,
+        annualRentalRate: annualRentRate,
+        startDate: moment().startOf('month').add(1, 'month'),
+        interval,
+      };
+
+      try {
+        const balloonCalculation = calculateBalloonPaymentSchedule(balloonConfig);
+        
+        setTotalAmount(balloonCalculation.totalAmount);
+        setMonthlyAmount(balloonCalculation.schedule.find(p => p.paymentType === 'installment')?.amount || 0);
+        setDownPayment(downPaymentForCalc);
+
+        const updatedPlan = {
+          tenure,
+          interval,
+          monthlyAmount: balloonCalculation.schedule.find(p => p.paymentType === 'installment')?.amount || 0,
+          totalAmount: balloonCalculation.totalAmount,
+          downPayment: downPaymentForCalc,
+          annualRentalRate: annualRentRate,
+          schedule: balloonCalculation.schedule,
+          calculationMethod: 'balloon_payment' as const,
+          paymentStructure: {
+            downPaymentPercent,
+            installmentPercent,
+            balloonPercent,
+          },
+          balloonPayment: {
+            amount: balloonCalculation.balloonAmount,
+            percentage: balloonPercent,
+          },
+        };
+
+        updateData({
+          installmentPlan: updatedPlan,
+        });
+        return;
+      } catch (error: any) {
+        console.error('Balloon payment calculation error (new application):', error);
+        toast.error(error.message || 'Failed to calculate balloon payment schedule. Please check your inputs.');
+        return;
+      }
+    }
+    
+    // Standard calculation (non-balloon)
     // Use down payment from state (matching InstallmentCalculator logic)
     const downPaymentForCalc = hasExistingLoan ? downPayment : (data.installmentPlan?.downPayment || downPayment || 0);
     const loanAmountForCalc = vehiclePrice - downPaymentForCalc;
@@ -510,151 +818,96 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
       downPayment: downPaymentForCalc,
       annualRentalRate: annualRentRate, // Store the rate used for calculation
       schedule: generatedSchedule,
+      calculationMethod: 'dynamic_rent' as const,
     };
 
     updateData({
       installmentPlan: updatedPlan,
     });
-  }, [data.vehicle, data.offer, data.installmentPlan, tenure, interval, downPayment, hasExistingLoan, loanStartDate, totalLoanMonths, updateData, generateSchedule]);
+  }, [data.vehicle, data.offer, data.installmentPlan, tenure, interval, downPayment, hasExistingLoan, loanStartDate, totalLoanMonths, updateData, generateSchedule, useBalloonPayment, downPaymentPercent, installmentPercent, balloonPercent, toast, validatePaymentStructure, calculateBalloonPaymentSchedule, parseTenureToMonths]);
 
-  const generateExistingLoanSchedule = () => {
-    if (!loanStartDate || totalLoanMonths <= 0 || !data.vehicle || !data.offer) return;
+  // Normal (non-existing-loan) installment calculations
+  useEffect(() => {
+    if (hasExistingLoan) return;
+    calculateInstallments();
+  }, [tenure, interval, data.vehicle, data.offer, downPayment, hasExistingLoan, useBalloonPayment, downPaymentPercent, installmentPercent, balloonPercent, calculateInstallments]);
 
-    const carValue = data.vehicle.price || 0;
-    const loanAmount = carValue - downPayment;
-    
-    if (loanAmount <= 0) return;
+  // Existing-loan auto/fixed/balloon modes: generate schedule when inputs change.
+  // IMPORTANT: do NOT depend on `paymentSchedule` here, since schedule generation itself updates it.
+  useEffect(() => {
+    if (!hasExistingLoan) return;
 
-    // Use stored annualRentalRate from installmentPlan if available, otherwise use offer's rate
-    const annualRentalRate = data.installmentPlan?.annualRentalRate !== undefined
-      ? data.installmentPlan.annualRentalRate
-      : (data.offer.annualRentRate || 0) / 100; // Convert percentage to decimal
-    
-    // Principal payment per month (equal principal payments)
-    const principalPaymentPerMonth = loanAmount / totalLoanMonths;
-    
-    // Calculate initial monthly rent (first month)
-    // Rent is based on Blox's ownership, which decreases over time
-    const rentPerPeriodRate = annualRentalRate / 12;
-    const initialBloxOwnership = loanAmount; // Blox owns the loan amount initially
-    const initialMonthlyRent = initialBloxOwnership * rentPerPeriodRate;
-    
-    // First month payment = Principal + Initial Rent
-    const firstMonthPayment = principalPaymentPerMonth + initialMonthlyRent;
-    
-    // Calculate total rent over loan term (decreases each month)
-    let totalRent = 0;
-    for (let month = 0; month < totalLoanMonths; month++) {
-      const customerOwnership = downPayment + (principalPaymentPerMonth * month);
-      const bloxOwnership = carValue - customerOwnership;
-      const monthlyRentForThisMonth = bloxOwnership * rentPerPeriodRate;
-      totalRent += monthlyRentForThisMonth;
+    if (
+      entryMode === 'auto' &&
+      loanStartDate &&
+      totalLoanMonths > 0 &&
+      data.vehicle &&
+      data.offer &&
+      downPayment >= 0
+    ) {
+        generateExistingLoanSchedule();
+    } else if (
+      entryMode === 'fixed' &&
+      loanStartDate &&
+      totalLoanMonths > 0 &&
+      data.vehicle &&
+      downPayment >= 0 &&
+      (!useBalloonPayment || Math.abs((downPaymentPercent + installmentPercent + balloonPercent) - 100) < 0.01)
+    ) {
+      generateFixedAmortizedSchedule();
     }
+  }, [
+    hasExistingLoan,
+    entryMode,
+    useBalloonPayment,
+    loanStartDate,
+    totalLoanMonths,
+    downPayment,
+    downPaymentPercent,
+    installmentPercent,
+    balloonPercent,
+    annualRatePercent,
+    interval,
+    data.vehicle,
+    data.offer,
+    generateExistingLoanSchedule,
+    generateFixedAmortizedSchedule,
+  ]);
+
+  // Helper function to update data with current schedule (for manual mode)
+  const updateDataWithSchedule = useCallback(() => {
+    if (!hasExistingLoan || entryMode !== 'manual' || paymentSchedule.length === 0) return;
     
-    // Generate schedule with dynamic rent calculation
-    const schedule = generateSchedule(firstMonthPayment, loanStartDate, totalLoanMonths, carValue, downPayment, annualRentalRate, interval);
-    setPaymentSchedule(schedule);
-    setManualMonthlyPayment(firstMonthPayment);
+    const updatedPlan = {
+      ...data.installmentPlan,
+      schedule: paymentSchedule,
+      monthlyAmount: manualMonthlyPayment || data.installmentPlan?.monthlyAmount || 0,
+    };
+    
+    const updatedExistingLoan = {
+      ...data.existingLoan,
+      entryMode: 'manual' as const,
+      monthlyPaymentAmount: manualMonthlyPayment,
+      totalMonths: totalLoanMonths,
+      startDate: loanStartDate?.format('YYYY-MM-DD'),
+      downPayment: downPayment,
+    };
     
     updateData({
-      existingLoan: {
-        enabled: true,
-        startDate: loanStartDate.format('YYYY-MM-DD'),
-        totalMonths: totalLoanMonths,
-        downPayment,
-        carValue,
-        loanAmount,
-        annualRentalRate: annualRentalRate * 100, // Store as percentage
-        monthlyRent: initialMonthlyRent, // First month rent
-        principalPaymentPerMonth,
-        monthlyAmount: firstMonthPayment, // First month payment
-        totalRent,
-      },
-      installmentPlan: {
-        ...(data.installmentPlan || {}),
-        tenure: formatMonthsToTenure(totalLoanMonths),
-        interval: 'Monthly',
-        monthlyAmount: firstMonthPayment, // First month payment (varies per month)
-        totalAmount: carValue + totalRent,
-        schedule,
-        calculationMethod: 'dynamic_rent',
-      },
-      paymentHistory: schedule
-        .filter((s) => s.status === 'paid')
-        .map((s, index) => ({
-          id: `payment-${index}`,
-          amount: s.amount,
-          type: 'Installment',
-          status: 'paid' as PaymentStatus,
-          date: s.paidDate || s.dueDate,
-        })),
+      installmentPlan: updatedPlan,
+      existingLoan: updatedExistingLoan,
     });
-  };
+  }, [hasExistingLoan, entryMode, paymentSchedule, loanStartDate, totalLoanMonths, downPayment, manualMonthlyPayment, data.installmentPlan, data.existingLoan, updateData]);
 
-  const generateFixedAmortizedSchedule = () => {
-    if (!loanStartDate || totalLoanMonths <= 0 || !data.vehicle) return;
+  // Existing-loan manual mode: propagate manual edits when schedule changes.
+  useEffect(() => {
+    if (!hasExistingLoan) return;
+    if (entryMode !== 'manual') return;
+    if (paymentSchedule.length === 0) return;
+    updateDataWithSchedule();
+  }, [hasExistingLoan, entryMode, paymentSchedule, loanStartDate, totalLoanMonths, downPayment, manualMonthlyPayment, updateDataWithSchedule]);
 
-    const carValue = data.vehicle.price || 0;
-    const principal = carValue - downPayment;
-    if (principal <= 0) return;
-
-    const rawPayment = calculateAmortizedMonthlyPayment(principal, annualRatePercent, totalLoanMonths);
-
-    // Currency precision is 0 in this repo; floor avoids rounding up (e.g. 1622.6 -> 1622)
-    const monthlyPayment = Math.max(0, Math.floor(rawPayment));
-
-    const schedule = generateSchedule(
-      monthlyPayment,
-      loanStartDate,
-      totalLoanMonths,
-      undefined,
-      undefined,
-      undefined,
-      'Monthly'
-    );
-
-    setPaymentSchedule(schedule);
-    setManualMonthlyPayment(monthlyPayment);
-
-    updateData({
-      existingLoan: {
-        enabled: true,
-        entryMode: 'fixed',
-        startDate: loanStartDate.format('YYYY-MM-DD'),
-        totalMonths: totalLoanMonths,
-        downPayment,
-        annualRatePercent,
-        loanAmount: principal,
-        monthlyAmount: monthlyPayment,
-      },
-      installmentPlan: {
-        ...(data.installmentPlan || {}),
-        tenure: formatMonthsToTenure(totalLoanMonths),
-        interval: 'Monthly',
-        monthlyAmount: monthlyPayment,
-        // Total cost (consistent with other flows that include vehicle price / down payment):
-        // downPayment + sum(monthly payments)
-        totalAmount: downPayment + (monthlyPayment * totalLoanMonths),
-        downPayment,
-        annualInterestRate: (annualRatePercent / 100),
-        calculationMethod: 'amortized_fixed',
-        schedule,
-      },
-      loanAmount: principal,
-      downPayment,
-      paymentHistory: schedule
-        .filter((s) => s.status === 'paid')
-        .map((s, index) => ({
-          id: `payment-${index}`,
-          amount: s.amount,
-          type: 'Installment',
-          status: 'paid' as PaymentStatus,
-          date: s.paidDate || s.dueDate,
-        })),
-    });
-  };
-
-  // Removed duplicate updateDataWithSchedule function - using the one with useCallback above (line 247)
+  // Removed duplicate calculateInstallments - it's now defined above before the useEffect that uses it
 
   const handleGenerateSchedule = () => {
     if (!loanStartDate || totalLoanMonths <= 0 || manualMonthlyPayment <= 0) {
@@ -803,7 +1056,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
             options={intervalOptions}
           />
         </Grid>
-        {!hasExistingLoan && data.vehicle && (
+        {!hasExistingLoan && data.vehicle && !useBalloonPayment && (
           <Grid item xs={12} sm={6}>
             <Input
               label="Down Payment (QAR)"
@@ -821,6 +1074,136 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
           </Grid>
         )}
       </Grid>
+
+      {/* Balloon Payment Configuration - Available for both new and existing loans */}
+      {data.vehicle && (
+        <Paper variant="outlined" sx={{ mt: 3, p: 3, backgroundColor: '#f9fafb' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+            <Typography variant="h5" sx={{ fontWeight: 600 }}>
+              Payment Structure
+            </Typography>
+          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            {hasExistingLoan 
+              ? "Configure the payment structure for this existing loan (e.g., 20% down, 60% installments, 20% balloon)"
+              : "Choose between standard payment plan or balloon payment structure (e.g., 20% down, 60% installments, 20% balloon)"
+            }
+          </Typography>
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={useBalloonPayment}
+                onChange={(e) => {
+                  const checked = e.target.checked;
+                  setUseBalloonPayment(checked);
+                  if (!checked) {
+                    // Reset to standard calculation
+                    setDownPaymentPercent(20);
+                    setInstallmentPercent(60);
+                    setBalloonPercent(20);
+                  }
+                }}
+                sx={{ color: '#00cfa2', '&.Mui-checked': { color: '#00cfa2' } }}
+              />
+            }
+            label="Use Balloon Payment Structure"
+          />
+
+          {useBalloonPayment && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 2 }}>
+                Payment Structure Breakdown
+              </Typography>
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={4}>
+                  <Input
+                    label="Down Payment (%)"
+                    type="number"
+                    value={downPaymentPercent.toString()}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      if (value >= 0 && value <= 100) {
+                        setDownPaymentPercent(value);
+                        // Auto-adjust installment to maintain 100% total
+                        const remaining = 100 - value - balloonPercent;
+                        if (remaining >= 0) {
+                          setInstallmentPercent(remaining);
+                        }
+                      }
+                    }}
+                    helperText="Percentage of vehicle price"
+                    inputProps={{ min: 0, max: 100, step: 0.1 }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Input
+                    label="Installments (%)"
+                    type="number"
+                    value={installmentPercent.toString()}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      if (value >= 0 && value <= 100) {
+                        setInstallmentPercent(value);
+                        // Auto-adjust balloon to maintain 100% total
+                        const remaining = 100 - downPaymentPercent - value;
+                        if (remaining >= 0) {
+                          setBalloonPercent(remaining);
+                        }
+                      }
+                    }}
+                    helperText="Percentage paid in monthly installments"
+                    inputProps={{ min: 0, max: 100, step: 0.1 }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Input
+                    label="Balloon Payment (%)"
+                    type="number"
+                    value={balloonPercent.toString()}
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      if (value >= 0 && value <= 100) {
+                        setBalloonPercent(value);
+                        // Auto-adjust installment to maintain 100% total
+                        const remaining = 100 - downPaymentPercent - value;
+                        if (remaining >= 0) {
+                          setInstallmentPercent(remaining);
+                        }
+                      }
+                    }}
+                    helperText="Final balloon payment percentage"
+                    inputProps={{ min: 0, max: 100, step: 0.1 }}
+                  />
+                </Grid>
+              </Grid>
+              <Box sx={{ mt: 2, p: 2, backgroundColor: '#e3f2fd', borderRadius: 2 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                  Total: {downPaymentPercent + installmentPercent + balloonPercent}%
+                </Typography>
+                {Math.abs((downPaymentPercent + installmentPercent + balloonPercent) - 100) > 0.01 && (
+                  <Typography variant="body2" color="error.main">
+                    Warning: Percentages must sum to 100%
+                  </Typography>
+                )}
+                {data.vehicle && (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Down Payment:</strong> {formatCurrency((data.vehicle.price || 0) * (downPaymentPercent / 100))}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Installments:</strong> {formatCurrency((data.vehicle.price || 0) * (installmentPercent / 100))} over {hasExistingLoan ? totalLoanMonths : parseTenureToMonths(tenure)} months
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      <strong>Balloon Payment:</strong> {formatCurrency((data.vehicle.price || 0) * (balloonPercent / 100))}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          )}
+        </Paper>
+      )}
 
       {/* Existing Loan Section */}
       <Paper variant="outlined" sx={{ mt: 3, p: 3, backgroundColor: '#f9fafb' }}>
@@ -866,10 +1249,14 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
               <RadioGroup
                 value={entryMode}
                 onChange={(e) => {
-                  setEntryMode(e.target.value as 'auto' | 'fixed' | 'manual');
-                  if (e.target.value === 'manual') {
+                  const newMode = e.target.value as 'auto' | 'fixed' | 'manual';
+                  setEntryMode(newMode);
+                  if (newMode === 'manual') {
                     // Clear auto-generated schedule when switching to manual
                     setPaymentSchedule([]);
+                  } else if (newMode !== 'fixed' && useBalloonPayment && hasExistingLoan) {
+                    // If switching away from fixed mode, disable balloon payment for existing loans
+                    setUseBalloonPayment(false);
                   }
                 }}
                 row
@@ -898,6 +1285,78 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                 <Typography variant="body2" color="warning.main">
                   Please select an offer in the previous step to calculate loan details.
                 </Typography>
+              </Box>
+            )}
+            
+            {/* Fixed Mode with Balloon Payment Option */}
+            {entryMode === 'fixed' && (
+              <Box sx={{ mb: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={useBalloonPayment}
+                      onChange={(e) => {
+                        setUseBalloonPayment(e.target.checked);
+                        if (!e.target.checked) {
+                          // Reset to default percentages when disabling
+                          setDownPaymentPercent(20);
+                          setInstallmentPercent(60);
+                          setBalloonPercent(20);
+                        }
+                      }}
+                      sx={{ color: '#00cfa2', '&.Mui-checked': { color: '#00cfa2' } }}
+                    />
+                  }
+                  label="Add balloon payment at end of term"
+                />
+                
+                {useBalloonPayment && (
+                  <Box sx={{ mt: 2, p: 2, backgroundColor: '#e3f2fd', borderRadius: 2, border: '1px solid #2196f3' }}>
+                    <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+                      Balloon Payment Configuration
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                      Configure the balloon payment percentage. The remaining amount will be paid through amortized monthly installments.
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} sm={4}>
+                        <Input
+                          label="Balloon Payment (%)"
+                          type="number"
+                          value={balloonPercent.toString()}
+                          onChange={(e) => {
+                            const value = parseFloat(e.target.value) || 0;
+                            if (value >= 0 && value <= 100) {
+                              setBalloonPercent(value);
+                              // Auto-adjust installment to maintain 100% total
+                              const remaining = 100 - downPaymentPercent - value;
+                              if (remaining >= 0) {
+                                setInstallmentPercent(remaining);
+                              }
+                            }
+                          }}
+                          helperText="Percentage of vehicle price for final balloon payment"
+                          inputProps={{ min: 0, max: 100, step: 0.1 }}
+                        />
+                      </Grid>
+                      {data.vehicle && (
+                        <Grid item xs={12} sm={8}>
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                            <strong>Balloon Amount:</strong> {formatCurrency((data.vehicle.price || 0) * (balloonPercent / 100))}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Installment Amount:</strong> {formatCurrency((data.vehicle.price || 0) * (installmentPercent / 100))} over {totalLoanMonths} months
+                          </Typography>
+                        </Grid>
+                      )}
+                    </Grid>
+                    {Math.abs((downPaymentPercent + installmentPercent + balloonPercent) - 100) > 0.01 && (
+                      <Typography variant="body2" color="error.main" sx={{ mt: 2 }}>
+                        ⚠️ Payment structure percentages must sum to 100% to generate the schedule.
+                      </Typography>
+                    )}
+                  </Box>
+                )}
               </Box>
             )}
             
@@ -986,10 +1445,24 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                     const amount = parseFloat(e.target.value) || 0;
                     if (amount >= 0) {
                       setDownPayment(amount);
+                      // If balloon payment is enabled in fixed mode, update the percentage to match
+                      if (useBalloonPayment && entryMode === 'fixed' && data.vehicle && data.vehicle.price > 0) {
+                        const newPercent = (amount / data.vehicle.price) * 100;
+                        setDownPaymentPercent(newPercent);
+                        // Auto-adjust installment to maintain 100% total
+                        const remaining = 100 - newPercent - balloonPercent;
+                        if (remaining >= 0) {
+                          setInstallmentPercent(remaining);
+                        }
+                      }
                     }
                   }}
                   placeholder="0.00"
-                  helperText="Down payment amount for this loan"
+                  helperText={
+                    useBalloonPayment && entryMode === 'fixed' && data.vehicle
+                      ? `Down payment amount (${downPaymentPercent.toFixed(1)}% of vehicle price) - Editing updates the percentage`
+                      : "Down payment amount for this loan"
+                  }
                 />
               </Grid>
               {data.vehicle && (
@@ -1125,7 +1598,17 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                       </TableHead>
                       <TableBody>
                         {paymentSchedule.map((payment, index) => (
-                          <TableRow key={index} hover>
+                          <TableRow 
+                            key={index} 
+                            hover
+                            sx={{
+                              backgroundColor: payment.isBalloon ? '#fff3e0' : 'inherit',
+                              '&:hover': {
+                                backgroundColor: payment.isBalloon ? '#ffe0b2' : '#f5f5f5',
+                              },
+                              borderLeft: payment.isBalloon ? '4px solid #ff9800' : 'none',
+                            }}
+                          >
                             {editingScheduleIndex === index ? (
                               <>
                                 <TableCell>{index + 1}</TableCell>
@@ -1198,9 +1681,45 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                               </>
                             ) : (
                               <>
-                                <TableCell>{index + 1}</TableCell>
+                                <TableCell>
+                                  {payment.isBalloon ? (
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                      <Typography variant="body2" fontWeight={600}>
+                                        {index + 1}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        sx={{
+                                          px: 0.5,
+                                          py: 0.25,
+                                          borderRadius: 0.5,
+                                          backgroundColor: '#ff9800',
+                                          color: '#fff',
+                                          fontWeight: 600,
+                                          fontSize: '0.65rem',
+                                        }}
+                                      >
+                                        BALLOON
+                                      </Typography>
+                                    </Box>
+                                  ) : (
+                                    index + 1
+                                  )}
+                                </TableCell>
                                 <TableCell>{formatDate(payment.dueDate)}</TableCell>
-                                <TableCell sx={{ fontWeight: 600 }}>{formatCurrency(payment.amount)}</TableCell>
+                                <TableCell 
+                                  sx={{ 
+                                    fontWeight: 600,
+                                    color: payment.isBalloon ? '#ff9800' : 'inherit',
+                                  }}
+                                >
+                                  {formatCurrency(payment.amount)}
+                                  {payment.isBalloon && (
+                                    <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>
+                                      (Final Payment)
+                                    </Typography>
+                                  )}
+                                </TableCell>
                                 <TableCell>
                                   <Box
                                     sx={{

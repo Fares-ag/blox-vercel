@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { Box, Typography, Tabs, Tab, IconButton, Fab, Tooltip } from '@mui/material';
+import { Box, Typography, Tabs, Tab, IconButton, Tooltip } from '@mui/material';
 import {
   AttachMoney,
   AccountBalance,
@@ -7,7 +7,6 @@ import {
   People,
   Visibility,
   FilterList,
-  Chat,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { useNavigate } from 'react-router-dom';
@@ -32,6 +31,8 @@ export const ApplicationsListPage: React.FC = () => {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   // Store full filtered list (before pagination) for metrics calculation
   const [fullFilteredList, setFullFilteredList] = useState<Application[]>([]);
+  // Track last load time to force refresh when needed
+  const [lastLoadTime, setLastLoadTime] = useState(Date.now());
 
   // Debounce search term to avoid excessive API calls
   useEffect(() => {
@@ -55,9 +56,17 @@ export const ApplicationsListPage: React.FC = () => {
     return applications;
   }, []);
 
-  const loadApplications = useCallback(async () => {
+  const loadApplications = useCallback(async (forceRefresh = false) => {
     try {
       dispatch(setLoading(true));
+      
+      // If force refresh, invalidate cache first
+      if (forceRefresh) {
+        const { supabaseCache } = await import('@shared/services/supabase-cache.service');
+        supabaseCache.invalidate('applications:all');
+        supabaseCache.invalidatePattern('^applications:');
+        console.log('🔄 Force refreshing applications list');
+      }
       
       // Load from Supabase only
       const supabaseResponse = await supabaseApiService.getApplications();
@@ -88,6 +97,7 @@ export const ApplicationsListPage: React.FC = () => {
         const paginatedApps = filtered.slice(start, end);
         
         dispatch(setList({ applications: paginatedApps, total }));
+        setLastLoadTime(Date.now());
       } else {
         throw new Error(supabaseResponse.message || 'Failed to load applications from Supabase');
       }
@@ -103,6 +113,21 @@ export const ApplicationsListPage: React.FC = () => {
   useEffect(() => {
     loadApplications();
   }, [loadApplications]);
+
+  // Listen for navigation events to force refresh when coming from delete
+  useEffect(() => {
+    const handleFocus = () => {
+      // If page was focused and it's been more than 1 second since last load, refresh
+      const timeSinceLastLoad = Date.now() - lastLoadTime;
+      if (timeSinceLastLoad > 1000) {
+        console.log('🔄 Page focused, refreshing applications list');
+        loadApplications(true);
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [lastLoadTime, loadApplications]);
 
   const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
@@ -139,20 +164,31 @@ export const ApplicationsListPage: React.FC = () => {
       return sum + loanAmount;
     }, 0);
 
-    // Profitability: mirror the main dashboard formula using these totals:
-    // (receivable - payable) / (receivable + payable), rounded to 2 decimals
-    let profitability = 0;
-    const total = totalPayable + totalReceivable;
-    if (total > 0 && !isNaN(totalPayable) && !isNaN(totalReceivable)) {
-      const raw =
-        ((totalReceivable - totalPayable) / total) * 100;
-      profitability = Math.round(raw * 100) / 100;
+    // Average Payment Size = average installment amount across all applications
+    let averagePaymentSize = 0;
+    let totalPaymentsCount = 0;
+    let totalPaymentAmount = 0;
+    
+    filtered.forEach((app) => {
+      const schedule = app.installmentPlan?.schedule || [];
+      schedule.forEach((payment) => {
+        const amount = Number(payment.amount) || 0;
+        if (amount > 0) {
+          totalPaymentAmount += amount;
+          totalPaymentsCount += 1;
+        }
+      });
+    });
+
+    if (totalPaymentsCount > 0 && !isNaN(totalPaymentAmount)) {
+      averagePaymentSize = totalPaymentAmount / totalPaymentsCount;
+      averagePaymentSize = Math.round(averagePaymentSize * 100) / 100;
     }
 
     return {
       totalPayable: isNaN(totalPayable) ? 0 : totalPayable,
       totalReceivable: isNaN(totalReceivable) ? 0 : totalReceivable,
-      profitability: isNaN(profitability) ? 0 : profitability,
+      averagePaymentSize: isNaN(averagePaymentSize) ? 0 : averagePaymentSize,
       activeApplications: filtered.filter((app) => app.status === 'active' || app.status === 'under_review').length,
     };
   }, [fullFilteredList]);
@@ -372,22 +408,6 @@ export const ApplicationsListPage: React.FC = () => {
     },
   ];
 
-  const filteredList = useMemo(() => {
-    // No dummy data - use only what's in Redux state
-    let filtered = filterApplicationsByStatus(list, statusFilter);
-    
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (app) =>
-          app.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          app.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          app.id?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    return filtered;
-  }, [list, statusFilter, searchTerm]);
-
   return (
     <Box className="applications-list-page">
       {/* Header */}
@@ -414,9 +434,9 @@ export const ApplicationsListPage: React.FC = () => {
           className="metric-card receivable"
         />
         <Card
-          title="Total Profibility"
-          value={metrics.profitability}
-          moduleType="percentage"
+          title="Average Payment Size"
+          value={metrics.averagePaymentSize}
+          moduleType="currency"
           icon={<TrendingUp sx={{ color: '#FF9800' }} />}
           className="metric-card profitability"
         />
@@ -467,29 +487,16 @@ export const ApplicationsListPage: React.FC = () => {
       <Box className="table-section">
         <Table
           columns={columns}
-          rows={filteredList}
+          rows={list}
           loading={loading}
           page={pagination.page - 1}
           rowsPerPage={pagination.limit}
-          totalRows={pagination.total || filteredList.length}
+          totalRows={pagination.total}
           onPageChange={(page) => dispatch(setPage(page + 1))}
           onRowsPerPageChange={(limit) => dispatch(setLimit(limit))}
           onRowClick={(row) => navigate(`/admin/applications/view/${row.id}`)}
         />
       </Box>
-
-      {/* Floating Action Button */}
-      <Fab
-        color="primary"
-        aria-label="chat"
-        className="fab-chat"
-        onClick={() => {
-          // TODO: Open chat/help
-          toast.info('Chat feature coming soon');
-        }}
-      >
-        <Chat />
-      </Fab>
     </Box>
   );
 };

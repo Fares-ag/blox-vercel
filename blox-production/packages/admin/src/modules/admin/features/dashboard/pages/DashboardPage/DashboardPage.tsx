@@ -613,10 +613,10 @@ export const DashboardPage: React.FC = () => {
               </Box>
               <Box className="financial-item">
                 <Typography variant="body2" className="financial-label">
-                  Profitability
+                  Average Payment Size
                 </Typography>
-                <Typography variant="h4" className="financial-value profitability">
-                  {stats.profitability.toFixed(2)}%
+                <Typography variant="h4" className="financial-value average-payment-size">
+                  QAR {(stats.monthlyReceivable / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Typography>
               </Box>
             </Box>

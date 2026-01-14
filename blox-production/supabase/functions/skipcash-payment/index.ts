@@ -277,9 +277,12 @@ serve(async (req) => {
       throw new Error(json?.message || json?.error || `Payment request failed: ${response.status} ${response.statusText}`);
     }
     
+    // SkipCash uses 'id' and 'payUrl', not 'paymentId' and 'paymentUrl'
     console.log('SkipCash payment request successful:', {
-      paymentId: json.resultObj?.paymentId,
-      hasPaymentUrl: !!json.resultObj?.paymentUrl,
+      paymentId: json.resultObj?.id || json.resultObj?.paymentId,
+      hasPaymentUrl: !!(json.resultObj?.payUrl || json.resultObj?.paymentUrl),
+      status: json.resultObj?.status,
+      statusId: json.resultObj?.statusId,
     });
 
     // Create payment transaction record in database

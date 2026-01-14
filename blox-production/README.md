@@ -157,6 +157,32 @@ The application integrates with a RESTful API. All API calls are handled through
 - Authentication: Bearer token in Authorization header
 - Error Handling: Automatic token refresh and error handling
 
+## Payment Gateway Integration
+
+The application integrates with **SkipCash** payment gateway for processing payments.
+
+### Payment Features
+- Credit/Debit card payments
+- Blox Credit top-up functionality
+- Payment verification and callback handling
+- Transaction status tracking
+
+### Testing Payment Integration
+
+**Quick Test (5 minutes):** See **[SKIPCASH_QUICK_TEST.md](./SKIPCASH_QUICK_TEST.md)**
+
+**Full Verification Guide:** See **[SKIPCASH_SANDBOX_VERIFICATION.md](./SKIPCASH_SANDBOX_VERIFICATION.md)**
+
+**Test Cards:** See **[TEST_CARDS.md](./TEST_CARDS.md)** which contains:
+- Test card numbers for successful and failed transactions
+- Test debit card (NAPS) for Qatari payment system
+- Testing scenarios and checklists
+- Troubleshooting guide
+
+**Important**: 
+- Test cards are for development and QA testing only. Never use them in production.
+- Ensure `SKIPCASH_USE_SANDBOX=true` is set in Supabase Edge Functions secrets for sandbox testing.
+
 ## Routing
 
 - `/auth/login` - Login page

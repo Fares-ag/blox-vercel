@@ -295,7 +295,7 @@ class SupabaseApiService {
 
   async createApplication(application: Omit<Application, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Application>> {
     try {
-      const appData = {
+      const appData: any = {
         customer_name: application.customerName,
         customer_email: application.customerEmail,
         customer_phone: application.customerPhone,
@@ -320,6 +320,17 @@ class SupabaseApiService {
         cancelled_at: application.cancelledAt || null,
         blox_membership: application.bloxMembership || null
       };
+
+      // Store origin in customer_info metadata if provided
+      if (application.origin) {
+        if (!appData.customer_info) {
+          appData.customer_info = {};
+        }
+        if (typeof appData.customer_info === 'object') {
+          appData.customer_info._origin = application.origin;
+          appData.customer_info._createdByAI = application.origin === 'ai';
+        }
+      }
 
       const response = await supabase
         .from('applications')
@@ -445,6 +456,167 @@ class SupabaseApiService {
         status: 'ERROR',
         message: error.message || 'Failed to update application',
         data: {} as Application
+      };
+    }
+  }
+
+  /**
+   * Delete an application from the database
+   * @param id - The application ID to delete
+   */
+  async deleteApplication(id: string): Promise<ApiResponse<void>> {
+    try {
+      if (!id || id.trim() === '') {
+        console.error('❌ Delete application: Invalid ID provided', id);
+        return {
+          status: 'ERROR',
+          message: 'Invalid application ID',
+          data: undefined
+        };
+      }
+
+      console.log('🗑️ Deleting application from database:', id);
+
+      // First, check if the application exists
+      const { data: existingApp, error: checkError } = await supabase
+        .from('applications')
+        .select('id, status')
+        .eq('id', id)
+        .single();
+
+      if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = not found
+        console.error('❌ Error checking application existence:', checkError);
+        const dnsError = this.detectDnsError(checkError);
+        if (dnsError) {
+          throw new Error(dnsError);
+        }
+        throw new Error(checkError.message || 'Failed to check application existence');
+      }
+
+      if (!existingApp) {
+        console.warn('⚠️ Application not found:', id);
+        return {
+          status: 'ERROR',
+          message: 'Application not found or already deleted',
+          data: undefined
+        };
+      }
+
+      console.log('✅ Application exists, proceeding with deletion:', existingApp);
+
+      // Try using RPC function first (bypasses RLS issues)
+      // If that fails, fall back to direct delete
+      let deleteSuccess = false;
+      let deleteError: any = null;
+      
+      try {
+        console.log('🔄 Attempting delete via RPC function...');
+        const { data: rpcData, error: rpcError } = await supabase
+          .rpc('admin_delete_application', { app_id: id });
+        
+        if (rpcError) {
+          console.warn('⚠️ RPC delete failed, trying direct delete:', rpcError);
+          deleteError = rpcError;
+        } else if (rpcData === true) {
+          console.log('✅ Application deleted successfully via RPC function');
+          deleteSuccess = true;
+        }
+      } catch (rpcException) {
+        console.warn('⚠️ RPC function may not exist, trying direct delete:', rpcException);
+      }
+
+      // If RPC didn't work, try direct delete
+      if (!deleteSuccess) {
+        console.log('🔄 Attempting direct delete...');
+        const { error, data, count } = await supabase
+          .from('applications')
+          .delete()
+          .eq('id', id)
+          .select('id', { count: 'exact' });
+        
+        deleteError = error;
+
+        console.log('Direct delete response:', { error, data, count, hasData: !!data, dataLength: data?.length });
+        
+        const deletedCount = data?.length || count || 0;
+        if (deletedCount > 0) {
+          deleteSuccess = true;
+          console.log(`✅ Application deleted successfully via direct delete. ${deletedCount} row(s) deleted.`);
+        }
+      }
+
+      if (!deleteSuccess) {
+        if (deleteError) {
+          console.error('❌ Supabase delete error:', deleteError);
+          console.error('Error details:', {
+            message: deleteError.message,
+            code: deleteError.code,
+            details: deleteError.details,
+            hint: deleteError.hint
+          });
+          
+          // Check for RLS policy violation
+          if (deleteError.code === '42501' || deleteError.message?.includes('row-level security') || deleteError.message?.includes('policy')) {
+            throw new Error(`Permission denied: ${deleteError.message}. Make sure you are logged in as an admin user and have delete permissions.`);
+          }
+          
+          const dnsError = this.detectDnsError(deleteError);
+          if (dnsError) {
+            throw new Error(dnsError);
+          }
+          throw new Error(deleteError.message || `Failed to delete application: ${deleteError.code || 'Unknown error'}`);
+        } else {
+          // No error but also no success - RLS is likely blocking silently
+          // Verify if application still exists
+          const { data: verifyData, error: verifyError } = await supabase
+            .from('applications')
+            .select('id, status')
+            .eq('id', id)
+            .single();
+          
+          if (verifyData) {
+            // Application still exists - RLS is likely blocking the delete
+            console.error('❌ Delete failed: Application still exists. RLS policy may be blocking deletion.');
+            throw new Error('Delete operation failed: No rows were deleted. This may be due to insufficient permissions or RLS policy restrictions. Please run FIX_APPLICATION_DELETE_RLS.sql in Supabase SQL Editor to fix this issue.');
+          } else if (verifyError?.code === 'PGRST116') {
+            // Application doesn't exist - it was already deleted
+            console.log('✅ Application was already deleted');
+            deleteSuccess = true;
+          } else {
+            // Some other error checking
+            console.warn('⚠️ Could not verify deletion status:', verifyError);
+            throw new Error('Delete operation completed but could not verify result. Please check if the application was deleted.');
+          }
+        }
+      }
+
+      // Invalidate applications cache - clear all application-related cache
+      supabaseCache.invalidate('applications:all');
+      supabaseCache.invalidate(`applications:${id}`);
+      // Also invalidate any pattern matches to ensure fresh data
+      supabaseCache.invalidatePattern('^applications:');
+      console.log('✅ Cache invalidated for all applications');
+
+      return {
+        status: 'SUCCESS',
+        data: undefined,
+        message: 'Application deleted successfully'
+      };
+    } catch (error: any) {
+      console.error('❌ Exception in deleteApplication:', error);
+      console.error('Error details:', {
+        message: error?.message,
+        stack: error?.stack,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        error
+      });
+      
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to delete application. Please check the console for details.',
+        data: undefined
       };
     }
   }
@@ -599,32 +771,6 @@ class SupabaseApiService {
         status: 'ERROR',
         message: error.message || 'Failed to mark installment as paid',
         data: {} as Application,
-      };
-    }
-  }
-
-  async deleteApplication(id: string): Promise<ApiResponse<void>> {
-    try {
-      const response = await supabase
-        .from('applications')
-        .delete()
-        .eq('id', id);
-
-      if (response.error) {
-        throw new Error(response.error.message || 'Failed to delete application');
-      }
-
-      supabaseCache.invalidate('applications:all');
-      supabaseCache.invalidate(`applications:${id}`);
-
-      return {
-        status: 'SUCCESS',
-        message: 'Application deleted successfully',
-      };
-    } catch (error: any) {
-      return {
-        status: 'ERROR',
-        message: error.message || 'Failed to delete application',
       };
     }
   }
@@ -1455,6 +1601,7 @@ class SupabaseApiService {
               totalApplications: 0,
               activeApplications: 0,
               membershipStatus: 'none',
+              creditsBalance: 0, // Will be loaded separately
             });
           });
         }
@@ -1497,6 +1644,7 @@ class SupabaseApiService {
               totalApplications: 0,
               activeApplications: 0,
               membershipStatus: 'none',
+              creditsBalance: 0, // Will be loaded separately
             });
           }
         });
@@ -1559,7 +1707,38 @@ class SupabaseApiService {
         });
       }
 
+      // Fetch credits for all users (admin can see all, customers will be filtered by RLS)
       const users = Array.from(userMap.values());
+      
+      // Load credits for all users in parallel
+      try {
+        const { data: creditsData, error: creditsError } = await supabase
+          .from('user_credits')
+          .select('user_email, balance');
+        
+        if (!creditsError && creditsData) {
+          const creditsMap = new Map<string, number>();
+          creditsData.forEach((credit: any) => {
+            creditsMap.set(credit.user_email.toLowerCase(), parseFloat(credit.balance) || 0);
+          });
+          
+          // Add credits to users
+          users.forEach((user) => {
+            const email = user.email?.toLowerCase();
+            if (email && creditsMap.has(email)) {
+              user.creditsBalance = creditsMap.get(email);
+            } else {
+              user.creditsBalance = 0; // Default to 0 if no record exists
+            }
+          });
+        }
+      } catch (creditsError: any) {
+        console.warn('Failed to load credits for users:', creditsError);
+        // Don't fail the entire request if credits load fails
+        users.forEach((user) => {
+          user.creditsBalance = 0;
+        });
+      }
       
       return {
         status: 'SUCCESS',
@@ -1609,6 +1788,24 @@ class SupabaseApiService {
             } else if (userApplications.some((app) => app.bloxMembership)) {
               user.membershipStatus = 'inactive';
             }
+          }
+          
+          // Load user credits
+          try {
+            const { data: creditsData, error: creditsError } = await supabase
+              .from('user_credits')
+              .select('balance')
+              .eq('user_email', email)
+              .single();
+            
+            if (!creditsError && creditsData) {
+              user.creditsBalance = parseFloat(creditsData.balance) || 0;
+            } else {
+              user.creditsBalance = 0; // Default to 0 if no record exists
+            }
+          } catch (creditsError: any) {
+            console.warn('Failed to load credits for user:', creditsError);
+            user.creditsBalance = 0;
           }
           
           return {

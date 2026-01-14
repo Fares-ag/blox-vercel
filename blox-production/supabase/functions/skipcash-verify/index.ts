@@ -18,7 +18,17 @@ serve(async (req) => {
   }
 
   try {
-    const verifyRequest: SkipCashVerifyRequest = await req.json();
+    // Parse request body
+    let verifyRequest: SkipCashVerifyRequest;
+    try {
+      const bodyText = await req.text();
+      console.log('Raw request body:', bodyText);
+      verifyRequest = JSON.parse(bodyText);
+      console.log('Parsed verify request:', verifyRequest);
+    } catch (parseError: any) {
+      console.error('Failed to parse request body:', parseError);
+      throw new Error(`Invalid request body: ${parseError.message || 'Expected valid JSON'}`);
+    }
 
     if (!verifyRequest.paymentId && !verifyRequest.transactionId) {
       throw new Error('Payment ID or Transaction ID is required');
@@ -108,7 +118,10 @@ serve(async (req) => {
       ? skipCashConfig.sandboxURL 
       : skipCashConfig.productionURL;
 
-    const response = await fetch(`${apiUrl}/api/v1/payments/${paymentId}`, {
+    const verifyUrl = `${apiUrl}/api/v1/payments/${paymentId}`;
+    console.log('Verifying payment with SkipCash:', { url: verifyUrl, paymentId });
+
+    const response = await fetch(verifyUrl, {
       method: 'GET',
       headers: {
         'Authorization': hashInBase64,
@@ -116,11 +129,73 @@ serve(async (req) => {
       },
     });
 
-    const json = await response.json();
+    let json: any;
+    const responseText = await response.text();
+    
+    console.log('SkipCash API raw response:', {
+      status: response.status,
+      statusText: response.statusText,
+      responseText: responseText.substring(0, 500), // First 500 chars to avoid huge logs
+    });
+    
+    try {
+      json = JSON.parse(responseText);
+      console.log('SkipCash API parsed response:', JSON.stringify(json, null, 2));
+    } catch (parseError: any) {
+      console.error('Failed to parse SkipCash response:', {
+        responseText: responseText.substring(0, 500),
+        parseError: parseError.message,
+      });
+      throw new Error(`Invalid response from SkipCash API: ${response.status} ${response.statusText}. Response: ${responseText.substring(0, 200)}`);
+    }
 
     if (!response.ok) {
-      throw new Error(json.message || json.error || 'Payment verification failed');
+      // Extract error message properly (could be string or object)
+      let errorMessage: string;
+      if (json.message && typeof json.message === 'string') {
+        errorMessage = json.message;
+      } else if (json.error) {
+        if (typeof json.error === 'string') {
+          errorMessage = json.error;
+        } else if (typeof json.error === 'object' && json.error !== null) {
+          // Error is an object, try to extract message from it
+          errorMessage = json.error.message || 
+                        json.error.error || 
+                        json.error.errorMessage ||
+                        (json.error.Message || json.error.Error) ||
+                        JSON.stringify(json.error);
+        } else {
+          errorMessage = String(json.error);
+        }
+      } else if (json.errorMessage && typeof json.errorMessage === 'string') {
+        errorMessage = json.errorMessage;
+      } else {
+        // No clear error message, return the full response as context
+        errorMessage = `SkipCash API error (${response.status}): ${JSON.stringify(json)}`;
+      }
+      
+      // Provide more helpful error messages for common cases
+      if (errorMessage.toLowerCase() === 'forbidden' || response.status === 403) {
+        errorMessage = `Payment verification failed: Access denied. This may mean the payment ID doesn't exist, has expired, or belongs to a different account. Payment ID: ${paymentId}`;
+      } else if (response.status === 404) {
+        errorMessage = `Payment not found. The payment ID may be invalid or the payment may have been deleted. Payment ID: ${paymentId}`;
+      } else if (response.status === 401) {
+        errorMessage = `Authentication failed. Please check SkipCash credentials.`;
+      }
+      
+      console.error('SkipCash API error details:', { 
+        status: response.status, 
+        statusText: response.statusText, 
+        fullResponse: json,
+        extractedErrorMessage: errorMessage,
+        paymentId: paymentId,
+        url: verifyUrl,
+        signaturePreview: hashInBase64.substring(0, 20) + '...',
+      });
+      throw new Error(errorMessage);
     }
+
+    console.log('SkipCash verification response:', { status: json.status || json.resultObj?.status, paymentId });
 
     // Update payment transaction in database if transactionId is provided
     if (verifyRequest.transactionId) {
@@ -173,15 +248,58 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error('SkipCash verification error:', error);
+    console.error('SkipCash verification error - full error object:', error);
+    console.error('SkipCash verification error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+      errorType: typeof error,
+      isErrorInstance: error instanceof Error,
+      errorKeys: error ? Object.keys(error) : [],
+    });
+    
+    // Extract error message properly
+    let errorMessage: string;
+    if (error instanceof Error) {
+      errorMessage = error.message || 'Payment verification failed';
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (error && typeof error === 'object') {
+      // Error is an object, extract message
+      errorMessage = error.message || 
+                    error.error || 
+                    error.errorMessage ||
+                    (error.toString && error.toString() !== '[object Object]' ? error.toString() : JSON.stringify(error));
+    } else {
+      errorMessage = String(error) || 'Payment verification failed';
+    }
+    
+    // If message is still [object Object], provide a better fallback
+    if (errorMessage === '[object Object]' || errorMessage.includes('[object Object]')) {
+      errorMessage = 'Payment verification failed. Check SkipCash API response for details.';
+    }
+    
+    const statusCode = error.status || 400;
+    
+    console.log('Returning error response:', {
+      success: false,
+      error: errorMessage,
+      statusCode,
+    });
+    
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Payment verification failed',
+        error: errorMessage,
+        details: process.env.DENO_ENV === 'development' ? {
+          stack: error.stack,
+          name: error.name,
+          originalError: error instanceof Error ? error.message : String(error),
+        } : undefined,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
+        status: statusCode,
       }
     );
   }

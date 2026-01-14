@@ -271,7 +271,13 @@ export const ReviewStep: React.FC<StepProps> = ({ data }) => {
                     Entry Mode
                   </Typography>
                   <Typography variant="body1">
-                    {data.existingLoan.entryMode === 'auto' ? 'Automatic' : 'Manual'}
+                    {data.existingLoan.entryMode === 'auto' 
+                      ? 'Automatic (Calculate from rates)'
+                      : data.existingLoan.entryMode === 'fixed'
+                      ? 'Fixed Monthly (Amortized)'
+                      : data.existingLoan.entryMode === 'balloon'
+                      ? 'Balloon Payment Structure'
+                      : 'Manual Entry'}
                   </Typography>
                 </Grid>
               )}

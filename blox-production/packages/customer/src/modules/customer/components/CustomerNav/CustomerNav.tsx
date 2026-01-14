@@ -18,11 +18,14 @@ import {
   TextField,
 } from '@mui/material';
 import { Menu as MenuIcon, AccountCircle, Logout, DirectionsCar, Star, AddCircleOutline, AccountBalanceWallet, Add } from '@mui/icons-material';
+import { CircularProgress } from '@mui/material';
 import { useAppSelector } from '../../store/hooks';
 import { useAuth } from '../../hooks/useAuth';
 import { NotificationCenter } from '../../features/notifications/components/NotificationCenter/NotificationCenter';
 import { formatCurrency } from '@shared/utils/formatters';
+import { skipCashService, supabase } from '@shared/services';
 import { toast } from 'react-toastify';
+import { useCredits } from '../../hooks/useCredits';
 import './CustomerNav.scss';
 
 export const CustomerNav: React.FC = () => {
@@ -30,32 +33,14 @@ export const CustomerNav: React.FC = () => {
   const location = useLocation();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const { logout } = useAuth();
+  const { creditsBalance: bloxCredits, refreshCredits } = useCredits();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null);
-  const [bloxCredits, setBloxCredits] = useState<number>(0);
   const [topUpDialogOpen, setTopUpDialogOpen] = useState(false);
   const [creditsToBuy, setCreditsToBuy] = useState<string>('1');
+  const [processingTopUp, setProcessingTopUp] = useState(false);
 
   const BLOX_CREDIT_PRICE_QAR = 250;
-
-  useEffect(() => {
-    // Load stored Blox credits from localStorage (simple wallet for now)
-    if (typeof window === 'undefined') return;
-    const stored = localStorage.getItem('blox_credits');
-    if (stored) {
-      const parsed = parseInt(stored, 10);
-      if (!isNaN(parsed)) {
-        setBloxCredits(parsed);
-      }
-    }
-  }, []);
-
-  const updateBloxCredits = (newBalance: number) => {
-    setBloxCredits(newBalance);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('blox_credits', String(newBalance));
-    }
-  };
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -78,17 +63,101 @@ export const CustomerNav: React.FC = () => {
     setTopUpDialogOpen(true);
   };
 
-  const handleConfirmTopUp = () => {
+  const handleConfirmTopUp = async () => {
     const credits = parseInt(creditsToBuy, 10);
     if (isNaN(credits) || credits <= 0) {
       toast.error('Please enter a valid number of Blox Credits.');
       return;
     }
-    const newBalance = bloxCredits + credits;
-    const totalCost = credits * BLOX_CREDIT_PRICE_QAR;
-    updateBloxCredits(newBalance);
-    toast.success(`Added ${credits} Blox Credits for ${formatCurrency(totalCost)}.`);
-    setTopUpDialogOpen(false);
+
+    if (!user?.email) {
+      toast.error('User information is required to process payment.');
+      return;
+    }
+
+    try {
+      setProcessingTopUp(true);
+      const totalCost = credits * BLOX_CREDIT_PRICE_QAR;
+
+      // Fetch user metadata to get phone number if needed
+      let userPhone = '';
+      try {
+        const { data: { user: supabaseUser } } = await supabase.auth.getUser();
+        if (supabaseUser?.user_metadata) {
+          userPhone = supabaseUser.user_metadata.phone_number || supabaseUser.user_metadata.phone || '';
+        }
+      } catch (e) {
+        console.warn('Could not fetch user phone:', e);
+      }
+
+      // Generate transaction ID
+      const transactionId = `CREDIT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      // Parse customer name
+      const nameParts = (user.name || user.email || '').split(' ');
+      const firstName = nameParts[0] || user.email?.split('@')[0] || 'Customer';
+      const lastName = nameParts.slice(1).join(' ') || firstName;
+
+      // Build return URL for payment callback
+      const returnUrl = `${window.location.origin}/customer/credit-topup-callback?transactionId=${encodeURIComponent(transactionId)}&credits=${encodeURIComponent(credits)}`;
+
+      // Prepare SkipCash payment request
+      const skipCashRequest = {
+        amount: totalCost,
+        firstName: firstName,
+        lastName: lastName,
+        phone: userPhone,
+        email: user.email,
+        transactionId: transactionId,
+        returnUrl: returnUrl,
+        subject: `Top Up ${credits} Blox Credits`,
+        description: `Purchase ${credits} Blox Credits for ${formatCurrency(totalCost)}`,
+        custom1: JSON.stringify({
+          type: 'credit_topup',
+          credits: credits,
+          transactionId: transactionId,
+          email: user.email, // Include email for webhook processing
+        }),
+      };
+
+      // Process payment through SkipCash
+      const result = await skipCashService.processPayment(skipCashRequest);
+
+      // The Edge Function returns data directly (not wrapped in resultObj)
+      // So we check both result.data.paymentUrl and result.data.resultObj.paymentUrl for compatibility
+      const responseData = result.data as any; // Type assertion needed due to interface structure
+      const paymentUrl = responseData?.paymentUrl || responseData?.resultObj?.paymentUrl || responseData?.payUrl || responseData?.resultObj?.payUrl;
+      const paymentId = responseData?.paymentId || responseData?.resultObj?.paymentId || responseData?.id || responseData?.resultObj?.id;
+
+      if (result.status === 'SUCCESS' && paymentUrl) {
+        // Store pending transaction data in localStorage for callback
+        localStorage.setItem(`pending_credit_topup_${transactionId}`, JSON.stringify({
+          credits: credits,
+          transactionId: transactionId,
+          paymentId: paymentId, // Store paymentId for verification
+          timestamp: Date.now(),
+        }));
+
+        console.log('Redirecting to SkipCash payment page:', paymentUrl);
+        
+        // Redirect to SkipCash payment page
+        window.location.href = paymentUrl;
+        return; // Don't continue with other logic, user will be redirected
+      } else {
+        console.error('Payment initiation failed:', {
+          status: result.status,
+          message: result.message,
+          data: result.data,
+          paymentUrl: paymentUrl,
+        });
+        toast.error(result.message || 'Failed to initiate payment. Please try again.');
+        setProcessingTopUp(false);
+      }
+    } catch (error: any) {
+      console.error('Failed to process credit top-up:', error);
+      toast.error(error.message || 'Failed to process credit top-up. Please try again.');
+      setProcessingTopUp(false);
+    }
   };
 
   const handleLogoutClick = async () => {
@@ -382,9 +451,14 @@ export const CustomerNav: React.FC = () => {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setTopUpDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleConfirmTopUp}>
-            Confirm Top Up
+          <Button onClick={() => setTopUpDialogOpen(false)} disabled={processingTopUp}>Cancel</Button>
+          <Button 
+            variant="contained" 
+            onClick={handleConfirmTopUp}
+            disabled={processingTopUp || !creditsToBuy || parseInt(creditsToBuy, 10) <= 0}
+            startIcon={processingTopUp ? <CircularProgress size={16} /> : null}
+          >
+            {processingTopUp ? 'Processing...' : 'Proceed to Payment'}
           </Button>
         </DialogActions>
       </Dialog>

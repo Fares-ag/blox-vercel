@@ -189,10 +189,13 @@ serve(async (req) => {
     const dbStatus = mapStatusIdToDbStatus(webhookData.StatusId);
     const transactionId = webhookData.TransactionId || webhookData.Custom1?.split('"transactionId":"')[1]?.split('"')[0];
 
-    // Parse Custom1 to get application context
+    // Parse Custom1 to get application context or credit top-up info
     let applicationId: string | null = null;
     let paymentScheduleId: string | null = null;
     let isSettlement = false;
+    let isCreditTopup = false;
+    let creditsAmount = 0;
+    let customerEmail: string | null = null;
 
     if (webhookData.Custom1) {
       try {
@@ -200,6 +203,12 @@ serve(async (req) => {
         applicationId = customData.applicationId || null;
         paymentScheduleId = customData.paymentScheduleId || null;
         isSettlement = customData.isSettlement || false;
+        isCreditTopup = customData.type === 'credit_topup';
+        creditsAmount = customData.credits || 0;
+        // Get email from Custom1 for credit top-ups
+        if (isCreditTopup && customData.email) {
+          customerEmail = customData.email.toLowerCase();
+        }
       } catch (e) {
         // If Custom1 is not JSON, try to extract applicationId directly
         // Some merchants might pass it as a plain string
@@ -284,6 +293,44 @@ serve(async (req) => {
       if (upsertError) {
         console.error('Failed to upsert payment transaction:', upsertError);
         // Don't fail the webhook, but log the error
+      }
+
+      // Handle credit top-up if payment is completed
+      if (dbStatus === 'completed' && isCreditTopup && creditsAmount > 0 && customerEmail) {
+        try {
+          console.log('Processing credit top-up:', {
+            customerEmail,
+            creditsAmount,
+            transactionId,
+            paymentId: webhookData.PaymentId,
+          });
+
+          // Use RPC to add credits (bypasses RLS with service role)
+          const { data: addCreditsResult, error: addCreditsError } = await supabaseClient.rpc(
+            'admin_add_user_credits',
+            {
+              p_user_email: customerEmail,
+              p_amount: creditsAmount,
+              p_description: `Credit top-up via payment. Transaction ID: ${transactionId}, Payment ID: ${webhookData.PaymentId}`,
+              p_admin_email: null, // System-initiated
+            }
+          );
+
+          if (addCreditsError) {
+            console.error('Failed to add credits via webhook:', addCreditsError);
+          } else if (addCreditsResult && addCreditsResult.length > 0 && addCreditsResult[0].success) {
+            console.log('Successfully added credits via webhook:', {
+              customerEmail,
+              creditsAmount,
+              newBalance: addCreditsResult[0].new_balance,
+            });
+          } else {
+            console.error('Failed to add credits - unexpected result:', addCreditsResult);
+          }
+        } catch (creditError: any) {
+          console.error('Error processing credit top-up:', creditError);
+          // Don't fail the webhook if credits update fails, but log it
+        }
       }
 
       // If payment is completed, update the payment schedule and application

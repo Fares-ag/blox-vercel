@@ -38,13 +38,15 @@
         font-size: 15px;
         letter-spacing: 0.01em;
         padding: 10px 18px;
-        border-radius: var(--radius-sm);
+        border-radius: 0;
+        border: 1px solid transparent;
         transition: all var(--transition-base);
         font-family: 'IBM Plex Sans', sans-serif;
 
         &:hover {
           background-color: var(--card-hover) !important;
           color: var(--primary-text) !important; /* Black text on hover */
+          border-color: var(--divider-color);
           transform: translateY(-1px);
           box-shadow: var(--shadow-xs);
         }
@@ -52,11 +54,13 @@
         &.active {
           color: var(--primary-btn-color); /* Blox Black text */
           background-color: var(--primary-color); /* Lime Yellow background */
+          border-color: var(--primary-color);
           font-weight: 700;
           box-shadow: var(--shadow-sm);
           
           &:hover {
             background-color: var(--primary-btn-hover) !important; /* Darker Lime Yellow */
+            border-color: var(--primary-btn-hover);
             color: var(--primary-btn-color); /* Blox Black text */
           }
         }
@@ -75,7 +79,7 @@
         padding: 8px 12px;
         background: #0E1909;
         border: 1px solid var(--divider-color);
-        border-radius: var(--radius-md);
+        border-radius: 0;
         transition: all var(--transition-base);
         min-width: 140px;
 
@@ -93,7 +97,7 @@
           width: 32px;
           height: 32px;
           background: rgba(218, 255, 1, 0.2);
-          border-radius: var(--radius-sm);
+          border-radius: 0;
 
           .wallet-icon {
             color: var(--primary-color); /* Lime Yellow */
@@ -141,7 +145,7 @@
         gap: 12px;
         cursor: pointer;
         padding: 4px 8px;
-        border-radius: var(--radius-sm);
+        border-radius: 0;
         transition: background-color var(--transition-base);
 
         &:hover {
@@ -180,6 +184,7 @@
           font-family: 'IBM Plex Sans', sans-serif;
           letter-spacing: 0.01em;
           background-color: transparent;
+          border-radius: 0 !important;
 
           &:hover {
             border-color: var(--primary-color); /* Lime Yellow border */
@@ -199,9 +204,12 @@
           font-family: 'IBM Plex Sans', sans-serif;
           letter-spacing: 0.01em;
           box-shadow: var(--shadow-xs);
+          border-radius: 0 !important;
+          border: 1px solid var(--primary-color);
 
           &:hover {
             background-color: var(--primary-btn-hover); /* Darker Lime Yellow */
+            border-color: var(--primary-btn-hover);
             box-shadow: var(--shadow-sm);
             transform: translateY(-1px);
           }

@@ -7,6 +7,7 @@ export * from './badges.utils';
 export * from './storage.util';
 export * from './tenure.utils';
 export * from './installment-plan.utils';
+export * from './balloon-payment.utils';
 export * from './sanitize';
 export * from './rate-limit';
 export * from './rbac';

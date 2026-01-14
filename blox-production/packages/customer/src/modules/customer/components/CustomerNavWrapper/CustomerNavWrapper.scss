@@ -3,10 +3,34 @@
   flex-direction: column;
   min-height: 100vh;
   width: 100%;
+  position: relative;
 
   .customer-content-wrapper {
     flex: 1;
     width: 100%;
+  }
+
+  // Chatbot FAB button styles - Using brand colors
+  .fab-chat {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    background-color: #DAFF01 !important; // Lime Yellow
+    color: #0E1909 !important; // Blox Black
+    box-shadow: 0 4px 12px rgba(218, 255, 1, 0.3);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
+
+    &:hover {
+      background-color: #B8D900 !important; // Darker Lime Yellow
+      transform: scale(1.05);
+      box-shadow: 0 6px 16px rgba(218, 255, 1, 0.4);
+    }
+
+    @media (max-width: 768px) {
+      bottom: 16px;
+      right: 16px;
+    }
   }
 }
 

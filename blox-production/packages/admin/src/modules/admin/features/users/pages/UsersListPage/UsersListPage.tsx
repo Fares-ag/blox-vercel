@@ -124,6 +124,20 @@ export const UsersListPage: React.FC = () => {
       ),
     },
     {
+      id: 'creditsBalance',
+      label: 'Credits',
+      minWidth: 100,
+      align: 'right',
+      format: (value) => {
+        const credits = typeof value === 'number' ? value : 0;
+        return (
+          <Typography variant="body2" fontWeight={600} color={credits > 0 ? 'primary' : 'text.secondary'}>
+            {credits.toLocaleString()}
+          </Typography>
+        );
+      },
+    },
+    {
       id: 'createdAt',
       label: 'Joined',
       minWidth: 120,

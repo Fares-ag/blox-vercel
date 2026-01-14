@@ -1076,12 +1076,68 @@ export const ApplicationDetailPage: React.FC = () => {
                       );
                       
                       return (
-                        <TableRow key={index}>
-                          <TableCell>{index + 1}</TableCell>
+                        <TableRow 
+                          key={index}
+                          sx={{
+                            backgroundColor: payment.isBalloon ? '#fff3e0' : 'inherit',
+                            '&:hover': {
+                              backgroundColor: payment.isBalloon ? '#ffe0b2' : '#f5f5f5',
+                            },
+                            borderLeft: payment.isBalloon ? '4px solid #ff9800' : 'none',
+                          }}
+                        >
+                          <TableCell>
+                            {payment.isBalloon ? (
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                <Typography variant="body2" fontWeight={600}>
+                                  {index + 1}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    px: 0.5,
+                                    py: 0.25,
+                                    borderRadius: 0.5,
+                                    backgroundColor: '#ff9800',
+                                    color: '#fff',
+                                    fontWeight: 600,
+                                    fontSize: '0.65rem',
+                                  }}
+                                >
+                                  BALLOON
+                                </Typography>
+                              </Box>
+                            ) : (
+                              index + 1
+                            )}
+                          </TableCell>
                           <TableCell>{formatDateTable(payment.dueDate)}</TableCell>
                           <TableCell sx={{ fontWeight: 600 }}>
                             <Box>
-                              {formatCurrency(payment.amount)}
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <Typography 
+                                  variant="body2" 
+                                  fontWeight={600}
+                                  sx={{ color: payment.isBalloon ? '#ff9800' : 'inherit' }}
+                                >
+                                  {formatCurrency(payment.amount)}
+                                </Typography>
+                                {payment.isBalloon && (
+                                  <Typography 
+                                    variant="caption" 
+                                    sx={{ 
+                                      px: 0.5,
+                                      py: 0.25,
+                                      borderRadius: 0.5,
+                                      backgroundColor: '#fff3e0',
+                                      color: '#e65100',
+                                      fontWeight: 600,
+                                    }}
+                                  >
+                                    Final Payment
+                                  </Typography>
+                                )}
+                              </Box>
                               {payment.paidAmount !== undefined && payment.paidAmount > 0 && (
                                 <Box sx={{ mt: 0.5 }}>
                                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
@@ -1155,9 +1211,19 @@ export const ApplicationDetailPage: React.FC = () => {
                           <TableCell align="center">
                             {payment.status !== 'paid' && application.status === 'active' && (
                               <Button
-                                variant="outlined"
+                                variant="contained"
                                 size="small"
                                 onClick={() => handleMakePayment(index)}
+                                sx={{
+                                  backgroundColor: '#0E1909',
+                                  color: 'var(--primary-color)',
+                                  border: '1px solid var(--primary-color)',
+                                  '&:hover': {
+                                    backgroundColor: '#0E1909',
+                                    borderColor: 'var(--primary-color)',
+                                    opacity: 0.9,
+                                  }
+                                }}
                               >
                                 Pay Now
                               </Button>

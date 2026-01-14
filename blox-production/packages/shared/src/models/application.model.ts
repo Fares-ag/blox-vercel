@@ -45,6 +45,7 @@ export interface Application {
   cancelledAt?: string; // Date when application was cancelled
   bloxMembership?: BloxMembership;
   customerInfo?: ExtendedCustomerInformation;
+  origin?: 'manual' | 'ai' | 'api'; // Source/origin of the application (default: 'manual')
 }
 
 export interface BloxMembership {
@@ -124,6 +125,7 @@ export interface InstallmentPlan {
   /**
    * For dynamic-rent plans this is the first month payment (payments decrease).
    * For amortized-fixed plans this is the fixed monthly payment.
+   * For balloon_payment plans this is the monthly installment amount.
    */
   monthlyAmount: number;
   totalAmount: number;
@@ -134,10 +136,31 @@ export interface InstallmentPlan {
    * How the installment schedule was calculated.
    * - dynamic_rent: current Blox model (principal + decreasing rent)
    * - amortized_fixed: standard amortized loan payment (fixed monthly payment)
+   * - balloon_payment: down payment + monthly installments + balloon payment at end
    */
-  calculationMethod?: 'dynamic_rent' | 'amortized_fixed';
+  calculationMethod?: 'dynamic_rent' | 'amortized_fixed' | 'balloon_payment';
   /** Annual interest rate used for amortized_fixed (decimal, e.g., 0.1206). */
   annualInterestRate?: number;
+  /**
+   * Balloon payment configuration (only used when calculationMethod is 'balloon_payment')
+   */
+  balloonPayment?: {
+    /** Balloon payment amount (fixed amount) */
+    amount?: number;
+    /** Balloon payment as percentage of vehicle price (e.g., 20 for 20%) */
+    percentage?: number;
+    /** When the balloon payment is due (end of term or specific date) */
+    dueDate?: string;
+  };
+  /**
+   * Payment structure breakdown for balloon payment plans
+   * e.g., { downPaymentPercent: 20, installmentPercent: 60, balloonPercent: 20 }
+   */
+  paymentStructure?: {
+    downPaymentPercent?: number;
+    installmentPercent?: number;
+    balloonPercent?: number;
+  };
 }
 
 export interface PaymentSchedule {
@@ -164,6 +187,17 @@ export interface PaymentSchedule {
   // Receipt information
   receiptUrl?: string; // URL to download receipt
   receiptGeneratedAt?: string; // When receipt was generated
+  /**
+   * Type of payment in the schedule
+   * - down_payment: Initial down payment
+   * - installment: Regular monthly installment
+   * - balloon_payment: Final balloon payment
+   */
+  paymentType?: 'down_payment' | 'installment' | 'balloon_payment';
+  /**
+   * For balloon payments, indicates this is the final large payment
+   */
+  isBalloon?: boolean;
 }
 
 export type PaymentStatus = 'due' | 'active' | 'paid' | 'unpaid' | 'partially_paid' | 'upcoming';

@@ -335,13 +335,13 @@ export const DashboardPage: React.FC = () => {
               <DescriptionOutlined className="stat-icon" sx={{ color: 'var(--primary-text)', opacity: 1 }} />
               <Chip 
                 label={stats.activeApplications} 
-                sx={{ 
-                  backgroundColor: 'var(--primary-color)', 
+                sx={{
+                  backgroundColor: 'var(--primary-color)',
                   color: '#0E1909', 
                   fontWeight: 700,
                   fontSize: '12px',
                   height: '24px'
-                }} 
+                }}
                 size="small" 
               />
             </Box>
@@ -648,21 +648,21 @@ export const DashboardPage: React.FC = () => {
                       px: 3,
                       py: 1.5,
                       borderRadius: 999,
-                      backgroundColor: 'var(--card-hover)',
+                      backgroundColor: '#000000',
                       border: '2px solid var(--primary-color)',
                     }}
                   >
-                    <Typography
-                      variant="h4"
-                      fontWeight={800}
-                      sx={{
+                  <Typography
+                    variant="h4"
+                    fontWeight={800}
+                    sx={{
                         color: 'var(--primary-color)',
                         letterSpacing: '0.02em',
                         fontSize: 32,
-                      }}
-                    >
-                      {formatCurrency(stats.nextPaymentAmount)}
-                    </Typography>
+                    }}
+                  >
+                    {formatCurrency(stats.nextPaymentAmount)}
+                  </Typography>
                   </Box>
                 </Box>
               </Box>

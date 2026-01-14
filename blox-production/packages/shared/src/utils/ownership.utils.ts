@@ -9,6 +9,16 @@ export interface OwnershipResult {
   principalPerMonth: number;
 }
 
+export interface BalloonOwnershipParams {
+  vehiclePrice: number;
+  downPayment: number;
+  installmentPercent: number;
+  balloonPercent: number;
+  tenureMonths: number;
+  paymentIndex: number;
+  balloonPaid?: boolean;
+}
+
 /**
  * Calculates ownership percentages for a given payment in the schedule
  * @param vehiclePrice - Total price of the vehicle
@@ -40,3 +50,44 @@ export const calculateOwnership = (
   };
 };
 
+/**
+ * Calculates ownership for balloon payment plans
+ * Ownership only reaches 100% after balloon payment is made
+ * @param params - Balloon ownership calculation parameters
+ * @returns Ownership calculation result
+ */
+export const calculateBalloonOwnership = (
+  params: BalloonOwnershipParams
+): OwnershipResult => {
+  const {
+    vehiclePrice,
+    downPayment,
+    installmentPercent,
+    balloonPercent,
+    tenureMonths,
+    paymentIndex,
+    balloonPaid = false,
+  } = params;
+
+  // Calculate installment amount (portion of vehicle price)
+  const totalInstallmentAmount = vehiclePrice * (installmentPercent / 100);
+  const principalPerMonth = tenureMonths > 0 ? totalInstallmentAmount / tenureMonths : 0;
+
+  // Calculate ownership after this payment
+  const customerOwnership = downPayment + (principalPerMonth * (paymentIndex + 1));
+
+  // If balloon is paid, customer owns 100%, otherwise cap at (down + installments)
+  const maxOwnershipWithoutBalloon = vehiclePrice * ((100 - balloonPercent) / 100);
+  const finalCustomerOwnership = balloonPaid
+    ? vehiclePrice
+    : Math.min(customerOwnership, maxOwnershipWithoutBalloon);
+
+  const bloxOwnership = Math.max(vehiclePrice - finalCustomerOwnership, 0);
+
+  return {
+    customerOwnership: finalCustomerOwnership,
+    bloxOwnership,
+    loanAmount: vehiclePrice - downPayment,
+    principalPerMonth,
+  };
+};

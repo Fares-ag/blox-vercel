@@ -15,9 +15,9 @@ import {
   Chip,
   Fade,
 } from '@mui/material';
-import { Send, Close, SmartToy, Person, AttachFile, Image as ImageIcon, PictureAsPdf, InsertDriveFile, Cancel } from '@mui/icons-material';
+import { Send, Close, SmartToy, Person, AttachFile, Image as ImageIcon, PictureAsPdf, InsertDriveFile, Cancel, Mic, Stop, CheckCircle, Description } from '@mui/icons-material';
 import { Button } from '@shared/components';
-import { bloxAIClient } from '@shared/services';
+import { bloxAIClient, supabaseApiService, BloxAIClient, type AIApplicationInput, type AIDocumentInput } from '@shared/services';
 import { toast } from 'react-toastify';
 import './ChatModal.scss';
 
@@ -49,10 +49,35 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
   const [error, setError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [filePreviews, setFilePreviews] = useState<Record<string, string>>({});
+  const [isRecording, setIsRecording] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const [ttsEnabled, setTtsEnabled] = useState(true);
+  const [interimTranscript, setInterimTranscript] = useState('');
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+  const [applicationData, setApplicationData] = useState<Partial<AIApplicationInput>>({});
+  const [uploadedFileIds, setUploadedFileIds] = useState<Map<string, { fileId: string; documentType: string }>>(new Map());
+  const [uploadedDocumentTypes, setUploadedDocumentTypes] = useState<Set<string>>(new Set());
+  const [isSubmittingApplication, setIsSubmittingApplication] = useState(false);
+  const [showSubmitButton, setShowSubmitButton] = useState(false);
+  const [availableVehicles, setAvailableVehicles] = useState<any[]>([]);
+  const [vehiclesLoaded, setVehiclesLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const recognitionRef = useRef<any>(null); // SpeechRecognition is a browser API
+  const synthRef = useRef<SpeechSynthesis | null>(null);
+
+  // Generate a new session ID for each chat session (no persistence for anonymous users)
+  const getOrCreateSessionId = (): string => {
+    if (sessionId) return sessionId;
+    // Generate a fresh session ID for each chat session
+    const newSessionId = `chat-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    setSessionId(newSessionId);
+    return newSessionId;
+  };
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -68,31 +93,202 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
     }
   }, [open]);
 
-  // Initialize chat with welcome message
+  // Check for speech recognition support
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      setSpeechSupported(true);
+      const recognition = new SpeechRecognition();
+      
+      // Improved accuracy settings
+      recognition.continuous = true; // Keep listening until stopped
+      recognition.interimResults = true; // Show partial results for better UX
+      recognition.lang = 'en-US'; // Primary language
+      recognition.maxAlternatives = 3; // Get multiple alternatives for better accuracy
+      
+      // Try to improve accuracy with service hints
+      if ('serviceURI' in recognition) {
+        (recognition as any).serviceURI = 'wss://speech.googleapis.com/v1/speech:recognize';
+      }
+      
+      recognition.onstart = () => {
+        setIsListening(true);
+        setIsRecording(true);
+        setInterimTranscript('');
+        toast.info('Listening... Speak clearly', { autoClose: 2000 });
+      };
+      
+      recognition.onresult = (event: any) => {
+        let finalTranscript = '';
+        let interimText = '';
+        
+        // Process all results
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          const transcript = result[0].transcript;
+          const confidence = result[0].confidence || 0.5;
+          
+          // Filter low confidence results (below 0.3)
+          if (confidence < 0.3 && !result.isFinal) {
+            continue;
+          }
+          
+          if (result.isFinal) {
+            // Use the highest confidence alternative
+            let bestTranscript = transcript;
+            let bestConfidence = confidence;
+            
+            if (result.length > 1) {
+              for (let j = 0; j < result.length; j++) {
+                if (result[j].confidence > bestConfidence) {
+                  bestTranscript = result[j].transcript;
+                  bestConfidence = result[j].confidence;
+                }
+              }
+            }
+            
+            finalTranscript += bestTranscript + ' ';
+          } else {
+            interimText += transcript;
+          }
+        }
+        
+        // Update interim transcript for real-time feedback
+        if (interimText) {
+          setInterimTranscript(interimText);
+        }
+        
+        // Update final message when we have final results
+        if (finalTranscript) {
+          const currentText = inputMessage.trim();
+          const newText = (currentText ? currentText + ' ' : '') + finalTranscript.trim();
+          setInputMessage(newText);
+          setInterimTranscript('');
+        }
+      };
+      
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        
+        // Handle specific error types
+        let errorMessage = 'Speech recognition error';
+        switch (event.error) {
+          case 'no-speech':
+            errorMessage = 'No speech detected. Please try again.';
+            break;
+          case 'audio-capture':
+            errorMessage = 'Microphone not found. Please check your microphone settings.';
+            break;
+          case 'not-allowed':
+            errorMessage = 'Microphone permission denied. Please allow microphone access.';
+            break;
+          case 'network':
+            errorMessage = 'Network error. Please check your connection.';
+            break;
+          case 'aborted':
+            // User stopped, don't show error
+            return;
+          default:
+            errorMessage = `Speech recognition error: ${event.error}`;
+        }
+        
+        toast.error(errorMessage);
+        setIsListening(false);
+        setIsRecording(false);
+        setInterimTranscript('');
+      };
+      
+      recognition.onend = () => {
+        setIsListening(false);
+        setIsRecording(false);
+        setInterimTranscript('');
+      };
+      
+      recognition.onnomatch = () => {
+        toast.warning('Could not recognize speech. Please try speaking more clearly.');
+        setInterimTranscript('');
+      };
+      
+      recognitionRef.current = recognition;
+    }
+    
+    // Check for text-to-speech support
+    if ('speechSynthesis' in window) {
+      synthRef.current = window.speechSynthesis;
+    }
+    
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      if (synthRef.current) {
+        synthRef.current.cancel();
+      }
+    };
+  }, []);
+
+  // Load available vehicles when chat opens
+  useEffect(() => {
+    if (open && !vehiclesLoaded) {
+      loadAvailableVehicles();
+    }
+  }, [open, vehiclesLoaded]);
+
+  const loadAvailableVehicles = async () => {
+    try {
+      const response = await supabaseApiService.getProducts();
+      if (response.status === 'SUCCESS' && response.data) {
+        setAvailableVehicles(response.data);
+        setVehiclesLoaded(true);
+      }
+    } catch (error) {
+      console.error('Failed to load vehicles:', error);
+    }
+  };
+
+  // Initialize chat with welcome message (no history for anonymous users)
   useEffect(() => {
     if (open && messages.length === 0) {
-      setMessages([
-        {
-          role: 'assistant',
-          content: 'Hello! I\'m your BLOX AI assistant. How can I help you today?',
-          timestamp: new Date(),
-        },
-      ]);
+      // Generate a fresh session ID for each new chat session
+      getOrCreateSessionId();
+      
+      // Show welcome message - no history loading for anonymous users
+      const welcomeMessage = {
+        role: 'assistant' as const,
+        content: 'Hello! I\'m your BLOX AI assistant. How can I help you today?',
+        timestamp: new Date(),
+      };
+      setMessages([welcomeMessage]);
+      
+      // Speak welcome message if TTS is enabled
+      if (ttsEnabled && synthRef.current) {
+        speakMessage(welcomeMessage.content);
+      }
     }
-  }, [open, messages.length]);
+  }, [open, messages.length, ttsEnabled]);
 
   // Connect WebSocket when modal opens
   useEffect(() => {
-    if (open && !isConnected && !isConnecting && !wsRef.current) {
+    if (!open) {
+      // Cleanup: disconnect when modal closes
+      if (wsRef.current) {
+        disconnectWebSocket();
+      }
+      return;
+    }
+
+    // Only connect if no existing connection
+    if (!wsRef.current) {
       connectWebSocket();
     }
 
-    // Cleanup: disconnect when modal closes
+    // Cleanup: disconnect when component unmounts or modal closes
     return () => {
       if (!open && wsRef.current) {
         disconnectWebSocket();
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const connectWebSocket = async () => {
@@ -148,7 +344,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
       const ws = bloxAIClient.createChatConnection('user_chatbot');
       wsRef.current = ws;
 
-      let connectionTimeout: NodeJS.Timeout;
+      let connectionTimeout: ReturnType<typeof setTimeout>;
 
       ws.onopen = () => {
         console.log('WebSocket connected to BLOX AI');
@@ -168,14 +364,34 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
 
           const responseText = data.response || data.message || '';
           if (responseText) {
-            setMessages((prev) => [
-              ...prev,
-              {
-                role: 'assistant',
+            // Try to parse structured application data from response
+            parseApplicationDataFromResponse(responseText, data);
+            
+            // Use functional update to prevent duplicates
+            setMessages((prev) => {
+              // Check if this exact message already exists (prevent duplicates)
+              const lastMessage = prev[prev.length - 1];
+              if (
+                lastMessage &&
+                lastMessage.role === 'assistant' &&
+                lastMessage.content === responseText
+              ) {
+                // Message already exists, don't add duplicate
+                return prev;
+              }
+              
+              const assistantMessage = {
+                role: 'assistant' as const,
                 content: responseText,
                 timestamp: new Date(),
-              },
-            ]);
+              };
+              return [...prev, assistantMessage];
+            });
+            
+            // Speak the response if TTS is enabled
+            if (ttsEnabled && synthRef.current) {
+              speakMessage(responseText);
+            }
           }
         } catch (error) {
           console.error('Error parsing WebSocket message:', error);
@@ -248,6 +464,125 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
     setIsConnecting(false);
   };
 
+  // Reset chat state when modal closes (fresh session for each chat)
+  useEffect(() => {
+    if (!open) {
+      // Clear messages and session when modal closes
+      setMessages([]);
+      setSessionId(null);
+      setError(null);
+      setSelectedFiles([]);
+      setFilePreviews({});
+      setApplicationData({});
+      setUploadedFileIds(new Map());
+      setUploadedDocumentTypes(new Set());
+      setShowSubmitButton(false);
+      disconnectWebSocket();
+    }
+  }, [open]);
+
+  // Check if we have enough data to submit an application
+  useEffect(() => {
+    const hasRequiredData = 
+      applicationData.customerInfo?.email &&
+      applicationData.customerInfo?.phone &&
+      applicationData.vehicleId &&
+      applicationData.loanAmount !== undefined &&
+      applicationData.downPayment !== undefined;
+    
+    setShowSubmitButton(hasRequiredData || false);
+  }, [applicationData]);
+
+  // Parse application data from AI response
+  const parseApplicationDataFromResponse = (responseText: string, data: any) => {
+    try {
+      // Try to extract JSON from response (AI might return structured data)
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.applicationData || parsed.customerInfo || parsed.vehicleId) {
+            setApplicationData((prev) => ({
+              ...prev,
+              ...(parsed.applicationData || parsed),
+            }));
+            return;
+          }
+        } catch (e) {
+          // Not valid JSON, continue with keyword parsing
+        }
+      }
+
+      // Keyword-based parsing for common patterns
+      const lowerText = responseText.toLowerCase();
+      
+      // Extract email
+      const emailMatch = responseText.match(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/);
+      if (emailMatch) {
+        setApplicationData((prev) => ({
+          ...prev,
+          customerInfo: {
+            ...prev.customerInfo,
+            email: emailMatch[0],
+          },
+        }));
+      }
+
+      // Extract phone (Qatar format: +974 or 974)
+      const phoneMatch = responseText.match(/(\+?974\s?\d{8})|(\d{8})/);
+      if (phoneMatch) {
+        const phone = phoneMatch[0].replace(/\s/g, '');
+        setApplicationData((prev) => ({
+          ...prev,
+          customerInfo: {
+            ...prev.customerInfo,
+            phone: phone.startsWith('+') ? phone : `+974${phone}`,
+          },
+        }));
+      }
+
+      // Extract vehicle ID if mentioned (UUID format)
+      const vehicleIdMatch = responseText.match(/\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/i);
+      if (vehicleIdMatch && lowerText.includes('vehicle')) {
+        setApplicationData((prev) => ({
+          ...prev,
+          vehicleId: vehicleIdMatch[0],
+        }));
+      }
+
+      // Extract amounts
+      const amountMatches = responseText.match(/(?:loan|amount|price)[:\s]*([\d,]+\.?\d*)/gi);
+      if (amountMatches) {
+        const amounts = amountMatches.map(m => {
+          const num = m.replace(/[^\d.]/g, '');
+          return parseFloat(num);
+        });
+        if (amounts.length > 0) {
+          setApplicationData((prev) => ({
+            ...prev,
+            loanAmount: amounts[0],
+          }));
+        }
+      }
+
+      const downPaymentMatches = responseText.match(/(?:down\s*payment|downpayment)[:\s]*([\d,]+\.?\d*)/gi);
+      if (downPaymentMatches) {
+        const amounts = downPaymentMatches.map(m => {
+          const num = m.replace(/[^\d.]/g, '');
+          return parseFloat(num);
+        });
+        if (amounts.length > 0) {
+          setApplicationData((prev) => ({
+            ...prev,
+            downPayment: amounts[0],
+          }));
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing application data from response:', error);
+    }
+  };
+
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
@@ -276,10 +611,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (e) => {
-          if (e.target?.result) {
+          const result = e.target?.result;
+          if (result) {
             setFilePreviews((prev) => ({
               ...prev,
-              [file.name]: e.target.result as string,
+              [file.name]: result as string,
             }));
           }
         };
@@ -319,27 +655,73 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
+  // Helper function to detect document type from file name/type
+  const detectDocumentType = (file: File): string => {
+    const name = file.name.toLowerCase();
+    const type = file.type.toLowerCase();
+    
+    // Try to detect from file name
+    if (name.includes('id') || name.includes('national') || name.includes('qid')) {
+      return 'Qatar_national_id';
+    }
+    if (name.includes('bank') || name.includes('statement')) {
+      return 'Bank_statements';
+    }
+    if (name.includes('salary') || name.includes('income')) {
+      return 'Salary_certificates';
+    }
+    if (name.includes('passport')) {
+      return 'Passport';
+    }
+    if (name.includes('license') || name.includes('driving')) {
+      return 'Driving_license';
+    }
+    
+    // Default based on file type
+    if (type.includes('image')) {
+      return 'Qatar_national_id'; // Default for images
+    }
+    if (type.includes('pdf')) {
+      return 'Bank_statements'; // Default for PDFs
+    }
+    
+    return 'Other_documents';
+  };
+
   const handleSend = async () => {
     if (!inputMessage.trim() && selectedFiles.length === 0) return;
 
-    // Convert files to base64
+    // Convert files to base64 for preview
     const chatFiles: ChatFile[] = await Promise.all(
       selectedFiles.map(async (file) => {
         return new Promise<ChatFile>((resolve) => {
           const reader = new FileReader();
           reader.onload = (e) => {
-            resolve({
-              name: file.name,
-              type: file.type,
-              size: file.size,
-              data: e.target?.result as string,
-              preview: filePreviews[file.name],
-            });
+            const result = e.target?.result;
+            if (result) {
+              resolve({
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                data: result as string,
+                preview: filePreviews[file.name],
+              });
+            }
           };
           reader.readAsDataURL(file);
         });
       })
     );
+
+    // Check if user is asking about vehicles/cars
+    const messageLower = inputMessage.toLowerCase();
+    const isVehicleQuery = messageLower.includes('car') || 
+                          messageLower.includes('vehicle') || 
+                          messageLower.includes('audi') || 
+                          messageLower.includes('sedan') || 
+                          messageLower.includes('what do you have') ||
+                          messageLower.includes('what cars') ||
+                          messageLower.includes('available');
 
     const userMessage: ChatMessage = {
       role: 'user',
@@ -349,42 +731,156 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
     };
 
     setMessages((prev) => [...prev, userMessage]);
-    const messageToSend = inputMessage.trim() || 'I have uploaded some files';
+    
+    // Enhance message with vehicle data if asking about vehicles
+    let messageToSend = inputMessage.trim() || (selectedFiles.length > 0 ? 'Please review these documents' : '');
+    
+    // Add context about already collected documents
+    if (uploadedDocumentTypes.size > 0) {
+      const collectedDocs = Array.from(uploadedDocumentTypes).join(', ');
+      messageToSend = `${messageToSend}\n\n[Already Collected Documents]\nThe following document types have already been uploaded: ${collectedDocs}\nPlease do NOT ask for these again. Move on to the next required document or proceed with the application if all documents are collected.\n[End Context]`;
+    }
+    
+    if (isVehicleQuery && availableVehicles.length > 0) {
+      // Format vehicle data for the AI
+      const vehicleSummary = availableVehicles
+        .slice(0, 20) // Limit to first 20 vehicles
+        .map(v => `${v.make} ${v.model} ${v.modelYear} - ${v.condition} - ${v.price} QAR`)
+        .join('\n');
+      
+      messageToSend = `${messageToSend}\n\n[Available Vehicles Context]\nHere are the available vehicles:\n${vehicleSummary}\n[End Context]`;
+    } else if (isVehicleQuery && availableVehicles.length === 0 && !vehiclesLoaded) {
+      // Load vehicles if not already loaded
+      await loadAvailableVehicles();
+    }
+    
+    const filesToUpload = [...selectedFiles];
     setInputMessage('');
     setSelectedFiles([]);
     setFilePreviews({});
 
     try {
-      if (wsRef.current && isConnected) {
-        // Use the new API method
-        bloxAIClient.sendUserQuery(wsRef.current, messageToSend);
-        // TODO: Send file data if API supports it
-      } else if (wsRef.current && wsRef.current.readyState === WebSocket.CONNECTING) {
-        // Wait for connection
-        wsRef.current.addEventListener('open', () => {
-          if (wsRef.current) {
-            bloxAIClient.sendUserQuery(wsRef.current, messageToSend);
-          }
-        }, { once: true });
-      } else {
-        // If not connected, try to reconnect
+      if (!wsRef.current) {
+        // Try to reconnect
         connectWebSocket();
-        // Wait a bit and try again
         setTimeout(() => {
-          if (wsRef.current && isConnected) {
-            bloxAIClient.sendUserQuery(wsRef.current, messageToSend);
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            handleSendAfterConnection(filesToUpload, messageToSend, userMessage);
           } else {
             setError('Unable to send message. Please try again.');
-            // Remove the message if we can't send it
             setMessages((prev) => prev.filter((msg) => msg !== userMessage));
           }
         }, 1000);
+        return;
       }
+
+      if (wsRef.current.readyState === WebSocket.CONNECTING) {
+        // Wait for connection
+        wsRef.current.addEventListener('open', () => {
+          handleSendAfterConnection(filesToUpload, messageToSend, userMessage);
+        }, { once: true });
+        return;
+      }
+
+      if (wsRef.current.readyState !== WebSocket.OPEN) {
+        // Not connected, try to reconnect
+        connectWebSocket();
+        setTimeout(() => {
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            handleSendAfterConnection(filesToUpload, messageToSend, userMessage);
+          } else {
+            setError('Unable to send message. Please try again.');
+            setMessages((prev) => prev.filter((msg) => msg !== userMessage));
+          }
+        }, 1000);
+        return;
+      }
+
+      await handleSendAfterConnection(filesToUpload, messageToSend, userMessage);
     } catch (error) {
       console.error('Failed to send message:', error);
       toast.error('Failed to send message. Please try again.');
-      // Remove the message if sending failed
       setMessages((prev) => prev.filter((msg) => msg !== userMessage));
+    }
+  };
+
+  const handleSendAfterConnection = async (
+    files: File[],
+    message: string,
+    userMessage: ChatMessage
+  ) => {
+    if (!wsRef.current) return;
+
+    try {
+      setUploadingFiles(files.length > 0);
+
+      if (files.length > 0) {
+        // Use new upload and chat methods
+        if (files.length === 1) {
+          // Single file upload
+          const documentType = detectDocumentType(files[0]);
+          const uploadResult = await bloxAIClient.uploadAndChat(
+            wsRef.current,
+            message || 'Please review this document',
+            files[0],
+            documentType
+          );
+          
+          // Track uploaded file ID for application submission
+          if (uploadResult && uploadResult.file_id) {
+            setUploadedFileIds((prev) => {
+              const newMap = new Map(prev);
+              newMap.set(files[0].name, {
+                fileId: uploadResult.file_id,
+                documentType: documentType,
+              });
+              return newMap;
+            });
+            // Track document type as collected
+            setUploadedDocumentTypes((prev) => new Set([...prev, documentType]));
+          }
+        } else {
+          // Multiple files upload
+          const documentTypes = files.map(file => detectDocumentType(file));
+          const uploadResult = await bloxAIClient.uploadMultipleAndChat(
+            wsRef.current,
+            message || 'Please review these documents',
+            files,
+            documentTypes
+          );
+          
+          // Track uploaded file IDs
+          if (uploadResult && uploadResult.files) {
+            setUploadedFileIds((prev) => {
+              const newMap = new Map(prev);
+              uploadResult.files.forEach((file, index: number) => {
+                if (file.file_id && file.status === 'processed' && files[index]) {
+                  newMap.set(files[index].name, {
+                    fileId: file.file_id,
+                    documentType: documentTypes[index],
+                  });
+                }
+              });
+              return newMap;
+            });
+            // Track document types as collected
+            setUploadedDocumentTypes((prev) => {
+              const newSet = new Set(prev);
+              documentTypes.forEach(type => newSet.add(type));
+              return newSet;
+            });
+          }
+        }
+      } else {
+        // Just send message without files
+        bloxAIClient.sendUserQuery(wsRef.current, message);
+      }
+    } catch (error: any) {
+      console.error('Failed to upload files and send message:', error);
+      toast.error(error.message || 'Failed to upload files. Please try again.');
+      setMessages((prev) => prev.filter((msg) => msg !== userMessage));
+    } finally {
+      setUploadingFiles(false);
     }
   };
 
@@ -395,11 +891,257 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
     }
   };
 
+  const handleStartRecording = () => {
+    if (!recognitionRef.current) {
+      toast.error('Speech recognition is not supported in your browser');
+      return;
+    }
+    
+    try {
+      if (isRecording) {
+        // Stop recording
+        recognitionRef.current.stop();
+        setIsRecording(false);
+        setInterimTranscript('');
+        
+        // If we have interim text, add it to the input
+        if (interimTranscript.trim()) {
+          const currentText = inputMessage.trim();
+          const newText = (currentText ? currentText + ' ' : '') + interimTranscript.trim();
+          setInputMessage(newText);
+          setInterimTranscript('');
+        }
+      } else {
+        // Request microphone permission first
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(() => {
+            // Permission granted, start recognition
+            recognitionRef.current?.start();
+          })
+          .catch((error) => {
+            console.error('Microphone permission error:', error);
+            toast.error('Microphone access is required for voice input. Please allow microphone access in your browser settings.');
+          });
+      }
+    } catch (error: any) {
+      console.error('Error starting speech recognition:', error);
+      
+      // Handle specific errors
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        toast.error('Microphone permission denied. Please allow microphone access in your browser settings.');
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        toast.error('No microphone found. Please connect a microphone and try again.');
+      } else {
+        toast.error('Failed to start voice recording. Please try again.');
+      }
+    }
+  };
+
+  const speakMessage = (text: string) => {
+    if (!synthRef.current || !ttsEnabled) return;
+    
+    // Cancel any ongoing speech
+    synthRef.current.cancel();
+    
+    // Clean text for better TTS (remove markdown, URLs, etc.)
+    const cleanText = text
+      .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // Remove markdown links
+      .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
+      .replace(/\*\*([^\*]+)\*\*/g, '$1') // Remove bold markdown
+      .replace(/\*([^\*]+)\*/g, '$1') // Remove italic markdown
+      .replace(/#{1,6}\s/g, '') // Remove markdown headers
+      .replace(/\n{3,}/g, '\n\n') // Limit multiple newlines
+      .trim();
+    
+    if (!cleanText) return;
+    
+    // Split long text into sentences for better quality
+    const sentences = cleanText.match(/[^\.!\?]+[\.!\?]+/g) || [cleanText];
+    
+    sentences.forEach((sentence, index) => {
+      const utterance = new SpeechSynthesisUtterance(sentence.trim());
+      
+      // Optimized TTS settings for better accuracy and naturalness
+      utterance.rate = 0.95; // Slightly slower for better clarity
+      utterance.pitch = 1.0; // Natural pitch
+      utterance.volume = 0.85; // Comfortable volume
+      utterance.lang = 'en-US';
+      
+      // Try to use a high-quality voice if available
+      if (!synthRef.current) return;
+      const voices = synthRef.current.getVoices();
+      const preferredVoices = voices.filter(voice => 
+        voice.lang.startsWith('en') && 
+        (voice.name.includes('Google') || 
+         voice.name.includes('Microsoft') || 
+         voice.name.includes('Natural') ||
+         voice.name.includes('Enhanced'))
+      );
+      
+      if (preferredVoices.length > 0) {
+        utterance.voice = preferredVoices[0];
+      } else {
+        // Fallback to any English voice
+        const englishVoices = voices.filter(voice => voice.lang.startsWith('en'));
+        if (englishVoices.length > 0) {
+          utterance.voice = englishVoices[0];
+        }
+      }
+      
+      utterance.onerror = (event) => {
+        console.error('Speech synthesis error:', event);
+      };
+      
+      // Add small delay between sentences for natural speech
+      setTimeout(() => {
+        synthRef.current?.speak(utterance);
+      }, index * 100);
+    });
+  };
+
+  const handleSubmitApplication = async () => {
+    if (!applicationData.customerInfo?.email || !applicationData.customerInfo?.phone || !applicationData.vehicleId) {
+      toast.error('Please provide all required information (email, phone, and vehicle selection) before submitting.');
+      return;
+    }
+
+    setIsSubmittingApplication(true);
+    try {
+      // Convert uploaded file IDs to document format
+      const documents: AIDocumentInput[] = Array.from(uploadedFileIds.entries()).map(([fileName, { fileId, documentType }]) => ({
+        file_id: fileId,
+        document_type: documentType,
+        name: fileName,
+      }));
+
+      // Prepare application data
+      const appInput: AIApplicationInput = {
+        customerInfo: {
+          firstName: applicationData.customerInfo?.firstName || '',
+          lastName: applicationData.customerInfo?.lastName || '',
+          email: applicationData.customerInfo.email!,
+          phone: applicationData.customerInfo.phone!,
+          ...applicationData.customerInfo,
+        },
+        vehicleId: applicationData.vehicleId!,
+        offerId: applicationData.offerId,
+        loanAmount: applicationData.loanAmount || 0,
+        downPayment: applicationData.downPayment || 0,
+        installmentPlan: applicationData.installmentPlan,
+        documents: documents.length > 0 ? documents : undefined,
+      };
+
+      // Format using helper method
+      const formattedData = BloxAIClient.createApplicationFromAIData(appInput);
+
+      // Convert to Application format (add required fields with defaults)
+      const customerInfo = formattedData.customerInfo;
+      const applicationPayload: any = {
+        customerName: formattedData.customerName,
+        customerEmail: formattedData.customerEmail,
+        customerPhone: formattedData.customerPhone,
+        vehicleId: formattedData.vehicleId,
+        offerId: formattedData.offerId || '', // Ensure offerId is a string
+        status: formattedData.status,
+        loanAmount: formattedData.loanAmount,
+        downPayment: formattedData.downPayment,
+        installmentPlan: formattedData.installmentPlan ? {
+          ...formattedData.installmentPlan,
+          tenure: formattedData.installmentPlan.tenure || '',
+          interval: formattedData.installmentPlan.interval || 'Monthly',
+        } : undefined,
+        documents: formattedData.documents,
+        origin: formattedData.origin,
+        customerInfo: {
+          firstName: customerInfo.firstName || '',
+          lastName: customerInfo.lastName || '',
+          email: formattedData.customerEmail,
+          phone: formattedData.customerPhone,
+          dateOfBirth: (customerInfo.dateOfBirth as string) || '',
+          nationality: (customerInfo.nationality as string) || '',
+          address: (customerInfo.address as any) || {
+            street: '',
+            city: '',
+            state: '',
+            postalCode: '',
+            country: 'Qatar',
+          },
+          employment: (customerInfo.employment as any) || {
+            company: '',
+            position: '',
+            employmentType: '',
+            employmentDuration: '',
+            salary: 0,
+          },
+          income: (customerInfo.income as any) || {
+            monthlyIncome: 0,
+            totalIncome: 0,
+          },
+          // Preserve AI origin markers
+          _origin: 'ai' as const,
+          _createdByAI: true as const,
+          // Preserve any other fields from customerInfo
+          ...Object.fromEntries(
+            Object.entries(customerInfo).filter(([key]) => 
+              !['dateOfBirth', 'nationality', 'address', 'employment', 'income'].includes(key)
+            )
+          ),
+        },
+      };
+
+      // Submit to Supabase
+      const result = await supabaseApiService.createApplication(applicationPayload);
+
+      if (result.status === 'SUCCESS' && result.data) {
+        const appId = result.data.id || '';
+        toast.success(`Application #${appId.slice(0, 8)} submitted successfully! It will be reviewed by our team.`);
+        
+        // Add success message to chat
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: `✅ Your application has been successfully submitted! Application ID: ${appId.slice(0, 8)}. Our team will review it and get back to you soon.`,
+            timestamp: new Date(),
+          },
+        ]);
+
+        // Reset application data
+        setApplicationData({});
+        setUploadedFileIds(new Map());
+        setUploadedDocumentTypes(new Set());
+        setShowSubmitButton(false);
+      } else {
+        throw new Error(result.message || 'Failed to submit application');
+      }
+    } catch (error: any) {
+      console.error('Failed to submit application:', error);
+      let errorMessage = 'Failed to submit application. Please try again.';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error.code === 'MISSING_FIELD' || error.code === 'INVALID_DATA') {
+        errorMessage = `Please provide all required information: ${error.message}`;
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmittingApplication(false);
+    }
+  };
+
   const handleClose = () => {
     disconnectWebSocket();
     setError(null);
     setSelectedFiles([]);
     setFilePreviews({});
+    setApplicationData({});
+    setUploadedFileIds(new Map());
+    setUploadedDocumentTypes(new Set());
+    setShowSubmitButton(false);
+    // Optionally clear session ID on close, or keep it for persistence
+    // localStorage.removeItem('blox-chat-session-id');
+    // setSessionId(null);
     onClose();
   };
 
@@ -427,25 +1169,25 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
           justifyContent: 'space-between',
           alignItems: 'center',
           borderBottom: '1px solid',
-          borderColor: 'divider',
-          background: 'linear-gradient(135deg, #00CFA2 0%, #00B892 100%)',
-          color: 'white',
+          borderColor: '#C9C4B7', // Mid Grey
+          bgcolor: '#DAFF01', // Lime Yellow
+          color: '#0E1909', // Blox Black
           py: 2,
           px: 3,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Avatar
             sx={{
-              bgcolor: 'rgba(255, 255, 255, 0.2)',
+              bgcolor: 'rgba(14, 25, 9, 0.1)', // Blox Black with opacity
               width: 40,
               height: 40,
             }}
           >
-            <SmartToy />
+            <SmartToy sx={{ color: '#0E1909' }} />
           </Avatar>
           <Box>
-            <Typography variant="h6" fontWeight={700} component="span" sx={{ color: 'white' }}>
+            <Typography variant="h6" fontWeight={700} component="span" sx={{ color: '#0E1909' }}>
               BLOX AI Assistant
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
@@ -454,7 +1196,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  bgcolor: isConnected ? '#4ade80' : isConnecting ? '#fbbf24' : '#ef4444',
+                  bgcolor: isConnected ? '#DAFF01' : isConnecting ? '#B8D900' : '#787663', // Lime Yellow / Darker Lime Yellow / Dark Grey
                   animation: isConnecting ? 'pulse 2s infinite' : 'none',
                   '@keyframes pulse': {
                     '0%, 100%': { opacity: 1 },
@@ -462,7 +1204,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                   },
                 }}
               />
-              <Typography variant="caption" sx={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '0.7rem' }}>
+              <Typography variant="caption" sx={{ color: '#787663', fontSize: '0.7rem' }}>
                 {isConnected ? 'Online' : isConnecting ? 'Connecting...' : 'Offline'}
               </Typography>
             </Box>
@@ -472,9 +1214,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
           onClick={handleClose}
           size="small"
           sx={{
-            color: 'white',
+            color: '#0E1909', // Blox Black
             '&:hover': {
-              bgcolor: 'rgba(255, 255, 255, 0.1)',
+              bgcolor: 'rgba(14, 25, 9, 0.1)', // Blox Black with opacity
             },
           }}
         >
@@ -482,7 +1224,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ flex: 1, overflow: 'auto', p: 0, bgcolor: '#f8fafc' }}>
+      <DialogContent sx={{ flex: 1, overflow: 'auto', p: 0, bgcolor: '#F3F0ED' }}>
         <Box className="chat-messages" sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {error && (
             <Fade in={!!error}>
@@ -517,6 +1259,56 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
             </Box>
           )}
 
+          {showSubmitButton && (
+            <Fade in={showSubmitButton}>
+              <Alert
+                severity="info"
+                icon={<Description />}
+                sx={{
+                  mb: 2,
+                  borderRadius: 2,
+                  boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                  bgcolor: '#E3F2FD',
+                  border: '1px solid #2196F3',
+                }}
+                action={
+                  <Button
+                    variant="primary"
+                    onClick={handleSubmitApplication}
+                    disabled={isSubmittingApplication}
+                    sx={{
+                      minWidth: 'auto',
+                      px: 2,
+                      py: 0.5,
+                      fontSize: '0.875rem',
+                    }}
+                  >
+                    {isSubmittingApplication ? (
+                      <>
+                        <CircularProgress size={16} sx={{ mr: 1, color: 'inherit' }} />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle sx={{ mr: 0.5, fontSize: 18 }} />
+                        Submit Application
+                      </>
+                    )}
+                  </Button>
+                }
+              >
+                <Typography variant="body2" sx={{ fontWeight: 500, mb: 0.5 }}>
+                  Ready to submit your application?
+                </Typography>
+                <Typography variant="caption" sx={{ display: 'block', opacity: 0.8 }}>
+                  {applicationData.customerInfo?.email && `Email: ${applicationData.customerInfo.email} • `}
+                  {applicationData.vehicleId && `Vehicle selected • `}
+                  {uploadedFileIds.size > 0 && `${uploadedFileIds.size} document(s) uploaded`}
+                </Typography>
+              </Alert>
+            </Fade>
+          )}
+
           {messages.map((message, index) => (
             <Fade in key={index} timeout={300}>
               <Box
@@ -541,13 +1333,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                 {message.role === 'assistant' && (
                   <Avatar
                     sx={{
-                      bgcolor: 'primary.main',
+                      bgcolor: '#DAFF01', // Lime Yellow
                       width: 32,
                       height: 32,
-                      boxShadow: '0 2px 8px rgba(0, 207, 162, 0.3)',
+                      boxShadow: '0 2px 8px rgba(218, 255, 1, 0.3)',
                     }}
                   >
-                    <SmartToy sx={{ fontSize: 18 }} />
+                    <SmartToy sx={{ fontSize: 18, color: '#0E1909' }} />
                   </Avatar>
                 )}
                 <Box
@@ -563,22 +1355,19 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                     sx={{
                       p: 2,
                       position: 'relative',
-                      bgcolor: message.role === 'user' ? 'primary.main' : 'white',
-                      background: message.role === 'user' 
-                        ? 'linear-gradient(135deg, #00CFA2 0%, #00B892 100%)'
-                        : 'white',
-                      color: message.role === 'user' ? '#FFFFFF' : '#111827',
+                      bgcolor: message.role === 'user' ? '#DAFF01' : '#F3F0ED', // Lime Yellow for user, Light Grey for assistant
+                      color: message.role === 'user' ? '#0E1909' : '#0E1909', // Blox Black for both
                       borderRadius: message.role === 'user' 
                         ? '16px 16px 4px 16px'
                         : '16px 16px 16px 4px',
                       boxShadow: message.role === 'user'
-                        ? '0 4px 12px rgba(0, 207, 162, 0.25)'
+                        ? '0 4px 12px rgba(218, 255, 1, 0.25)'
                         : '0 2px 8px rgba(0, 0, 0, 0.08)',
                       transition: 'transform 0.2s, box-shadow 0.2s',
                       '&:hover': {
                         transform: 'translateY(-2px)',
                         boxShadow: message.role === 'user'
-                          ? '0 6px 16px rgba(0, 207, 162, 0.3)'
+                          ? '0 6px 16px rgba(218, 255, 1, 0.3)'
                           : '0 4px 12px rgba(0, 0, 0, 0.12)',
                       },
                     }}
@@ -593,7 +1382,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                           lineHeight: 1.6,
                           fontSize: '0.9rem',
                           fontWeight: message.role === 'user' ? 500 : 400,
-                          color: message.role === 'user' ? '#FFFFFF' : '#111827',
+                          color: '#0E1909', // Blox Black for both
                           mb: message.files && message.files.length > 0 ? 1.5 : 0,
                           '& *': {
                             color: 'inherit',
@@ -614,8 +1403,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                               gap: 1,
                               p: 1.5,
                               borderRadius: 2,
-                              bgcolor: message.role === 'user' ? 'rgba(255, 255, 255, 0.15)' : '#f1f5f9',
-                              border: `1px solid ${message.role === 'user' ? 'rgba(255, 255, 255, 0.2)' : '#e2e8f0'}`,
+                              bgcolor: message.role === 'user' ? 'rgba(14, 25, 9, 0.1)' : '#E8E5DF', // Blox Black with opacity for user, darker light grey for assistant
+                              border: `1px solid ${message.role === 'user' ? 'rgba(14, 25, 9, 0.2)' : '#C9C4B7'}`, // Blox Black with opacity / Mid Grey
                             }}
                           >
                             {file.preview && file.type.startsWith('image/') ? (
@@ -639,14 +1428,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                                   alignItems: 'center',
                                   gap: 1,
                                   flex: 1,
-                                  color: message.role === 'user' ? 'rgba(255, 255, 255, 0.9)' : '#475569',
+                                  color: '#0E1909', // Blox Black for both
                                 }}
                               >
                                 <Box
                                   sx={{
                                     p: 1,
                                     borderRadius: 1.5,
-                                    bgcolor: message.role === 'user' ? 'rgba(255, 255, 255, 0.2)' : '#e2e8f0',
+                                    bgcolor: message.role === 'user' ? 'rgba(14, 25, 9, 0.15)' : '#C9C4B7', // Blox Black with opacity / Mid Grey
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -659,7 +1448,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                                     variant="body2"
                                     sx={{
                                       fontWeight: 500,
-                                      color: message.role === 'user' ? '#FFFFFF' : '#111827',
+                                      color: '#0E1909', // Blox Black for both
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
                                       whiteSpace: 'nowrap',
@@ -670,7 +1459,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                                   <Typography
                                     variant="caption"
                                     sx={{
-                                      color: message.role === 'user' ? 'rgba(255, 255, 255, 0.7)' : '#64748b',
+                                      color: '#787663', // Dark Grey for both
                                       fontSize: '0.7rem',
                                     }}
                                   >
@@ -701,13 +1490,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                 {message.role === 'user' && (
                   <Avatar
                     sx={{
-                      bgcolor: 'secondary.main',
+                      bgcolor: '#787663', // Dark Grey
                       width: 32,
                       height: 32,
-                      boxShadow: '0 2px 8px rgba(46, 44, 52, 0.2)',
+                      boxShadow: '0 2px 8px rgba(120, 118, 99, 0.2)',
                     }}
                   >
-                    <Person sx={{ fontSize: 18 }} />
+                    <Person sx={{ fontSize: 18, color: '#F3F0ED' }} />
                   </Avatar>
                 )}
               </Box>
@@ -720,9 +1509,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
       <DialogActions
         sx={{
           borderTop: '1px solid',
-          borderColor: 'divider',
+          borderColor: '#C9C4B7', // Mid Grey
           p: 2.5,
-          bgcolor: 'white',
+          bgcolor: '#F3F0ED', // Light Grey
           gap: 1.5,
           flexDirection: 'column',
         }}
@@ -747,11 +1536,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                 onDelete={() => removeFile(file.name)}
                 deleteIcon={<Cancel />}
                 sx={{
-                  bgcolor: '#f1f5f9',
+                  bgcolor: '#E8E5DF', // Slightly darker light grey
                   '& .MuiChip-deleteIcon': {
-                    color: '#64748b',
+                    color: '#787663', // Dark Grey
                     '&:hover': {
-                      color: '#ef4444',
+                      color: '#0E1909', // Blox Black
                     },
                   },
                 }}
@@ -772,88 +1561,164 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
             onClick={() => fileInputRef.current?.click()}
             disabled={!isConnected && !isConnecting}
             sx={{
-              bgcolor: '#f8fafc',
-              color: 'text.secondary',
+              bgcolor: '#F3F0ED', // Light Grey
+              color: '#787663', // Dark Grey
               width: 48,
               height: 48,
-              border: '1.5px solid #e2e8f0',
+              border: '1.5px solid #C9C4B7', // Mid Grey
               transition: 'all 0.2s',
               '&:hover': {
-                bgcolor: '#f1f5f9',
-                borderColor: 'primary.main',
-                color: 'primary.main',
+                bgcolor: '#E8E5DF', // Slightly darker light grey
+                borderColor: '#DAFF01', // Lime Yellow
+                color: '#0E1909', // Blox Black
               },
               '&:disabled': {
-                bgcolor: '#f1f5f9',
-                borderColor: '#e2e8f0',
-                color: '#cbd5e1',
+                bgcolor: '#E8E5DF', // Slightly darker light grey
+                borderColor: '#C9C4B7', // Mid Grey
+                color: '#C9C4B7', // Mid Grey
               },
             }}
           >
             <AttachFile />
           </IconButton>
-          <TextField
-            inputRef={inputRef}
-            fullWidth
-            placeholder={isConnected ? "Type your message..." : "Connecting..."}
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={!isConnected && !isConnecting}
-            size="medium"
-            multiline
-            maxRows={4}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 3,
-                bgcolor: '#f8fafc',
+          {speechSupported && (
+            <IconButton
+              onClick={handleStartRecording}
+              disabled={!isConnected && !isConnecting}
+              sx={{
+                bgcolor: isRecording ? '#787663' : '#F3F0ED', // Dark Grey when recording, Light Grey otherwise
+                color: isRecording ? '#F3F0ED' : '#787663', // Light Grey text when recording, Dark Grey otherwise
+                width: 48,
+                height: 48,
+                border: '1.5px solid',
+                borderColor: isRecording ? '#787663' : '#C9C4B7', // Dark Grey / Mid Grey
                 transition: 'all 0.2s',
+                animation: isRecording ? 'pulse 1.5s infinite' : 'none',
+                '@keyframes pulse': {
+                  '0%, 100%': { transform: 'scale(1)', opacity: 1 },
+                  '50%': { transform: 'scale(1.1)', opacity: 0.8 },
+                },
                 '&:hover': {
-                  bgcolor: '#f1f5f9',
+                  bgcolor: isRecording ? '#5A5849' : '#E8E5DF', // Darker grey / Slightly darker light grey
+                  borderColor: isRecording ? '#5A5849' : '#DAFF01', // Darker grey / Lime Yellow
+                  color: isRecording ? '#F3F0ED' : '#0E1909', // Light Grey / Blox Black
                 },
-                '&.Mui-focused': {
-                  bgcolor: 'white',
-                  boxShadow: '0 0 0 3px rgba(0, 207, 162, 0.1)',
+                '&:disabled': {
+                  bgcolor: '#E8E5DF', // Slightly darker light grey
+                  borderColor: '#C9C4B7', // Mid Grey
+                  color: '#C9C4B7', // Mid Grey
                 },
-                '& fieldset': {
-                  borderColor: '#e2e8f0',
-                  borderWidth: 1.5,
+              }}
+              title={isRecording ? 'Stop recording' : 'Start voice input'}
+            >
+              {isRecording ? <Stop /> : <Mic />}
+            </IconButton>
+          )}
+          <Box sx={{ position: 'relative', width: '100%' }}>
+            <TextField
+              inputRef={inputRef}
+              fullWidth
+              placeholder={
+                isRecording && interimTranscript
+                  ? interimTranscript
+                  : isConnected
+                  ? "Type your message or use voice input..."
+                  : "Connecting..."
+              }
+              value={isRecording && interimTranscript ? `${inputMessage}${interimTranscript ? ' ' + interimTranscript : ''}` : inputMessage}
+              onChange={(e) => {
+                if (!isRecording) {
+                  setInputMessage(e.target.value);
+                }
+              }}
+              onKeyPress={handleKeyPress}
+              disabled={(!isConnected && !isConnecting) || isRecording}
+              size="medium"
+              multiline
+              maxRows={4}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 3,
+                  bgcolor: isRecording ? '#E8E5DF' : '#F3F0ED', // Slightly darker light grey when recording, Light Grey otherwise
+                  transition: 'all 0.2s',
+                  border: isRecording ? '2px solid #787663' : 'none', // Dark Grey border when recording
+                  '&:hover': {
+                    bgcolor: isRecording ? '#E8E5DF' : '#E8E5DF', // Slightly darker light grey
+                  },
+                  '&.Mui-focused': {
+                    bgcolor: '#F3F0ED', // Light Grey
+                    boxShadow: isRecording 
+                      ? '0 0 0 3px rgba(120, 118, 99, 0.1)' // Dark Grey focus ring
+                      : '0 0 0 3px rgba(218, 255, 1, 0.4)', // Lime Yellow focus ring
+                  },
+                  '& fieldset': {
+                    borderColor: isRecording ? '#787663' : '#C9C4B7', // Dark Grey / Mid Grey
+                    borderWidth: isRecording ? 2 : 1.5,
+                  },
+                  '&:hover fieldset': {
+                    borderColor: isRecording ? '#787663' : '#787663', // Dark Grey
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: isRecording ? '#787663' : '#DAFF01', // Dark Grey / Lime Yellow
+                    borderWidth: 2,
+                  },
                 },
-                '&:hover fieldset': {
-                  borderColor: '#cbd5e1',
+                '& .MuiInputBase-input': {
+                  fontSize: '0.95rem',
+                  py: 1.5,
+                  color: isRecording && interimTranscript ? '#787663' : '#0E1909', // Dark Grey / Blox Black
+                  fontStyle: isRecording && interimTranscript ? 'italic' : 'normal',
                 },
-                '&.Mui-focused fieldset': {
-                  borderColor: 'primary.main',
-                  borderWidth: 2,
-                },
-              },
-              '& .MuiInputBase-input': {
-                fontSize: '0.95rem',
-                py: 1.5,
-              },
-            }}
-          />
+              }}
+            />
+            {isRecording && interimTranscript && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  bottom: 8,
+                  right: 12,
+                  fontSize: '0.75rem',
+                  color: '#787663', // Dark Grey
+                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: '50%',
+                    bgcolor: '#787663', // Dark Grey
+                    animation: 'pulse 1s infinite',
+                  }}
+                />
+                Listening...
+              </Box>
+            )}
+          </Box>
           <IconButton
             onClick={handleSend}
-            disabled={(!inputMessage.trim() && selectedFiles.length === 0) || (!isConnected && !isConnecting)}
+            disabled={(!inputMessage.trim() && selectedFiles.length === 0) || (!isConnected && !isConnecting) || uploadingFiles}
             sx={{
-              bgcolor: 'primary.main',
-              color: 'white',
+              bgcolor: '#DAFF01', // Lime Yellow
+              color: '#0E1909', // Blox Black
               width: 48,
               height: 48,
-              boxShadow: '0 4px 12px rgba(0, 207, 162, 0.3)',
+              boxShadow: '0 4px 12px rgba(218, 255, 1, 0.3)',
               transition: 'all 0.2s',
               '&:hover': {
-                bgcolor: 'primary.dark',
+                bgcolor: '#B8D900', // Darker Lime Yellow
                 transform: 'translateY(-2px)',
-                boxShadow: '0 6px 16px rgba(0, 207, 162, 0.4)',
+                boxShadow: '0 6px 16px rgba(218, 255, 1, 0.4)',
               },
               '&:active': {
                 transform: 'translateY(0)',
               },
               '&:disabled': {
-                bgcolor: '#e2e8f0',
-                color: '#94a3b8',
+                bgcolor: '#C9C4B7', // Mid Grey
+                color: '#787663', // Dark Grey
                 boxShadow: 'none',
                 transform: 'none',
               },
