@@ -4,35 +4,35 @@ import { Button as CustomButton } from '../../core/Button/Button';
 import { devLogger } from '../../../utils/logger.util';
 import './MultiStepForm.scss';
 
-export interface StepConfig {
+export interface StepConfig<TData = any> {
   label: string;
-  component: React.ComponentType<StepProps>;
+  component: React.ComponentType<StepProps<TData>>;
 }
 
-export interface StepProps {
-  data: Record<string, unknown>;
-  updateData: (data: Record<string, unknown>) => void;
+export interface StepProps<TData = any> {
+  data: TData;
+  updateData: (data: any) => void;
   onNext: () => void;
   onPrevious: () => void;
   isFirstStep: boolean;
   isLastStep: boolean;
 }
 
-interface MultiStepFormProps {
-  steps: StepConfig[];
-  initialData?: Record<string, unknown>;
-  onSubmit: (data: Record<string, unknown>) => void | Promise<void>;
+interface MultiStepFormProps<TData = any> {
+  steps: StepConfig<TData>[];
+  initialData?: TData;
+  onSubmit: (data: TData) => void | Promise<void>;
   onCancel?: () => void;
 }
 
 export const MultiStepForm: React.FC<MultiStepFormProps> = ({
   steps,
-  initialData = {},
+  initialData = {} as any,
   onSubmit,
   onCancel,
 }) => {
   const [activeStep, setActiveStep] = useState(0);
-  const [formData, setFormData] = useState(initialData);
+  const [formData, setFormData] = useState<any>(initialData);
 
   const CurrentStepComponent = steps[activeStep].component;
 
@@ -46,8 +46,8 @@ export const MultiStepForm: React.FC<MultiStepFormProps> = ({
     setActiveStep((prevActiveStep) => prevActiveStep - 1);
   };
 
-  const handleUpdateData = (stepData: Record<string, unknown>) => {
-    setFormData((prev: Record<string, unknown>) => ({ ...prev, ...stepData }));
+  const handleUpdateData = (stepData: any) => {
+    setFormData((prev: any) => ({ ...(prev || {}), ...(stepData || {}) }));
   };
 
   const handleSubmit = async () => {

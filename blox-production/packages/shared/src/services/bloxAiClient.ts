@@ -75,11 +75,11 @@ interface VoiceResponse {
  * Custom error class for AI application submission errors
  */
 export class AIApplicationError extends Error {
-  constructor(
-    message: string,
-    public code: 'VALIDATION_ERROR' | 'MISSING_FIELD' | 'INVALID_DATA' | 'INVALID_TYPE'
-  ) {
+  public code: 'VALIDATION_ERROR' | 'MISSING_FIELD' | 'INVALID_DATA' | 'INVALID_TYPE';
+
+  constructor(message: string, code: 'VALIDATION_ERROR' | 'MISSING_FIELD' | 'INVALID_DATA' | 'INVALID_TYPE') {
     super(message);
+    this.code = code;
     this.name = 'AIApplicationError';
     Object.setPrototypeOf(this, AIApplicationError.prototype);
   }
@@ -543,6 +543,25 @@ class BloxAIClient {
       } catch (parseError) {
         console.error('Failed to parse upload response:', parseError);
         throw new Error('Failed to parse upload response from server');
+      }
+
+      // Log file upload activity
+      try {
+        const { activityTrackingService } = await import('./activity-tracking.service');
+        await activityTrackingService.logActivity('upload', 'document', {
+          resourceId: uploadResult.file_id,
+          resourceName: file.name,
+          description: `Uploaded document: ${file.name} (${documentType})`,
+          metadata: {
+            fileName: file.name,
+            fileSize: file.size,
+            fileType: file.type,
+            documentType,
+            fileId: uploadResult.file_id,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to log activity:', error);
       }
 
       // Then send the chat message with file_id
@@ -1184,8 +1203,5 @@ export type {
   FileUploadResponse, 
   BatchUploadResponse, 
   ChatHistory, 
-  VoiceResponse,
-  AIApplicationInput,
-  AIDocumentInput,
-  FormattedAIApplication
+  VoiceResponse
 };

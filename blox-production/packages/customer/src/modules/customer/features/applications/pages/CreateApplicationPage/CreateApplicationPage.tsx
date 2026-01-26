@@ -39,7 +39,6 @@ import { Loading, EmptyState } from '@shared/components';
 import { supabaseApiService } from '@shared/services';
 import { supabase } from '@shared/services/supabase.service';
 import { devLogger } from '@shared/utils/logger.util';
-import { vehicleService } from '../../../../services/vehicle.service';
 import { customerAuthService } from '../../../../services/customerAuth.service';
 import { toast } from 'react-toastify';
 import { MembershipConfig } from '@shared/config/app.config';
@@ -138,7 +137,7 @@ export const CreateApplicationPage: React.FC = () => {
   const termMonths = parseInt(searchParams.get('termMonths') || '0');
   const salary = parseFloat(searchParams.get('salary') || '0');
   const durationOfResidence = searchParams.get('durationOfResidence') || '';
-  const monthlyLiabilities = searchParams.get('monthlyLiabilities') || '';
+  // const monthlyLiabilities = searchParams.get('monthlyLiabilities') || ''; // Currently unused
   const employmentType = searchParams.get('employmentType') || '';
   const hasBloxMembership = searchParams.get('hasBloxMembership') === 'true';
   const membershipType = (searchParams.get('membershipType') as 'monthly' | 'yearly') || 'monthly';
@@ -302,6 +301,7 @@ export const CreateApplicationPage: React.FC = () => {
       toast.error('Vehicle ID is required');
       navigate('/customer/vehicles');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vehicleId]);
 
   const loadVehicle = async (id: string) => {
@@ -317,9 +317,10 @@ export const CreateApplicationPage: React.FC = () => {
         toast.error('Vehicle not found or inactive');
         navigate('/customer/vehicles');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load vehicle details';
       console.error('❌ Failed to load vehicle details:', error);
-      toast.error(error.message || 'Failed to load vehicle details');
+      toast.error(errorMessage);
       navigate('/customer/vehicles');
     } finally {
       setLoading(false);
@@ -377,8 +378,9 @@ export const CreateApplicationPage: React.FC = () => {
           },
         }));
         toast.success('Document uploaded successfully');
-      } catch (error: any) {
-        toast.error(error.message || 'Failed to upload document');
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Failed to upload document';
+        toast.error(errorMessage);
       } finally {
         setUploading((prev) => ({ ...prev, [category]: false }));
       }

@@ -46,7 +46,9 @@ export class ReceiptService {
     
     const { application, payment, paidAmount, transactionId, paymentMethod, paidDate } = data;
     const paidAt = paidDate || payment.paidDate || moment().format('YYYY-MM-DD');
-    const vehicleName = application.vehicle?.name || 'N/A';
+    const vehicleName = application.vehicle
+      ? `${application.vehicle.make} ${application.vehicle.model}${application.vehicle.trim ? ` ${application.vehicle.trim}` : ''}`.trim()
+      : 'N/A';
     const customerName = application.customerName || 'N/A';
     const customerEmail = application.customerEmail || 'N/A';
     

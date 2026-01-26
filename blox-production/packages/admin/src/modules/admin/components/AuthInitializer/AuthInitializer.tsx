@@ -39,7 +39,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
 
       // If we get a 406 error immediately, skip the email fallback
       // Check for 406 in status, code, or message
-      const is406Error = error?.status === 406 || 
+      const is406Error = (error as any)?.status === 406 || 
                         error?.code === 'PGRST116' || 
                         error?.message?.includes('406') ||
                         error?.message?.includes('Not Acceptable');
@@ -67,7 +67,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
         }
 
         // If email lookup also returns 406, use metadata
-        const isEmail406Error = emailError?.status === 406 || 
+        const isEmail406Error = (emailError as any)?.status === 406 || 
                                emailError?.code === 'PGRST116' || 
                                emailError?.message?.includes('406') ||
                                emailError?.message?.includes('Not Acceptable');
@@ -82,7 +82,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
       return roleFromMetadata || 'customer';
     } catch (error: any) {
       // If it's a 406 or table access error, use metadata immediately
-      const is406Error = error?.status === 406 || 
+      const is406Error = (error as any)?.status === 406 || 
                         error?.code === 'PGRST116' || 
                         error?.message?.includes('406') ||
                         error?.message?.includes('Not Acceptable');

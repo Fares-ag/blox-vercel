@@ -1,6 +1,5 @@
 import React from 'react';
-import { Box, Typography, Paper } from '@mui/material';
-import { formatCurrency } from '../../../utils/formatters';
+import { Box, Typography } from '@mui/material';
 import './FunnelChart.scss';
 
 export interface FunnelStage {

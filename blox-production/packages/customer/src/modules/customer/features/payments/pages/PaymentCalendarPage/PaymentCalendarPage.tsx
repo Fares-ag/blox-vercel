@@ -22,7 +22,7 @@ import {
 } from '@mui/icons-material';
 import { formatCurrency, formatDate } from '@shared/utils/formatters';
 import { StatusBadge, Button as CustomButton } from '@shared/components';
-import { supabaseApiService } from '@shared/services';
+import { supabaseApiService, paymentPermissionsService } from '@shared/services';
 import { DeferPaymentDialog } from '../../../membership/components/DeferPaymentDialog/DeferPaymentDialog';
 import { membershipService } from '../../../../services/membership.service';
 import { deferralService } from '../../../../services/deferral.service';
@@ -54,12 +54,52 @@ export const PaymentCalendarPage: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
   const [currentDate, setCurrentDate] = useState(moment());
   const [payments, setPayments] = useState<CalendarPayment[]>([]);
+  const [canPay, setCanPay] = useState(true);
+  const [checkingCanPay, setCheckingCanPay] = useState(true);
   const [deferDialogOpen, setDeferDialogOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<CalendarPayment | null>(null);
   const [deferring, setDeferring] = useState(false);
   const [viewMode, setViewMode] = useState<'daily' | 'monthly'>('monthly');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        // Calendar is cross-application: enable if any payable application exists for this user.
+        const appsResponse = await supabaseApiService.getApplications();
+        if (appsResponse.status !== 'SUCCESS' || !appsResponse.data || !user?.email) {
+          if (mounted) setCanPay(false);
+          return;
+        }
+        const userApps = appsResponse.data.filter(
+          (a) => a.customerEmail?.toLowerCase() === user.email?.toLowerCase()
+        );
+        const results = await Promise.all(
+          userApps.map((a) => paymentPermissionsService.getCanPayForApplication(a.id))
+        );
+        if (mounted) setCanPay(results.some(Boolean));
+      } finally {
+        if (mounted) setCheckingCanPay(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [user?.email]);
+
+  const handlePayNowClick = useCallback((payment: CalendarPayment) => {
+    if (checkingCanPay) {
+      toast.info('Checking payment permissions...');
+      return;
+    }
+    if (!canPay) {
+      toast.error('Payments are disabled for your company.');
+      return;
+    }
+    navigate(`/customer/applications/${payment.applicationId}/payment`);
+  }, [checkingCanPay, canPay, navigate]);
 
   const mapPaymentStatus = (status: PaymentStatus | undefined, dueDate: string): CalendarPayment['status'] => {
     if (status === 'paid') return 'paid';
@@ -388,7 +428,7 @@ export const PaymentCalendarPage: React.FC = () => {
     if (!payment.application) return false;
     const hasMembership = payment.application.bloxMembership?.isActive || false;
     const isEligible = ['upcoming', 'active'].includes(payment.status);
-    const canDefer = deferralService.canDeferPayment();
+    const canDefer = deferralService.canDeferPaymentSync(payment.application.id);
     return hasMembership && isEligible && canDefer;
   };
 
@@ -559,6 +599,7 @@ export const PaymentCalendarPage: React.FC = () => {
                           variant="contained"
                           size="small"
                           fullWidth={!canDeferPayment(payment)}
+                          disabled={checkingCanPay || !canPay}
                           sx={{ 
                             flex: canDeferPayment(payment) ? 1 : 'none',
                             backgroundColor: '#0E1909',
@@ -570,7 +611,7 @@ export const PaymentCalendarPage: React.FC = () => {
                               opacity: 0.9,
                             }
                           }}
-                          onClick={() => navigate(`/customer/applications/${payment.applicationId}/payment`)}
+                          onClick={() => handlePayNowClick(payment)}
                         >
                           Pay Now
                         </Button>

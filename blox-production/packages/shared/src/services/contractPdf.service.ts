@@ -1,13 +1,13 @@
-﻿import type { Application } from '../models/application.model';
+import type { Application } from '../models/application.model';
 import moment from 'moment';
 import { formatCurrency } from '../utils/formatters';
 import { devLogger } from '../utils/logger.util';
 
 // Dynamic import for jsPDF
 // Note: jsPDF types are complex and vary by version, so we use unknown and type guards
-let jsPDFModule: Promise<unknown> | null = null;
+let jsPDFModule: Promise<any> | null = null;
 
-const getJsPDF = async (): Promise<unknown> => {
+const getJsPDF = async (): Promise<any> => {
   try {
     if (!jsPDFModule) {
       jsPDFModule = import('jspdf');
@@ -15,12 +15,12 @@ const getJsPDF = async (): Promise<unknown> => {
     const module = await jsPDFModule;
     // jsPDF v3.x can export as default or named
     // Try multiple possible export patterns
-    if (typeof module.jsPDF !== 'undefined') {
+    if (typeof module?.jsPDF !== 'undefined') {
       return module.jsPDF;
     }
-    if (module.default) {
+    if (module?.default) {
       // Check if default has jsPDF
-      if (typeof module.default.jsPDF !== 'undefined') {
+      if (typeof module.default?.jsPDF !== 'undefined') {
         return module.default.jsPDF;
       }
       // Default might be the class itself

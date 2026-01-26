@@ -42,6 +42,16 @@ export interface SettlementDiscountSettings {
 export interface TieredDiscount {
   minMonthsEarly: number; // Minimum months early (e.g., 1 = at least 1 month early, 12 = at least 12 months early)
   maxMonthsEarly?: number; // Maximum months early (null/undefined means unlimited)
+  /**
+   * @deprecated Legacy field name kept for backward compatibility with older saved settings.
+   * Use `minMonthsEarly` instead.
+   */
+  minMonthsIntoLoan?: number;
+  /**
+   * @deprecated Legacy field name kept for backward compatibility with older saved settings.
+   * Use `maxMonthsEarly` instead.
+   */
+  maxMonthsIntoLoan?: number;
   principalDiscount: number;
   interestDiscount: number;
   installmentDiscount?: number; // Discount on total installment amount (optional)

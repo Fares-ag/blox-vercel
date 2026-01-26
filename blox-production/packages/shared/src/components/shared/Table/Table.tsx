@@ -14,15 +14,17 @@ import { TableSkeleton } from '../Skeleton/Skeleton';
 import { EmptyState } from '../EmptyState/EmptyState';
 import './Table.scss';
 
-export interface Column<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface Column<T extends object = Record<string, unknown>> {
   id: string;
   label: string;
   minWidth?: number;
   align?: 'right' | 'left' | 'center';
-  format?: (value: unknown, row: T) => React.ReactNode;
+  // `value` is dynamically pulled from `row[column.id]`, so it's intentionally `any`.
+  // Callers can cast/format as needed.
+  format?: (value: any, row: T) => React.ReactNode;
 }
 
-export interface TableProps<T extends Record<string, unknown> = Record<string, unknown>> {
+export interface TableProps<T extends object = Record<string, unknown>> {
   columns: Column<T>[];
   rows: T[];
   loading?: boolean;
@@ -35,9 +37,28 @@ export interface TableProps<T extends Record<string, unknown> = Record<string, u
   emptyMessage?: string;
 }
 
+function renderCellValue(value: unknown): React.ReactNode {
+  if (value === null || value === undefined) return '';
+  if (React.isValidElement(value)) return value;
+  switch (typeof value) {
+    case 'string':
+    case 'number':
+      return value;
+    case 'boolean':
+      return value ? 'Yes' : 'No';
+    default:
+      // Avoid rendering [object Object] silently; stringify for safety.
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return String(value);
+      }
+  }
+}
+
 // Table row component for performance
 // Note: Cannot use React.memo directly with generic functions, so we rely on useCallback for optimization
-const TableRowComponent = <T extends Record<string, unknown>>({
+const TableRowComponent = <T extends object>({
   row,
   columns,
   onRowClick,
@@ -50,6 +71,8 @@ const TableRowComponent = <T extends Record<string, unknown>>({
     onRowClick?.(row);
   }, [onRowClick, row]);
 
+  const rowRecord = row as unknown as Record<string, unknown>;
+
   return (
     <TableRow
       hover
@@ -58,10 +81,10 @@ const TableRowComponent = <T extends Record<string, unknown>>({
       sx={{ cursor: onRowClick ? 'pointer' : 'default' }}
     >
       {columns.map((column) => {
-        const value = row[column.id];
+        const value = rowRecord[column.id];
         return (
           <TableCell key={column.id} align={column.align || 'left'}>
-            {column.format ? column.format(value, row) : value}
+            {column.format ? column.format(value, row) : renderCellValue(value)}
           </TableCell>
         );
       })}
@@ -69,7 +92,7 @@ const TableRowComponent = <T extends Record<string, unknown>>({
   );
 };
 
-export function Table<T extends Record<string, unknown>>({
+export function Table<T extends object>({
   columns,
   rows,
   loading = false,
@@ -125,7 +148,7 @@ export function Table<T extends Record<string, unknown>>({
               <TableBody>
                 {rows.map((row, index) => (
                   <TableRowComponent
-                    key={row.id || index}
+                    key={String((row as any)?.id ?? index)}
                     row={row}
                     columns={columns}
                     onRowClick={onRowClick}

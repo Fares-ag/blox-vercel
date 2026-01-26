@@ -43,12 +43,41 @@ export interface SkipCashPaymentResponse {
   [key: string]: any;
 }
 
-export interface SkipCashVerifyRequest {
-  paymentId: string;
-  transactionId?: string;
-}
+// Verify request must include at least one identifier.
+export type SkipCashVerifyRequest =
+  | { paymentId: string; transactionId?: string }
+  | { transactionId: string; paymentId?: string };
 
 class SkipCashService {
+  private async extractFunctionsInvokeErrorMessage(error: any): Promise<string> {
+    // Supabase Functions errors can carry a Response in `error.context`
+    // (FunctionsHttpError). If present, try to extract JSON { error, message }.
+    try {
+      const ctx = error?.context;
+      if (ctx && typeof ctx === 'object' && (typeof ctx.json === 'function' || typeof ctx.text === 'function')) {
+        // Prefer clone() to avoid consuming the stream if already read elsewhere.
+        const resp = typeof ctx.clone === 'function' ? ctx.clone() : ctx;
+        try {
+          const body = await resp.json();
+          const msg =
+            (body && (body.error || body.message)) ||
+            (typeof body === 'string' ? body : null);
+          if (msg) return String(msg);
+        } catch {
+          // Fall back to text
+          if (typeof resp.text === 'function') {
+            const text = await resp.text();
+            if (text) return text;
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    return error?.message || 'Failed to process payment';
+  }
+
   /**
    * Process payment through SkipCash gateway
    * This calls the Supabase Edge Function which securely handles the payment
@@ -62,9 +91,10 @@ class SkipCashService {
       });
 
       if (error) {
+        const message = await this.extractFunctionsInvokeErrorMessage(error);
         return {
           status: 'ERROR',
-          message: error.message || 'Failed to process payment',
+          message,
           data: null as any,
         };
       }
@@ -92,7 +122,7 @@ class SkipCashService {
   }
 
   /**
-   * Verify payment status
+   * Verify payment status with 30-second timeout
    */
   async verifyPayment(
     verifyRequest: SkipCashVerifyRequest
@@ -100,9 +130,16 @@ class SkipCashService {
     try {
       console.log('Calling skipcash-verify with:', verifyRequest);
       
-      const { data, error } = await supabase.functions.invoke('skipcash-verify', {
+      // Add 30-second timeout to prevent hanging on slow/unresponsive API
+      const verifyPromise = supabase.functions.invoke('skipcash-verify', {
         body: verifyRequest,
       });
+
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Payment verification timeout (30s). Please try again or check status later.')), 30000);
+      });
+
+      const { data, error } = await Promise.race([verifyPromise, timeoutPromise]) as any;
 
       // Log both data and error to see what we get
       console.log('skipcash-verify response - data:', data);

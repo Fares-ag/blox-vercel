@@ -1,5 +1,6 @@
 import type { Product } from './product.model';
 import type { Offer } from './offer.model';
+import type { Company } from './company.model';
 import type { ContractFormData } from '../services/contractPdf.service';
 
 /**
@@ -21,6 +22,8 @@ export interface Application {
   vehicle?: Product;
   offerId: string;
   offer?: Offer;
+  companyId?: string;
+  company?: Company;
   status: ApplicationStatus;
   loanAmount: number;
   downPayment: number;
@@ -89,10 +92,10 @@ export interface CustomerInformation {
   lastName: string;
   email: string;
   phone: string;
-  dateOfBirth: string;
+  dateOfBirth?: string;
   nationality: string;
   qid?: string; // Qatar ID number
-  address: Address;
+  address?: Address;
   employment: EmploymentInfo;
   income: IncomeInfo;
 }

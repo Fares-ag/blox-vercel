@@ -115,7 +115,7 @@ export function calculatePrincipalAndInterest(
     p => p.dueDate === remainingPayments[0]?.dueDate
   );
 
-  remainingPayments.forEach((payment, index) => {
+  remainingPayments.forEach((_payment, index) => {
     const paymentIndex = firstRemainingIndex >= 0 ? firstRemainingIndex + index : index;
     
     // Calculate principal (same for each payment)

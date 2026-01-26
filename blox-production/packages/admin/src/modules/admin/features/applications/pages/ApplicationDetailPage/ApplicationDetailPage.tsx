@@ -5,9 +5,12 @@ import {
   Typography,
   Paper,
   Divider,
-  Chip,
   IconButton,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
   Tabs,
   Tab,
   Table,
@@ -21,6 +24,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Chip,
 } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
 import {
@@ -28,9 +32,8 @@ import {
   Edit,
   CheckCircle,
   Cancel,
-  Visibility,
-  Download,
   Delete,
+  Visibility,
   Person,
   DirectionsCar,
   AttachMoney,
@@ -43,11 +46,13 @@ import {
   Comment,
   Folder,
   Info,
+  Download,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading, updateApplication, removeApplication, setList } from '../../../../store/slices/applications.slice';
 import { supabaseApiService } from '@shared/services';
-import type { Application, PaymentSchedule } from '@shared/models/application.model';
+import type { Application, Company, Document, PaymentSchedule, PaymentStatus } from '@shared/models';
+import type { ProductAttribute } from '@shared/models/product.model';
 import { Button, StatusBadge, Loading, HorizontalBarChart, SegmentedBarChart } from '@shared/components';
 import { formatDate, formatCurrency, formatDateTable } from '@shared/utils/formatters';
 import { parseTenureToMonths } from '@shared/utils/tenure.utils';
@@ -55,7 +60,6 @@ import { calculateOwnership, calculateBalloonOwnership } from '@shared/utils/own
 import { aggregateDailyScheduleToMonthly, isScheduleLikelyDaily, normalizeInstallmentInterval } from '@shared/utils';
 import { toast } from 'react-toastify';
 import moment from 'moment';
-import type { PaymentStatus } from '@shared/models/application.model';
 import { ContractGenerationForm, type ContractFormData } from '../../components/ContractGenerationForm/ContractGenerationForm';
 import { ContractReviewDialog, type ReviewAction } from '../../components/ContractReviewDialog/ContractReviewDialog';
 import { ResubmissionDialog } from '../../components/ResubmissionDialog/ResubmissionDialog';
@@ -73,6 +77,10 @@ export const ApplicationDetailPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const { selected, loading } = useAppSelector((state) => state.applications);
   const [activeTab, setActiveTab] = useState(0);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [companyId, setCompanyId] = useState<string>('');
+  const [savingCompany, setSavingCompany] = useState(false);
   const [contractFormOpen, setContractFormOpen] = useState(false);
   const [approving, setApproving] = useState(false);
   const [contractReviewOpen, setContractReviewOpen] = useState(false);
@@ -113,6 +121,54 @@ export const ApplicationDetailPage: React.FC = () => {
       loadApplicationDetails(id);
     }
   }, [id, loadApplicationDetails]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setCompaniesLoading(true);
+        const res = await supabaseApiService.getCompanies();
+        if (mounted && res.status === 'SUCCESS' && res.data) {
+          setCompanies(res.data);
+        }
+      } finally {
+        if (mounted) setCompaniesLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const cid = (selected as any)?.companyId as string | undefined;
+    setCompanyId(cid || '');
+  }, [selected]);
+
+  const handleCompanyChange = async (nextCompanyId: string) => {
+    if (!id) return;
+    try {
+      setSavingCompany(true);
+      setCompanyId(nextCompanyId);
+
+      const res = await supabaseApiService.updateApplication(id, {
+        companyId: nextCompanyId ? nextCompanyId : (null as any),
+      });
+
+      if (res.status !== 'SUCCESS' || !res.data) {
+        throw new Error(res.message || 'Failed to update application company');
+      }
+
+      dispatch(updateApplication(res.data));
+      dispatch(setSelected(res.data));
+      toast.success('Company assignment updated');
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Failed to update company assignment';
+      toast.error(msg);
+    } finally {
+      setSavingCompany(false);
+    }
+  };
 
   // Helper function to create notifications
   const createNotificationForCustomer = async (
@@ -175,8 +231,12 @@ export const ApplicationDetailPage: React.FC = () => {
         proofDocumentName = proofFile.name;
       }
 
+      if (!selected.installmentPlan) {
+        throw new Error('Installment plan is missing for this application');
+      }
+
       // Update payment schedule
-      const currentSchedule = selected.installmentPlan?.schedule || [];
+      const currentSchedule = selected.installmentPlan.schedule || [];
       const updatedSchedule = [...currentSchedule];
       const paymentToUpdate = updatedSchedule[selectedPaymentIndex];
       const paymentAmount = paymentToUpdate.amount;
@@ -203,6 +263,25 @@ export const ApplicationDetailPage: React.FC = () => {
 
       if (updateResponse.status === 'SUCCESS') {
         toast.success(`Installment #${selectedPaymentIndex + 1} marked as paid`);
+        
+        // Log payment activity
+        try {
+          const { activityTrackingService } = await import('@shared/services');
+          await activityTrackingService.logActivity('payment', 'payment', {
+            resourceId: id,
+            resourceName: `Payment #${selectedPaymentIndex + 1} for Application #${id.slice(0, 8)}`,
+            description: `Payment confirmed: ${formatCurrency(paymentAmount)} via ${paymentMethod}`,
+            metadata: {
+              applicationId: id,
+              paymentIndex: selectedPaymentIndex,
+              amount: paymentAmount,
+              paymentMethod: paymentMethod,
+              hasProof: !!proofDocumentUrl,
+            },
+          });
+        } catch (error) {
+          console.error('Failed to log payment activity:', error);
+        }
         
         // Create notification for customer
         await createNotificationForCustomer(
@@ -322,7 +401,7 @@ export const ApplicationDetailPage: React.FC = () => {
   };
 
   // Ensure installment schedule exists
-  if (displayData && (!displayData.installmentPlan?.schedule || displayData.installmentPlan.schedule.length === 0)) {
+  if (displayData?.installmentPlan && (!displayData.installmentPlan.schedule || displayData.installmentPlan.schedule.length === 0)) {
     const generatedSchedule = generatePaymentSchedule(displayData);
     if (generatedSchedule.length > 0) {
       displayData = {
@@ -417,7 +496,7 @@ export const ApplicationDetailPage: React.FC = () => {
   let paidInstallmentsTotal = 0;
 
   if (displayData.installmentPlan?.schedule) {
-    displayData.installmentPlan.schedule.forEach((payment) => {
+    displayData.installmentPlan.schedule.forEach((payment: PaymentSchedule) => {
       if (payment.status === 'paid') {
         paidInstallmentsTotal += payment.amount || 0;
       }
@@ -442,21 +521,12 @@ export const ApplicationDetailPage: React.FC = () => {
     try {
       setApproving(true);
 
+      if (!displayData.installmentPlan) {
+        throw new Error('Installment plan is missing for this application');
+      }
+
       // Generate payment schedule if not present
       const paymentSchedule = generatePaymentSchedule(displayData);
-      
-      // Create updated application with contract data
-      const updatedApplication: Application = {
-        ...displayData,
-        status: 'contract_signing_required',
-        contractGenerated: true,
-        contractData: contractData as any, // Store contract form data
-        installmentPlan: {
-          ...displayData.installmentPlan,
-          schedule: paymentSchedule,
-        },
-        updatedAt: new Date().toISOString(),
-      };
 
       // Update in Supabase only
       const supabaseResponse = await supabaseApiService.updateApplication(id, {
@@ -474,6 +544,23 @@ export const ApplicationDetailPage: React.FC = () => {
         dispatch(setSelected(supabaseResponse.data));
         toast.success('Application approved and contract generated successfully!');
         
+        // Log contract generation activity
+        try {
+          const { activityTrackingService } = await import('@shared/services');
+          await activityTrackingService.logActivity('create', 'contract', {
+            resourceId: id,
+            resourceName: `Contract for Application #${id?.slice(0, 8)}`,
+            description: `Contract generated and approved for application`,
+            metadata: {
+              applicationId: id,
+              status: 'contract_signing_required',
+              contractGenerated: true,
+            },
+          });
+        } catch (error: unknown) {
+          console.error('Failed to log contract activity:', error);
+        }
+        
         // Create notification for customer
         await createNotificationForCustomer(
           'success',
@@ -488,7 +575,8 @@ export const ApplicationDetailPage: React.FC = () => {
       }
     } catch (error: unknown) {
       console.error('❌ Failed to approve application:', error);
-      toast.error(error.message || 'Failed to approve application in Supabase');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to approve application in Supabase';
+      toast.error(errorMessage);
     } finally {
       setApproving(false);
     }
@@ -510,7 +598,8 @@ export const ApplicationDetailPage: React.FC = () => {
       toast.success('Contract downloaded successfully!');
     } catch (error: unknown) {
       console.error('Error generating contract PDF:', error);
-      toast.error(error.message || 'Failed to generate contract PDF');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to generate contract PDF';
+      toast.error(errorMessage);
     }
   };
 
@@ -539,15 +628,6 @@ export const ApplicationDetailPage: React.FC = () => {
           contractSigned = false; // Reset signature flag so customer can sign again
           break;
       }
-
-      const updatedApplication: Application = {
-        ...displayData,
-        status: newStatus,
-        contractSigned: contractSigned,
-        contractReviewComments: comments || undefined,
-        contractReviewDate: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
 
       // Update in Supabase only
       const supabaseResponse = await supabaseApiService.updateApplication(id, {
@@ -591,7 +671,8 @@ export const ApplicationDetailPage: React.FC = () => {
         throw new Error(supabaseResponse.message || 'Failed to update application');
       }
     } catch (error: unknown) {
-      toast.error(error.message || 'Failed to review contract');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to review contract';
+      toast.error(errorMessage);
     } finally {
       setReviewing(false);
     }
@@ -650,6 +731,10 @@ export const ApplicationDetailPage: React.FC = () => {
     if (!confirmed) return;
 
     try {
+      if (!displayData.installmentPlan) {
+        throw new Error('Installment plan is missing for this application');
+      }
+
       // Generate payment schedule if not present
       const paymentSchedule = generatePaymentSchedule(displayData);
       
@@ -681,7 +766,8 @@ export const ApplicationDetailPage: React.FC = () => {
       }
     } catch (error: unknown) {
       console.error('❌ Failed to approve application:', error);
-      toast.error(error.message || 'Failed to approve application');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to approve application';
+      toast.error(errorMessage);
     }
   };
 
@@ -694,6 +780,10 @@ export const ApplicationDetailPage: React.FC = () => {
     if (!confirmed) return;
 
     try {
+      if (!displayData.installmentPlan) {
+        throw new Error('Installment plan is missing for this application');
+      }
+
       // Generate payment schedule if not present
       const paymentSchedule = generatePaymentSchedule(displayData);
 
@@ -704,7 +794,7 @@ export const ApplicationDetailPage: React.FC = () => {
           schedule: paymentSchedule,
         },
         updatedAt: new Date().toISOString(),
-      } as any);
+      });
 
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         dispatch(updateApplication(supabaseResponse.data));
@@ -721,9 +811,10 @@ export const ApplicationDetailPage: React.FC = () => {
       } else {
         throw new Error(supabaseResponse.message || 'Failed to activate application');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Failed to activate draft application:', error);
-      toast.error(error.message || 'Failed to activate application');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to activate application';
+      toast.error(errorMessage);
     }
   };
 
@@ -834,12 +925,6 @@ export const ApplicationDetailPage: React.FC = () => {
     if (!confirmed) return;
 
     try {
-      const updatedApplication: Application = {
-        ...displayData,
-        status: 'rejected',
-        updatedAt: new Date().toISOString(),
-      };
-
       // Update in Supabase only
       const supabaseResponse = await supabaseApiService.updateApplication(id, {
         status: 'rejected',
@@ -863,7 +948,8 @@ export const ApplicationDetailPage: React.FC = () => {
       }
     } catch (error: unknown) {
       console.error('❌ Failed to reject application:', error);
-      toast.error(error.message || 'Failed to reject application in Supabase');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reject application in Supabase';
+      toast.error(errorMessage);
     }
   };
 
@@ -886,6 +972,22 @@ export const ApplicationDetailPage: React.FC = () => {
         </Box>
         <Box className="header-actions">
           <StatusBadge status={statusMap[displayData.status] || displayData.status} type="application" />
+          <FormControl size="small" sx={{ minWidth: 220 }} disabled={companiesLoading || savingCompany}>
+            <InputLabel id="application-company-select-label">Company</InputLabel>
+            <Select
+              labelId="application-company-select-label"
+              label="Company"
+              value={companyId}
+              onChange={(e) => handleCompanyChange(String(e.target.value))}
+            >
+              <MenuItem value="">No company</MenuItem>
+              {companies.map((c) => (
+                <MenuItem key={c.id} value={c.id}>
+                  {c.name}{c.code ? ` (${c.code})` : ''}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <Button variant="secondary" startIcon={<Edit />} onClick={() => setEditDialogOpen(true)}>
             Edit Installments
           </Button>
@@ -1372,7 +1474,7 @@ export const ApplicationDetailPage: React.FC = () => {
                           Additional Attributes
                         </Typography>
                       </Grid>
-                      {displayData.vehicle.attributes.map((attr) => (
+                      {displayData.vehicle.attributes.map((attr: ProductAttribute) => (
                         <Grid item xs={12} sm={6} key={attr.id}>
                           <Box className="info-item">
                             <Typography variant="caption" className="info-label">
@@ -1629,7 +1731,7 @@ export const ApplicationDetailPage: React.FC = () => {
             <Divider sx={{ my: 2 }} />
             {displayData.documents && displayData.documents.length > 0 ? (
               <Grid container spacing={2}>
-                {displayData.documents.map((doc) => (
+                {displayData.documents.map((doc: Document) => (
                   <Grid item xs={12} sm={6} md={4} key={doc.id}>
                     <Box className="document-card">
                       <Description className="document-icon" />
@@ -1638,12 +1740,12 @@ export const ApplicationDetailPage: React.FC = () => {
                       </Typography>
                       <Box className="document-actions">
                         <Tooltip title="View">
-                          <IconButton size="small">
+                          <IconButton size="small" onClick={() => window.open(doc.url, '_blank')}>
                             <Visibility fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Download">
-                          <IconButton size="small">
+                          <IconButton size="small" onClick={() => window.open(doc.url, '_blank')}>
                             <Download fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -1809,8 +1911,8 @@ export const ApplicationDetailPage: React.FC = () => {
                 // Combine payment history and paid installments from schedule
                 const paymentHistory = displayData.paymentHistory || [];
                 const paidInstallments = (displayData.installmentPlan?.schedule || [])
-                  .filter((s) => s.status === 'paid')
-                  .map((s, index) => ({
+                  .filter((s: PaymentSchedule) => s.status === 'paid')
+                  .map((s: PaymentSchedule, index: number) => ({
                     id: `installment-${index}`,
                     amount: s.amount,
                     type: 'Installment Payment',
@@ -1920,7 +2022,7 @@ export const ApplicationDetailPage: React.FC = () => {
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {displayData.installmentPlan.schedule.map((schedule, index) => {
+                      {displayData.installmentPlan.schedule.map((schedule: PaymentSchedule, index: number) => {
                         // Calculate ownership for this payment using stored data
                         const vehiclePrice = displayData.vehicle?.price || 0;
                         const downPayment = displayData.downPayment || displayData.installmentPlan?.downPayment || 0;
@@ -1933,14 +2035,18 @@ export const ApplicationDetailPage: React.FC = () => {
                         // Use utility functions for parsing and calculation
                         const tenureMonths = parseTenureToMonths(tenureStr);
                         const { customerOwnership, bloxOwnership } = balloonAmount > 0
-                          ? calculateBalloonOwnership(
+                          ? calculateBalloonOwnership({
                               vehiclePrice,
                               downPayment,
+                              installmentPercent: displayData.installmentPlan?.paymentStructure?.installmentPercent ?? 0,
+                              balloonPercent:
+                                displayData.installmentPlan?.paymentStructure?.balloonPercent ??
+                                displayData.installmentPlan?.balloonPayment?.percentage ??
+                                0,
                               tenureMonths,
-                              index,
-                              balloonAmount,
-                              isBalloonPayment || false
-                            )
+                              paymentIndex: index,
+                              balloonPaid: Boolean(isBalloonPayment && schedule.status === 'paid'),
+                            })
                           : calculateOwnership(
                               vehiclePrice,
                               downPayment,
@@ -2104,7 +2210,7 @@ export const ApplicationDetailPage: React.FC = () => {
               <Divider sx={{ my: 2 }} />
               {displayData.documents && displayData.documents.length > 0 ? (
                 <Grid container spacing={2}>
-                  {displayData.documents.map((doc) => (
+                  {displayData.documents.map((doc: Document) => (
                     <Grid item xs={12} sm={6} md={4} key={doc.id}>
                       <Paper variant="outlined" sx={{ p: 2 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

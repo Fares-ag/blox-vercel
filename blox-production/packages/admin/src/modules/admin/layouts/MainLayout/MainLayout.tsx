@@ -14,6 +14,7 @@ const adminMenuItems: MenuItem[] = [
   { id: 'dashboard', label: 'Dashboard', path: '/admin/dashboard' },
   { id: 'applications', label: 'Applications', path: '/admin/applications' },
   { id: 'users', label: 'Users', path: '/admin/users' },
+  { id: 'companies', label: 'Companies', path: '/admin/companies' },
   { id: 'products', label: 'Vehicles', path: '/admin/vehicles' },
   { id: 'offers', label: 'Offers', path: '/admin/offers' },
   { id: 'promotions', label: 'Promotions', path: '/admin/promotions' },

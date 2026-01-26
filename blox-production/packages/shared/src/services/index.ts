@@ -21,5 +21,7 @@ export {
   type FormattedAIApplication
 } from './bloxAiClient';
 export { skipCashService, type SkipCashPaymentRequest, type SkipCashPaymentResponse, type SkipCashVerifyRequest } from './skipcash.service';
+export { paymentPermissionsService } from './payment-permissions.service';
 export { creditsService, type UserCredits, type CreditTransaction, type CreditOperationResult } from './credits.service';
+export { activityTrackingService, type ActivityLog, type ActionType, type ResourceType } from './activity-tracking.service';
 

@@ -240,7 +240,9 @@
         .activity-description,
         .activity-timestamp,
         .MuiTypography-root {
-          color: var(--primary-text);
+          /* Dashboard "Recent Activity" is rendered on a dark surface in practice.
+           * Default to light text so rows are readable even before hover. */
+          color: var(--background-secondary);
           transition: color 0.2s ease, opacity 0.2s ease;
         }
 

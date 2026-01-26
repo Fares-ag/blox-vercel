@@ -19,7 +19,7 @@ const loginSchema = yup.object({
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (emailRegex.test(value)) return true;
       // Check if it's a valid phone number (digits, +, spaces, dashes, parentheses)
-      const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+      const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
       if (phoneRegex.test(value.replace(/\s/g, ''))) return true;
       return false;
     }),

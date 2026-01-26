@@ -117,6 +117,22 @@ class CustomerAuthService {
       permissions: data.user.user_metadata?.permissions || [],
     };
 
+    // Log login activity
+    try {
+      const { activityTrackingService } = await import('@shared/services/activity-tracking.service');
+      await activityTrackingService.logActivity('login', 'user', {
+        resourceId: user.id,
+        resourceName: user.email,
+        description: `User logged in: ${user.email}`,
+        metadata: {
+          role: user.role,
+        },
+        user: user,
+      });
+    } catch (error) {
+      console.error('Failed to log login activity:', error);
+    }
+
     return {
       user,
       token: data.session.access_token,
@@ -150,6 +166,42 @@ class CustomerAuthService {
   }
 
   async logout(): Promise<void> {
+    // Get current user and session BEFORE logout for activity logging
+    let currentUser: User | null = null;
+    try {
+      currentUser = await this.getUser();
+      // Verify session is still active
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || !currentUser) {
+        // No session or user, skip logging
+        currentUser = null;
+      }
+    } catch (error) {
+      console.error('Error getting user before logout:', error);
+    }
+    
+    // Log logout activity BEFORE signing out (while session is still active)
+    if (currentUser) {
+      try {
+        const { activityTrackingService } = await import('@shared/services/activity-tracking.service');
+        // Log while session is still active
+        await activityTrackingService.logActivity('logout', 'user', {
+          resourceId: currentUser.id,
+          resourceName: currentUser.email,
+          description: `User logged out (${currentUser.role})`,
+          metadata: {
+            role: currentUser.role,
+            email: currentUser.email,
+          },
+          user: currentUser,
+        });
+      } catch (error) {
+        console.error('Failed to log activity:', error);
+        // Continue with logout even if logging fails
+      }
+    }
+    
+    // Now sign out (after logging)
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Logout error:', error);

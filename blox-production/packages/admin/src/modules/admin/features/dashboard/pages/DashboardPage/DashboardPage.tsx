@@ -15,9 +15,9 @@ import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setStats, setFilters, setLoading, setError } from '../../../../store/slices/dashboard.slice';
 import { supabase } from '@shared/services';
 import type { DashboardStats } from '@shared/models/dashboard.model';
-import { Card, Loading, DatePicker, Button, HorizontalBarChart, SegmentedBarChart, VerticalBarChart, LineChart, FunnelChart, Table, type Column } from '@shared/components';
+import { Card, Loading, DatePicker, Button, HorizontalBarChart, SegmentedBarChart, VerticalBarChart, LineChart, FunnelChart, Table } from '@shared/components';
 import { analyticsService, reportExportService } from '@shared/services';
-import type { RevenueForecast, ConversionFunnelStage, PaymentCollectionRate, CustomerLifetimeValue, AnalyticsData } from '@shared/models/dashboard.model';
+import type { AnalyticsData } from '@shared/models/dashboard.model';
 import { formatCurrency } from '@shared/utils/formatters';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
@@ -29,7 +29,7 @@ import {
   Tooltip,
   Legend,
 } from 'chart.js';
-import { GetApp, PictureAsPdf, TableChart } from '@mui/icons-material';
+import { PictureAsPdf, TableChart } from '@mui/icons-material';
 import { toast } from 'react-toastify';
 import './DashboardPage.scss';
 

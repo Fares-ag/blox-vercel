@@ -8,7 +8,6 @@ import {
   Button,
   Divider,
   Paper,
-  Chip,
   Alert,
   Tabs,
   Tab,
@@ -18,23 +17,20 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Grid,
+  useTheme,
   useMediaQuery,
 } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 import {
   ArrowBack,
   FileDownload,
   Description,
-  Payment,
   DirectionsCar,
   CheckCircle,
+  Cancel,
   Upload,
   Receipt,
   Schedule,
   Person,
-  Delete,
-  Cancel,
   AttachMoney,
   Print,
   CloudUpload,
@@ -43,20 +39,17 @@ import {
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading, setError } from '../../../../store/slices/application.slice';
-import { supabaseApiService } from '@shared/services';
-import type { Application, PaymentSchedule } from '@shared/models/application.model';
+import { supabaseApiService, paymentPermissionsService, ContractPdfService } from '@shared/services';
+import type { PaymentSchedule } from '@shared/models/application.model';
 import { StatusBadge, Loading, EmptyState, ConfirmDialog } from '@shared/components';
-import type { PaymentStatus } from '@shared/models/application.model';
 import { formatDate, formatDateTable, formatCurrency } from '@shared/utils/formatters';
 import { parseTenureToMonths } from '@shared/utils/tenure.utils';
 import { calculateOwnership } from '@shared/utils/ownership.utils';
 import { devLogger } from '@shared/utils/logger.util';
 import { toast } from 'react-toastify';
 import { ApplicationTimeline } from '../../components/ApplicationTimeline/ApplicationTimeline';
-import type { TimelineEvent } from '../../components/ApplicationTimeline/ApplicationTimeline';
 import { OwnershipTimeline } from '../../components/OwnershipTimeline/OwnershipTimeline';
 import { BadgeDisplay } from '../../components/BadgeDisplay/BadgeDisplay';
-import { ContractPdfService } from '@shared/services';
 import './ApplicationDetailPage.scss';
 
 // Dummy data removed - using only localStorage and API
@@ -71,9 +64,26 @@ export const ApplicationDetailPage: React.FC = () => {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [canPay, setCanPay] = useState(true);
+  const [checkingCanPay, setCheckingCanPay] = useState(true);
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('md'));
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const allowed = id ? await paymentPermissionsService.getCanPayForApplication(id) : false;
+        if (mounted) setCanPay(allowed);
+      } finally {
+        if (mounted) setCheckingCanPay(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
 
   const loadApplicationDetails = useCallback(async (applicationId: string) => {
     try {
@@ -195,9 +205,9 @@ export const ApplicationDetailPage: React.FC = () => {
     }
   }, [id, uploadedFile, loadApplicationDetails]);
 
-  const handleSignContract = useCallback(() => {
-    navigate(`/customer/applications/${id}/contract/sign`);
-  }, [navigate, id]);
+  // const handleSignContract = useCallback(() => {
+  //   navigate(`/customer/applications/${id}/contract/sign`);
+  // }, [navigate, id]); // Currently unused
 
   const handleUploadDocument = useCallback(() => {
     navigate(`/customer/applications/${id}/documents/upload`);
@@ -237,6 +247,16 @@ export const ApplicationDetailPage: React.FC = () => {
   }, [id, selected, loadApplicationDetails, navigate]);
 
   const handleMakePayment = useCallback((paymentIndex?: number) => {
+    if (checkingCanPay) {
+      toast.info('Checking payment permissions...');
+      return;
+    }
+
+    if (!canPay) {
+      toast.error('Payments are disabled for your company.');
+      return;
+    }
+
     // Use selected application from Redux (loaded from Supabase)
     const currentApplication = selected;
 
@@ -245,10 +265,20 @@ export const ApplicationDetailPage: React.FC = () => {
         ? { amount: currentApplication.installmentPlan.schedule[paymentIndex].amount }
         : {},
     });
-  }, [navigate, id, selected]);
+  }, [checkingCanPay, canPay, navigate, id, selected]);
 
   const handleSettleAllPayments = useCallback(async () => {
     if (!selected || !id) return;
+
+    if (checkingCanPay) {
+      toast.info('Checking payment permissions...');
+      return;
+    }
+
+    if (!canPay) {
+      toast.error('Payments are disabled for your company.');
+      return;
+    }
 
     // Calculate total remaining payments
     const remainingPayments = selected.installmentPlan?.schedule?.filter(
@@ -292,7 +322,7 @@ export const ApplicationDetailPage: React.FC = () => {
         remainingPayments: remainingPayments.length,
       },
     });
-  }, [navigate, id, selected]);
+  }, [checkingCanPay, canPay, navigate, id, selected]);
 
   if (loading) {
     return (
@@ -1028,6 +1058,7 @@ export const ApplicationDetailPage: React.FC = () => {
                       color="primary"
                       startIcon={<AttachMoney />}
                       onClick={handleSettleAllPayments}
+                      disabled={checkingCanPay || !canPay}
                       sx={{
                         backgroundColor: '#DAFF01',
                         '&:hover': {
@@ -1068,7 +1099,7 @@ export const ApplicationDetailPage: React.FC = () => {
                       
                       // Use utility functions for parsing and calculation
                       const tenureMonths = parseTenureToMonths(tenureStr);
-                      const { customerOwnership, bloxOwnership, loanAmount, principalPerMonth } = calculateOwnership(
+                      const { customerOwnership, bloxOwnership } = calculateOwnership(
                         vehiclePrice,
                         downPayment,
                         tenureMonths,
@@ -1214,6 +1245,7 @@ export const ApplicationDetailPage: React.FC = () => {
                                 variant="contained"
                                 size="small"
                                 onClick={() => handleMakePayment(index)}
+                                disabled={checkingCanPay || !canPay}
                                 sx={{
                                   backgroundColor: '#0E1909',
                                   color: 'var(--primary-color)',

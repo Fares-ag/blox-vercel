@@ -81,7 +81,7 @@ class FeatureFlagService {
    */
   getEnabledFeatures(userId?: string, userRole?: string): string[] {
     const enabled: string[] = [];
-    this.flags.forEach((flag, name) => {
+    this.flags.forEach((_flag, name) => {
       if (this.isEnabled(name, userId, userRole)) {
         enabled.push(name);
       }

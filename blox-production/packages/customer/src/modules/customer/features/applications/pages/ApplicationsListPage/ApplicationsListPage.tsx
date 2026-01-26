@@ -2,7 +2,6 @@ import React, { useEffect, useCallback } from 'react';
 import { Box, Typography, Card, CardContent, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { Visibility, FileDownload } from '@mui/icons-material';
-import type { Application } from '@shared/models/application.model';
 import { StatusBadge, Loading, EmptyState } from '@shared/components';
 import { formatDateTime, formatCurrency } from '@shared/utils/formatters';
 import { supabaseApiService } from '@shared/services';

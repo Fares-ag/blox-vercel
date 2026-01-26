@@ -64,11 +64,26 @@ export const ContactSupportPage: React.FC = () => {
 
     try {
       setSubmitting(true);
-      // TODO: Replace with actual API call
-      // await apiService.post('/customer/support/contact', formData);
+      
+      // Create a notification for admin support team
+      const { supabaseApiService } = await import('@shared/services');
+      await supabaseApiService.createNotification({
+        userEmail: formData.email || 'support@blox.market', // Use support email for admin notifications
+        type: 'info',
+        title: `Support Request: ${formData.topic}`,
+        message: `From: ${formData.email || 'N/A'}\nPhone: ${formData.phone || 'N/A'}\n\nSubject: ${formData.subject}\n\nMessage: ${formData.message}`,
+        link: '/admin/support', // Link to admin support page if exists
+      });
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Also create a confirmation notification for the customer
+      if (formData.email) {
+        await supabaseApiService.createNotification({
+          userEmail: formData.email,
+          type: 'success',
+          title: 'Support Request Received',
+          message: `We've received your support request regarding "${formData.subject}". Our team will get back to you soon.`,
+        });
+      }
 
       toast.success('Your message has been sent. We will get back to you soon!');
       setFormData({

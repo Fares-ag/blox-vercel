@@ -4,7 +4,7 @@ import { Box, Typography, Paper, Button, CircularProgress, Alert } from '@mui/ma
 import { CheckCircle, Error as ErrorIcon, ArrowBack, Refresh } from '@mui/icons-material';
 import { formatCurrency } from '@shared/utils/formatters';
 import { Button as CustomButton, Loading } from '@shared/components';
-import { skipCashService, creditsService, supabase } from '@shared/services';
+import { skipCashService, supabase } from '@shared/services';
 import { toast } from 'react-toastify';
 import { useCredits } from '../../../../hooks/useCredits';
 import { useAppSelector } from '../../../../store/hooks';
@@ -80,37 +80,35 @@ export const CreditTopUpCallbackPage: React.FC = () => {
           setStatus('success');
           setCredits(creditsToAdd);
 
-          // Update credits balance in database
+          // Claim credits using customer-safe RPC
           if (creditsToAdd > 0 && user?.email) {
             try {
-              // Add credits to user's account via database
-              const result = await creditsService.addCredits(
-                user.email,
-                creditsToAdd,
-                `Credit top-up via payment. Transaction ID: ${transactionId}`,
-                undefined // No admin email for customer-initiated top-up
-              );
-              
-              if (result.status === 'SUCCESS' && result.data) {
-                // Refresh credits balance
+              const { data: claimResult, error: claimError } = await supabase
+                .rpc('customer_claim_payment_credits', {
+                  p_transaction_id: transactionId
+                });
+
+              if (claimError) {
+                console.error('Failed to claim credits:', claimError);
+                toast.warning('Payment successful but failed to add credits. Please contact support.');
+              } else if (claimResult && claimResult.length > 0 && claimResult[0].success) {
+                // Credits added successfully
                 await refreshCredits();
-                
-                // Clear pending transaction data
                 localStorage.removeItem(pendingDataKey);
-                
-                // Trigger event to notify other components
                 window.dispatchEvent(new CustomEvent('bloxCreditsUpdated'));
                 localStorage.setItem('blox_credits_updated', Date.now().toString());
-                
-                toast.success(`Successfully added ${creditsToAdd} credits to your account!`);
+                toast.success(`Successfully added ${claimResult[0].credits_added} credit${claimResult[0].credits_added > 1 ? 's' : ''} to your account!`);
               } else {
-                console.error('Failed to add credits:', result.message);
-                toast.warning('Payment successful but failed to add credits. Please contact support.');
+                const errorMsg = claimResult && claimResult.length > 0 ? claimResult[0].message : 'Unknown error';
+                console.error('Failed to claim credits:', errorMsg);
+                toast.warning(`Payment successful but: ${errorMsg}. Please contact support if credits don't appear.`);
               }
             } catch (err: any) {
-              console.error('Failed to update credits:', err);
+              console.error('Failed to claim credits:', err);
               toast.warning('Payment successful but failed to update credits. Please contact support.');
             }
+          } else {
+            localStorage.removeItem(pendingDataKey);
           }
           return; // Exit early
         } else if (statusId === 3 || statusParam === 'canceled' || statusParam === 'cancelled') {
@@ -144,30 +142,35 @@ export const CreditTopUpCallbackPage: React.FC = () => {
             setPaymentData(result.data);
             setCredits(creditsToAdd);
 
-            // Update credits balance in database
+            // Claim credits using customer-safe RPC
             if (creditsToAdd > 0 && user?.email) {
               try {
-                const result = await creditsService.addCredits(
-                  user.email,
-                  creditsToAdd,
-                  `Credit top-up via payment. Transaction ID: ${transactionId}`,
-                  undefined
-                );
-                
-                if (result.status === 'SUCCESS' && result.data) {
+                const { data: claimResult, error: claimError } = await supabase
+                  .rpc('customer_claim_payment_credits', {
+                    p_transaction_id: transactionId
+                  });
+
+                if (claimError) {
+                  console.error('Failed to claim credits:', claimError);
+                  toast.warning('Payment successful but failed to add credits. Please contact support.');
+                } else if (claimResult && claimResult.length > 0 && claimResult[0].success) {
+                  // Credits added successfully
                   await refreshCredits();
                   localStorage.removeItem(pendingDataKey);
                   window.dispatchEvent(new CustomEvent('bloxCreditsUpdated'));
                   localStorage.setItem('blox_credits_updated', Date.now().toString());
-                  toast.success(`Successfully added ${creditsToAdd} credits to your account!`);
+                  toast.success(`Successfully added ${claimResult[0].credits_added} credit${claimResult[0].credits_added > 1 ? 's' : ''} to your account!`);
                 } else {
-                  console.error('Failed to add credits:', result.message);
-                  toast.warning('Payment successful but failed to add credits. Please contact support.');
+                  const errorMsg = claimResult && claimResult.length > 0 ? claimResult[0].message : 'Unknown error';
+                  console.error('Failed to claim credits:', errorMsg);
+                  toast.warning(`Payment successful but: ${errorMsg}. Please contact support if credits don't appear.`);
                 }
               } catch (err: any) {
-                console.error('Failed to update credits:', err);
+                console.error('Failed to claim credits:', err);
                 toast.warning('Payment successful but failed to update credits. Please contact support.');
               }
+            } else {
+              localStorage.removeItem(pendingDataKey);
             }
             return;
           } else if (paymentStatus === 3 || paymentStatus === 'canceled' || paymentStatus === 'cancelled') {

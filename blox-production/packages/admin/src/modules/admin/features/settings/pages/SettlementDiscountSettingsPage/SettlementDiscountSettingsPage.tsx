@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Box, Typography, Paper, Switch, FormControlLabel, Divider, Alert } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
 import { supabaseApiService } from '@shared/services';
-import type { SettlementDiscountSettings } from '@shared/models/settlement-discount.model';
+import type { SettlementDiscountSettings, TieredDiscount } from '@shared/models/settlement-discount.model';
 import { Button, Input, Select, type SelectOption, Loading } from '@shared/components';
 import { toast } from 'react-toastify';
 import { Settings, AttachMoney, Percent, AccountBalance, Add, Delete } from '@mui/icons-material';
@@ -29,16 +29,7 @@ export const SettlementDiscountSettingsPage: React.FC = () => {
     minRemainingPayments: 1,
     maxDiscountAmount: 0,
     maxDiscountPercentage: 0,
-    tieredDiscounts: [] as Array<{
-      minMonthsEarly: number;
-      maxMonthsEarly?: number;
-      principalDiscount: number;
-      interestDiscount: number;
-      installmentDiscount?: number;
-      principalDiscountType: 'percentage' | 'fixed';
-      interestDiscountType: 'percentage' | 'fixed';
-      installmentDiscountType?: 'percentage' | 'fixed';
-    }>,
+    tieredDiscounts: [] as TieredDiscount[],
     useTieredDiscounts: false,
   });
 

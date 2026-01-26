@@ -234,12 +234,34 @@ serve(async (req) => {
     // Important: Don't update if already marked as 'completed' and new status is 'failed'
     // This prevents out-of-order webhook issues
     if (transactionId) {
-      // Check current transaction status
-      const { data: existingTransaction } = await supabaseClient
+      // IDEMPOTENCY CHECK: Check if this webhook has already been processed
+      const { data: existingPayment } = await supabaseClient
         .from('payment_transactions')
-        .select('status')
+        .select('id, status, skipcash_payment_id')
         .eq('transaction_id', transactionId)
         .single();
+
+      // If payment already exists with same SkipCash payment ID, this is a duplicate webhook
+      if (existingPayment && existingPayment.skipcash_payment_id === webhookData.PaymentId) {
+        console.log('Duplicate webhook detected, skipping', {
+          transactionId,
+          paymentId: webhookData.PaymentId,
+          existingStatus: existingPayment.status,
+        });
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: 'Webhook already processed (duplicate)',
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 200,
+          }
+        );
+      }
+
+      // Check current transaction status
+      const existingTransaction = existingPayment;
 
       // If transaction is already completed and new status is failed, ignore it
       // This handles out-of-order webhook delivery
@@ -272,11 +294,12 @@ serve(async (req) => {
         updateData.completed_at = new Date().toISOString();
       }
 
-      // Upsert payment transaction
+      // Upsert payment transaction (with idempotency key)
       const { data: transaction, error: upsertError } = await supabaseClient
         .from('payment_transactions')
         .upsert({
           transaction_id: transactionId,
+          skipcash_payment_id: webhookData.PaymentId, // Idempotency key
           application_id: applicationId,
           payment_schedule_id: paymentScheduleId,
           amount: parseFloat(webhookData.Amount),

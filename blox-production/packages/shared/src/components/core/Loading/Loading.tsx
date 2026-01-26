@@ -20,7 +20,7 @@ export const Loading: React.FC<LoadingProps> = ({
           src="/BloxLogoNav.png" 
           alt="Blox Logo" 
           className="animated-logo"
-          onError={(e) => {
+          onError={() => {
             console.error('Failed to load logo at /BloxLogoNav.png');
             console.error('Current path:', window.location.pathname);
           }}

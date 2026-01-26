@@ -26,7 +26,7 @@ export const ResetPasswordPage: React.FC = () => {
   const validateSession = useCallback(async () => {
     try {
       // Check if there's an active session (Supabase handles this automatically when user clicks reset link)
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (session && session.user) {
         setSessionValid(true);
         setUserEmail(session.user.email || null);

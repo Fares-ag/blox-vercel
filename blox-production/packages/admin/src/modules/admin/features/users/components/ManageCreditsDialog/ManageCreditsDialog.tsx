@@ -15,7 +15,6 @@ import {
 } from '@mui/material';
 import { Add, Remove, Edit, AccountBalance } from '@mui/icons-material';
 import { Button as CustomButton } from '@shared/components';
-import { formatCurrency } from '@shared/utils/formatters';
 import './ManageCreditsDialog.scss';
 
 export type CreditsAction = 'add' | 'subtract' | 'set';

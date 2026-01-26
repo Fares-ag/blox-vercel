@@ -60,7 +60,7 @@ class ReportExportService {
    * Export dashboard report to PDF (using browser print)
    * For a more advanced PDF, consider using libraries like jsPDF or pdfmake
    */
-  exportToPDF(title: string, content: HTMLElement, filename: string): void {
+  exportToPDF(title: string, content: HTMLElement, _filename: string): void {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       if (import.meta.env.DEV) {
@@ -218,9 +218,9 @@ class ReportExportService {
    */
   exportDashboardReport(
     stats: DashboardStats,
-    revenueForecast: RevenueForecast[],
-    conversionFunnel: ConversionFunnelStage[],
-    paymentCollectionRates: PaymentCollectionRate[],
+    _revenueForecast: RevenueForecast[],
+    _conversionFunnel: ConversionFunnelStage[],
+    _paymentCollectionRates: PaymentCollectionRate[],
     topCustomers: CustomerLifetimeValue[],
     dateRange: { startDate: string; endDate: string }
   ): void {
@@ -340,8 +340,6 @@ class ReportExportService {
     // Brand colors
     const primaryColor = '#00CFA2';
     const secondaryColor = '#2E2C34';
-    const textColor = '#111827';
-    const lightGray = '#F1F2F4';
 
     // Add top accent bar
     doc.setFillColor(primaryColor);
@@ -430,7 +428,6 @@ class ReportExportService {
   ): Promise<void> {
     const doc = new jsPDF('portrait', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 20;
     let yPosition = 60;
 
@@ -438,7 +435,6 @@ class ReportExportService {
     const primaryColor = '#00CFA2';
     const secondaryColor = '#2E2C34';
     const successColor = '#09C97F';
-    const warningColor = '#E2B13C';
     const dangerColor = '#F95668';
 
     // Load logo
@@ -593,17 +589,11 @@ class ReportExportService {
     dateRange: { startDate: string; endDate: string }
   ): Promise<void> {
     const doc = new jsPDF('portrait', 'mm', 'a4');
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 20;
     let yPosition = 60;
 
     // Brand colors
-    const primaryColor = '#00CFA2';
     const secondaryColor = '#2E2C34';
-    const successColor = '#09C97F';
-    const warningColor = '#E2B13C';
-    const dangerColor = '#F95668';
 
     // Load logo
     const logoBase64 = await this.loadLogo();

@@ -1,4 +1,4 @@
-﻿import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Supabase configuration
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
@@ -25,7 +25,8 @@ export const supabase: SupabaseClient = (() => {
 })();
 
 // Helper function to handle Supabase responses
-export const handleSupabaseResponse = <T>(response: { error?: { message?: string }; data?: T }): T => {
+export const handleSupabaseResponse = <T>(response: { error?: { message?: string } | null; data?: T | null }): T => {
+  // Supabase JS responses use `error: PostgrestError | null` and `data: T | null`.
   if (response.error) {
     throw new Error(response.error.message || 'An error occurred');
   }

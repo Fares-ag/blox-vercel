@@ -1,5 +1,6 @@
 export * from './api.model';
 export * from './application.model';
+export * from './company.model';
 export * from './dashboard.model';
 export * from './insurance-rate.model';
 export * from './ledger.model';

@@ -14,46 +14,6 @@ import moment from 'moment';
 type Moment = moment.Moment;
 import './EditPromotionPage.scss';
 
-// Dummy data for testing
-const dummyPromotions: Record<string, Promotion> = {
-  'PROMO001': {
-    id: 'PROMO001',
-    name: 'Summer Sale 2025',
-    description: 'Special discount for summer purchases',
-    discountType: 'percentage',
-    discountValue: 15,
-    startDate: new Date().toISOString(),
-    endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'active',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  'PROMO002': {
-    id: 'PROMO002',
-    name: 'New Year Special',
-    description: 'Fixed discount for new customers',
-    discountType: 'fixed',
-    discountValue: 5000,
-    startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    endDate: new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'active',
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  'PROMO003': {
-    id: 'PROMO003',
-    name: 'Early Bird Discount',
-    description: 'Percentage discount for early applications',
-    discountType: 'percentage',
-    discountValue: 10,
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    endDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'active',
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-};
-
 export const EditPromotionPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();

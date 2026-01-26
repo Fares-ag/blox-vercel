@@ -38,6 +38,192 @@ serve(async (req) => {
   }
 
   try {
+    // ============================================
+    // Auth + payment permission gate (company-based)
+    // ============================================
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const authHeader = req.headers.get('Authorization') ?? '';
+
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized: missing Authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const authClient = createClient(supabaseUrl, supabaseServiceKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: userData, error: userError } = await authClient.auth.getUser();
+    const authedUser = userData?.user;
+
+    if (userError || !authedUser?.id) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Unauthorized: invalid session' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // We may need to inspect request body to enforce application-based permissions.
+    // IMPORTANT: req.text() can only be read once, so we store it here for reuse.
+    let rawBodyText = '';
+    let parsedBody: any = null;
+    let applicationId: string | null = null; // Declare here for broader scope
+
+    // ============================================
+    // Payment permission gate (application-based)
+    // ============================================
+    // Single source of truth:
+    // - If request has applicationId (custom1 JSON), use current_user_can_pay_for_application(appId)
+    // - Otherwise (e.g. credit top-ups), use current_user_can_pay_for_any_application()
+    try {
+      // Parse request early so we can enforce application-based permissions.
+      try {
+        rawBodyText = await req.text();
+      } catch {
+        rawBodyText = '';
+      }
+
+      try {
+        parsedBody = rawBodyText ? JSON.parse(rawBodyText) : null;
+      } catch {
+        parsedBody = null;
+      }
+
+      // Extract applicationId from custom1 JSON (if present)
+      applicationId = null; // Reset before parsing
+      const custom1 = parsedBody?.custom1;
+      if (typeof custom1 === 'string' && custom1.trim()) {
+        try {
+          const customObj = JSON.parse(custom1);
+          applicationId = customObj?.applicationId || null;
+        } catch {
+          applicationId = null;
+        }
+      }
+
+      const { data: profile } = await authClient
+        .from('users')
+        .select('role')
+        .eq('id', authedUser.id)
+        .maybeSingle();
+
+      const role = (profile as any)?.role as string | undefined;
+      if (role !== 'admin') {
+        // #region agent log
+        console.log('[DEBUG] Starting payment permission check', { userId: authedUser.id, email: authedUser.email, role, applicationId });
+        // #endregion
+        
+        // RATE LIMITING: Prevent spam/abuse (max 3 payment initiations per minute)
+        const oneMinuteAgo = new Date(Date.now() - 60000).toISOString();
+        
+        // #region agent log
+        console.log('[DEBUG] Checking rate limit', { oneMinuteAgo });
+        // #endregion
+        
+        const { data: recentPayments, error: rateLimitError } = await authClient
+          .from('rate_limit_log')
+          .select('id')
+          .eq('user_id', authedUser.id)
+          .eq('endpoint', 'skipcash-payment')
+          .gte('created_at', oneMinuteAgo);
+
+        // #region agent log
+        console.log('[DEBUG] Rate limit check result', { recentPaymentsCount: recentPayments?.length, rateLimitError: rateLimitError?.message });
+        // #endregion
+
+        if (!rateLimitError && recentPayments && recentPayments.length >= 3) {
+          console.warn('Rate limit exceeded', {
+            userId: authedUser.id,
+            email: authedUser.email,
+            attempts: recentPayments.length,
+          });
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: 'Too many payment requests. Please wait a minute before trying again.',
+            }),
+            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // Log this request for rate limiting
+        // #region agent log
+        console.log('[DEBUG] Logging rate limit entry');
+        // #endregion
+        
+        try {
+          await authClient.from('rate_limit_log').insert({
+            user_id: authedUser.id,
+            user_email: authedUser.email || '',
+            endpoint: 'skipcash-payment',
+            created_at: new Date().toISOString(),
+          });
+        } catch (err) {
+          // Don't fail payment if rate limit logging fails
+          console.warn('Failed to log rate limit entry:', err);
+        }
+
+        const rpcName = applicationId
+          ? 'current_user_can_pay_for_application'
+          : 'current_user_can_pay_for_any_application';
+        const rpcArgs = applicationId ? { p_application_id: applicationId } : {};
+
+        // #region agent log
+        console.log('[DEBUG] Calling payment permission RPC', { rpcName, rpcArgs, userEmail: authedUser.email });
+        // #endregion
+
+        const { data: canPay, error: canPayError } = await authClient.rpc(rpcName as any, rpcArgs as any);
+
+        // #region agent log
+        console.log('[DEBUG] RPC result', { rpcName, canPay, canPayError: canPayError?.message, canPayErrorDetails: canPayError });
+        // #endregion
+
+        if (canPayError) {
+          console.error(`Error calling ${rpcName}():`, canPayError);
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: `Payment authorization check failed: ${canPayError.message || 'RPC error'}`,
+            }),
+            { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        if (!canPay) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: applicationId
+                ? 'Payments are disabled for this application (company not assigned / canPay disabled / inactive).'
+                : 'Payments are disabled (no payable application/company found for this user).',
+            }),
+            { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      }
+    } catch (e) {
+      // #region agent log
+      console.error('[DEBUG] Payment permission gate exception caught', {
+        errorMessage: (e as any)?.message,
+        errorName: (e as any)?.name,
+        errorCode: (e as any)?.code,
+        errorDetails: (e as any)?.details,
+        errorHint: (e as any)?.hint,
+        fullError: e,
+      });
+      // #endregion
+      
+      console.error('Payment permission gate failed:', e);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Payment authorization check failed' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Get SkipCash credentials from environment variables
     const skipCashConfig = {
       sandboxURL: Deno.env.get('SKIPCASH_SANDBOX_URL') || 'https://skipcashtest.azurewebsites.net',
@@ -69,21 +255,25 @@ serve(async (req) => {
 
     let paymentDetails: SkipCashPaymentRequest;
     try {
-      // Supabase functions.invoke() sends the body as JSON, so we need to parse it
-      const bodyText = await req.text();
+      // If we already parsed the body for permissions, reuse it.
+      // Otherwise, read and parse now.
+      const bodyText = (typeof rawBodyText === 'string' && rawBodyText.length > 0)
+        ? rawBodyText
+        : await req.text();
       console.log('Raw request body:', bodyText);
       
       if (!bodyText || bodyText.trim() === '') {
         throw new Error('Request body is empty');
       }
       
-      paymentDetails = JSON.parse(bodyText);
+      paymentDetails = parsedBody ? parsedBody : JSON.parse(bodyText);
+      // Log payment request (with PII redaction for privacy/GDPR compliance)
       console.log('Received payment details:', {
         amount: paymentDetails.amount,
-        firstName: paymentDetails.firstName,
-        lastName: paymentDetails.lastName,
-        phone: paymentDetails.phone,
-        email: paymentDetails.email,
+        firstName: paymentDetails.firstName ? paymentDetails.firstName.substring(0, 1) + '***' : '',
+        lastName: paymentDetails.lastName ? paymentDetails.lastName.substring(0, 1) + '***' : '',
+        phone: paymentDetails.phone ? paymentDetails.phone.substring(0, 3) + '***' + paymentDetails.phone.substring(paymentDetails.phone.length - 2) : '',
+        email: paymentDetails.email ? paymentDetails.email.replace(/^(.{2})(.*)(@.*)$/, '$1***$3') : '',
         transactionId: paymentDetails.transactionId,
         hasCustom1: !!paymentDetails.custom1,
       });
@@ -103,6 +293,33 @@ serve(async (req) => {
     
     if (missingFields.length > 0) {
       throw new Error(`Missing required payment fields: ${missingFields.join(', ')}`);
+    }
+
+    // SERVER-SIDE PRICE VALIDATION: Prevent price tampering for credit top-ups
+    const EXPECTED_CREDIT_PRICE_QAR = 1; // Must match frontend constant
+    if (applicationId === null && parsedBody?.custom1) {
+      try {
+        const customObj = JSON.parse(parsedBody.custom1);
+        if (customObj.type === 'credit_topup' && customObj.credits) {
+          const expectedTotal = customObj.credits * EXPECTED_CREDIT_PRICE_QAR;
+          const actualTotal = paymentDetails.amount;
+          // Allow 0.01 QAR tolerance for floating point rounding
+          if (Math.abs(actualTotal - expectedTotal) > 0.01) {
+            console.error('Credit price mismatch detected', {
+              credits: customObj.credits,
+              expectedTotal,
+              actualTotal,
+              difference: actualTotal - expectedTotal,
+            });
+            throw new Error(`Price validation failed: expected ${expectedTotal} QAR for ${customObj.credits} credits, got ${actualTotal} QAR`);
+          }
+        }
+      } catch (e: any) {
+        if (e.message.includes('Price validation failed')) {
+          throw e; // Re-throw validation errors
+        }
+        // Ignore JSON parse errors (custom1 might not be JSON)
+      }
     }
 
     // Generate UUID
@@ -144,8 +361,19 @@ serve(async (req) => {
       paymentRequest.OnlyDebitCard = paymentDetails.onlyDebitCard;
     }
     
-    // Log the exact payment request being sent
-    console.log('Payment request being sent to SkipCash:', JSON.stringify(paymentRequest, null, 2));
+    // Log payment request structure (redact PII)
+    console.log('Payment request being sent to SkipCash:', {
+      Uid: paymentRequest.Uid,
+      KeyId: paymentRequest.KeyId.substring(0, 10) + '***',
+      Amount: paymentRequest.Amount,
+      FirstName: paymentRequest.FirstName ? paymentRequest.FirstName.substring(0, 1) + '***' : '',
+      LastName: paymentRequest.LastName ? paymentRequest.LastName.substring(0, 1) + '***' : '',
+      Phone: paymentRequest.Phone ? '***' + paymentRequest.Phone.substring(paymentRequest.Phone.length - 4) : '',
+      Email: paymentRequest.Email ? paymentRequest.Email.replace(/^(.{2})(.*)(@.*)$/, '$1***$3') : '',
+      TransactionId: paymentRequest.TransactionId,
+      hasCustom1: !!paymentRequest.Custom1,
+      hasReturnUrl: !!paymentRequest.ReturnUrl,
+    });
 
     // Build combined data string for hashing
     // CRITICAL: Only include NON-EMPTY fields in the signature!
@@ -297,14 +525,15 @@ serve(async (req) => {
       }
     );
 
-    // Extract application ID from custom1 if available
-    let applicationId: string | null = null;
+    // Extract application ID from custom1 if available (reuse already declared applicationId)
+    // applicationId is already declared at the top of the function
     if (paymentDetails.custom1) {
       try {
         const customData = JSON.parse(paymentDetails.custom1);
         applicationId = customData.applicationId || null;
       } catch (e) {
         // Ignore parsing errors
+        applicationId = null;
       }
     }
 

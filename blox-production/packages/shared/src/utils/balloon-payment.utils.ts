@@ -229,7 +229,7 @@ export function calculateBalloonPaymentSchedule(
  * Calculates ownership percentages for balloon payment plans
  * Ownership only reaches 100% after balloon payment is made
  */
-export function calculateBalloonOwnership(
+export function calculateBalloonOwnershipLegacy(
   vehiclePrice: number,
   downPayment: number,
   principalPerMonth: number,

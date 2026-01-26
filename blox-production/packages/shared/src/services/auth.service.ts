@@ -23,7 +23,7 @@ class AuthService {
 
         // If we get a 406 error immediately, skip the email fallback
         // Check for 406 in status, code, or message
-        const is406Error = error?.status === 406 || 
+        const is406Error = (error as any)?.status === 406 || 
                           error?.code === 'PGRST116' || 
                           error?.message?.includes('406') ||
                           error?.message?.includes('Not Acceptable');
@@ -50,7 +50,7 @@ class AuthService {
           }
 
           // If email lookup also returns 406, use metadata
-          const isEmail406Error = emailError?.status === 406 || 
+          const isEmail406Error = (emailError as any)?.status === 406 || 
                                  emailError?.code === 'PGRST116' || 
                                  emailError?.message?.includes('406') ||
                                  emailError?.message?.includes('Not Acceptable');
@@ -64,7 +64,7 @@ class AuthService {
         return roleFromMetadata || 'customer';
       } catch (error: any) {
         // If it's a 406 or table access error, use metadata immediately
-        const is406Error = error?.status === 406 || 
+        const is406Error = (error as any)?.status === 406 || 
                           error?.code === 'PGRST116' || 
                           error?.message?.includes('406') ||
                           error?.message?.includes('Not Acceptable');
@@ -150,6 +150,22 @@ class AuthService {
       permissions: data.user.user_metadata?.permissions || [],
     };
 
+    // Log login activity
+    try {
+      const { activityTrackingService } = await import('./activity-tracking.service');
+      await activityTrackingService.logActivity('login', 'user', {
+        resourceId: user.id,
+        resourceName: user.email,
+        description: `User logged in: ${user.email}`,
+        metadata: {
+          role: user.role,
+        },
+        user: user,
+      });
+    } catch (error) {
+      console.error('Failed to log login activity:', error);
+    }
+
     return {
       user,
       token: data.session.access_token,
@@ -157,10 +173,32 @@ class AuthService {
   }
 
   async logout(): Promise<void> {
+    // Get current user before logout for activity logging
+    const currentUser = await this.getUser();
+    
     const { error } = await supabase.auth.signOut();
     if (error) {
       console.error('Logout error:', error);
       throw error;
+    }
+
+    // Log logout activity
+    if (currentUser) {
+      try {
+        const { activityTrackingService } = await import('./activity-tracking.service');
+        await activityTrackingService.logActivity('logout', 'user', {
+          resourceId: currentUser.id,
+          resourceName: currentUser.email,
+          description: `User logged out (${currentUser.role})`,
+          metadata: {
+            role: currentUser.role,
+            email: currentUser.email,
+          },
+          user: currentUser,
+        });
+      } catch (error) {
+        console.error('Failed to log activity:', error);
+      }
     }
   }
 

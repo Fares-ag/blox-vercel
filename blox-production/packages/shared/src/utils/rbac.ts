@@ -2,7 +2,7 @@
  * Role-Based Access Control (RBAC) utilities
  */
 
-export type UserRole = 'admin' | 'customer' | 'viewer';
+export type UserRole = 'admin' | 'super_admin' | 'customer' | 'viewer';
 
 export interface Permission {
   resource: string;
@@ -18,6 +18,34 @@ export interface RolePermissions {
  * Define permissions for each role
  */
 const rolePermissions: RolePermissions[] = [
+  {
+    role: 'super_admin',
+    permissions: [
+      // Super admin has all admin permissions PLUS activity log access
+      { resource: 'applications', action: 'create' },
+      { resource: 'applications', action: 'read' },
+      { resource: 'applications', action: 'update' },
+      { resource: 'applications', action: 'delete' },
+      { resource: 'products', action: 'create' },
+      { resource: 'products', action: 'read' },
+      { resource: 'products', action: 'update' },
+      { resource: 'products', action: 'delete' },
+      { resource: 'offers', action: 'create' },
+      { resource: 'offers', action: 'read' },
+      { resource: 'offers', action: 'update' },
+      { resource: 'offers', action: 'delete' },
+      { resource: 'users', action: 'create' },
+      { resource: 'users', action: 'read' },
+      { resource: 'users', action: 'update' },
+      { resource: 'users', action: 'delete' },
+      { resource: 'dashboard', action: 'read' },
+      { resource: 'ledgers', action: 'read' },
+      { resource: 'activity_logs', action: 'read' }, // Super admin only
+      { resource: 'activity_logs', action: 'export' }, // Super admin only
+      { resource: 'settings', action: 'read' },
+      { resource: 'settings', action: 'update' },
+    ],
+  },
   {
     role: 'admin',
     permissions: [

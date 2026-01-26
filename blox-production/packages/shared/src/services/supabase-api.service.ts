@@ -2,13 +2,15 @@ import { supabase, handleSupabaseResponse, mapSupabaseRow } from './supabase.ser
 import { supabaseCache } from './supabase-cache.service';
 import type { 
   Application, 
+  Company,
   Product, 
   Offer, 
   Package, 
   Promotion,
   InsuranceRate,
   Ledger,
-  User
+  User,
+  PaymentDeferral
 } from '../models';
 import type { ApiResponse } from '../models/api.model';
 
@@ -123,6 +125,24 @@ class SupabaseApiService {
       // Invalidate products cache so newly created products appear immediately
       supabaseCache.invalidate('products:all');
       
+      // Log activity
+      try {
+        const { activityTrackingService } = await import('./activity-tracking.service');
+        await activityTrackingService.logActivity('create', 'product', {
+          resourceId: createdProduct.id,
+          resourceName: `${createdProduct.make} ${createdProduct.model} ${createdProduct.modelYear}`,
+          description: `Created product: ${createdProduct.make} ${createdProduct.model}`,
+          metadata: {
+            make: createdProduct.make,
+            model: createdProduct.model,
+            price: createdProduct.price,
+            status: createdProduct.status,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to log activity:', error);
+      }
+      
       return {
         status: 'SUCCESS',
         data: createdProduct,
@@ -172,6 +192,22 @@ class SupabaseApiService {
       // Invalidate products cache
       supabaseCache.invalidate('products:all');
       supabaseCache.invalidate(`products:${id}`);
+      
+      // Log activity
+      try {
+        const { activityTrackingService } = await import('./activity-tracking.service');
+        await activityTrackingService.logActivity('update', 'product', {
+          resourceId: id,
+          resourceName: `${updatedProduct.make} ${updatedProduct.model} ${updatedProduct.modelYear}`,
+          description: `Updated product: ${updatedProduct.make} ${updatedProduct.model}`,
+          metadata: {
+            changes: Object.keys(updateData).filter(k => k !== 'updated_at'),
+            status: updatedProduct.status,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to log activity:', error);
+      }
       
       return {
         status: 'SUCCESS',
@@ -343,6 +379,25 @@ class SupabaseApiService {
       // Invalidate applications cache
       supabaseCache.invalidate('applications:all');
       
+      // Log activity
+      try {
+        const { activityTrackingService } = await import('./activity-tracking.service');
+        await activityTrackingService.logActivity('create', 'application', {
+          resourceId: createdApp.id,
+          resourceName: `Application #${createdApp.id.slice(0, 8)}`,
+          description: `Created application for ${application.customerName} (${application.customerEmail})`,
+          metadata: {
+            status: application.status,
+            loanAmount: application.loanAmount,
+            origin: application.origin || 'manual',
+            vehicleId: application.vehicleId,
+          },
+        });
+      } catch (error) {
+        // Activity logging should not break the app
+        console.error('Failed to log activity:', error);
+      }
+      
       return {
         status: 'SUCCESS',
         data: createdApp,
@@ -369,6 +424,7 @@ class SupabaseApiService {
       if ((application as any).customerInfo !== undefined) updateData.customer_info = (application as any).customerInfo;
       if (application.vehicleId !== undefined) updateData.vehicle_id = application.vehicleId;
       if (application.offerId !== undefined) updateData.offer_id = application.offerId;
+      if (application.companyId !== undefined) updateData.company_id = application.companyId;
       if (application.status !== undefined) updateData.status = application.status;
       if (application.loanAmount !== undefined) updateData.loan_amount = application.loanAmount;
       if (application.downPayment !== undefined) updateData.down_payment = application.downPayment;
@@ -433,6 +489,27 @@ class SupabaseApiService {
         supabaseCache.invalidate('applications:all');
         supabaseCache.invalidate(`applications:${id}`);
         
+        // Log activity
+        try {
+          const { activityTrackingService } = await import('./activity-tracking.service');
+          const changes: Record<string, any> = {};
+          if (application.status !== undefined) changes.status = application.status;
+          if (application.contractSigned !== undefined) changes.contractSigned = application.contractSigned;
+          if (application.contractReviewComments !== undefined) changes.contractReviewComments = application.contractReviewComments;
+          
+          await activityTrackingService.logActivity('update', 'application', {
+            resourceId: id,
+            resourceName: `Application #${id.slice(0, 8)}`,
+            description: `Updated application${application.status ? ` - status changed to ${application.status}` : ''}`,
+            metadata: {
+              changes,
+              customerEmail: updatedApp.customerEmail,
+            },
+          });
+        } catch (error) {
+          console.error('Failed to log activity:', error);
+        }
+        
         return {
           status: 'SUCCESS',
           data: updatedApp,
@@ -445,6 +522,27 @@ class SupabaseApiService {
       // Invalidate applications cache
       supabaseCache.invalidate('applications:all');
       supabaseCache.invalidate(`applications:${id}`);
+      
+      // Log activity
+      try {
+        const { activityTrackingService } = await import('./activity-tracking.service');
+        const changes: Record<string, any> = {};
+        if (application.status !== undefined) changes.status = application.status;
+        if (application.contractSigned !== undefined) changes.contractSigned = application.contractSigned;
+        if (application.contractReviewComments !== undefined) changes.contractReviewComments = application.contractReviewComments;
+        
+        await activityTrackingService.logActivity('update', 'application', {
+          resourceId: id,
+          resourceName: `Application #${id.slice(0, 8)}`,
+          description: `Updated application${application.status ? ` - status changed to ${application.status}` : ''}`,
+          metadata: {
+            changes,
+            customerEmail: updatedApp.customerEmail,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to log activity:', error);
+      }
       
       return {
         status: 'SUCCESS',
@@ -532,7 +630,7 @@ class SupabaseApiService {
           .from('applications')
           .delete()
           .eq('id', id)
-          .select('id', { count: 'exact' });
+          .select('id');
         
         deleteError = error;
 
@@ -694,7 +792,7 @@ class SupabaseApiService {
       try {
         const { data: existingRows, error: selectError } = await supabase
           .from('payment_schedules')
-          .select('id, paid_amount')
+          .select('id, paid_amount, paid_date')
           .eq('application_id', applicationId)
           .eq('due_date', paymentDueDate)
           .limit(1);
@@ -886,6 +984,24 @@ class SupabaseApiService {
       
       const createdOffer = mapSupabaseRow<Offer>(response.data);
       
+      // Log activity
+      try {
+        const { activityTrackingService } = await import('./activity-tracking.service');
+        await activityTrackingService.logActivity('create', 'offer', {
+          resourceId: createdOffer.id,
+          resourceName: createdOffer.name,
+          description: `Created offer: ${createdOffer.name}`,
+          metadata: {
+            name: createdOffer.name,
+            annualRentRate: createdOffer.annualRentRate,
+            isDefault: createdOffer.isDefault,
+            status: createdOffer.status,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to log activity:', error);
+      }
+      
       return {
         status: 'SUCCESS',
         data: createdOffer,
@@ -925,6 +1041,23 @@ class SupabaseApiService {
         .single();
       
       const updatedOffer = mapSupabaseRow<Offer>(handleSupabaseResponse<any>(response));
+      
+      // Log activity
+      try {
+        const { activityTrackingService } = await import('./activity-tracking.service');
+        await activityTrackingService.logActivity('update', 'offer', {
+          resourceId: id,
+          resourceName: updatedOffer.name,
+          description: `Updated offer: ${updatedOffer.name}`,
+          metadata: {
+            changes: Object.keys(updateData).filter(k => k !== 'updated_at'),
+            status: updatedOffer.status,
+            isDefault: updatedOffer.isDefault,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to log activity:', error);
+      }
       
       return {
         status: 'SUCCESS',
@@ -1075,6 +1208,26 @@ class SupabaseApiService {
       
       const createdPromo = mapSupabaseRow<Promotion>(handleSupabaseResponse<any>(response));
       
+      // Log activity
+      try {
+        const { activityTrackingService } = await import('./activity-tracking.service');
+        await activityTrackingService.logActivity('create', 'promotion', {
+          resourceId: createdPromo.id,
+          resourceName: createdPromo.name,
+          description: `Created promotion: ${createdPromo.name}`,
+          metadata: {
+            name: createdPromo.name,
+            discountType: createdPromo.discountType,
+            discountValue: createdPromo.discountValue,
+            status: createdPromo.status,
+            startDate: createdPromo.startDate,
+            endDate: createdPromo.endDate,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to log activity:', error);
+      }
+      
       return {
         status: 'SUCCESS',
         data: createdPromo,
@@ -1118,6 +1271,22 @@ class SupabaseApiService {
         .single();
       
       const updatedPromo = mapSupabaseRow<Promotion>(handleSupabaseResponse<any>(response));
+      
+      // Log activity
+      try {
+        const { activityTrackingService } = await import('./activity-tracking.service');
+        await activityTrackingService.logActivity('update', 'promotion', {
+          resourceId: id,
+          resourceName: updatedPromo.name,
+          description: `Updated promotion: ${updatedPromo.name}`,
+          metadata: {
+            changes: Object.keys(updateData).filter(k => k !== 'updated_at'),
+            status: updatedPromo.status,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to log activity:', error);
+      }
       
       return {
         status: 'SUCCESS',
@@ -1564,6 +1733,120 @@ class SupabaseApiService {
     }
   }
 
+  // ==================== COMPANIES ====================
+  async getCompanies(): Promise<ApiResponse<Company[]>> {
+    try {
+      const response = await supabase
+        .from('companies')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      const companies = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<Company>);
+      return { status: 'SUCCESS', data: companies, message: 'Companies fetched successfully' };
+    } catch (error: any) {
+      return { status: 'ERROR', message: error.message || 'Failed to fetch companies', data: [] };
+    }
+  }
+
+  async createCompany(company: Omit<Company, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Company>> {
+    try {
+      const response = await supabase
+        .from('companies')
+        .insert({
+          name: company.name,
+          code: company.code || null,
+          description: company.description || null,
+          can_pay: company.canPay,
+          status: company.status,
+          metadata: company.metadata || {},
+        })
+        .select()
+        .single();
+
+      const created = mapSupabaseRow<Company>(handleSupabaseResponse<any>(response));
+      return { status: 'SUCCESS', data: created, message: 'Company created successfully' };
+    } catch (error: any) {
+      return { status: 'ERROR', message: error.message || 'Failed to create company', data: {} as Company };
+    }
+  }
+
+  async updateCompany(id: string, company: Partial<Company>): Promise<ApiResponse<Company>> {
+    try {
+      const updateData: any = { updated_at: new Date().toISOString() };
+      if (company.name !== undefined) updateData.name = company.name;
+      if (company.code !== undefined) updateData.code = company.code;
+      if (company.description !== undefined) updateData.description = company.description;
+      if (company.canPay !== undefined) updateData.can_pay = company.canPay;
+      if (company.status !== undefined) updateData.status = company.status;
+      if (company.metadata !== undefined) updateData.metadata = company.metadata;
+
+      const response = await supabase
+        .from('companies')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      const updated = mapSupabaseRow<Company>(handleSupabaseResponse<any>(response));
+      return { status: 'SUCCESS', data: updated, message: 'Company updated successfully' };
+    } catch (error: any) {
+      return { status: 'ERROR', message: error.message || 'Failed to update company', data: {} as Company };
+    }
+  }
+
+  async updateUserCompanyId(
+    userId: string,
+    companyId: string | null,
+    email?: string
+  ): Promise<ApiResponse<User>> {
+    try {
+      // Preferred: admin-only RPC (bypasses RLS + upserts profile if missing)
+      if (companyId) {
+        try {
+          const { data: rpcData, error: rpcError } = await supabase.rpc('admin_set_user_company', {
+            p_user_id: userId,
+            p_company_id: companyId,
+          });
+
+          if (!rpcError && Array.isArray(rpcData) && rpcData.length > 0) {
+            const updated = mapSupabaseRow<User>(rpcData[0]);
+            return { status: 'SUCCESS', data: updated, message: 'User updated successfully' };
+          }
+        } catch {
+          // fall through to table write
+        }
+      }
+
+      // If the profile row doesn't exist yet in public.users, UPDATE will 406/return no rows.
+      // We upsert when email is provided so company assignment always persists.
+      const response = email
+        ? await supabase
+          .from('users')
+          .upsert(
+            {
+              id: userId,
+              email,
+              company_id: companyId,
+              updated_at: new Date().toISOString(),
+            } as any,
+            { onConflict: 'id' }
+          )
+          .select('*')
+          .single()
+        : await supabase
+          .from('users')
+          .update({ company_id: companyId, updated_at: new Date().toISOString() } as any)
+          .eq('id', userId)
+          .select('*')
+          .single();
+
+      const updated = mapSupabaseRow<User>(handleSupabaseResponse<any>(response));
+      return { status: 'SUCCESS', data: updated, message: 'User updated successfully' };
+    } catch (error: any) {
+      return { status: 'ERROR', message: error.message || 'Failed to update user', data: {} as User };
+    }
+  }
+
   // ==================== USERS ====================
   async getUsers(): Promise<ApiResponse<User[]>> {
     try {
@@ -1738,6 +2021,29 @@ class SupabaseApiService {
         users.forEach((user) => {
           user.creditsBalance = 0;
         });
+      }
+
+      // Load company_id from public.users (best-effort). If table/RLS isn't ready yet, ignore.
+      try {
+        const ids = users.map((u) => u.id).filter(Boolean);
+        if (ids.length > 0) {
+          const { data: profiles, error: profileError } = await supabase
+            .from('users')
+            .select('id, company_id, role')
+            .in('id', ids);
+
+          if (!profileError && Array.isArray(profiles)) {
+            const byId = new Map<string, any>(profiles.map((p: any) => [p.id, p]));
+            users.forEach((u) => {
+              const p = byId.get(u.id);
+              if (!p) return;
+              u.companyId = p.company_id || undefined;
+              if (p.role && !u.role) u.role = p.role;
+            });
+          }
+        }
+      } catch {
+        // ignore
       }
       
       return {
@@ -1990,7 +2296,7 @@ class SupabaseApiService {
       if (settings.maxDiscountAmount !== undefined) updateData.max_discount_amount = settings.maxDiscountAmount > 0 ? settings.maxDiscountAmount : null;
       if (settings.maxDiscountPercentage !== undefined) updateData.max_discount_percentage = settings.maxDiscountPercentage > 0 ? settings.maxDiscountPercentage : null;
       if (settings.tieredDiscounts !== undefined) {
-        updateData.tiered_discounts = settings.tieredDiscounts.map(tier => ({
+        updateData.tiered_discounts = settings.tieredDiscounts.map((tier: any) => ({
           // Use new format (minMonthsEarly) or fallback to old format for backward compatibility
           minMonthsEarly: tier.minMonthsEarly !== undefined 
             ? tier.minMonthsEarly 
@@ -2073,6 +2379,117 @@ class SupabaseApiService {
         status: 'ERROR',
         message: errorMessage,
         data: null
+      };
+    }
+  }
+
+  // ==================== PAYMENT DEFERRALS ====================
+  async getDeferrals(applicationId?: string, year?: number): Promise<ApiResponse<PaymentDeferral[]>> {
+    try {
+      let query = supabase
+        .from('payment_deferrals')
+        .select('*')
+        .order('deferred_date', { ascending: false });
+
+      if (applicationId) {
+        query = query.eq('application_id', applicationId);
+      }
+
+      if (year) {
+        query = query.eq('year', year);
+      }
+
+      const response = await query;
+      const deferrals = handleSupabaseResponse<any[]>(response).map((deferral: any) => ({
+        id: deferral.id,
+        paymentId: deferral.payment_id,
+        applicationId: deferral.application_id,
+        originalDueDate: deferral.original_due_date,
+        deferredToDate: deferral.deferred_to_date,
+        deferredDate: deferral.deferred_date,
+        reason: deferral.reason || '',
+        year: deferral.year,
+        deferredAmount: deferral.deferred_amount ? Number(deferral.deferred_amount) : undefined,
+        originalAmount: deferral.original_amount ? Number(deferral.original_amount) : undefined,
+      }));
+
+      return {
+        status: 'SUCCESS',
+        data: deferrals,
+        message: 'Deferrals fetched successfully'
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch deferrals',
+        data: []
+      };
+    }
+  }
+
+  async createDeferral(deferral: Omit<PaymentDeferral, 'id' | 'deferredDate'>): Promise<ApiResponse<PaymentDeferral>> {
+    try {
+      const deferralData = {
+        payment_id: deferral.paymentId,
+        application_id: deferral.applicationId,
+        original_due_date: deferral.originalDueDate,
+        deferred_to_date: deferral.deferredToDate,
+        reason: deferral.reason || null,
+        year: deferral.year,
+        deferred_amount: deferral.deferredAmount || null,
+        original_amount: deferral.originalAmount || null,
+      };
+
+      const response = await supabase
+        .from('payment_deferrals')
+        .insert(deferralData)
+        .select()
+        .single();
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to create deferral');
+      }
+
+      const createdDeferral: PaymentDeferral = {
+        id: response.data.id,
+        paymentId: response.data.payment_id,
+        applicationId: response.data.application_id,
+        originalDueDate: response.data.original_due_date,
+        deferredToDate: response.data.deferred_to_date,
+        deferredDate: response.data.deferred_date,
+        reason: response.data.reason || '',
+        year: response.data.year,
+        deferredAmount: response.data.deferred_amount ? Number(response.data.deferred_amount) : undefined,
+        originalAmount: response.data.original_amount ? Number(response.data.original_amount) : undefined,
+      };
+
+      // Log activity
+      try {
+        const { activityTrackingService } = await import('./activity-tracking.service');
+        await activityTrackingService.logActivity('create', 'payment', {
+          resourceId: deferral.applicationId,
+          resourceName: `Deferral for Application #${deferral.applicationId.slice(0, 8)}`,
+          description: `Created payment deferral: ${deferral.originalDueDate} → ${deferral.deferredToDate}`,
+          metadata: {
+            paymentId: deferral.paymentId,
+            year: deferral.year,
+            deferredAmount: deferral.deferredAmount,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to log activity:', error);
+      }
+
+      return {
+        status: 'SUCCESS',
+        data: createdDeferral,
+        message: 'Deferral created successfully'
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to create deferral',
+        data: {} as PaymentDeferral
       };
     }
   }

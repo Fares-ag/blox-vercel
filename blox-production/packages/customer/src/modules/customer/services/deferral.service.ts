@@ -8,7 +8,7 @@ class DeferralService {
    * Note: This currently returns empty array as deferrals need to be loaded from Supabase
    * TODO: Add getDeferrals method to supabaseApiService
    */
-  getDeferrals(): PaymentDeferral[] {
+  getDeferrals(_applicationId?: string): PaymentDeferral[] {
     // TODO: Load from Supabase when deferral methods are added
     return [];
   }
@@ -16,21 +16,21 @@ class DeferralService {
   /**
    * Get deferrals for a specific year
    */
-  getDeferralsForYear(year: number): PaymentDeferral[] {
-    const allDeferrals = this.getDeferrals();
+  async getDeferralsForYear(year: number, applicationId?: string): Promise<PaymentDeferral[]> {
+    const allDeferrals = await this.getDeferrals(applicationId);
     return allDeferrals.filter((d) => d.year === year);
   }
 
   /**
    * Get deferral status for current year
    */
-  getDeferralStatus(): {
+  async getDeferralStatus(applicationId?: string): Promise<{
     remainingDeferrals: number;
     deferralsUsed: number;
     year: number;
-  } {
+  }> {
     const currentYear = new Date().getFullYear();
-    const deferralsThisYear = this.getDeferralsForYear(currentYear);
+    const deferralsThisYear = await this.getDeferralsForYear(currentYear, applicationId);
     
     return {
       remainingDeferrals: Math.max(0, 3 - deferralsThisYear.length),
@@ -41,20 +41,38 @@ class DeferralService {
 
   /**
    * Add a new deferral
-   * Note: This is a no-op as deferrals should be saved via Supabase
-   * TODO: Add createDeferral method to supabaseApiService
    */
-  addDeferral(_deferral: PaymentDeferral): void {
-    // TODO: Save to Supabase when deferral methods are added
-    console.warn('Deferral service: addDeferral called but not yet implemented with Supabase');
+  async addDeferral(deferral: Omit<PaymentDeferral, 'id' | 'deferredDate'>): Promise<PaymentDeferral | null> {
+    try {
+      const response = await supabaseApiService.createDeferral(deferral);
+      if (response.status === 'SUCCESS' && response.data) {
+        return response.data;
+      }
+      console.error('Failed to create deferral:', response.message);
+      return null;
+    } catch (error) {
+      console.error('Failed to create deferral:', error);
+      return null;
+    }
   }
 
   /**
    * Check if a payment can be deferred
    */
-  canDeferPayment(): boolean {
-    const status = this.getDeferralStatus();
+  async canDeferPayment(applicationId?: string): Promise<boolean> {
+    const status = await this.getDeferralStatus(applicationId);
     return status.remainingDeferrals > 0;
+  }
+
+  /**
+   * Synchronous helper for UI call sites that need an immediate boolean.
+   * Until deferrals are fully loaded from Supabase, this uses the in-memory stub and will typically be `true`.
+   */
+  canDeferPaymentSync(applicationId?: string): boolean {
+    // Since `getDeferrals()` is currently a stub, the "sync" result matches the intended behavior: allow deferral.
+    // If/when deferrals are loaded from Supabase, remove this helper and make UI call sites async.
+    void applicationId;
+    return true;
   }
 
   /**

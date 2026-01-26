@@ -1,6 +1,7 @@
 import React from 'react';
 import { TextField } from '@mui/material';
 import type { TextFieldProps } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import './Input.scss';
 
 export interface InputProps extends Omit<TextFieldProps, 'variant'> {
@@ -13,7 +14,7 @@ export const Input: React.FC<InputProps> = React.memo(({
   sx,
   ...props
 }) => {
-  const defaultSx = {
+  const defaultSx: SxProps<Theme> = {
     '& .MuiOutlinedInput-root': {
       borderRadius: 'var(--radius-sm)',
       backgroundColor: variant === 'filled' ? 'var(--disabled-bg)' : 'transparent',
@@ -37,9 +38,10 @@ export const Input: React.FC<InputProps> = React.memo(({
       color: 'var(--field-placeholder)',
       opacity: 1,
     },
-  } as const;
+  };
 
-  const mergedSx = sx ? [defaultSx, sx] : defaultSx;
+  // MUI's `sx` type is broad (object | array | function). We intentionally merge in a permissive way.
+  const mergedSx = (sx ? [defaultSx, sx as any] : defaultSx) as SxProps<Theme>;
 
   return (
     <TextField
@@ -48,7 +50,7 @@ export const Input: React.FC<InputProps> = React.memo(({
       fullWidth
       {...props}
       sx={mergedSx}
-      aria-label={props.label || props.placeholder || props.name || 'Input field'}
+      aria-label={String(props.label ?? props.placeholder ?? props.name ?? 'Input field')}
     />
   );
 }, (prevProps, nextProps) => {

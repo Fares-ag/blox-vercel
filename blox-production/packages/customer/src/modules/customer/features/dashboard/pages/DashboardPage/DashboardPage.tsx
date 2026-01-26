@@ -24,7 +24,7 @@ import {
 } from '@mui/icons-material';
 import { formatCurrency, formatDate } from '@shared/utils/formatters';
 import { StatusBadge, Loading } from '@shared/components';
-import { supabaseApiService } from '@shared/services';
+import { supabaseApiService, paymentPermissionsService } from '@shared/services';
 import type { Application, PaymentSchedule, BloxMembership } from '@shared/models/application.model';
 import { useAppSelector } from '../../../../store/hooks';
 import { membershipService } from '../../../../services/membership.service';
@@ -60,6 +60,8 @@ export const DashboardPage: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
   const [loading, setLoading] = useState(true);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [canPay, setCanPay] = useState(true);
+  const [checkingCanPay, setCheckingCanPay] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     activeApplications: 0,
     upcomingPayments: 0,
@@ -75,6 +77,35 @@ export const DashboardPage: React.FC = () => {
   const [membership, setMembership] = useState<BloxMembership | null>(null);
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        // Dashboard shows payments across applications; we enable the button if at least one
+        // of the user's applications is payable (active company + can_pay).
+        const appsResponse = await supabaseApiService.getApplications();
+        if (appsResponse.status !== 'SUCCESS' || !appsResponse.data || !user?.email) {
+          if (mounted) setCanPay(false);
+          return;
+        }
+        const userApps = appsResponse.data.filter(
+          (a) => a.customerEmail?.toLowerCase() === user.email?.toLowerCase()
+        );
+
+        // Check all apps in parallel, allow if any app can pay.
+        const results = await Promise.all(
+          userApps.map((a) => paymentPermissionsService.getCanPayForApplication(a.id))
+        );
+        if (mounted) setCanPay(results.some(Boolean));
+      } finally {
+        if (mounted) setCheckingCanPay(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [user?.email]);
 
   useEffect(() => {
     if (user?.email) {
@@ -612,7 +643,16 @@ export const DashboardPage: React.FC = () => {
                 <Button
                   variant="contained"
                   startIcon={<CreditCard />}
+                  disabled={checkingCanPay || !canPay}
                   onClick={() => {
+                    if (checkingCanPay) {
+                      toast.info('Checking payment permissions...');
+                      return;
+                    }
+                    if (!canPay) {
+                      toast.error('Payments are disabled for your company.');
+                      return;
+                    }
                     // Find the application with this payment
                     const app = applications.find((a) => {
                       const schedule = a.installmentPlan?.schedule || [];

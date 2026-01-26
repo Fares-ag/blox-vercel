@@ -37,6 +37,7 @@ export const OfferSelectionStep: React.FC<StepProps> = ({ data, updateData }) =>
 
   useEffect(() => {
     loadOffers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadOffers = async () => {

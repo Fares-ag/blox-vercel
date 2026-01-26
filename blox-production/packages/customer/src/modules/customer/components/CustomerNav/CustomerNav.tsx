@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar,
@@ -17,7 +17,7 @@ import {
   DialogActions,
   TextField,
 } from '@mui/material';
-import { Menu as MenuIcon, AccountCircle, Logout, DirectionsCar, Star, AddCircleOutline, AccountBalanceWallet, Add } from '@mui/icons-material';
+import { Menu as MenuIcon, AccountCircle, Logout, DirectionsCar, AccountBalanceWallet, Add } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
 import { useAppSelector } from '../../store/hooks';
 import { useAuth } from '../../hooks/useAuth';
@@ -33,14 +33,14 @@ export const CustomerNav: React.FC = () => {
   const location = useLocation();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const { logout } = useAuth();
-  const { creditsBalance: bloxCredits, refreshCredits } = useCredits();
+  const { creditsBalance: bloxCredits } = useCredits();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [mobileMenuAnchor, setMobileMenuAnchor] = useState<null | HTMLElement>(null);
   const [topUpDialogOpen, setTopUpDialogOpen] = useState(false);
   const [creditsToBuy, setCreditsToBuy] = useState<string>('1');
   const [processingTopUp, setProcessingTopUp] = useState(false);
 
-  const BLOX_CREDIT_PRICE_QAR = 250;
+  const BLOX_CREDIT_PRICE_QAR = 1;
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -90,8 +90,9 @@ export const CustomerNav: React.FC = () => {
         console.warn('Could not fetch user phone:', e);
       }
 
-      // Generate transaction ID
-      const transactionId = `CREDIT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // Generate unique transaction ID using UUID (prevents collisions)
+      // Remove dashes to fit SkipCash 40-char limit: CREDIT-(32 chars) = 39 chars
+      const transactionId = `CREDIT-${crypto.randomUUID().replace(/-/g, '')}`;
 
       // Parse customer name
       const nameParts = (user.name || user.email || '').split(' ');
@@ -125,7 +126,18 @@ export const CustomerNav: React.FC = () => {
 
       // The Edge Function returns data directly (not wrapped in resultObj)
       // So we check both result.data.paymentUrl and result.data.resultObj.paymentUrl for compatibility
-      const responseData = result.data as any; // Type assertion needed due to interface structure
+      const responseData = result.data as {
+        paymentUrl?: string;
+        payUrl?: string;
+        paymentId?: string;
+        id?: string;
+        resultObj?: {
+          paymentUrl?: string;
+          payUrl?: string;
+          paymentId?: string;
+          id?: string;
+        };
+      };
       const paymentUrl = responseData?.paymentUrl || responseData?.resultObj?.paymentUrl || responseData?.payUrl || responseData?.resultObj?.payUrl;
       const paymentId = responseData?.paymentId || responseData?.resultObj?.paymentId || responseData?.id || responseData?.resultObj?.id;
 
@@ -144,18 +156,27 @@ export const CustomerNav: React.FC = () => {
         window.location.href = paymentUrl;
         return; // Don't continue with other logic, user will be redirected
       } else {
-        console.error('Payment initiation failed:', {
+        console.error('Credit top-up payment initiation failed:', {
           status: result.status,
           message: result.message,
-          data: result.data,
-          paymentUrl: paymentUrl,
+          creditsRequested: credits,
         });
-        toast.error(result.message || 'Failed to initiate payment. Please try again.');
+        // Provide user-friendly error message
+        const userFriendlyMessage = result.message?.includes('authorization') || result.message?.includes('permission')
+          ? 'Credit top-up not available. Please ensure you have an active application or contact support.'
+          : result.message?.includes('Rate limit') || result.message?.includes('Too many')
+          ? 'Too many attempts. Please wait a minute before trying again.'
+          : result.message?.includes('Price validation')
+          ? 'Payment amount mismatch detected. Please refresh the page and try again.'
+          : result.message || 'Failed to initiate credit top-up. Please try again.';
+        
+        toast.error(userFriendlyMessage);
         setProcessingTopUp(false);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to process credit top-up. Please try again.';
       console.error('Failed to process credit top-up:', error);
-      toast.error(error.message || 'Failed to process credit top-up. Please try again.');
+      toast.error(errorMessage);
       setProcessingTopUp(false);
     }
   };
@@ -188,7 +209,7 @@ export const CustomerNav: React.FC = () => {
             src="/BloxLogoNav.png" 
             alt="Blox Logo" 
             className="logo-image"
-            onError={(e) => {
+            onError={() => {
               console.error('Failed to load logo at /BloxLogoNav.png');
             }}
           />

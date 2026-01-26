@@ -25,7 +25,7 @@ import {
   Stars,
   AttachMoney,
 } from '@mui/icons-material';
-import { supabaseApiService, receiptService, supabase, skipCashService } from '@shared/services';
+import { supabaseApiService, receiptService, supabase, skipCashService, paymentPermissionsService } from '@shared/services';
 import type { PaymentMethod } from '@shared/models/payment.model';
 import type { Application, PaymentSchedule } from '@shared/models/application.model';
 import { Button as CustomButton, Loading } from '@shared/components';
@@ -78,13 +78,7 @@ export const PaymentPage: React.FC = () => {
   const [processing, setProcessing] = useState(false);
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod['type']>('card');
   const [amount, setAmount] = useState<number>(0);
-  const [cardDetails, setCardDetails] = useState({
-    cardNumber: '',
-    expiryMonth: '',
-    expiryYear: '',
-    cvv: '',
-    cardholderName: '',
-  });
+  // Card details are collected on the SkipCash hosted checkout page.
   const [bankTransferDetails, setBankTransferDetails] = useState({
     bankName: '',
     accountNumber: '',
@@ -103,12 +97,29 @@ export const PaymentPage: React.FC = () => {
   const [discountSettings, setDiscountSettings] = useState<SettlementDiscountSettings | null>(null);
   const [discountCalculation, setDiscountCalculation] = useState<any>(null);
   const [loadingDiscount, setLoadingDiscount] = useState(false);
+  const [canPay, setCanPay] = useState(true);
+  const [checkingCanPay, setCheckingCanPay] = useState(true);
 
   useEffect(() => {
     if (id) {
       loadApplication();
       checkMembership();
     }
+  }, [id]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const allowed = id ? await paymentPermissionsService.getCanPayForApplication(id) : false;
+        if (mounted) setCanPay(allowed);
+      } finally {
+        if (mounted) setCheckingCanPay(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
   }, [id]);
 
   const checkMembership = async () => {
@@ -288,23 +299,10 @@ export const PaymentPage: React.FC = () => {
   };
 
   const validateCardDetails = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!cardDetails.cardNumber || cardDetails.cardNumber.replace(/\s/g, '').length < 16) {
-      newErrors.cardNumber = 'Valid card number is required';
-    }
-    if (!cardDetails.expiryMonth || !cardDetails.expiryYear) {
-      newErrors.expiry = 'Expiry date is required';
-    }
-    if (!cardDetails.cvv || cardDetails.cvv.length < 3) {
-      newErrors.cvv = 'CVV is required';
-    }
-    if (!cardDetails.cardholderName || cardDetails.cardholderName.length < 3) {
-      newErrors.cardholderName = 'Cardholder name is required';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    // Card payments are processed on the SkipCash hosted checkout page.
+    // We intentionally do not collect or validate card details in BLOX.
+    setErrors({});
+    return true;
   };
 
   const validateBankTransfer = (): boolean => {
@@ -330,6 +328,16 @@ export const PaymentPage: React.FC = () => {
       return;
     }
 
+    if (checkingCanPay) {
+      toast.info('Checking payment permissions...');
+      return;
+    }
+
+    if (!canPay) {
+      toast.error('Payments are disabled for your company.');
+      return;
+    }
+
     let isValid = true;
     if (selectedMethod === 'card') {
       isValid = validateCardDetails();
@@ -343,8 +351,9 @@ export const PaymentPage: React.FC = () => {
 
       // Handle card payments through SkipCash
       if (selectedMethod === 'card') {
-        // Generate transaction ID
-        const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Generate unique transaction ID using UUID (prevents collisions)
+        // Remove dashes to fit SkipCash 40-char limit: TXN-(32 chars) = 36 chars
+        const transactionId = `TXN-${crypto.randomUUID().replace(/-/g, '')}`;
         
         // Determine payment amount
         let paymentAmount: number;
@@ -396,12 +405,28 @@ export const PaymentPage: React.FC = () => {
         // Process payment through SkipCash
         const result = await skipCashService.processPayment(skipCashRequest);
 
-        if (result.status === 'SUCCESS' && result.data?.resultObj?.paymentUrl) {
+        const responseData = result.data as any;
+        const paymentUrl =
+          responseData?.paymentUrl ||
+          responseData?.resultObj?.paymentUrl ||
+          responseData?.payUrl ||
+          responseData?.resultObj?.payUrl;
+
+        if (result.status === 'SUCCESS' && paymentUrl) {
           // Redirect to SkipCash payment page
-          window.location.href = result.data.resultObj.paymentUrl;
+          window.location.href = paymentUrl;
           return; // Don't continue with other logic, user will be redirected
         } else {
-          toast.error(result.message || 'Failed to initiate payment. Please try again.');
+          // Improve error message for users
+          const userFriendlyMessage = result.message?.includes('authorization') || result.message?.includes('permission')
+            ? 'Payment not authorized. Please contact your administrator.'
+            : result.message?.includes('Rate limit') || result.message?.includes('Too many')
+            ? 'Too many payment attempts. Please wait a minute and try again.'
+            : result.message?.includes('credentials') || result.message?.includes('configuration')
+            ? 'Payment system is temporarily unavailable. Please try again later or contact support.'
+            : result.message || 'Failed to initiate payment. Please try again.';
+          
+          toast.error(userFriendlyMessage);
           setProcessing(false);
           return;
         }
@@ -439,7 +464,9 @@ export const PaymentPage: React.FC = () => {
             allSucceeded = false;
           } else {
             // Update local application state after each successful payment
-            setApplication(result.data);
+            if (result.data) {
+              setApplication(result.data);
+            }
           }
         }
 
@@ -468,8 +495,9 @@ export const PaymentPage: React.FC = () => {
           return;
         }
 
-        // Generate transaction ID
-        const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        // Generate unique transaction ID using UUID (prevents collisions)
+        // Remove dashes to fit SkipCash 40-char limit: TXN-(32 chars) = 36 chars
+        const transactionId = `TXN-${crypto.randomUUID().replace(/-/g, '')}`;
 
         // Mark the installment as paid (fully or partially) in Supabase
         const result = await supabaseApiService.markInstallmentAsPaid(
@@ -482,6 +510,10 @@ export const PaymentPage: React.FC = () => {
           console.error('❌ Failed to mark installment as paid:', result.message);
           toast.error('Payment recorded, but failed to update installment status. Please contact support if this persists.');
         } else {
+          if (!result.data) {
+            toast.error('Payment recorded, but no updated application data was returned.');
+            return;
+          }
           // Refresh local application state so the UI reflects the updated schedule
           setApplication(result.data);
           
@@ -619,20 +651,7 @@ export const PaymentPage: React.FC = () => {
     (paymentSchedule.status === 'upcoming' || paymentSchedule.status === 'active') &&
     deferralService.canDeferPayment();
 
-  const formatCardNumber = (value: string) => {
-    const v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-    const matches = v.match(/\d{4,16}/g);
-    const match = (matches && matches[0]) || '';
-    const parts = [];
-    for (let i = 0, len = match.length; i < len; i += 4) {
-      parts.push(match.substring(i, i + 4));
-    }
-    if (parts.length) {
-      return parts.join(' ');
-    } else {
-      return v;
-    }
-  };
+  // No local card formatting needed (SkipCash handles input UI).
 
   if (loading) {
     return <Loading fullScreen />;
@@ -661,6 +680,12 @@ export const PaymentPage: React.FC = () => {
       <Typography variant="h4" className="page-title">
         Make Payment
       </Typography>
+
+      {!checkingCanPay && !canPay && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          Payments are currently disabled for your company. Please contact support if you believe this is a mistake.
+        </Alert>
+      )}
 
       {isSettlement && (
         <Alert severity="success" sx={{ mb: 3 }}>
@@ -719,86 +744,12 @@ export const PaymentPage: React.FC = () => {
 
             <Divider sx={{ my: 3 }} />
 
-            {/* Card Payment Form */}
+            {/* Card Payment (SkipCash Hosted Checkout) */}
             {selectedMethod === 'card' && (
               <Box className="payment-form">
-                <TextField
-                  fullWidth
-                  label="Card Number"
-                  value={cardDetails.cardNumber}
-                  onChange={(e) =>
-                    setCardDetails({ ...cardDetails, cardNumber: formatCardNumber(e.target.value) })
-                  }
-                  error={!!errors.cardNumber}
-                  helperText={errors.cardNumber}
-                  placeholder="1234 5678 9012 3456"
-                  inputProps={{ maxLength: 19 }}
-                  sx={{ mb: 2 }}
-                />
-                <Grid container spacing={2}>
-                  <Grid item xs={4}>
-                    <TextField
-                      fullWidth
-                      label="Month"
-                      value={cardDetails.expiryMonth}
-                      onChange={(e) =>
-                        setCardDetails({
-                          ...cardDetails,
-                          expiryMonth: e.target.value.replace(/[^0-9]/g, '').slice(0, 2),
-                        })
-                      }
-                      error={!!errors.expiry}
-                      placeholder="MM"
-                      inputProps={{ maxLength: 2 }}
-                    />
-                  </Grid>
-                  <Grid item xs={4}>
-                    <TextField
-                      fullWidth
-                      label="Year"
-                      value={cardDetails.expiryYear}
-                      onChange={(e) =>
-                        setCardDetails({
-                          ...cardDetails,
-                          expiryYear: e.target.value.replace(/[^0-9]/g, '').slice(0, 4),
-                        })
-                      }
-                      error={!!errors.expiry}
-                      placeholder="YYYY"
-                      inputProps={{ maxLength: 4 }}
-                    />
-                  </Grid>
-                  <Grid item xs={4}>
-                    <TextField
-                      fullWidth
-                      label="CVV"
-                      type="password"
-                      value={cardDetails.cvv}
-                      onChange={(e) =>
-                        setCardDetails({
-                          ...cardDetails,
-                          cvv: e.target.value.replace(/[^0-9]/g, '').slice(0, 4),
-                        })
-                      }
-                      error={!!errors.cvv}
-                      helperText={errors.cvv}
-                      placeholder="123"
-                      inputProps={{ maxLength: 4 }}
-                    />
-                  </Grid>
-                </Grid>
-                <TextField
-                  fullWidth
-                  label="Cardholder Name"
-                  value={cardDetails.cardholderName}
-                  onChange={(e) =>
-                    setCardDetails({ ...cardDetails, cardholderName: e.target.value })
-                  }
-                  error={!!errors.cardholderName}
-                  helperText={errors.cardholderName}
-                  placeholder="John Doe"
-                  sx={{ mt: 2 }}
-                />
+                <Alert severity="info">
+                  You’ll be redirected to our secure payment gateway (SkipCash) to enter your card details.
+                </Alert>
               </Box>
             )}
 
@@ -874,7 +825,7 @@ export const PaymentPage: React.FC = () => {
               fullWidth
               onClick={handleSubmit}
               loading={processing}
-              disabled={!amount || amount <= 0}
+              disabled={checkingCanPay || !canPay || !amount || amount <= 0}
               startIcon={processing ? <CircularProgress size={20} /> : <CheckCircle />}
             >
               {processing 

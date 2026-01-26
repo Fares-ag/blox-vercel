@@ -1,3 +1,5 @@
+import type { Company } from './company.model';
+
 export interface User {
   id: string;
   email: string;
@@ -10,6 +12,11 @@ export interface User {
   gender?: string;
   /** Authorization role from Supabase user metadata (e.g. 'admin' | 'customer'). */
   role?: string;
+  /** Company assignment (used to enable/disable payment features). */
+  companyId?: string;
+  company?: Company;
+  /** Convenience flag (typically derived from company.canPay). */
+  canPay?: boolean;
   /** Optional permission list for future fine-grained RBAC. */
   permissions?: string[];
   createdAt?: string;

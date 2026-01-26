@@ -33,13 +33,14 @@ class CreditsService {
    */
   async getUserCredits(userEmail: string): Promise<ApiResponse<UserCredits>> {
     try {
+      // Use maybeSingle() so "no rows" does NOT produce a 406 response in the browser.
       const { data, error } = await supabase
         .from('user_credits')
         .select('*')
         .eq('user_email', userEmail)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      if (error) {
         throw new Error(error.message || 'Failed to get user credits');
       }
 
@@ -89,7 +90,7 @@ class CreditsService {
         return {
           status: 'ERROR',
           message: 'Amount must be greater than 0',
-          data: null,
+          data: undefined,
         };
       }
 
@@ -132,14 +133,14 @@ class CreditsService {
       return {
         status: 'ERROR',
         message: 'Unexpected response from server',
-        data: null,
+        data: undefined,
       };
     } catch (error: any) {
       console.error('Failed to add credits:', error);
       return {
         status: 'ERROR',
         message: error.message || 'Failed to add credits',
-        data: null,
+        data: undefined,
       };
     }
   }
@@ -158,7 +159,7 @@ class CreditsService {
         return {
           status: 'ERROR',
           message: 'Amount must be greater than 0',
-          data: null,
+          data: undefined,
         };
       }
 
@@ -201,14 +202,14 @@ class CreditsService {
       return {
         status: 'ERROR',
         message: 'Unexpected response from server',
-        data: null,
+        data: undefined,
       };
     } catch (error: any) {
       console.error('Failed to subtract credits:', error);
       return {
         status: 'ERROR',
         message: error.message || 'Failed to subtract credits',
-        data: null,
+        data: undefined,
       };
     }
   }
@@ -227,7 +228,7 @@ class CreditsService {
         return {
           status: 'ERROR',
           message: 'Amount cannot be negative',
-          data: null,
+          data: undefined,
         };
       }
 
@@ -270,14 +271,14 @@ class CreditsService {
       return {
         status: 'ERROR',
         message: 'Unexpected response from server',
-        data: null,
+        data: undefined,
       };
     } catch (error: any) {
       console.error('Failed to set credits:', error);
       return {
         status: 'ERROR',
         message: error.message || 'Failed to set credits',
-        data: null,
+        data: undefined,
       };
     }
   }

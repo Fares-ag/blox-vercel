@@ -4,7 +4,8 @@ import { Box, Typography, Paper, Button, CircularProgress, Alert } from '@mui/ma
 import { CheckCircle, Error as ErrorIcon, ArrowBack, Refresh } from '@mui/icons-material';
 import { formatCurrency } from '@shared/utils/formatters';
 import { Button as CustomButton, Loading } from '@shared/components';
-import { skipCashService } from '@shared/services';
+import { skipCashService, supabase } from '@shared/services';
+import type { SkipCashVerifyRequest } from '@shared/services/skipcash.service';
 import { toast } from 'react-toastify';
 import './PaymentCallbackPage.scss';
 
@@ -38,9 +39,12 @@ export const PaymentCallbackPage: React.FC = () => {
       setError(null);
 
       // Verify payment status with SkipCash
-      const result = await skipCashService.verifyPayment({
-        transactionId: transactionId,
-      });
+      const paymentIdParam = searchParams.get('paymentId');
+      const verifyRequest: SkipCashVerifyRequest = paymentIdParam
+        ? { transactionId, paymentId: paymentIdParam }
+        : { transactionId };
+
+      const result = await skipCashService.verifyPayment(verifyRequest);
 
       if (result.status === 'SUCCESS' && result.data) {
         const paymentStatus = result.data.status || result.data.statusId;
@@ -48,6 +52,39 @@ export const PaymentCallbackPage: React.FC = () => {
         // Map SkipCash status to our status
         // StatusId: 0=new, 1=pending, 2=paid, 3=canceled, 4=failed, 5=rejected
         if (paymentStatus === 2 || paymentStatus === 'paid' || paymentStatus === 'completed') {
+          // RACE CONDITION FIX: Poll database to ensure webhook has updated it
+          // User may return before webhook completes (typically takes 1-3 seconds)
+          let dbConfirmed = false;
+          for (let attempt = 0; attempt < 10; attempt++) {
+            try {
+              const { data: dbPayment } = await supabase
+                .from('payment_transactions')
+                .select('status, completed_at')
+                .eq('transaction_id', transactionId)
+                .single();
+
+              if (dbPayment && dbPayment.status === 'completed') {
+                dbConfirmed = true;
+                console.log('Payment confirmed in database', { transactionId, attempt });
+                break;
+              }
+            } catch (e) {
+              // Ignore DB query errors, will show success anyway
+            }
+
+            // Wait 1 second before next attempt
+            if (attempt < 9) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+
+          if (!dbConfirmed) {
+            console.warn('Payment verified with SkipCash but not yet in database', {
+              transactionId,
+              note: 'Webhook may still be processing',
+            });
+          }
+
           setStatus('success');
           setPaymentData(result.data);
         } else if (paymentStatus === 3 || paymentStatus === 'canceled' || paymentStatus === 'cancelled') {
@@ -62,10 +99,15 @@ export const PaymentCallbackPage: React.FC = () => {
           setPaymentData(result.data);
         }
       } else {
-        // If verification fails, check database for payment status
-        // The webhook might have already updated it
+        // If verification fails, provide clear guidance
+        const errorMsg = result.message?.includes('timeout')
+          ? 'Payment verification is taking longer than expected. Your payment may still be processing. Please check your application status in a few minutes.'
+          : result.message?.includes('not found')
+          ? 'Payment record not found. If you just completed payment, please wait a moment and refresh this page.'
+          : 'Payment status is being verified. Please check back in a moment.';
+        
         setStatus('pending');
-        setError('Payment status is being verified. Please check back in a moment.');
+        setError(errorMsg);
       }
     } catch (err: any) {
       console.error('Payment verification error:', err);

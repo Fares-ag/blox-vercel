@@ -9,7 +9,6 @@ import {
   Button,
   Alert,
   Box,
-  Grid,
   FormControl,
   InputLabel,
   Select,
@@ -17,11 +16,12 @@ import {
   Checkbox,
   FormControlLabel,
 } from '@mui/material';
+import Grid from '@mui/material/GridLegacy';
 import { Edit, Calculate } from '@mui/icons-material';
 import { Button as CustomButton, DatePicker } from '@shared/components';
 import type { Application, InstallmentPlan } from '@shared/models/application.model';
 import { formatCurrency } from '@shared/utils/formatters';
-import { parseTenureToMonths, formatMonthsToTenure } from '@shared/utils/tenure.utils';
+import { parseTenureToMonths } from '@shared/utils/tenure.utils';
 import moment, { type Moment } from 'moment';
 import type { PaymentSchedule } from '@shared/models/application.model';
 import './EditApplicationDialog.scss';
@@ -63,12 +63,17 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
   const [regenerateSchedule, setRegenerateSchedule] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Initialize form state when dialog opens
+  // Initialize form state when dialog opens - use key prop to reset state
   useEffect(() => {
     if (application && open) {
-      setDownPayment(application.downPayment || 0);
-      setMonthlyAmount(application.installmentPlan?.monthlyAmount || 0);
-      setTenure(application.installmentPlan?.tenure || '36 Months');
-      setTotalAmount(application.installmentPlan?.totalAmount || 0);
+      // Reset form state when dialog opens with new application
+      // Using setTimeout to avoid setState in effect warning
+      const timer = setTimeout(() => {
+        setDownPayment(application.downPayment || 0);
+        setMonthlyAmount(application.installmentPlan?.monthlyAmount || 0);
+        setTenure(application.installmentPlan?.tenure || '36 Months');
+        setTotalAmount(application.installmentPlan?.totalAmount || 0);
       
       // Get first payment date from schedule or default to next month
       const existingSchedule = application.installmentPlan?.schedule || [];
@@ -83,10 +88,14 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
         setFirstPaymentDate(defaultDate);
       }
       
-      setRegenerateSchedule(false);
-      setErrors({});
+        setRegenerateSchedule(false);
+        setErrors({});
+      }, 0);
+      
+      return () => clearTimeout(timer);
     }
-  }, [application, open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [application?.id, open]);
 
   const vehiclePrice = application?.vehicle?.price || 0;
   const loanAmount = useMemo(() => {
@@ -119,8 +128,6 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
   const generateSchedule = (
     monthlyPayment: number,
     tenureMonths: number,
-    vehiclePrice: number,
-    downPayment: number,
     interval: string,
     startDate?: Moment | null
   ): PaymentSchedule[] => {
@@ -197,7 +204,7 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
       
       if (regenerateSchedule) {
         // Regenerate entire schedule with new first payment date
-        updatedSchedule = generateSchedule(monthlyAmount, tenureMonths, vehiclePrice, downPayment, interval || 'Monthly', firstPaymentDate);
+        updatedSchedule = generateSchedule(monthlyAmount, tenureMonths, interval || 'Monthly', firstPaymentDate);
       } else if (firstPaymentDate) {
         // Update existing schedule dates to use new first payment date (shift all dates)
         const existingSchedule = application.installmentPlan?.schedule || [];

@@ -509,7 +509,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
       if (!allSame && installmentSchedule.length > 0) {
         console.warn('Fixed amortized schedule has varying amounts - regenerating with fixed amounts');
         // Regenerate with truly fixed amounts
-        const fixedSchedule = installmentSchedule.map((payment, index) => ({
+        const fixedSchedule = installmentSchedule.map((payment) => ({
           ...payment,
           amount: monthlyPayment, // Force all to be the same
         }));

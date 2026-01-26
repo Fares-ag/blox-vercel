@@ -13,7 +13,7 @@ import {
   Typography,
   IconButton,
 } from '@mui/material';
-import { ChevronLeft, ChevronRight } from '@mui/icons-material';
+import { ChevronLeft, ChevronRight, Logout } from '@mui/icons-material';
 import './SidePanel.scss';
 
 export interface MenuItem {
@@ -55,8 +55,16 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   };
 
   const handleLogoutClick = async () => {
+    console.log('[SidePanel] Logout button clicked, onLogout:', !!onLogout);
     if (onLogout) {
-      await onLogout();
+      try {
+        await onLogout();
+        console.log('[SidePanel] onLogout completed');
+      } catch (error) {
+        console.error('[SidePanel] Error in onLogout:', error);
+      }
+    } else {
+      console.warn('[SidePanel] onLogout prop is not provided');
     }
   };
   
@@ -162,7 +170,14 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               </Box>
             )}
           </Box>
-          <ListItemButton className="logout-button" onClick={handleLogoutClick}>
+          <ListItemButton 
+            className="logout-button" 
+            onClick={handleLogoutClick}
+            sx={{ cursor: 'pointer' }}
+          >
+            <ListItemIcon sx={{ color: 'rgba(255, 255, 255, 0.8)', minWidth: collapsed ? 'auto' : 40 }}>
+              <Logout fontSize="small" />
+            </ListItemIcon>
             {!collapsed && <ListItemText primary="Logout" />}
           </ListItemButton>
         </Box>
