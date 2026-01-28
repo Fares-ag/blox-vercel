@@ -157,6 +157,39 @@ class SupabaseApiService {
     }
   }
 
+  async bulkUpdateProductStatus(ids: string[], status: 'active' | 'inactive'): Promise<ApiResponse<{ updated: number }>> {
+    try {
+      if (!ids || ids.length === 0) {
+        throw new Error('No product IDs provided');
+      }
+
+      const { error, count } = await supabase
+        .from('products')
+        .update({ 
+          status, 
+          updated_at: new Date().toISOString() 
+        })
+        .in('id', ids);
+
+      if (error) throw error;
+
+      // Clear cache after bulk update
+      supabaseCache.invalidate('products:all');
+
+      return {
+        status: 'SUCCESS',
+        data: { updated: count || ids.length },
+        message: `Successfully updated ${count || ids.length} product(s) to ${status}`
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to bulk update products',
+        data: { updated: 0 }
+      };
+    }
+  }
+
   async updateProduct(id: string, product: Partial<Product>): Promise<ApiResponse<Product>> {
     try {
       const updateData: any = {

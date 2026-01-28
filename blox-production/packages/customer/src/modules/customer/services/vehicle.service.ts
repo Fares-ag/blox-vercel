@@ -30,7 +30,8 @@ class VehicleService {
       };
     }
 
-    let vehicles = response.data as Product[];
+    // Only show active vehicles (admin can control visibility via status field)
+    let vehicles = (response.data as Product[]).filter((v) => v.status === 'active');
 
     if (filters) {
       if (filters.search) {
@@ -86,7 +87,9 @@ class VehicleService {
         data: [],
       };
     }
-    const makes = Array.from(new Set(response.data.map((v) => v.make))).sort();
+    // Only show makes from active vehicles
+    const activeVehicles = response.data.filter((v) => v.status === 'active');
+    const makes = Array.from(new Set(activeVehicles.map((v) => v.make))).sort();
     return { status: 'SUCCESS', data: makes, message: 'Makes loaded from Supabase' };
   }
 
@@ -102,8 +105,10 @@ class VehicleService {
         data: [],
       };
     }
+    // Only show models from active vehicles
+    const activeVehicles = response.data.filter((v) => v.status === 'active');
     const models = Array.from(
-      new Set(response.data.filter((v) => v.make === make).map((v) => v.model))
+      new Set(activeVehicles.filter((v) => v.make === make).map((v) => v.model))
     ).sort();
     return { status: 'SUCCESS', data: models, message: 'Models loaded from Supabase' };
   }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Box, Typography, IconButton } from '@mui/material';
-import { Edit, Delete } from '@mui/icons-material';
+import { Box, Typography, IconButton, Checkbox, Menu, MenuItem } from '@mui/material';
+import { Edit, Delete, MoreVert } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { useNavigate } from 'react-router-dom';
 import { setList, setLoading, setPage, setLimit, setFilters, clearFilters, removeProduct, setError } from '../../../../store/slices/products.slice';
@@ -21,6 +21,9 @@ export const ProductsListPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
+  const [bulkActionsAnchor, setBulkActionsAnchor] = useState<null | HTMLElement>(null);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search by 300ms
 
   const loadProducts = useCallback(async () => {
@@ -129,6 +132,55 @@ export const ProductsListPage: React.FC = () => {
     }
   }, [productToDelete, dispatch, loadProducts]);
 
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedProducts(new Set(list.map((p) => p.id)));
+    } else {
+      setSelectedProducts(new Set());
+    }
+  }, [list]);
+
+  const handleSelectProduct = useCallback((productId: string, checked: boolean) => {
+    setSelectedProducts((prev) => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(productId);
+      } else {
+        newSet.delete(productId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleBulkAction = useCallback(async (action: 'activate' | 'deactivate') => {
+    if (selectedProducts.size === 0) {
+      toast.warning('Please select at least one vehicle');
+      return;
+    }
+
+    try {
+      setBulkActionLoading(true);
+      const status = action === 'activate' ? 'active' : 'inactive';
+      const ids = Array.from(selectedProducts);
+      
+      const response = await supabaseApiService.bulkUpdateProductStatus(ids, status);
+      
+      if (response.status === 'SUCCESS' && response.data) {
+        toast.success(`Successfully ${action}d ${response.data.updated} vehicle(s)`);
+        setSelectedProducts(new Set());
+        loadProducts();
+      } else {
+        throw new Error(response.message || `Failed to ${action} vehicles`);
+      }
+    } catch (error: any) {
+      console.error(`❌ Failed to ${action} vehicles:`, error);
+      toast.error(error.message || `Failed to ${action} vehicles`);
+    } finally {
+      setBulkActionLoading(false);
+      setBulkActionsAnchor(null);
+    }
+  }, [selectedProducts, loadProducts]);
+
   const filterConfigs: FilterConfig[] = [
     { id: 'condition', label: 'Condition', type: 'multiselect', options: [
       { value: 'new', label: 'New' },
@@ -142,6 +194,22 @@ export const ProductsListPage: React.FC = () => {
   ];
 
   const columns: Column<Product>[] = [
+    {
+      id: 'select',
+      label: '',
+      minWidth: 50,
+      align: 'center',
+      format: (_value, row) => (
+        <Checkbox
+          checked={selectedProducts.has(row.id)}
+          onChange={(e) => {
+            e.stopPropagation();
+            handleSelectProduct(row.id, e.target.checked);
+          }}
+          size="small"
+        />
+      ),
+    },
     { id: 'id', label: 'ID', minWidth: 100 },
     {
       id: 'make',
@@ -208,6 +276,33 @@ export const ProductsListPage: React.FC = () => {
       <Box className="page-header">
         <Typography variant="h2">Vehicles</Typography>
         <Box className="header-actions">
+          {selectedProducts.size > 0 && (
+            <>
+              <Typography variant="body2" sx={{ mr: 2, alignSelf: 'center' }}>
+                {selectedProducts.size} selected
+              </Typography>
+              <Button
+                variant="secondary"
+                onClick={(e) => setBulkActionsAnchor(e.currentTarget)}
+                disabled={bulkActionLoading}
+                endIcon={<MoreVert />}
+              >
+                Bulk Actions
+              </Button>
+              <Menu
+                anchorEl={bulkActionsAnchor}
+                open={Boolean(bulkActionsAnchor)}
+                onClose={() => setBulkActionsAnchor(null)}
+              >
+                <MenuItem onClick={() => handleBulkAction('activate')}>
+                  Activate Selected
+                </MenuItem>
+                <MenuItem onClick={() => handleBulkAction('deactivate')}>
+                  Deactivate Selected
+                </MenuItem>
+              </Menu>
+            </>
+          )}
           <ExportButton data={list} filename="vehicles" />
           <Button variant="primary" onClick={() => navigate('/admin/vehicles/add')}>
             Add Vehicle
@@ -235,6 +330,17 @@ export const ProductsListPage: React.FC = () => {
       </Box>
 
       <Box className="table-section">
+        <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Checkbox
+            checked={selectedProducts.size > 0 && selectedProducts.size === list.length}
+            indeterminate={selectedProducts.size > 0 && selectedProducts.size < list.length}
+            onChange={(e) => handleSelectAll(e.target.checked)}
+            size="small"
+          />
+          <Typography variant="body2" color="text.secondary">
+            Select All
+          </Typography>
+        </Box>
         <Table
           columns={columns}
           rows={list}

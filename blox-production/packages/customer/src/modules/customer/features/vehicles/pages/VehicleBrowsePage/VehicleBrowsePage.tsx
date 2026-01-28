@@ -36,7 +36,8 @@ export const VehicleBrowsePage: React.FC = () => {
       // Fetch vehicles from Supabase via shared API service
       const response = await supabaseApiService.getProducts();
       if (response.status === 'SUCCESS' && response.data) {
-        let filteredVehicles = [...response.data];
+        // Only show active vehicles (admin can control visibility via status field)
+        let filteredVehicles = response.data.filter((v) => v.status === 'active');
 
         // Exclude vehicles that are already tied to other customers' active applications
         try {

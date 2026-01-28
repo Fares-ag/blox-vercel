@@ -238,7 +238,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
     try {
       const response = await supabaseApiService.getProducts();
       if (response.status === 'SUCCESS' && response.data) {
-        setAvailableVehicles(response.data);
+        // Only show active vehicles (admin can control visibility via status field)
+        const activeVehicles = response.data.filter((v) => v.status === 'active');
+        setAvailableVehicles(activeVehicles);
         setVehiclesLoaded(true);
       }
     } catch (error) {
