@@ -120,21 +120,21 @@ export const BadgeDisplay: React.FC<BadgeDisplayProps> = ({ application }) => {
 
   return (
     <Box className="badge-display">
-      <Paper sx={{ p: 3, mb: 2 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
+            <Typography variant="h6" fontWeight={700} className="section-title" gutterBottom>
               Achievements & Badges
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: 'var(--secondary-text)' }}>
               Unlock badges as you progress on your ownership journey
             </Typography>
           </Box>
           <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="h4" fontWeight={700} color="primary">
+            <Typography variant="h4" fontWeight={700} className="badge-count">
               {unlockedBadges.length}/{badges.length}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>
               Badges Unlocked
             </Typography>
           </Box>
@@ -145,12 +145,12 @@ export const BadgeDisplay: React.FC<BadgeDisplayProps> = ({ application }) => {
           variant="determinate"
           value={(unlockedBadges.length / badges.length) * 100}
           sx={{
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: '#E0E0E0',
+            height: 10,
+            borderRadius: 5,
+            backgroundColor: 'var(--card-hover)',
             '& .MuiLinearProgress-bar': {
-              borderRadius: 4,
-              background: 'linear-gradient(90deg, #DAFF01 0%, #B8E001 100%)',
+              borderRadius: 5,
+              backgroundColor: '#2E7D32',
             },
           }}
         />
@@ -158,9 +158,9 @@ export const BadgeDisplay: React.FC<BadgeDisplayProps> = ({ application }) => {
 
       {/* Unlocked Badges */}
       {unlockedBadges.length > 0 && (
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <EmojiEvents sx={{ color: '#FFD700' }} />
+        <Box className="unlocked-section" sx={{ mb: 3 }}>
+          <Typography variant="subtitle1" fontWeight={700} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'var(--primary-text)' }}>
+            <EmojiEvents sx={{ color: '#2E7D32' }} />
             Unlocked Badges
           </Typography>
           <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -175,9 +175,9 @@ export const BadgeDisplay: React.FC<BadgeDisplayProps> = ({ application }) => {
 
       {/* Locked Badges */}
       {lockedBadges.length > 0 && (
-        <Box>
-          <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Lock sx={{ color: '#9E9E9E' }} />
+        <Box className="locked-section">
+          <Typography variant="subtitle1" fontWeight={700} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'var(--primary-text)' }}>
+            <Lock sx={{ color: 'var(--secondary-text)' }} />
             Locked Badges
           </Typography>
           <Grid container spacing={2} sx={{ mt: 1 }}>

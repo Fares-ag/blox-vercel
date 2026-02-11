@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -32,6 +32,7 @@ import { Loading, DatePicker } from '@shared/components';
 import { supabaseApiService } from '@shared/services';
 import type { Application, PaymentSchedule } from '@shared/models/application.model';
 import moment from 'moment';
+import { useAppSelector } from '../../../../store/hooks';
 type Moment = moment.Moment;
 import './PaymentHistoryPage.scss';
 
@@ -50,25 +51,18 @@ interface PaymentTransaction {
 
 export const PaymentHistoryPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<PaymentTransaction[]>([]);
   
-  // Filters
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  // Filters (page only shows paid transactions)
   const [applicationFilter, setApplicationFilter] = useState<string>('all');
   const [startDate, setStartDate] = useState<Moment | null>(null);
   const [endDate, setEndDate] = useState<Moment | null>(null);
 
-  useEffect(() => {
-    loadPaymentHistory();
-  }, []);
-
-  useEffect(() => {
-    applyFilters();
-  }, [transactions, statusFilter, applicationFilter, startDate, endDate]);
-
-  const loadPaymentHistory = async () => {
+  const loadPaymentHistory = useCallback(async () => {
+    if (!user?.email) return;
     try {
       setLoading(true);
 
@@ -76,12 +70,11 @@ export const PaymentHistoryPage: React.FC = () => {
       const supabaseResponse = await supabaseApiService.getApplications();
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
-        // Filter to current user's applications
-        const userEmail = JSON.parse(localStorage.getItem('customer_user') || '{}')?.email;
+        // Filter to current user's applications (use Redux auth)
         const applications = supabaseResponse.data as Application[];
-        const userApplications = userEmail
-          ? applications.filter((app: Application) => app.customerEmail?.toLowerCase() === userEmail.toLowerCase())
-          : applications;
+        const userApplications = applications.filter(
+          (app: Application) => app.customerEmail?.toLowerCase() === user.email.toLowerCase()
+        );
       // Extract all payment transactions
       const allTransactions: PaymentTransaction[] = [];
 
@@ -90,24 +83,8 @@ export const PaymentHistoryPage: React.FC = () => {
           const vehicleName = `${app.vehicle?.make || ''} ${app.vehicle?.model || ''}`.trim() || 'N/A';
           
           app.installmentPlan.schedule.forEach((payment: PaymentSchedule, index: number) => {
-            const now = moment().startOf('day');
-            const dueDate = moment(payment.dueDate);
-            const paymentStatus: PaymentTransaction['status'] = (() => {
-
-              if (payment.status === 'paid' || payment.paidDate) return 'paid';
-
-              if (payment.status === 'active') return 'active';
-
-              if (payment.status === 'upcoming') return 'upcoming';
-
-              if (dueDate.isBefore(now, 'day')) return 'overdue';
-
-              if (dueDate.isSame(now, 'day')) return 'active';
-
-              return 'upcoming';
-
-            })();
-
+            // Only include paid transactions in payment history
+            if (payment.status !== 'paid' && !payment.paidDate) return;
 
             allTransactions.push({
               id: `${app.id}-${payment.dueDate}-${index}`,
@@ -117,7 +94,7 @@ export const PaymentHistoryPage: React.FC = () => {
               dueDate: payment.dueDate,
               paidDate: payment.paidDate || null,
               amount: payment.amount || 0,
-              status: paymentStatus,
+              status: 'paid' as const,
               paymentMethod: payment.paymentMethod || 'N/A',
               transactionId: payment.transactionId || undefined,
             });
@@ -138,15 +115,18 @@ export const PaymentHistoryPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.email]);
+
+  useEffect(() => {
+    loadPaymentHistory();
+  }, [loadPaymentHistory]);
+
+  useEffect(() => {
+    applyFilters();
+  }, [transactions, applicationFilter, startDate, endDate]);
 
   const applyFilters = () => {
     let filtered = [...transactions];
-
-    // Status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter((t) => t.status === statusFilter);
-    }
 
     // Application filter
     if (applicationFilter !== 'all') {
@@ -174,81 +154,212 @@ export const PaymentHistoryPage: React.FC = () => {
     return Array.from(apps.entries()).map(([id, name]) => ({ id, name }));
   }, [transactions]);
 
+  // Brand colors: Lime Yellow #DAFF01, Blox Black #0E1909
+  const LIME_YELLOW = [218, 255, 1] as [number, number, number];
+  const BLOX_BLACK = [14, 25, 9] as [number, number, number];
+  const PAGE_WIDTH = 210;
+  const MARGIN = 18;
+  const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
+
   const downloadPDF = async (transaction?: PaymentTransaction) => {
-    // Dynamic import for jsPDF
     const { jsPDF } = await import('jspdf');
-    const doc = new jsPDF();
-    const data = transaction ? [transaction] : filteredTransactions;
-
-    // Header
-    doc.setFontSize(18);
-    doc.setTextColor(0, 207, 162);
-    doc.text(transaction ? 'Payment Receipt' : 'Payment History', 14, 20);
-    doc.setFontSize(10);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Generated: ${moment().format('MMMM D, YYYY h:mm A')}`, 14, 30);
-
-    // Simple table layout
-    let yPos = 40;
-    const lineHeight = 7;
+    const doc = new jsPDF('p', 'mm', 'a4');
     const pageHeight = doc.internal.pageSize.height;
-    
-    // Headers
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setFillColor(0, 207, 162);
-    doc.rect(14, yPos - 5, 182, lineHeight, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.text('Application', 16, yPos);
-    doc.text('Vehicle', 60, yPos);
-    doc.text('Due Date', 100, yPos);
-    doc.text('Amount', 140, yPos);
-    doc.text('Status', 170, yPos);
-    
-    yPos += lineHeight;
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'normal');
-    
-    // Data rows
-    data.forEach((t) => {
-      if (yPos > pageHeight - 20) {
-        doc.addPage();
-        yPos = 20;
-      }
-      
-      const rowY = yPos;
-      doc.setFontSize(8);
-      doc.text(t.applicationName.substring(0, 20), 16, rowY);
-      doc.text(t.vehicleName.substring(0, 15), 60, rowY);
-      doc.text(formatDate(t.dueDate).substring(0, 10), 100, rowY);
-      doc.text(formatCurrency(t.amount), 140, rowY);
-      doc.text(t.status.charAt(0).toUpperCase() + t.status.slice(1), 170, rowY);
-      
-      // Draw line
-      doc.setDrawColor(200, 200, 200);
-      doc.line(14, rowY + 2, 196, rowY + 2);
-      
-      yPos += lineHeight + 2;
-    });
 
-    // Footer
-    const pageCount = (doc as any).internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
+    if (transaction) {
+      // ——— Single receipt: designed like an actual receipt ———
+      let y = MARGIN;
+
+      // Brand header bar (Blox Black background, Lime Yellow text)
+      doc.setFillColor(...BLOX_BLACK);
+      doc.rect(0, 0, PAGE_WIDTH, 36, 'F');
+      doc.setTextColor(...LIME_YELLOW);
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text('BLOX', PAGE_WIDTH / 2, 14, { align: 'center' });
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Payment Receipt', PAGE_WIDTH / 2, 24, { align: 'center' });
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(8);
+      doc.text('Vehicle financing · Keep this receipt for your records', PAGE_WIDTH / 2, 31, { align: 'center' });
+
+      y = 46;
+      doc.setTextColor(...BLOX_BLACK);
+
+      // Receipt number & date
+      const receiptNum = transaction.transactionId || `REC-${transaction.applicationId.slice(0, 8)}-${moment(transaction.paidDate || transaction.dueDate).format('YYYYMMDD')}`;
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Receipt No.', MARGIN, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(receiptNum, MARGIN + 32, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Date issued:', PAGE_WIDTH - MARGIN - 45, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(moment().format('DD MMM YYYY, h:mm A'), PAGE_WIDTH - MARGIN - 42, y);
+      y += 10;
+
+      // Divider
+      doc.setDrawColor(218, 255, 1);
+      doc.setLineWidth(0.5);
+      doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
+      y += 12;
+
+      // Client
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.text('CLIENT', MARGIN, y);
+      y += 7;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.text(user?.name || '—', MARGIN, y);
+      y += 6;
+      doc.setFontSize(10);
+      doc.setTextColor(80, 80, 80);
+      doc.text(user?.email || '—', MARGIN, y);
+      doc.setTextColor(...BLOX_BLACK);
+      y += 14;
+
+      // Vehicle & application
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.text('VEHICLE', MARGIN, y);
+      y += 7;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.text(transaction.vehicleName || '—', MARGIN, y);
+      y += 6;
+      doc.setFontSize(9);
+      doc.setTextColor(80, 80, 80);
+      doc.text(`Application ${transaction.applicationName.replace(/^Application\s+/i, '')}`, MARGIN, y);
+      doc.setTextColor(...BLOX_BLACK);
+      y += 14;
+
+      // Installment / payment details box
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.text('INSTALLMENT PAYMENT', MARGIN, y);
+      y += 8;
+      doc.setDrawColor(220, 220, 220);
+      doc.setLineWidth(0.2);
+      const boxTop = y - 2;
+      doc.rect(MARGIN, boxTop, CONTENT_WIDTH, 52, 'S');
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      const leftLabel = MARGIN + 4;
+      const leftVal = MARGIN + 58;
+      doc.text('Due date', leftLabel, y + 6);
+      doc.text(formatDate(transaction.dueDate), leftVal, y + 6);
+      doc.text('Paid date', leftLabel, y + 14);
+      doc.text(transaction.paidDate ? formatDate(transaction.paidDate) : '—', leftVal, y + 14);
+      doc.text('Amount', leftLabel, y + 22);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(formatCurrency(transaction.amount), leftVal, y + 22);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Payment method', leftLabel, y + 30);
+      doc.text((transaction.paymentMethod && transaction.paymentMethod !== 'N/A') ? String(transaction.paymentMethod).replace(/_/g, ' ') : '—', leftVal, y + 30);
+      if (transaction.transactionId) {
+        doc.text('Transaction ID', leftLabel, y + 38);
+        doc.setFontSize(8);
+        doc.text(transaction.transactionId, leftVal, y + 38);
+        doc.setFontSize(10);
+      }
+      y += 58;
+
+      // Status badge (Paid)
+      doc.setFillColor(218, 255, 1);
+      doc.rect(PAGE_WIDTH - MARGIN - 22, y - 6, 22, 8, 'F');
+      doc.setTextColor(...BLOX_BLACK);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('PAID', PAGE_WIDTH - MARGIN - 11, y - 0.5, { align: 'center' });
+      y += 16;
+
+      // Divider
+      doc.setDrawColor(218, 255, 1);
+      doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
+      y += 14;
+
+      // Footer
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 100);
-      doc.text(
-        `Page ${i} of ${pageCount}`,
-        doc.internal.pageSize.width / 2,
-        doc.internal.pageSize.height - 10,
-        { align: 'center' }
-      );
+      doc.text('This is an official payment receipt from BLOX.', PAGE_WIDTH / 2, y, { align: 'center' });
+      doc.text('Thank you for your payment.', PAGE_WIDTH / 2, y + 5, { align: 'center' });
+      doc.text('For support: info@blox-it.com', PAGE_WIDTH / 2, y + 12, { align: 'center' });
+    } else {
+      // ——— Payment History (multiple transactions) ———
+      let yPos = MARGIN;
+      doc.setFillColor(...BLOX_BLACK);
+      doc.rect(0, 0, PAGE_WIDTH, 28, 'F');
+      doc.setTextColor(...LIME_YELLOW);
+      doc.setFontSize(18);
+      doc.setFont('helvetica', 'bold');
+      doc.text('BLOX', PAGE_WIDTH / 2, 12, { align: 'center' });
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.text('Payment History', PAGE_WIDTH / 2, 21, { align: 'center' });
+      yPos = 36;
+      doc.setTextColor(...BLOX_BLACK);
+      doc.setFontSize(9);
+      doc.text(`Generated: ${moment().format('MMMM D, YYYY h:mm A')}`, MARGIN, yPos);
+      doc.text(`Client: ${user?.name || user?.email || '—'}`, PAGE_WIDTH - MARGIN, yPos, { align: 'right' });
+      yPos += 12;
+
+      const lineHeight = 8;
+      doc.setFillColor(...BLOX_BLACK);
+      doc.rect(MARGIN, yPos - 5, CONTENT_WIDTH, lineHeight, 'F');
+      doc.setTextColor(...LIME_YELLOW);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text('Application', MARGIN + 2, yPos);
+      doc.text('Vehicle', MARGIN + 42, yPos);
+      doc.text('Due Date', MARGIN + 85, yPos);
+      doc.text('Paid Date', MARGIN + 115, yPos);
+      doc.text('Amount', MARGIN + 145, yPos);
+      doc.text('Status', MARGIN + 175, yPos);
+      yPos += lineHeight + 2;
+      doc.setTextColor(...BLOX_BLACK);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+
+      filteredTransactions.forEach((t) => {
+        if (yPos > pageHeight - 22) {
+          doc.addPage();
+          yPos = MARGIN;
+        }
+        doc.text(t.applicationName.substring(0, 18), MARGIN + 2, yPos);
+        doc.text(t.vehicleName.substring(0, 20), MARGIN + 42, yPos);
+        doc.text(formatDate(t.dueDate).substring(0, 10), MARGIN + 85, yPos);
+        doc.text(t.paidDate ? formatDate(t.paidDate).substring(0, 10) : '—', MARGIN + 115, yPos);
+        doc.text(formatCurrency(t.amount), MARGIN + 145, yPos);
+        doc.text(t.status.charAt(0).toUpperCase() + t.status.slice(1), MARGIN + 175, yPos);
+        doc.setDrawColor(230, 230, 230);
+        doc.line(MARGIN, yPos + 2, PAGE_WIDTH - MARGIN, yPos + 2);
+        yPos += lineHeight + 2;
+      });
+
+      const pageCount = (doc as any).internal.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(120, 120, 120);
+        doc.text(
+          `Page ${i} of ${pageCount}`,
+          PAGE_WIDTH / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+      }
     }
 
     doc.save(
       transaction
-        ? `payment-receipt-${transaction.id}.pdf`
-        : `payment-history-${moment().format('YYYY-MM-DD')}.pdf`
+        ? `blox-receipt-${moment(transaction.paidDate || transaction.dueDate).format('YYYY-MM-DD')}-${transaction.applicationId.slice(0, 8)}.pdf`
+        : `blox-payment-history-${moment().format('YYYY-MM-DD')}.pdf`
     );
   };
 
@@ -304,7 +415,8 @@ export const PaymentHistoryPage: React.FC = () => {
       .reduce((sum, t) => sum + t.amount, 0);
   }, [filteredTransactions]);
 
-  if (loading) {
+  const userReady = user?.email !== undefined;
+  if (loading || (isAuthenticated && !userReady)) {
     return (
       <Box className="payment-history-page">
         <Loading />
@@ -328,7 +440,7 @@ export const PaymentHistoryPage: React.FC = () => {
             Payment History
           </Typography>
           <Typography variant="body2" className="page-subtitle">
-            View and download your payment transactions
+            View and download your paid payment history
           </Typography>
         </Box>
       </Box>
@@ -366,22 +478,6 @@ export const PaymentHistoryPage: React.FC = () => {
         </Box>
         <Box className="filters-content">
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={statusFilter}
-                  label="Status"
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="all">All Status</MenuItem>
-                  <MenuItem value="paid">Paid</MenuItem>
-                  <MenuItem value="upcoming">Upcoming</MenuItem>
-                  <MenuItem value="active">Active</MenuItem>
-                  <MenuItem value="overdue">Overdue</MenuItem>
-                </Select>
-              </FormControl>
-            </Grid>
             <Grid item xs={12} sm={6} md={3}>
               <FormControl fullWidth>
                 <InputLabel>Application</InputLabel>
@@ -467,7 +563,7 @@ export const PaymentHistoryPage: React.FC = () => {
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 4, color: 'var(--background-secondary)' }}>
                     <Typography variant="body2" sx={{ color: 'var(--background-secondary)', opacity: 0.8 }}>
-                      No transactions found
+                      No paid transactions yet
                     </Typography>
                   </TableCell>
                 </TableRow>

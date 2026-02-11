@@ -4,6 +4,7 @@ import { logout, setLoading, setError, setCredentials } from '../store/slices/au
 import { customerAuthService } from '../services/customerAuth.service';
 import type { LoginCredentials, AuthResponse } from '@shared/models/user.model';
 import { useNavigate } from 'react-router-dom';
+import { supabaseCache } from '@shared/services';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
@@ -19,6 +20,8 @@ export const useAuth = () => {
         const response: AuthResponse = await customerAuthService.login(credentials);
         
         dispatch(setCredentials({ user: response.user, token: response.token }));
+        // Invalidate applications cache so My Applications fetches fresh data with new session
+        supabaseCache.invalidate('applications:all');
         navigate('/customer/my-applications');
         
         return { success: true };

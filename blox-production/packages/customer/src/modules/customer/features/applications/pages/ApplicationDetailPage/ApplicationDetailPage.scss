@@ -106,7 +106,7 @@
         user-select: none;
 
         &.Mui-selected {
-          color: var(--primary-color); /* Lime Yellow */
+          color: var(--blox-black); /* Active tab: black */
         }
 
         &:not(.Mui-disabled):hover {
@@ -120,7 +120,7 @@
       }
 
       .MuiTabs-indicator {
-        background-color: var(--primary-color); /* Lime Yellow */
+        background-color: var(--blox-black); /* Active tab underline: black */
         height: 3px;
       }
     }
@@ -180,7 +180,7 @@
       margin-bottom: var(--spacing-md);
 
       .section-icon {
-        color: var(--primary-color); /* Lime Yellow */
+        color: var(--primary-text);
         font-size: 24px;
       }
 
@@ -233,7 +233,7 @@
         margin-bottom: var(--spacing-md);
 
         .section-icon {
-          color: var(--primary-color); /* Lime Yellow */
+          color: var(--primary-text);
           font-size: 24px;
         }
 
@@ -259,6 +259,10 @@
           .highlight-amount {
             color: var(--primary-color); /* Lime Yellow */
             font-size: 18px;
+          }
+
+          .monthly-payment-amount {
+            color: #2E7D32; /* Green – monthly payment */
           }
         }
       }
@@ -320,6 +324,49 @@
             align-items: flex-end;
             gap: 8px;
           }
+        }
+      }
+    }
+  }
+
+  /* Clear Download buttons (not yellow) – detail cards and tab panels */
+  .document-download-btn,
+  .detail-card-download-btn {
+    color: var(--primary-text) !important;
+    border-color: var(--divider-color);
+
+    &:hover {
+      border-color: rgba(0, 0, 0, 0.2);
+      background-color: var(--card-hover);
+    }
+  }
+
+  /* Installment schedule table: stronger contrast so it stands out (lives in tab-panel) */
+  .installment-schedule-table {
+    background-color: var(--background);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--divider-color);
+    overflow: hidden;
+
+    .MuiTable-root {
+      .MuiTableHead-root .MuiTableRow-root .MuiTableCell-head {
+        background-color: var(--blox-black, #0E1909);
+        color: var(--primary-color);
+        font-weight: 700;
+        font-size: 13px;
+        padding: 14px 16px;
+        border-bottom: 2px solid rgba(218, 255, 1, 0.3);
+      }
+
+      .MuiTableBody-root .MuiTableRow-root {
+        .MuiTableCell-root {
+          color: var(--primary-text);
+          font-weight: 500;
+          padding: 12px 16px;
+          border-bottom: 1px solid var(--divider-color);
+        }
+        &:hover .MuiTableCell-root {
+          background-color: rgba(218, 255, 1, 0.06);
         }
       }
     }

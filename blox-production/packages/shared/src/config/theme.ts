@@ -260,7 +260,7 @@ export const brandColors = {
   // Status colors - Adjusted to work with new palette
   statusDue: '#DAFF01',           // Lime Yellow for due/upcoming
   statusActive: '#DAFF01',        // Lime Yellow for active
-  statusPaid: '#787663',          // Dark Grey for paid (neutral)
+  statusPaid: '#2E7D32',          // Green for paid/success
   statusUnpaid: '#0E1909',       // Blox Black for unpaid (strong)
   statusPartiallyPaid: '#787663', // Dark Grey
   statusDraft: '#C9C4B7',         // Mid Grey for draft

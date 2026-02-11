@@ -16,9 +16,10 @@ export const ApplicationsListPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { list, loading } = useAppSelector((state) => state.application);
-  const { user } = useAppSelector((state) => state.auth);
+  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
   const loadApplications = useCallback(async () => {
+    if (!user?.email) return;
     try {
       dispatch(setLoading(true));
       
@@ -27,10 +28,10 @@ export const ApplicationsListPage: React.FC = () => {
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         // Filter to current user's applications by email
-        const userEmail = user?.email;
-        const userApplications = userEmail 
-          ? supabaseResponse.data.filter((app) => app.customerEmail?.toLowerCase() === userEmail.toLowerCase())
-          : [];
+        const userEmail = user.email;
+        const userApplications = supabaseResponse.data.filter(
+          (app) => app.customerEmail?.toLowerCase() === userEmail.toLowerCase()
+        );
         
         dispatch(setApplications(userApplications));
       } else {
@@ -55,7 +56,9 @@ export const ApplicationsListPage: React.FC = () => {
     navigate(`/customer/my-applications/${applicationId}`);
   };
 
-  if (loading) {
+  // Wait for user to be available before deciding empty vs loading (avoids empty state on first load after login)
+  const userReady = user?.email !== undefined;
+  if (loading || (isAuthenticated && !userReady)) {
     return (
       <Box className="applications-list-page">
         <Loading />
@@ -89,7 +92,7 @@ export const ApplicationsListPage: React.FC = () => {
                     <Typography variant="h6" className="application-id">
                       Application #{application.id}
                     </Typography>
-                    <Typography variant="body2" className="vehicle-info" sx={{ color: 'var(--secondary-text)', opacity: 0.95, fontSize: 14, fontWeight: 500 }}>
+                    <Typography variant="body2" className="vehicle-info">
                       {application.vehicle
                         ? `${application.vehicle.make} ${application.vehicle.model} ${application.vehicle.trim}`
                         : 'Vehicle Information'}
@@ -100,7 +103,7 @@ export const ApplicationsListPage: React.FC = () => {
 
                 <Box className="card-details">
                   <Box className="detail-row">
-                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.95, fontSize: 13, fontWeight: 500 }}>
+                    <Typography variant="caption" className="detail-label">
                       Vehicle Price
                     </Typography>
                     <Typography variant="body2" className="detail-value" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 15 }}>
@@ -110,7 +113,7 @@ export const ApplicationsListPage: React.FC = () => {
                     </Typography>
                   </Box>
                   <Box className="detail-row">
-                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.95, fontSize: 13, fontWeight: 500 }}>
+                    <Typography variant="caption" className="detail-label">
                       Down Payment
                     </Typography>
                     <Typography variant="body2" className="detail-value" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 15 }}>
@@ -118,7 +121,7 @@ export const ApplicationsListPage: React.FC = () => {
                     </Typography>
                   </Box>
                   <Box className="detail-row">
-                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.95, fontSize: 13, fontWeight: 500 }}>
+                    <Typography variant="caption" className="detail-label">
                       Loan Amount
                     </Typography>
                     <Typography variant="body2" className="detail-value" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 15 }}>
@@ -126,7 +129,7 @@ export const ApplicationsListPage: React.FC = () => {
                     </Typography>
                   </Box>
                   <Box className="detail-row">
-                    <Typography variant="caption" className="detail-label" sx={{ color: 'var(--secondary-text)', opacity: 0.95, fontSize: 13, fontWeight: 500 }}>
+                    <Typography variant="caption" className="detail-label">
                       Created
                     </Typography>
                     <Typography variant="body2" className="detail-value" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 15 }}>

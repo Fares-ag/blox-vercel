@@ -88,15 +88,21 @@ export const ApplicationTimeline: React.FC<ApplicationTimelineProps> = ({
           const isLast = index === sortedEvents.length - 1;
           const isActive = event.status === currentStatus;
 
+          const isDraft = event.status === 'draft';
+          const dotBg = isDraft ? config.color : (isActive ? config.color : '#C9C4B7');
+          const iconColor = isDraft
+            ? '#FFFFFF'
+            : isActive
+              ? (config.color === '#FFC107' || config.color === '#FF9800' ? '#FFFFFF' : '#FFFFFF')
+              : '#787663';
+
           return (
             <TimelineItem key={index}>
               <TimelineSeparator>
                 <TimelineDot
                   sx={{
-                    backgroundColor: isActive ? config.color : '#C9C4B7', // Mid Grey for inactive
-                    color: isActive 
-                      ? (config.color === '#FFC107' || config.color === '#FF9800' ? '#0E1909' : '#FFFFFF') // Black for yellow/orange, white for others
-                      : '#787663', // Dark Grey for inactive icons
+                    backgroundColor: dotBg,
+                    color: iconColor,
                   }}
                 >
                   {config.icon}

@@ -302,7 +302,7 @@ export const DashboardPage: React.FC = () => {
   const getActivityColor = (type: RecentActivity['type']) => {
     switch (type) {
       case 'payment':
-        return '#DAFF01';
+        return '#2E7D32'; // Green - clear on light green background
       case 'application':
         return '#2196F3';
       case 'contract':
@@ -312,6 +312,12 @@ export const DashboardPage: React.FC = () => {
       default:
         return '#757575';
     }
+  };
+
+  /** Light background tint for activity icon wrapper (payment uses green tint for contrast) */
+  const getActivityIconBg = (type: RecentActivity['type']) => {
+    if (type === 'payment') return '#2E7D3218'; // Light green tint
+    return `${getActivityColor(type)}30`;
   };
 
   if (loading) {
@@ -476,7 +482,7 @@ export const DashboardPage: React.FC = () => {
               <Typography variant="h6" sx={{ fontWeight: 700, color: 'var(--primary-text)', fontSize: 16 }}>
                 Become a Blox Member
               </Typography>
-              <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
+              <Typography variant="body2" sx={{ fontSize: 13 }}>
                 Unlock up to 3 payment deferrals per year across all your applications.
               </Typography>
             </Box>
@@ -636,7 +642,7 @@ export const DashboardPage: React.FC = () => {
                   <Typography variant="h6" className="section-title">
                     Next Payment
                   </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5, color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
+                  <Typography variant="body2" className="dashboard-label" sx={{ mt: 0.5, fontSize: 13 }}>
                     Due {moment(stats.nextPaymentDate).format('MMM D, YYYY')}
                   </Typography>
                 </Box>
@@ -738,19 +744,14 @@ export const DashboardPage: React.FC = () => {
                         cursor: activity.link ? 'pointer' : 'default',
                         transition: 'background-color 0.2s ease',
                         '&:hover': {
-                          backgroundColor: '#0E1909',
-                          '& .activity-title, & .activity-description, & .activity-timestamp, & .MuiTypography-root': {
-                            color: '#FFFFFF',
-                            opacity: 1,
-                            transition: 'color 0.2s ease, opacity 0.2s ease',
-                          },
+                          backgroundColor: 'rgba(0, 0, 0, 0.04)',
                         },
                       }}
                     >
                       <Box
                         className="activity-icon-wrapper"
                         sx={{ 
-                          backgroundColor: `${getActivityColor(activity.type)}30`, 
+                          backgroundColor: getActivityIconBg(activity.type),
                           opacity: 1,
                           transition: 'background-color 0.2s ease',
                         }}
@@ -817,19 +818,19 @@ export const DashboardPage: React.FC = () => {
             <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
             <Box className="application-stats">
               <Box className="stat-item">
-                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
+                <Typography variant="body2" className="dashboard-label" sx={{ fontSize: 13 }}>
                   Total Applications
                 </Typography>
-                <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 18 }}>
+                <Typography variant="h6" fontWeight={700} className="dashboard-value" sx={{ fontSize: 18 }}>
                   {stats.totalApplications}
                 </Typography>
               </Box>
               <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
               <Box className="stat-item">
-                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
+                <Typography variant="body2" className="dashboard-label" sx={{ fontSize: 13 }}>
                   Active Applications
                 </Typography>
-                <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-color)', fontSize: 18 }}>
+                <Typography variant="h6" fontWeight={700} className="dashboard-value" sx={{ fontSize: 18 }}>
                   {stats.activeApplications}
                 </Typography>
               </Box>
@@ -859,48 +860,48 @@ export const DashboardPage: React.FC = () => {
             <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
             <Box className="payment-overview" sx={{ flex: 1 }}>
               <Box className="payment-stat-item">
-                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
+                <Typography variant="body2" className="dashboard-label" sx={{ fontSize: 13 }}>
                   Total Paid
                 </Typography>
-                <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 18 }}>
+                <Typography variant="h6" fontWeight={700} className="dashboard-value" sx={{ fontSize: 18 }}>
                   {formatCurrency(stats.totalPaid)}
                 </Typography>
               </Box>
               <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
               <Box className="payment-stat-item">
-                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
+                <Typography variant="body2" className="dashboard-label" sx={{ fontSize: 13 }}>
                   Remaining Balance
                 </Typography>
-                <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 18 }}>
+                <Typography variant="h6" fontWeight={700} className="dashboard-value" sx={{ fontSize: 18 }}>
                   {formatCurrency(stats.remainingBalance)}
                 </Typography>
               </Box>
               <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
               <Box className="payment-stat-item">
-                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
+                <Typography variant="body2" className="dashboard-label" sx={{ fontSize: 13 }}>
                   Ownership
                 </Typography>
-                <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-color)', fontSize: 18 }}>
+                <Typography variant="h6" fontWeight={700} className="dashboard-value" sx={{ fontSize: 18 }}>
                   {stats.ownershipPercentage.toFixed(2)}%
                 </Typography>
               </Box>
               <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
               <Box className="payment-stat-item">
-                <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 13 }}>
+                <Typography variant="body2" className="dashboard-label" sx={{ fontSize: 13 }}>
                   Upcoming Payments
                 </Typography>
-                <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-color)', fontSize: 18 }}>
+                <Typography variant="h6" fontWeight={700} className="dashboard-value" sx={{ fontSize: 18 }}>
                   {stats.upcomingPayments}
                 </Typography>
               </Box>
               {stats.overduePayments > 0 && (
                 <>
                   <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
-                  <Box className="payment-stat-item">
-                    <Typography variant="body2" sx={{ color: '#F44336', fontSize: 13, fontWeight: 500 }}>
+                  <Box className="payment-stat-item payment-stat-item-overdue">
+                    <Typography variant="body2" className="overdue-label" sx={{ color: '#F44336', fontSize: 13, fontWeight: 500 }}>
                       Overdue Payments
                     </Typography>
-                    <Typography variant="h6" fontWeight={700} sx={{ color: '#F44336', fontSize: 18 }}>
+                    <Typography variant="h6" fontWeight={700} className="overdue-value" sx={{ color: '#F44336', fontSize: 18 }}>
                       {stats.overduePayments}
                     </Typography>
                   </Box>
@@ -914,9 +915,11 @@ export const DashboardPage: React.FC = () => {
               onClick={() => navigate('/customer/payment-history')}
               sx={{ 
                 mt: 2,
-                color: 'var(--primary-color)',
+                color: 'var(--primary-text)',
+                fontWeight: 600,
                 '&:hover': {
                   backgroundColor: 'var(--card-hover)',
+                  color: 'var(--primary-text)',
                 }
               }}
             >

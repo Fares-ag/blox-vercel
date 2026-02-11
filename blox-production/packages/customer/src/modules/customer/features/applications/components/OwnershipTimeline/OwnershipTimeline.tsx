@@ -57,20 +57,20 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
   return (
     <Box className="ownership-timeline">
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Box className="ownership-header" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
           <Box>
-            <Typography variant="h6" fontWeight={600} gutterBottom>
+            <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)' }} gutterBottom>
               Ownership Journey
             </Typography>
-            <Typography variant="body2" color="text.secondary">
+            <Typography variant="body2" sx={{ color: 'var(--secondary-text)' }}>
               Track your progress toward full ownership
             </Typography>
           </Box>
           <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="h4" fontWeight={700} color="primary">
+            <Typography variant="h4" fontWeight={700} sx={{ color: 'var(--primary-text)' }}>
               {timeline.currentOwnership.toFixed(1)}%
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>
               Current Ownership
             </Typography>
           </Box>
@@ -79,12 +79,8 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
         {/* Progress Bar */}
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="caption" color="text.secondary">
-              0%
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              100%
-            </Typography>
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>0%</Typography>
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>100%</Typography>
           </Box>
           <LinearProgress
             variant="determinate"
@@ -92,49 +88,43 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
             sx={{
               height: 12,
               borderRadius: 6,
-              backgroundColor: '#E0E0E0',
+              backgroundColor: 'var(--card-hover)',
               '& .MuiLinearProgress-bar': {
                 borderRadius: 6,
-                background: 'linear-gradient(90deg, #DAFF01 0%, #B8E001 100%)',
+                backgroundColor: '#2E7D32',
               },
             }}
           />
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>
               {formatCurrency(timeline.milestones[0]?.ownershipAmount || 0)}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>
               {formatCurrency(application.vehicle?.price || 0)}
             </Typography>
           </Box>
         </Box>
 
         {/* Stats */}
-        <Box sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
+        <Box className="ownership-stats" sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
           <Box>
-            <Typography variant="h6" fontWeight={600} color="primary">
+            <Typography variant="h6" fontWeight={700} className="stat-value" sx={{ color: 'var(--primary-text)' }}>
               {timeline.completedPayments}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Payments Completed
-            </Typography>
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>Payments Completed</Typography>
           </Box>
           <Box>
-            <Typography variant="h6" fontWeight={600} color="text.secondary">
+            <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)' }}>
               {timeline.totalPayments - timeline.completedPayments}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              Payments Remaining
-            </Typography>
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>Payments Remaining</Typography>
           </Box>
           {timeline.estimatedCompletionDate && (
             <Box>
-              <Typography variant="h6" fontWeight={600} color="text.secondary">
+              <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)' }}>
                 {moment(timeline.estimatedCompletionDate).format('MMM YYYY')}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Est. Completion
-              </Typography>
+              <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>Est. Completion</Typography>
             </Box>
           )}
         </Box>
@@ -142,7 +132,7 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
 
       {/* Timeline Stepper */}
       <Paper sx={{ p: 3 }}>
-        <Typography variant="h6" fontWeight={600} gutterBottom>
+        <Typography variant="h6" fontWeight={700} gutterBottom sx={{ color: 'var(--primary-text)' }}>
           Ownership Timeline
         </Typography>
         <Stepper orientation="vertical" sx={{ mt: 2 }}>
@@ -155,11 +145,11 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
                       width: 40,
                       height: 40,
                       borderRadius: '50%',
-                      backgroundColor: milestone.paymentStatus === 'paid' ? '#4CAF50' : '#E0E0E0',
+                      backgroundColor: milestone.paymentStatus === 'paid' ? '#2E7D32' : 'var(--card-hover)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      color: '#fff',
+                      color: milestone.paymentStatus === 'paid' ? '#fff' : 'var(--secondary-text)',
                     }}
                   >
                     {getMilestoneIcon(milestone)}
@@ -167,7 +157,7 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
                 )}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                  <Typography variant="subtitle1" fontWeight={600}>
+                  <Typography variant="subtitle1" fontWeight={600} sx={{ color: 'var(--primary-text)' }}>
                     {milestone.label}
                   </Typography>
                   {milestone.milestone && (
@@ -188,23 +178,15 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
                 <Box sx={{ pl: 4, pb: 2 }}>
                   <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 1 }}>
                     <Chip
+                      className="milestone-chip-ownership"
                       label={`${milestone.ownershipPercentage.toFixed(1)}% Ownership`}
                       size="small"
-                      icon={<TrendingUp />}
-                      sx={{ backgroundColor: '#E3F2FD', color: '#1976D2' }}
+                      icon={<TrendingUp sx={{ color: 'inherit !important' }} />}
                     />
-                    <Chip
-                      label={formatCurrency(milestone.ownershipAmount)}
-                      size="small"
-                      sx={{ backgroundColor: '#F3E5F5', color: '#7B1FA2' }}
-                    />
-                    <Chip
-                      label={formatDate(milestone.date)}
-                      size="small"
-                      sx={{ backgroundColor: '#FFF3E0', color: '#E65100' }}
-                    />
+                    <Chip className="milestone-chip-amount" label={formatCurrency(milestone.ownershipAmount)} size="small" />
+                    <Chip className="milestone-chip-date" label={formatDate(milestone.date)} size="small" />
                   </Box>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" sx={{ color: 'var(--secondary-text)' }}>
                     Payment #{milestone.paymentIndex + 1} of {timeline.totalPayments}
                   </Typography>
                 </Box>

@@ -54,7 +54,7 @@
   /* Status Colors - Adjusted for new palette */
   --status-due: #DAFF01;             /* Lime Yellow */
   --status-active: #DAFF01;         /* Lime Yellow */
-  --status-paid: #787663;           /* Dark Grey */
+  --status-paid: #2E7D32;           /* Green - paid/success */
   --status-unpaid: #0E1909;         /* Blox Black */
   --status-partially-paid: #787663; /* Dark Grey */
   --status-draft: #C9C4B7;          /* Mid Grey */
@@ -64,10 +64,10 @@
   --status-contract-signing: #787663; /* Dark Grey */
 
   /* Background Colors */
-  --background: #F3F0ED;            /* Light Grey */
-  --background-secondary: #F3F0ED;   /* Light Grey (replaces white) */
-  --card-background: #F3F0ED;       /* Light Grey (replaces white) */
-  --card-hover: #E8E5DF;            /* Slightly darker light grey for hover */
+  --background: #F3F0ED;            /* Light Grey – page background */
+  --background-secondary: #F3F0ED;   /* Light Grey (text on dark areas) */
+  --card-background: #FFFFFF;       /* White – cards stand out on page */
+  --card-hover: #F5F5F5;            /* Subtle grey for card hover */
   --disabled-bg: #C9C4B7;           /* Mid Grey */
   --overlay: rgba(14, 25, 9, 0.4);  /* Blox Black with opacity */
 

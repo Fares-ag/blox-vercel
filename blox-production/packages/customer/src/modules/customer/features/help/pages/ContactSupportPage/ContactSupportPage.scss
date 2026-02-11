@@ -1,61 +1,111 @@
 .contact-support-page {
-  padding: 24px;
-  max-width: 1200px;
+  padding: var(--spacing-md);
+  max-width: 1100px;
   margin: 0 auto;
+  min-height: 100vh;
+  background-color: var(--background);
+
+  .contact-page-header {
+    margin-bottom: var(--spacing-lg);
+  }
 
   .page-title {
-    margin-bottom: 32px;
-    font-weight: 600;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 700;
+    color: var(--primary-text);
+    font-size: 24px;
+    letter-spacing: -0.02em;
+  }
+
+  .page-subtitle {
+    color: var(--secondary-text);
+    font-size: 14px;
   }
 
   .contact-form-card {
-    // Clean, minimal design matching vehicle cards - Light Grey background
-    padding: var(--spacing-lg);
-    background-color: var(--card-background); /* Light Grey */
-    border-radius: var(--radius-card);
-    box-shadow: var(--card-shadow);
-    border: none; /* No border for clean look */
+    padding: var(--spacing-md);
+    background-color: var(--card-background);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--divider-color);
     transition: all var(--transition-base);
 
     &:hover {
-      box-shadow: var(--card-shadow-hover);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .section-title {
+      font-weight: 700;
+      color: var(--primary-text);
+      margin-bottom: var(--spacing-sm);
+      font-size: 17px;
     }
   }
 
   .contact-info-card {
-    // Clean, minimal design matching vehicle cards
-    padding: var(--spacing-lg);
-    background-color: var(--card-background); /* Light Grey */
-    border-radius: var(--radius-card);
-    box-shadow: var(--card-shadow);
-    border: none; /* No border for clean look */
+    padding: var(--spacing-md);
+    background-color: var(--card-background);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid var(--divider-color);
 
     .section-title {
-      margin-bottom: var(--spacing-lg);
+      margin-bottom: var(--spacing-md);
       font-weight: 700;
-      font-size: 20px;
-      color: var(--primary-text); /* Blox Black */
+      font-size: 17px;
+      color: var(--primary-text);
       letter-spacing: -0.01em;
     }
 
     .contact-item {
       display: flex;
       align-items: flex-start;
-      margin-bottom: var(--spacing-lg);
+      gap: var(--spacing-sm);
+      margin-bottom: var(--spacing-md);
+    }
+
+    .contact-icon {
+      color: var(--primary-text);
+      font-size: 20px !important;
+      flex-shrink: 0;
+    }
+
+    .contact-label {
+      color: var(--secondary-text);
+      font-size: 12px;
+    }
+
+    .contact-value {
+      color: var(--primary-text);
+      font-size: 14px;
     }
 
     .business-hours {
-      margin-top: var(--spacing-xl);
-      padding-top: var(--spacing-lg);
-      border-top: 1px solid var(--divider-color); /* Mid Grey border */
+      margin-top: var(--spacing-lg);
+      padding-top: var(--spacing-md);
+      border-top: 1px solid var(--divider-color);
+    }
+
+    .business-hours-title {
+      color: var(--primary-text);
+      margin-bottom: var(--spacing-xs);
+      display: block;
+      font-size: 13px;
+    }
+
+    .business-hours-text {
+      color: var(--secondary-text);
+      display: block;
+      margin-bottom: 2px;
+      font-size: 13px;
     }
   }
 
   @media (max-width: 960px) {
-    padding: 16px;
+    padding: var(--spacing-sm);
 
     .contact-form-card {
-      padding: 24px;
+      padding: var(--spacing-sm);
     }
   }
 }

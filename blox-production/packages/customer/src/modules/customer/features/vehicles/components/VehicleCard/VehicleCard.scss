@@ -34,12 +34,14 @@
     box-shadow: var(--card-shadow-hover);
   }
 
-  /* Image Wrapper with Color Indicators */
+  /* Image Wrapper with Color Indicators - integrates image with card */
   .vehicle-image-wrapper {
     position: relative;
     width: 100%;
     overflow: hidden;
-    background: var(--light-grey);
+    background: var(--card-background);
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   }
 
   .color-indicators {
@@ -79,15 +81,28 @@
 
   .vehicle-image {
     width: 100%;
-    height: 220px;
+    aspect-ratio: 4 / 3;
+    min-height: 180px;
+    max-height: 320px;
+    height: auto;
     object-fit: cover;
-    background: var(--light-grey);
+    object-position: center center;
+    background: var(--card-background);
     transition: transform var(--transition-base);
     display: block;
   }
 
   &:hover .vehicle-image {
     transform: scale(1.03);
+  }
+
+  /* Desktop: taller image area so the car isn’t tightly cropped */
+  @media (min-width: 1024px) {
+    .vehicle-image {
+      aspect-ratio: 4 / 3;
+      min-height: 220px;
+      max-height: 420px;
+    }
   }
 
   .MuiCardContent-root {
@@ -173,7 +188,8 @@
   // Mobile adjustments
   @media (max-width: 768px) {
     .vehicle-image {
-      height: 200px;
+      min-height: 160px;
+      max-height: 280px;
     }
 
     .MuiCardContent-root {
@@ -191,7 +207,8 @@
 
   @media (max-width: 480px) {
     .vehicle-image {
-      height: 180px;
+      min-height: 140px;
+      max-height: 240px;
     }
 
     .MuiCardContent-root {

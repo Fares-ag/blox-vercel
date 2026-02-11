@@ -103,9 +103,14 @@ export const ContactSupportPage: React.FC = () => {
 
   return (
     <Box className="contact-support-page">
-      <Typography variant="h4" className="page-title">
-        Contact Support
-      </Typography>
+      <Box className="contact-page-header">
+        <Typography variant="h4" className="page-title">
+          Contact Support
+        </Typography>
+        <Typography variant="body1" className="page-subtitle">
+          Get in touch with our team for assistance
+        </Typography>
+      </Box>
 
       <Grid container spacing={3}>
         <Grid item xs={12} md={8}>
@@ -199,48 +204,36 @@ export const ContactSupportPage: React.FC = () => {
             </Typography>
 
             <Box className="contact-item">
-              <Phone sx={{ color: '#DAFF01', mr: 2 }} />
+              <Phone className="contact-icon" />
               <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Phone
-                </Typography>
-                <Typography variant="body1" fontWeight={600}>
-                  +974 1234 5678
-                </Typography>
+                <Typography variant="body2" className="contact-label">Phone</Typography>
+                <Typography variant="body1" fontWeight={600} className="contact-value">+974 1234 5678</Typography>
               </Box>
             </Box>
 
             <Box className="contact-item">
-              <Email sx={{ color: '#DAFF01', mr: 2 }} />
+              <Email className="contact-icon" />
               <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Email
-                </Typography>
-                <Typography variant="body1" fontWeight={600}>
-                  support@blox.com
-                </Typography>
+                <Typography variant="body2" className="contact-label">Email</Typography>
+                <Typography variant="body1" fontWeight={600} className="contact-value">support@blox.com</Typography>
               </Box>
             </Box>
 
             <Box className="contact-item">
-              <LocationOn sx={{ color: '#DAFF01', mr: 2 }} />
+              <LocationOn className="contact-icon" />
               <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Address
-                </Typography>
-                <Typography variant="body1" fontWeight={600}>
-                  Doha, Qatar
-                </Typography>
+                <Typography variant="body2" className="contact-label">Address</Typography>
+                <Typography variant="body1" fontWeight={600} className="contact-value">Doha, Qatar</Typography>
               </Box>
             </Box>
 
             <Box className="business-hours">
-              <Typography variant="subtitle2" fontWeight={600} sx={{ mb: 1 }}>
+              <Typography variant="subtitle2" fontWeight={700} className="business-hours-title">
                 Business Hours
               </Typography>
-              <Typography variant="body2">Sunday - Thursday: 8:00 AM - 6:00 PM</Typography>
-              <Typography variant="body2">Friday: Closed</Typography>
-              <Typography variant="body2">Saturday: 9:00 AM - 1:00 PM</Typography>
+              <Typography variant="body2" className="business-hours-text">Sunday - Thursday: 8:00 AM - 6:00 PM</Typography>
+              <Typography variant="body2" className="business-hours-text">Friday: Closed</Typography>
+              <Typography variant="body2" className="business-hours-text">Saturday: 9:00 AM - 1:00 PM</Typography>
             </Box>
           </Paper>
         </Grid>

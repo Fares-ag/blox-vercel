@@ -56,12 +56,12 @@ export const Config = {
     { status: 'Draft', color: '#FF9800' },                    // Orange
     { status: 'Active', color: '#2196F3' },                   // Blue
     { status: 'Completed', color: '#4CAF50' },                // Green
-    { status: 'Under Review', color: '#FFC107' },            // Amber/Yellow
+    { status: 'Under Review', color: '#1565C0' },            // Dark blue – clear on light background
     { status: 'Rejected', color: '#F44336' },                 // Red
     { status: 'Contract Signing Required', color: '#9C27B0' }, // Purple
     { status: 'Resubmission Required', color: '#FF9800' },   // Orange
     { status: 'Contracts Submitted', color: '#2196F3' },     // Blue
-    { status: 'Contract Under Review', color: '#FFC107' },   // Amber/Yellow
+    { status: 'Contract Under Review', color: '#1565C0' },   // Dark blue – clear on light background
     { status: 'Down Payment Required', color: '#FF9800' },   // Orange
     { status: 'Down Payment Submitted', color: '#2196F3' },  // Blue
     { status: 'Submission Cancelled', color: '#757575' },    // Grey

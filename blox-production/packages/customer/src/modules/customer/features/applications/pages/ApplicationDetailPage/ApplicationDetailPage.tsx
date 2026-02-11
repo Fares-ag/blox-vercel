@@ -878,7 +878,7 @@ export const ApplicationDetailPage: React.FC = () => {
                           ? 'Monthly Payment'
                           : 'First Month Payment'}
                       </Typography>
-                      <Typography variant="body1" fontWeight={600} className="highlight-amount">
+                      <Typography variant="body1" fontWeight={600} className="highlight-amount monthly-payment-amount">
                         {formatCurrency(application.installmentPlan.monthlyAmount)}
                       </Typography>
                       {application.installmentPlan.calculationMethod !== 'amortized_fixed' && (
@@ -906,7 +906,7 @@ export const ApplicationDetailPage: React.FC = () => {
           </Card>
 
           {/* Documents */}
-          <Card className="detail-card">
+          <Card className="detail-card documents-card">
             <CardContent>
               <Box className="card-header">
                 <Description className="section-icon" />
@@ -929,6 +929,7 @@ export const ApplicationDetailPage: React.FC = () => {
                       </Box>
                       <Button
                         size="small"
+                        className="document-download-btn"
                         startIcon={<FileDownload />}
                         onClick={() => toast.info('Download will be implemented')}
                       >
@@ -1008,6 +1009,7 @@ export const ApplicationDetailPage: React.FC = () => {
                           {payment.receipt ? (
                             <Button
                               size="small"
+                              className="detail-card-download-btn"
                               startIcon={<FileDownload />}
                               onClick={() => toast.info('Download receipt')}
                             >
@@ -1075,7 +1077,7 @@ export const ApplicationDetailPage: React.FC = () => {
             </Box>
             <Divider sx={{ mb: 3 }} />
             {application.installmentPlan && application.installmentPlan.schedule && application.installmentPlan.schedule.length > 0 ? (
-              <TableContainer>
+              <TableContainer className="installment-schedule-table">
                 <Table>
                   <TableHead>
                     <TableRow>
@@ -1225,6 +1227,7 @@ export const ApplicationDetailPage: React.FC = () => {
                             {payment.receiptUrl ? (
                               <Button
                                 size="small"
+                                className="detail-card-download-btn"
                                 startIcon={<FileDownload />}
                                 onClick={() => {
                                   window.open(payment.receiptUrl, '_blank');

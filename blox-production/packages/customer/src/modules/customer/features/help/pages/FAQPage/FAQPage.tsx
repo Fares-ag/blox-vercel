@@ -78,11 +78,11 @@ export const FAQPage: React.FC = () => {
   return (
     <Box className="faq-page">
       <Box className="faq-header">
-        <Help sx={{ fontSize: 64, color: '#DAFF01', mb: 2 }} />
+        <Help className="faq-hero-icon" />
         <Typography variant="h3" className="page-title">
           Frequently Asked Questions
         </Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="body1" className="page-subtitle">
           Find answers to common questions about our services
         </Typography>
       </Box>
@@ -100,12 +100,12 @@ export const FAQPage: React.FC = () => {
                 onChange={handleChange(`panel-${category}-${index}`)}
               >
                 <AccordionSummary expandIcon={<ExpandMore />}>
-                  <Typography variant="subtitle1" fontWeight={600}>
+                  <Typography variant="subtitle1" fontWeight={600} className="faq-question">
                     {item.question}
                   </Typography>
                 </AccordionSummary>
                 <AccordionDetails>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography variant="body2" className="faq-answer">
                     {item.answer}
                   </Typography>
                 </AccordionDetails>
