@@ -234,11 +234,11 @@ export const VehicleDetailPage: React.FC = () => {
             <Divider sx={{ my: 2, borderColor: 'var(--divider-color)' }} />
 
             <Box className="features-box">
-              <Typography variant="subtitle2" sx={{ mb: 1, color: 'var(--background-secondary)' }}>
-                <LocalOffer sx={{ mr: 1, verticalAlign: 'middle' }} />
+              <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                <LocalOffer sx={{ mr: 1, verticalAlign: 'middle', color: 'var(--blox-black)' }} />
                 Available Offers
               </Typography>
-              <Typography variant="body2" sx={{ color: 'var(--background-secondary)', opacity: 0.8 }}>
+              <Typography variant="body2">
                 Competitive financing options available. Calculate your monthly installments below.
               </Typography>
             </Box>

@@ -162,31 +162,15 @@ export const LoginPage: React.FC = () => {
               type="button"
               variant="secondary"
               fullWidth
-              onClick={() => navigate('/customer/applications/new')}
+              onClick={() => navigate('/customer/vehicles')}
+              className="start-application-btn"
             >
               Start new application
             </Button>
           </Stack>
+          <br></br>
 
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Button
-              type="button"
-              variant="text"
-              size="small"
-              onClick={handleQuickLogin}
-              sx={{
-                color: 'text.secondary',
-                textDecoration: 'underline',
-                fontSize: '12px',
-                '&:hover': {
-                  textDecoration: 'underline',
-                  backgroundColor: 'transparent',
-                },
-              }}
-            >
-              Quick Login (No Backend)
-            </Button>
-          </Box>
+          
 
           <Box className="signup-link">
             <Typography variant="body2">

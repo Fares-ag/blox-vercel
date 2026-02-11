@@ -155,7 +155,7 @@
         font-weight: 800;
         font-size: 28px;
         line-height: 32px;
-        color: var(--primary-color); /* Lime Yellow */
+        color: var(--blox-black); /* Black for better readability */
         letter-spacing: -0.02em;
       }
     }
@@ -173,14 +173,20 @@
 
     .features-box {
       padding: var(--spacing-md);
-      background-color: rgba(218, 255, 1, 0.1); /* Subtle Lime Yellow tint */
+      background-color: rgba(218, 255, 1, 0.15); /* More visible Lime Yellow tint */
       border-radius: var(--radius-sm);
-      border: 1px solid rgba(218, 255, 1, 0.2); /* Lime Yellow border */
+      border: 1px solid rgba(218, 255, 1, 0.4); /* More visible Lime Yellow border */
       margin-top: var(--spacing-md);
 
+      .MuiTypography-subtitle2 {
+        color: var(--blox-black); /* Dark text for better contrast */
+        font-weight: 600;
+      }
+
       .MuiTypography-body2 {
-        color: var(--primary-text); /* Blox Black */
-        opacity: 0.9;
+        color: var(--blox-black); /* Dark text for better contrast */
+        opacity: 1; /* Full opacity for clarity */
+        line-height: 1.6;
       }
     }
   }

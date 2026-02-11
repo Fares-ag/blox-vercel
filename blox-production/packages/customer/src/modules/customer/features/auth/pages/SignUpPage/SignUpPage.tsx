@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Box, Typography, Link, MenuItem } from '@mui/material';
@@ -6,8 +6,10 @@ import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { customerAuthService, type SignUpData } from '../../../../services/customerAuth.service';
 import { Input, Button, Select } from '@shared/components';
+import type { SelectOption } from '@shared/components';
 import * as yup from 'yup';
 import { emailSchema, passwordSchema, qidSchema, phoneSchema, requiredStringSchema } from '@shared/utils/validators';
+import { getNationalityFromQID, getAllNationalityOptions } from '@shared/utils/nationality.utils';
 import './SignUpPage.scss';
 
 const signUpSchema = yup.object().shape({
@@ -37,7 +39,6 @@ const genderOptions = [
 export const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [nationality, setNationality] = useState('');
 
   const {
     register,
@@ -61,22 +62,36 @@ export const SignUpPage: React.FC = () => {
   });
 
   const qidValue = watch('qid');
+  const currentNationality = watch('nationality');
 
-  // Auto-extract nationality from QID (positions 3-6)
+  // Load all nationality options
+  const nationalityOptions: SelectOption[] = useMemo(() => {
+    try {
+      return getAllNationalityOptions();
+    } catch (error) {
+      console.error('Error loading nationality options:', error);
+      return [];
+    }
+  }, []);
+
+  // Auto-extract nationality from QID
   useEffect(() => {
     if (qidValue && qidValue.length >= 11) {
-      const countryCode = qidValue.slice(3, 6);
-      // Map country code to nationality (simplified - should use actual mapping)
-      const nationalityMap: Record<string, string> = {
-        '000': 'Qatar',
-        '001': 'Saudi Arabia',
-        // Add more mappings as needed
-      };
-      const extractedNationality = nationalityMap[countryCode] || 'Qatar';
-      setNationality(extractedNationality);
-      setValue('nationality', extractedNationality, { shouldValidate: true });
+      const detectedNationality = getNationalityFromQID(qidValue);
+      if (detectedNationality) {
+        // Find the matching option
+        const nationalityOption = nationalityOptions.find(
+          opt => opt.label.toLowerCase() === detectedNationality.toLowerCase()
+        );
+        if (nationalityOption) {
+          // Only auto-fill if nationality is empty or matches the detected one
+          if (!currentNationality || currentNationality === String(nationalityOption.value)) {
+            setValue('nationality', String(nationalityOption.value), { shouldValidate: true });
+          }
+        }
+      }
     }
-  }, [qidValue, setValue]);
+  }, [qidValue, currentNationality, setValue, nationalityOptions]);
 
   const onSubmit = async (data: SignUpFormData) => {
     setLoading(true);
@@ -157,11 +172,13 @@ export const SignUpPage: React.FC = () => {
             />
           </Box>
 
-          <Input
+          <Select
             label="Nationality"
-            value={nationality}
-            disabled
-            helperText="Auto-filled from QID"
+            {...register('nationality')}
+            error={!!errors.nationality}
+            helperText={errors.nationality?.message || 'Auto-filled from QID (can be changed)'}
+            options={nationalityOptions}
+            placeholder={nationalityOptions.length === 0 ? 'Loading nationalities...' : 'Select your nationality'}
           />
 
           <Input
