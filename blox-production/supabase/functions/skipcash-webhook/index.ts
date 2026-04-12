@@ -24,7 +24,8 @@ interface SkipCashWebhookPayload {
   VisaId?: string | null;
   TokenId?: string | null;
   CardType?: string | null;
-  CardNubmer?: string | null;
+  CardNumber?: string | null;
+  CardNubmer?: string | null; // SkipCash typo in some versions
   RecurringSubscriptionId?: string | null;
 }
 
@@ -187,15 +188,15 @@ serve(async (req) => {
 
     // Map StatusId to database status
     const dbStatus = mapStatusIdToDbStatus(webhookData.StatusId);
-    const transactionId = webhookData.TransactionId || webhookData.Custom1?.split('"transactionId":"')[1]?.split('"')[0];
 
-    // Parse Custom1 to get application context or credit top-up info
+    // Parse Custom1 to get application context or credit top-up info (and transactionId fallback)
     let applicationId: string | null = null;
     let paymentScheduleId: string | null = null;
     let isSettlement = false;
     let isCreditTopup = false;
     let creditsAmount = 0;
     let customerEmail: string | null = null;
+    let transactionIdFromCustom1: string | null = null;
 
     if (webhookData.Custom1) {
       try {
@@ -204,19 +205,19 @@ serve(async (req) => {
         paymentScheduleId = customData.paymentScheduleId || null;
         isSettlement = customData.isSettlement || false;
         isCreditTopup = customData.type === 'credit_topup';
-        creditsAmount = customData.credits || 0;
-        // Get email from Custom1 for credit top-ups
+        creditsAmount = Number(customData.credits) || 0;
+        transactionIdFromCustom1 = customData.transactionId || null;
         if (isCreditTopup && customData.email) {
-          customerEmail = customData.email.toLowerCase();
+          customerEmail = (customData.email as string).toLowerCase();
         }
       } catch (e) {
-        // If Custom1 is not JSON, try to extract applicationId directly
-        // Some merchants might pass it as a plain string
-        if (webhookData.Custom1.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        if (typeof webhookData.Custom1 === 'string' && webhookData.Custom1.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
           applicationId = webhookData.Custom1;
         }
       }
     }
+
+    const transactionId = webhookData.TransactionId || transactionIdFromCustom1 || webhookData.Custom1?.split('"transactionId":"')[1]?.split('"')[0] || null;
 
     // Initialize Supabase client
     const supabaseClient = createClient(
@@ -294,7 +295,11 @@ serve(async (req) => {
         updateData.completed_at = new Date().toISOString();
       }
 
-      // Upsert payment transaction (with idempotency key)
+      const amountNum = parseFloat(webhookData.Amount);
+      const amount = Number.isFinite(amountNum) ? amountNum : 0;
+
+      // Upsert payment transaction (with idempotency key).
+      // We do not send card_type here so the value set by skipcash-payment (from custom1) is preserved on conflict.
       const { data: transaction, error: upsertError } = await supabaseClient
         .from('payment_transactions')
         .upsert({
@@ -302,7 +307,7 @@ serve(async (req) => {
           skipcash_payment_id: webhookData.PaymentId, // Idempotency key
           application_id: applicationId,
           payment_schedule_id: paymentScheduleId,
-          amount: parseFloat(webhookData.Amount),
+          amount,
           method: 'card',
           status: dbStatus,
           completed_at: dbStatus === 'completed' ? new Date().toISOString() : null,
@@ -315,7 +320,9 @@ serve(async (req) => {
 
       if (upsertError) {
         console.error('Failed to upsert payment transaction:', upsertError);
-        // Don't fail the webhook, but log the error
+      }
+      if (!Number.isFinite(amountNum)) {
+        console.warn('Webhook Amount was not a valid number', { Amount: webhookData.Amount, transactionId });
       }
 
       // Handle credit top-up if payment is completed
@@ -333,7 +340,7 @@ serve(async (req) => {
             'admin_add_user_credits',
             {
               p_user_email: customerEmail,
-              p_amount: creditsAmount,
+              p_amount: Number(creditsAmount) || 0,
               p_description: `Credit top-up via payment. Transaction ID: ${transactionId}, Payment ID: ${webhookData.PaymentId}`,
               p_admin_email: null, // System-initiated
             }
@@ -469,12 +476,10 @@ serve(async (req) => {
     );
   } catch (error: any) {
     console.error('SkipCash webhook error:', error);
-    // Still return 200 to prevent retries for system errors
-    // Log the error for debugging
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message || 'Webhook processing failed',
+        error: error?.message || 'Webhook processing failed',
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

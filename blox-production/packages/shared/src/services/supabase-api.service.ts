@@ -362,11 +362,57 @@ class SupabaseApiService {
     }
   }
 
-  async createApplication(application: Omit<Application, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Application>> {
+  async createApplication(
+    application: Omit<Application, 'id' | 'createdAt' | 'updatedAt'>,
+    options?: { signupAuthUserId?: string }
+  ): Promise<ApiResponse<Application>> {
     try {
+      const useSignupRpc = Boolean(options?.signupAuthUserId);
+
+      // Refresh JWT for direct insert (RLS). Skip when using signup RPC (no session yet).
+      if (!useSignupRpc) {
+        await supabase.auth.refreshSession();
+      }
+
+      const { data: authData } = await supabase.auth.getUser();
+      const authUser = authData?.user;
+
+      let companyIdFromProfile: string | undefined;
+      let profileEmail: string | undefined;
+      if (authUser?.id) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('company_id, email')
+          .eq('id', authUser.id)
+          .maybeSingle();
+        const p = profile as { company_id?: string; email?: string } | null;
+        companyIdFromProfile = p?.company_id ?? undefined;
+        profileEmail = p?.email?.trim().toLowerCase() || undefined;
+      }
+
+      const sessionEmail = authUser?.email?.trim().toLowerCase() || '';
+      let customerEmail: string;
+
+      if (sessionEmail) {
+        customerEmail = sessionEmail;
+      } else if (profileEmail) {
+        // Session missing email (rare); profile row still used by some RLS paths
+        customerEmail = profileEmail;
+      } else if (authUser) {
+        return {
+          status: 'ERROR',
+          message:
+            'Your session has no email address. Please sign in with email or contact support.',
+          data: {} as Application,
+        };
+      } else {
+        // No Supabase session (e.g. some test mocks); use payload — production RLS still needs auth.
+        customerEmail = (application.customerEmail || '').trim().toLowerCase();
+      }
+
       const appData: any = {
         customer_name: application.customerName,
-        customer_email: application.customerEmail,
+        customer_email: customerEmail,
         customer_phone: application.customerPhone,
         customer_info: (application as any).customerInfo || null,
         vehicle_id: application.vehicleId,
@@ -390,6 +436,16 @@ class SupabaseApiService {
         blox_membership: application.bloxMembership || null
       };
 
+      if (application.companyId) {
+        appData.company_id = application.companyId;
+      } else if (companyIdFromProfile) {
+        appData.company_id = companyIdFromProfile;
+      }
+
+      if (appData.customer_info && typeof appData.customer_info === 'object') {
+        appData.customer_info = { ...appData.customer_info, email: customerEmail };
+      }
+
       // Store origin in customer_info metadata if provided
       if (application.origin) {
         if (!appData.customer_info) {
@@ -401,13 +457,40 @@ class SupabaseApiService {
         }
       }
 
-      const response = await supabase
-        .from('applications')
-        .insert(appData)
-        .select()
-        .single();
-      
-      const createdApp = mapSupabaseRow<Application>(handleSupabaseResponse<any>(response));
+      // Primary key is assigned by DB (e.g. trigger application-{n}); never send a client id.
+      delete appData.id;
+
+      let createdApp: Application;
+
+      if (useSignupRpc) {
+        const { data: rpcData, error: rpcError } = await supabase.rpc('create_application_after_signup', {
+          p_user_id: options!.signupAuthUserId,
+          p_payload: appData,
+        });
+        if (rpcError) {
+          return {
+            status: 'ERROR',
+            message: rpcError.message || 'Failed to create application',
+            data: {} as Application,
+          };
+        }
+        if (!rpcData) {
+          return {
+            status: 'ERROR',
+            message: 'Failed to create application',
+            data: {} as Application,
+          };
+        }
+        createdApp = mapSupabaseRow<Application>(rpcData as Record<string, unknown>);
+      } else {
+        const response = await supabase
+          .from('applications')
+          .insert(appData)
+          .select()
+          .single();
+
+        createdApp = mapSupabaseRow<Application>(handleSupabaseResponse<any>(response));
+      }
       
       // Invalidate applications cache
       supabaseCache.invalidate('applications:all');
@@ -418,7 +501,7 @@ class SupabaseApiService {
         await activityTrackingService.logActivity('create', 'application', {
           resourceId: createdApp.id,
           resourceName: `Application #${createdApp.id.slice(0, 8)}`,
-          description: `Created application for ${application.customerName} (${application.customerEmail})`,
+          description: `Created application for ${application.customerName} (${customerEmail})`,
           metadata: {
             status: application.status,
             loanAmount: application.loanAmount,

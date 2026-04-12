@@ -255,18 +255,14 @@ serve(async (req) => {
 
     let paymentDetails: SkipCashPaymentRequest;
     try {
-      // If we already parsed the body for permissions, reuse it.
-      // Otherwise, read and parse now.
-      const bodyText = (typeof rawBodyText === 'string' && rawBodyText.length > 0)
-        ? rawBodyText
-        : await req.text();
-      console.log('Raw request body:', bodyText);
-      
+      // Body was already read once for the permission gate; reuse it (req.text() can only be read once).
+      const bodyText = typeof rawBodyText === 'string' ? rawBodyText : '';
       if (!bodyText || bodyText.trim() === '') {
         throw new Error('Request body is empty');
       }
+      console.log('Raw request body length:', bodyText.length);
       
-      paymentDetails = parsedBody ? parsedBody : JSON.parse(bodyText);
+      paymentDetails = parsedBody ?? JSON.parse(bodyText);
       // Log payment request (with PII redaction for privacy/GDPR compliance)
       console.log('Received payment details:', {
         amount: paymentDetails.amount,
@@ -284,7 +280,10 @@ serve(async (req) => {
 
     // Validate required fields
     const missingFields = [];
-    if (!paymentDetails.amount) missingFields.push('amount');
+    if (paymentDetails.amount == null || paymentDetails.amount === '') missingFields.push('amount');
+    else if (Number(paymentDetails.amount) <= 0) {
+      throw new Error('Amount must be greater than 0');
+    }
     if (!paymentDetails.firstName) missingFields.push('firstName');
     if (!paymentDetails.lastName) missingFields.push('lastName');
     if (!paymentDetails.phone) missingFields.push('phone');
@@ -301,8 +300,8 @@ serve(async (req) => {
       try {
         const customObj = JSON.parse(parsedBody.custom1);
         if (customObj.type === 'credit_topup' && customObj.credits) {
-          const expectedTotal = customObj.credits * EXPECTED_CREDIT_PRICE_QAR;
-          const actualTotal = paymentDetails.amount;
+          const expectedTotal = Number(customObj.credits) * EXPECTED_CREDIT_PRICE_QAR;
+          const actualTotal = Number(paymentDetails.amount);
           // Allow 0.01 QAR tolerance for floating point rounding
           if (Math.abs(actualTotal - expectedTotal) > 0.01) {
             console.error('Credit price mismatch detected', {
@@ -315,7 +314,7 @@ serve(async (req) => {
           }
         }
       } catch (e: any) {
-        if (e.message.includes('Price validation failed')) {
+        if (e?.message?.includes('Price validation failed')) {
           throw e; // Re-throw validation errors
         }
         // Ignore JSON parse errors (custom1 might not be JSON)
@@ -402,7 +401,6 @@ serve(async (req) => {
     
     const combinedData = signatureParts.join(',');
     
-    console.log('Combined data for signature (only non-empty fields):', combinedData);
     console.log('Fields included:', {
       required: ['Uid', 'KeyId', 'Amount', 'FirstName', 'LastName', 'Phone', 'Email'],
       optional: {
@@ -411,18 +409,10 @@ serve(async (req) => {
       },
     });
 
-    // Validate secret key is complete (should be ~600+ characters for base64)
     if (skipCashConfig.secretKey.length < 500) {
-      console.error('WARNING: Secret key seems incomplete. Length:', skipCashConfig.secretKey.length);
-      console.error('Secret key starts with:', skipCashConfig.secretKey.substring(0, 50));
-      console.error('Secret key ends with:', skipCashConfig.secretKey.substring(skipCashConfig.secretKey.length - 10));
+      console.warn('WARNING: Secret key seems incomplete. Length:', skipCashConfig.secretKey.length);
     }
-    
-    console.log('Combined data for signature:', combinedData);
-    console.log('Using KeyId:', paymentRequest.KeyId);
-    console.log('Secret key length:', skipCashConfig.secretKey.length);
-    console.log('Secret key starts with:', skipCashConfig.secretKey.substring(0, 20) + '...');
-    console.log('Secret key ends with:', '...' + skipCashConfig.secretKey.substring(skipCashConfig.secretKey.length - 10));
+    console.log('Combined data for signature length:', combinedData.length);
 
     // Generate HMAC SHA256 hash
     // Use secret key as UTF-8 string (matches crypto-js HmacSHA256 behavior)
@@ -537,18 +527,31 @@ serve(async (req) => {
       }
     }
 
-    // Create payment transaction record
+    // Create payment transaction record (card_type: credit vs debit for analytics)
     if (applicationId) {
       try {
+        let cardType: string | null = null;
+        if (paymentDetails.custom1) {
+          try {
+            const customData = JSON.parse(paymentDetails.custom1);
+            const pm = customData.paymentMethod;
+            if (pm === 'credit_card') cardType = 'credit';
+            else if (pm === 'debit_card') cardType = 'debit';
+          } catch (_) {
+            /* ignore */
+          }
+        }
+        const insertPayload: Record<string, unknown> = {
+          application_id: applicationId,
+          amount: paymentDetails.amount,
+          method: 'card',
+          status: 'pending',
+          transaction_id: paymentDetails.transactionId,
+        };
+        if (cardType) (insertPayload as any).card_type = cardType;
         const { error: insertError } = await supabaseClient
           .from('payment_transactions')
-          .insert({
-            application_id: applicationId,
-            amount: paymentDetails.amount,
-            method: 'card',
-            status: 'pending',
-            transaction_id: paymentDetails.transactionId,
-          });
+          .insert(insertPayload);
         
         if (insertError) {
           console.error('Failed to create payment transaction record:', insertError);
@@ -610,7 +613,7 @@ serve(async (req) => {
     const errorDetails = {
       success: false,
       error: errorMessage,
-      details: process.env.DENO_ENV === 'development' ? {
+      details: Deno.env.get('DENO_ENV') === 'development' ? {
         stack: error.stack,
         name: error.name,
       } : undefined,

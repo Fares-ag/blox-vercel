@@ -94,6 +94,10 @@ describe('AuthService', () => {
 
   describe('logout', () => {
     it('should successfully logout', async () => {
+      vi.mocked(supabase.auth.getUser).mockResolvedValue({
+        data: { user: null },
+        error: null,
+      } as any);
       vi.mocked(supabase.auth.signOut).mockResolvedValue({
         error: null,
       } as any);

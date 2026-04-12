@@ -54,24 +54,6 @@
       margin: 0 auto;
       padding: 0 24px;
 
-      .hero-badge {
-        display: inline-block;
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 50px;
-        padding: 8px 20px;
-        margin-bottom: 32px;
-        animation: fadeInDown 0.8s ease-out;
-
-        .badge-text {
-          color: #ffffff;
-          font-weight: 500;
-          font-size: 14px;
-          letter-spacing: 0.5px;
-        }
-      }
-
       .hero-title {
         font-size: 56px;
         font-weight: 800;
@@ -145,17 +127,6 @@
             letter-spacing: 0.5px;
           }
         }
-      }
-    }
-
-    @keyframes fadeInDown {
-      from {
-        opacity: 0;
-        transform: translateY(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
       }
     }
 

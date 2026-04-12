@@ -5,6 +5,7 @@ import { Box, Typography, Checkbox, FormControlLabel, Link, Stack, Alert } from 
 import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../../../hooks/useAuth';
+import { getSafePostLoginRedirect } from '../../../../utils/authRedirect.util';
 import { Input, Button } from '@shared/components';
 import * as yup from 'yup';
 import './LoginPage.scss';
@@ -38,6 +39,9 @@ export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const message = location.state?.message;
+  const postLoginRedirect = getSafePostLoginRedirect(
+    (location.state as { from?: unknown } | null)?.from
+  );
 
   const {
     register,
@@ -59,7 +63,7 @@ export const LoginPage: React.FC = () => {
   }, [message]);
 
   const onSubmit = async (data: LoginFormData) => {
-    const result = await login(data);
+    const result = await login(data, { redirectTo: postLoginRedirect });
     if (result.success) {
       toast.success('Login successful!');
     } else {
@@ -81,7 +85,7 @@ export const LoginPage: React.FC = () => {
       password: 'password123',
       rememberMe: true,
     };
-    const result = await login(quickLoginData);
+    const result = await login(quickLoginData, { redirectTo: postLoginRedirect });
     if (result.success) {
       toast.success('Quick login successful! (Using dummy credentials)');
     } else {
@@ -175,7 +179,7 @@ export const LoginPage: React.FC = () => {
           <Box className="signup-link">
             <Typography variant="body2">
               Don't have an account?{' '}
-              <Link component={RouterLink} to="/customer/auth/signup">
+              <Link component={RouterLink} to="/customer/auth/signup" state={location.state}>
                 Sign up
               </Link>
             </Typography>

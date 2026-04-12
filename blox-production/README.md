@@ -2,6 +2,8 @@
 
 A comprehensive admin dashboard for managing vehicle financing applications, products, offers, promotions, packages, and financial ledgers. Built with React 19+ and TypeScript.
 
+**Platform documentation (functional + technical, all apps):** see [`docs/PLATFORM_DOCUMENTATION.md`](docs/PLATFORM_DOCUMENTATION.md).
+
 ## Technology Stack
 
 - **React 19+** with TypeScript

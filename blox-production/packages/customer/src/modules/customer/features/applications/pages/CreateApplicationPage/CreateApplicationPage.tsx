@@ -31,7 +31,9 @@ import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { Input, Select, type SelectOption } from '@shared/components';
-import { useAppSelector } from '../../../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
+import { setCredentials } from '../../../../store/slices/auth.slice';
+import type { User } from '@shared/models/user.model';
 import type { Product } from '@shared/models/product.model';
 import type { Application, ApplicationStatus } from '@shared/models/application.model';
 import type { Offer } from '@shared/models/offer.model';
@@ -117,6 +119,7 @@ const genderOptions: SelectOption[] = [
 
 export const CreateApplicationPage: React.FC = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   const [vehicle, setVehicle] = useState<Product | null>(null);
@@ -430,9 +433,15 @@ export const CreateApplicationPage: React.FC = () => {
   const onSubmit = async (data: ApplicationFormData) => {
     devLogger.debug('Form submitted with data:', data);
     devLogger.debug('Form errors:', errors);
-    
+
+    // Match DB / RLS: when logged in, use session email (same as JWT), not a differently cased form value.
+    const resolvedCustomerEmail =
+      isAuthenticated && user?.email
+        ? user.email.trim().toLowerCase()
+        : data.email.trim().toLowerCase();
+
     // Check for blocking existing application
-    const customerEmail = data.email.toLowerCase();
+    const customerEmail = resolvedCustomerEmail;
     
     // Load applications from Supabase
     const supabaseResponse = await supabaseApiService.getApplications();
@@ -483,12 +492,15 @@ export const CreateApplicationPage: React.FC = () => {
     try {
       setSubmitting(true);
       console.log('Starting application submission...');
-      
-      // If user is not authenticated, create account first
+
+      /** When email confirmation is on, signUp returns session null — DB insert uses RPC instead of RLS. */
+      let signupAuthUserId: string | undefined;
+
+      // If user is not authenticated, create account first, then submit application (session or RPC).
       if (!isAuthenticated && data.password) {
         try {
           console.log('Creating user account...');
-          await customerAuthService.signup({
+          const { user: newUser, session: newSession } = await customerAuthService.signup({
             first_name: data.firstName,
             last_name: data.lastName,
             email: data.email,
@@ -499,28 +511,52 @@ export const CreateApplicationPage: React.FC = () => {
             password: data.password,
             confirm_password: data.confirmPassword,
           });
-          
-          // Check if email confirmation is required
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user && !user.email_confirmed_at) {
-            toast.success('Account created! Please check your email to verify your account before viewing applications.');
-            // Still create the application, but user will need to verify email to view it
+
+          if (newSession?.user) {
+            const u = newSession.user;
+            const mappedUser: User = {
+              id: u.id,
+              email: u.email || '',
+              name:
+                u.user_metadata?.first_name && u.user_metadata?.last_name
+                  ? `${u.user_metadata.first_name} ${u.user_metadata.last_name}`.trim()
+                  : u.email || '',
+              role: u.user_metadata?.role || 'customer',
+              permissions: u.user_metadata?.permissions || [],
+            };
+            dispatch(setCredentials({ user: mappedUser, token: newSession.access_token }));
+            await supabase.auth.refreshSession();
+            const {
+              data: { user: createdUser },
+            } = await supabase.auth.getUser();
+            if (createdUser && !createdUser.email_confirmed_at) {
+              toast.success(
+                'Account created! Please check your email to verify your account before viewing applications.'
+              );
+            } else {
+              toast.success('Account created successfully!');
+            }
+          } else if (newUser?.id) {
+            signupAuthUserId = newUser.id;
+            toast.success(
+              'Account created! Check your email to confirm your address — your application is being saved. After confirming, log in to track it under My Applications.'
+            );
           } else {
-            toast.success('Account created successfully!');
+            toast.error('Account could not be created. Please try again or log in.');
+            return;
           }
         } catch (signupError: unknown) {
           const errorMessage = signupError instanceof Error ? signupError.message : 'Failed to create account';
-          
-          // If user already exists, that's okay - they might be trying to login
+
           if (errorMessage.includes('already registered') || errorMessage.includes('User already registered')) {
             toast.warning('An account with this email already exists. Please login to continue.');
             navigate('/customer/auth/login');
             return;
           }
-          
-          // For other errors, still allow application creation but show warning
+
           console.error('Account creation error:', signupError);
-          toast.warning(`Account creation failed: ${errorMessage}. Application will still be submitted.`);
+          toast.error(`Account creation failed: ${errorMessage}. Please try again or log in.`);
+          return;
         }
       }
       
@@ -640,65 +676,68 @@ export const CreateApplicationPage: React.FC = () => {
       }
 
       // Create application in Supabase
-      const supabaseResponse = await supabaseApiService.createApplication({
-        customerName: `${data.firstName} ${data.lastName}`,
-        customerEmail: data.email,
-        customerPhone: data.phone,
-        vehicleId: vehicle.id,
-        offerId: defaultOffer.id,
-        status: 'under_review',
-        loanAmount: loanAmount || (vehicle.price - downPayment),
-        downPayment: downPayment,
-        customerInfo: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          phone: data.phone,
-          nationalId: data.nationalId,
-          gender: data.gender,
-          nationality: data.nationality,
-          employment: {
-            employmentType: employmentType || '',
-            employmentDuration: durationOfResidence || '',
-            salary: salary || 0,
-            company: '',
-            position: '',
-          },
-          income: {
-            monthlyIncome: salary || 0,
-            totalIncome: salary || 0,
-          },
-        },
-        installmentPlan: {
-          tenure: tenureString,
-          interval: 'Monthly',
-          monthlyAmount: monthlyPayment || 0,
-          totalAmount: vehicle.price + totalRent,
+      const supabaseResponse = await supabaseApiService.createApplication(
+        {
+          customerName: `${data.firstName} ${data.lastName}`,
+          customerEmail: resolvedCustomerEmail,
+          customerPhone: data.phone,
+          vehicleId: vehicle.id,
+          offerId: defaultOffer.id,
+          status: 'under_review',
+          loanAmount: loanAmount || (vehicle.price - downPayment),
           downPayment: downPayment,
-          annualRentalRate: annualRentRateDecimal, // Store the rate used for calculation
-          schedule: schedule,
+          customerInfo: {
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: resolvedCustomerEmail,
+            phone: data.phone,
+            nationalId: data.nationalId,
+            gender: data.gender,
+            nationality: data.nationality,
+            employment: {
+              employmentType: employmentType || '',
+              employmentDuration: durationOfResidence || '',
+              salary: salary || 0,
+              company: '',
+              position: '',
+            },
+            income: {
+              monthlyIncome: salary || 0,
+              totalIncome: salary || 0,
+            },
+          },
+          installmentPlan: {
+            tenure: tenureString,
+            interval: 'Monthly',
+            monthlyAmount: monthlyPayment || 0,
+            totalAmount: vehicle.price + totalRent,
+            downPayment: downPayment,
+            annualRentalRate: annualRentRateDecimal, // Store the rate used for calculation
+            schedule: schedule,
+          },
+          documents: Object.values(documents).map((doc) => ({
+            id: `DOC${Date.now()}-${doc.category}`,
+            name: doc.name || `${doc.category} document`,
+            type: doc.file?.type || 'application/pdf',
+            category: doc.category,
+            url: doc.url || '',
+            uploadedAt: new Date().toISOString(),
+          })),
+          bloxMembership: hasBloxMembership ? {
+            isActive: true,
+            membershipType: membershipType,
+            purchasedDate: new Date().toISOString(),
+            cost: membershipType === 'yearly' ? MembershipConfig.costPerYear : MembershipConfig.costPerMonth,
+            ...(membershipType === 'monthly' && {
+              nextBillingDate: moment().add(1, 'month').toISOString(),
+            }),
+            ...(membershipType === 'yearly' && {
+              renewalDate: moment().add(1, 'year').toISOString(),
+            }),
+          } : undefined,
         },
-        documents: Object.values(documents).map((doc) => ({
-          id: `DOC${Date.now()}-${doc.category}`,
-          name: doc.name || `${doc.category} document`,
-          type: doc.file?.type || 'application/pdf',
-          category: doc.category,
-          url: doc.url || '',
-          uploadedAt: new Date().toISOString(),
-        })),
-        bloxMembership: hasBloxMembership ? {
-          isActive: true,
-          membershipType: membershipType,
-          purchasedDate: new Date().toISOString(),
-          cost: membershipType === 'yearly' ? MembershipConfig.costPerYear : MembershipConfig.costPerMonth,
-          ...(membershipType === 'monthly' && {
-            nextBillingDate: moment().add(1, 'month').toISOString(),
-          }),
-          ...(membershipType === 'yearly' && {
-            renewalDate: moment().add(1, 'year').toISOString(),
-          }),
-        } : undefined,
-      });
+        signupAuthUserId ? { signupAuthUserId } : undefined
+      );
 
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         console.log('Application created successfully:', supabaseResponse.data);
@@ -707,7 +746,7 @@ export const CreateApplicationPage: React.FC = () => {
         // Create notification for the customer
         try {
           await supabaseApiService.createNotification({
-            userEmail: data.email,
+            userEmail: resolvedCustomerEmail,
             type: 'success',
             title: 'Application Submitted',
             message: `Your application #${applicationId.slice(0, 8)} has been submitted successfully and is now under review.`,

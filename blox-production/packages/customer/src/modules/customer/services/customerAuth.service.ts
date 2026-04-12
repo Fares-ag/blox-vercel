@@ -1,5 +1,12 @@
+import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@shared/services/supabase.service';
 import type { LoginCredentials, AuthResponse, User } from '@shared/models/user.model';
+
+/** Returned by signup() so callers can create a DB row when email-confirm leaves session null. */
+export interface SignupResult {
+  user: { id: string; email?: string | null } | null;
+  session: Session | null;
+}
 
 export interface SignUpData {
   first_name: string;
@@ -139,12 +146,12 @@ class CustomerAuthService {
     };
   }
 
-  async signup(data: SignUpData): Promise<void> {
+  async signup(data: SignUpData): Promise<SignupResult> {
     if (data.password !== data.confirm_password) {
       throw new Error('Passwords do not match');
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpResponse, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
@@ -163,6 +170,11 @@ class CustomerAuthService {
     if (error) {
       throw new Error(error.message || 'Registration failed');
     }
+
+    return {
+      user: signUpResponse.user ? { id: signUpResponse.user.id, email: signUpResponse.user.email } : null,
+      session: signUpResponse.session ?? null,
+    };
   }
 
   async logout(): Promise<void> {

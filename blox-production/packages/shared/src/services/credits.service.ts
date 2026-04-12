@@ -326,6 +326,69 @@ class CreditsService {
       };
     }
   }
+
+  /**
+   * Pay one installment using Blox Credits (customer-only).
+   * Calls customer_pay_installment_with_credits RPC: checks balance, deducts credits, marks schedule paid.
+   */
+  async payInstallmentWithCredits(
+    applicationId: string,
+    dueDate: string,
+    amount: number
+  ): Promise<ApiResponse<CreditOperationResult>> {
+    try {
+      if (amount <= 0) {
+        return {
+          status: 'ERROR',
+          message: 'Amount must be greater than 0',
+          data: undefined,
+        };
+      }
+      const { data, error } = await supabase.rpc('customer_pay_installment_with_credits', {
+        p_application_id: applicationId,
+        p_due_date: dueDate,
+        p_amount: amount,
+      });
+      if (error) {
+        throw new Error(error.message || 'Failed to pay with credits');
+      }
+      const row = Array.isArray(data) ? data[0] : data;
+      if (!row) {
+        return {
+          status: 'ERROR',
+          message: 'No result from server',
+          data: undefined,
+        };
+      }
+      if (!row.success) {
+        return {
+          status: 'ERROR',
+          message: row.message || 'Payment failed',
+          data: {
+            success: false,
+            newBalance: Number(row.new_balance) || 0,
+            message: row.message || 'Payment failed',
+          },
+        };
+      }
+      return {
+        status: 'SUCCESS',
+        message: row.message || 'Payment successful',
+        data: {
+          success: true,
+          newBalance: Number(row.new_balance) ?? 0,
+          message: row.message || 'Payment successful',
+        },
+      };
+    } catch (error: any) {
+      console.error('Pay with credits error:', error);
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to pay with credits',
+        data: undefined,
+      };
+    }
+  }
 }
 
 export const creditsService = new CreditsService();

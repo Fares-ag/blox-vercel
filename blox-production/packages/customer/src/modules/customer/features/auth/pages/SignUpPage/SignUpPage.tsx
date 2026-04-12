@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Box, Typography, Link, MenuItem } from '@mui/material';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { customerAuthService, type SignUpData } from '../../../../services/customerAuth.service';
 import { Input, Button, Select } from '@shared/components';
@@ -38,6 +38,7 @@ const genderOptions = [
 
 export const SignUpPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
 
   const {
@@ -98,7 +99,7 @@ export const SignUpPage: React.FC = () => {
     try {
       await customerAuthService.signup(data);
       toast.success('Registration successful! Please login.');
-      navigate('/customer/auth/login');
+      navigate('/customer/auth/login', { state: location.state });
     } catch (error: any) {
       toast.error(error.message || 'Registration failed');
     } finally {
@@ -206,7 +207,7 @@ export const SignUpPage: React.FC = () => {
           <Box className="login-link">
             <Typography variant="body2">
               Already have an account?{' '}
-              <Link component={RouterLink} to="/customer/auth/login">
+              <Link component={RouterLink} to="/customer/auth/login" state={location.state}>
                 Sign In
               </Link>
             </Typography>

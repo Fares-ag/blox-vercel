@@ -95,11 +95,6 @@ export const LandingPage: React.FC = () => {
       <Box className="hero-section">
         <Container maxWidth="lg">
           <Box className="hero-content">
-            <Box className="hero-badge">
-              <Typography variant="body2" className="badge-text">
-                Managing 20M+ QAR in Loan Books
-              </Typography>
-            </Box>
             <Typography variant="h1" className="hero-title">
               Your Journey to Vehicle Ownership Starts Here
             </Typography>

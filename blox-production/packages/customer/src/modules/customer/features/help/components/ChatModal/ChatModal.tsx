@@ -1701,6 +1701,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
             )}
           </Box>
           <IconButton
+            aria-label="Send"
             onClick={handleSend}
             disabled={(!inputMessage.trim() && selectedFiles.length === 0) || (!isConnected && !isConnecting) || uploadingFiles}
             sx={{

@@ -6,13 +6,18 @@ import type { LoginCredentials, AuthResponse } from '@shared/models/user.model';
 import { useNavigate } from 'react-router-dom';
 import { supabaseCache } from '@shared/services';
 
+export interface LoginOptions {
+  /** In-app path only (e.g. from AuthGuard `state.from`); validated by caller */
+  redirectTo?: string;
+}
+
 export const useAuth = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { user, isAuthenticated, loading, error } = useAppSelector((state) => state.auth);
 
   const handleLogin = useCallback(
-    async (credentials: LoginCredentials) => {
+    async (credentials: LoginCredentials, options?: LoginOptions) => {
       try {
         dispatch(setLoading(true));
         dispatch(setError(null));
@@ -22,7 +27,8 @@ export const useAuth = () => {
         dispatch(setCredentials({ user: response.user, token: response.token }));
         // Invalidate applications cache so My Applications fetches fresh data with new session
         supabaseCache.invalidate('applications:all');
-        navigate('/customer/my-applications');
+        const target = options?.redirectTo?.trim() || '/customer/my-applications';
+        navigate(target, { replace: true });
         
         return { success: true };
       } catch (err: unknown) {

@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memorandum of Understanding – BLOX &amp; Dealer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ═══════════════════════════════════════════════════════════════
+       BLOX CORPORATE IDENTITY (CI)
+       Primary: #DAFF01 (Lime Yellow) | Text: #0E1909 (Blox Black)
+       Secondary: #787663 (Dark Grey) | Mid: #C9C4B7 | Background: #F3F0ED
+       Font: IBM Plex Sans
+       ═══════════════════════════════════════════════════════════════ */
+    :root {
+      --blox-primary: #DAFF01;
+      --blox-primary-dark: #B8D900;
+      --blox-black: #0E1909;
+      --blox-dark-grey: #787663;
+      --blox-mid-grey: #C9C4B7;
+      --blox-light-grey: #F3F0ED;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 11pt;
+      line-height: 1.55;
+      color: var(--blox-black);
+      background: #fff;
+      max-width: 210mm;
+      margin: 0 auto;
+      padding: 0;
+    }
+    .doc-body { padding: 20mm 25mm; }
+    .blox-header {
+      background: var(--blox-primary);
+      padding: 14px 25mm;
+      margin-bottom: 0;
+      border-bottom: 4px solid var(--blox-black);
+      display: flex;
+      align-items: center;
+    }
+    .blox-header-logo {
+      height: 36px;
+      width: auto;
+      max-width: 160px;
+      object-fit: contain;
+    }
+    .blox-logo-text {
+      font-size: 22pt;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--blox-black);
+    }
+    .doc-title {
+      font-size: 15pt;
+      font-weight: 600;
+      color: var(--blox-black);
+      margin: 24px 0 6px;
+      letter-spacing: -0.01em;
+    }
+    .doc-subtitle {
+      font-size: 11pt;
+      color: var(--blox-dark-grey);
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 12pt;
+      font-weight: 600;
+      color: var(--blox-black);
+      margin: 22px 0 10px;
+      padding: 8px 0 8px 12px;
+      border-left: 4px solid var(--blox-primary);
+      background: var(--blox-light-grey);
+    }
+    .divider {
+      height: 1px;
+      background: var(--blox-mid-grey);
+      margin: 16px 0;
+    }
+    table.parties {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 10.5pt;
+    }
+    table.parties th {
+      text-align: left;
+      padding: 8px 12px 6px 0;
+      font-weight: 600;
+      color: var(--blox-black);
+      vertical-align: top;
+      width: 50%;
+    }
+    table.parties td {
+      padding: 8px 0 6px;
+      vertical-align: top;
+      color: var(--blox-black);
+    }
+    table.parties .ar { direction: rtl; text-align: right; font-size: 10pt; }
+    .preamble { margin: 16px 0; }
+    .preamble p { margin: 0 0 10px; }
+    .article-num {
+      font-weight: 600;
+      color: var(--blox-black);
+      margin-bottom: 6px;
+    }
+    .article-body { margin-left: 0; margin-bottom: 18px; }
+    .article-body p { margin: 0 0 8px; }
+    .article-body ul { margin: 6px 0 12px 20px; padding: 0; }
+    .article-body li { margin-bottom: 4px; }
+    .signature-block {
+      margin: 28px 0;
+      padding: 16px 0;
+      border-top: 1px solid var(--blox-mid-grey);
+    }
+    .signature-block table { width: 100%; border-collapse: collapse; }
+    .signature-block td { padding: 6px 12px 6px 0; vertical-align: top; font-size: 10.5pt; }
+    .signature-line { border-bottom: 1px solid var(--blox-black); min-width: 180px; margin-top: 24px; }
+    .appendix {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid var(--blox-mid-grey);
+    }
+    .appendix table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10.5pt;
+      margin: 12px 0;
+    }
+    .appendix th, .appendix td {
+      border: 1px solid var(--blox-mid-grey);
+      padding: 8px 10px;
+      text-align: left;
+    }
+    .appendix th { background: var(--blox-light-grey); font-weight: 600; color: var(--blox-black); }
+    .placeholder { color: var(--blox-dark-grey); }
+    .blox-footer {
+      margin-top: 32px;
+      padding: 12px 0;
+      border-top: 3px solid var(--blox-primary);
+      font-size: 9pt;
+      color: var(--blox-dark-grey);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .blox-footer-logo {
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--blox-black);
+    }
+
+    /* Cover page – full-bleed Blox-branded design */
+    .cover-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      page-break-after: always;
+      background: var(--blox-black);
+    }
+    .cover-band {
+      background: var(--blox-primary);
+      padding: 40px 25mm 32px;
+      border-bottom: 4px solid var(--blox-black);
+    }
+    .cover-logo { display: flex; justify-content: center; align-items: center; }
+    .cover-logo img { height: 44px; width: auto; max-width: 200px; object-fit: contain; }
+    .cover-logo .blox-wordmark {
+      font-size: 28pt;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--blox-black);
+      border-bottom: 3px solid var(--blox-black);
+      padding-bottom: 4px;
+      display: inline-block;
+    }
+    .cover-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 56px 25mm 48px;
+      background: #fff;
+    }
+    .cover-title {
+      font-size: 24pt;
+      font-weight: 600;
+      color: var(--blox-black);
+      margin: 0 0 40px;
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+    }
+    .cover-between {
+      font-size: 11pt;
+      color: var(--blox-dark-grey);
+      margin: 0 0 28px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 500;
+    }
+    .cover-party {
+      font-size: 16pt;
+      font-weight: 600;
+      color: var(--blox-black);
+      margin: 0 0 4px;
+    }
+    .cover-party-sub {
+      font-size: 10pt;
+      color: var(--blox-dark-grey);
+      margin: 0 0 24px;
+    }
+    .cover-footer {
+      background: var(--blox-light-grey);
+      padding: 16px 25mm;
+      border-top: 1px solid var(--blox-mid-grey);
+      text-align: center;
+      font-size: 9pt;
+      color: var(--blox-dark-grey);
+    }
+    @media print {
+      .cover-page { min-height: 100vh; page-break-after: always; }
+      body { max-width: none; }
+      .cover-band { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .download-wrap { display: none !important; }
+    }
+    .download-wrap {
+      position: fixed;
+      top: 16px;
+      right: 24px;
+      z-index: 9999;
+    }
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--blox-black);
+      background: var(--blox-primary);
+      border: 2px solid var(--blox-black);
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(14, 25, 9, 0.15);
+    }
+    .download-btn:hover {
+      background: var(--blox-primary-dark);
+      box-shadow: 0 4px 12px rgba(14, 25, 9, 0.2);
+    }
+    .download-btn:active { transform: scale(0.98); }
+  </style>
+</head>
+<body>
+
+  <div class="download-wrap" aria-label="Download as Word">
+    <button type="button" class="download-btn" id="downloadWordBtn">Download as Word</button>
+  </div>
+
+  <section class="cover-page">
+    <div class="cover-band">
+      <div class="cover-logo">
+        <img src="BloxLogoNav.png" alt="BLOX" onerror="this.style.display='none'; var w=this.nextElementSibling; if(w) w.style.display='inline-block';" />
+        <span class="blox-wordmark" style="display: none;">BLOX</span>
+      </div>
+    </div>
+    <script>
+      (function(){
+        var img = document.querySelector('.cover-page .cover-logo img');
+        if (img) {
+          img.addEventListener('error', function() { this.style.display = 'none'; var w = this.nextElementSibling; if (w) w.style.display = 'inline-block'; });
+        }
+      })();
+    </script>
+    <div class="cover-main">
+      <h1 class="cover-title">Memorandum of Understanding</h1>
+      <p class="cover-between">Between</p>
+      <p class="cover-party">BLOX QFC LLC</p>
+      <p class="cover-party-sub">(Hereinafter referred to as &ldquo;Blox&rdquo;)</p>
+      <p class="cover-between">And</p>
+      <p class="cover-party">[DEALER NAME]</p>
+      <p class="cover-party-sub">(Hereinafter referred to as &ldquo;the Dealer&rdquo;)</p>
+    </div>
+    <div class="cover-footer">Confidential &bull; BLOX QFC LLC &bull; Qatar Financial Centre</div>
+  </section>
+
+  <div class="doc-body">
+
+  <p class="doc-title">Memorandum of Understanding (MOU)</p>
+  <p class="doc-subtitle">Between BLOX QFC LLC and [DEALER NAME]</p>
+
+  <p>This Memorandum of Understanding (hereinafter referred to as the "MOU") is made and entered into on this day, [Date], by and between:</p>
+
+  <table class="parties">
+    <tr>
+      <th>English</th>
+      <th>Arabic</th>
+    </tr>
+    <tr>
+      <td><strong>First Party:</strong> BLOX QFC LLC, a limited liability company organized and existing under the laws of the Qatar Financial Centre, holding Commercial Registration No. <span class="placeholder">[Blox CR Number]</span>, with its principal office located at <span class="placeholder">[Blox Address]</span>, Doha, State of Qatar, represented herein by Mr. Ahmed Shariefi, in his capacity as Chief Executive Officer. (Hereinafter referred to as "Blox")</td>
+      <td class="ar"><strong>الطرف الأول:</strong> شركة بلوكس مركز قطر للمال (ذ.م.م)، شركة ذات مسؤولية محدودة مؤسسة وقائمة بموجب قوانين مركز قطر للمال، وتحمل السجل التجاري رقم <span class="placeholder">[رقم سجل بلوكس]</span>، وعنوانها الرئيسي في <span class="placeholder">[عنوان بلوكس]</span>، الدوحة، دولة قطر، ويمثلها في هذا العقد السيد/ أحمد شريفي، بصفته الرئيس التنفيذي. (ويشار إليها فيما بعد بـ "بلوكس")</td>
+    </tr>
+    <tr>
+      <td><strong>Second Party:</strong> <span class="placeholder">[DEALER NAME]</span>, a company organized and existing under the laws of the State of Qatar, holding Commercial Registration No. <span class="placeholder">[Dealer CR Number]</span>, with its principal office located at <span class="placeholder">[Dealer Address]</span>, Doha, State of Qatar, represented by Mr./Ms. <span class="placeholder">[Dealer Representative]</span>, in his/her capacity as <span class="placeholder">[Representative Title]</span>. (Hereinafter referred to as "the Dealer")</td>
+      <td class="ar"><strong>الطرف الثاني:</strong> <span class="placeholder">[اسم الوكيل]</span>، شركة مؤسسة وقائمة بموجب قوانين دولة قطر، وتحمل السجل التجاري رقم <span class="placeholder">[رقم سجل الوكيل]</span>، وعنوانها الرئيسي في <span class="placeholder">[عنوان الوكيل]</span>، الدوحة، دولة قطر، ويمثلها السيد/ <span class="placeholder">[اسم ممثل الوكيل]</span>، بصفته <span class="placeholder">[منصب الممثل]</span>. (ويشار إليها فيما بعد بـ "الوكيل")</td>
+    </tr>
+  </table>
+
+  <div class="divider"></div>
+
+  <p class="section-title">Preamble | تمهيد</p>
+  <div class="preamble">
+    <p>Whereas, Blox is a fintech company licensed by the Qatar Financial Centre Authority and is in the process of obtaining a digital lending license from the Qatar Central Bank to offer innovative, Shariah-compliant vehicle co-ownership solutions through its proprietary digital platform.</p>
+    <p>Whereas, the Dealer is a reputable entity engaged in the business of selling new and/or used vehicles in the State of Qatar and is desirous of providing its customers with modern and flexible financing options.</p>
+    <p>Whereas, the Parties wish to enter into this MOU to establish a framework for cooperation whereby the Dealer will promote Blox’s financing solutions to its customers, and Blox will provide a streamlined digital financing journey for vehicles purchased from the Dealer.</p>
+    <p><strong>Now, therefore, the Parties have agreed as follows:</strong></p>
+    <p class="ar">حيث أن بلوكس هي شركة تكنولوجيا مالية مرخصة من قبل هيئة مركز قطر للمال وهي في طور الحصول على ترخيص إقراض رقمي من مصرف قطر المركزي لتقديم حلول مبتكرة ومتوافقة مع الشريعة الإسلامية للملكية المشتركة للمركبات عبر منصتها الرقمية الخاصة.</p>
+    <p class="ar">وحيث أن الوكيل هو كيان مرموق يعمل في مجال بيع المركبات الجديدة و/أو المستعملة في دولة قطر ويرغب في تزويد عملائه بخيارات تمويل حديثة ومرنة.</p>
+    <p class="ar">وحيث أن الطرفين يرغبان في إبرام مذكرة التفاهم هذه لوضع إطار للتعاون يقوم بموجبه الوكيل بالترويج لحلول بلوكس التمويلية لعملائه، وتقوم بلوكس بتوفير رحلة تمويل رقمية مبسطة للمركبات المشتراة من الوكيل.</p>
+    <p class="ar"><strong>وعليه، فقد اتفق الطرفان على ما يلي:</strong></p>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="section-title">Article 1: Scope of Cooperation | المادة 1: نطاق التعاون</p>
+  <p class="article-num">1.1. Blox's Obligations | التزامات بلوكس</p>
+  <div class="article-body">
+    <p>a) Provide the Dealer's customers with access to its digital platform for vehicle financing applications based on a co-ownership (Diminishing Musharakah) model.</p>
+    <p class="ar">أ) تزويد عملاء الوكيل بالوصول إلى منصتها الرقمية لطلبات تمويل المركبات القائمة على نموذج الملكية المشتركة (المشاركة المتناقصة).</p>
+    <p>b) Utilize its proprietary AI-driven underwriting system to provide rapid financing decisions.</p>
+    <p class="ar">ب) استخدام نظام الاكتتاب الخاص بها القائم على الذكاء الاصطناعي لتقديم قرارات تمويل سريعة.</p>
+    <p>c) Offer marketing support and promotional materials to the Dealer to facilitate the promotion of Blox's services, subject to mutual agreement.</p>
+    <p class="ar">ج) تقديم الدعم التسويقي والمواد الترويجية للوكيل لتسهيل الترويج لخدمات بلوكس، وذلك بعد موافقة الطرفين.</p>
+    <p>d) Provide training to the Dealer's sales staff on Blox's product offerings and digital application process.</p>
+    <p class="ar">د) توفير التدريب لموظفي مبيعات الوكيل على عروض منتجات بلوكس وعملية التقديم الرقمية.</p>
+  </div>
+  <p class="article-num">1.2 The Dealer’s Obligations | التزامات الوكيل</p>
+  <div class="article-body">
+    <p>a) Actively promote Blox's vehicle financing solutions as a preferred financing option to its customers.</p>
+    <p class="ar">أ) الترويج بنشاط لحلول تمويل المركبات من بلوكس كخيار تمويل مفضل لعملائه.</p>
+    <p>b) Integrate Blox's promotional materials within its showrooms and digital channels.</p>
+    <p class="ar">ب) دمج المواد الترويجية لبلوكس داخل صالات العرض والقنوات الرقمية الخاصة به.</p>
+    <p>c) Refer customers interested in financing to the Blox digital platform.</p>
+    <p class="ar">ج) إحالة العملاء المهتمين بالتمويل إلى منصة بلوكس الرقمية.</p>
+    <p>d) Facilitate a smooth vehicle handover process upon receipt of financing confirmation from Blox.</p>
+    <p class="ar">د) تسهيل عملية تسليم المركبة بسلاسة عند استلام تأكيد التمويل من بلوكس.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="section-title">Article 2: Financial Terms | المادة 2: الشروط المالية</p>
+  <div class="article-body">
+    <p><strong>2.1.</strong> In consideration for the services provided by the Dealer, Blox shall pay the Dealer a referral commission for each vehicle successfully financed through the Blox platform. The detailed commission structure is outlined in Appendix (A) attached hereto.</p>
+    <p class="ar"><strong>2.1.</strong> مقابل الخدمات التي يقدمها الوكيل، تدفع بلوكس للوكيل عمولة إحالة عن كل مركبة يتم تمويلها بنجاح عبر منصة بلوكس. تم توضيح هيكل العمولة المفصل في الملحق (أ) المرفق.</p>
+    <p><strong>2.2.</strong> The Dealer may, at its discretion, offer a special discount to customers who finance their vehicle purchase through Blox. The terms of such discounts are outlined in Appendix (B) attached hereto.</p>
+    <p class="ar"><strong>2.2.</strong> يجوز للوكيل، حسب تقديره، تقديم خصم خاص للعملاء الذين يمولون شراء سياراتهم عبر بلوكس. تم توضيح شروط هذه الخصومات في الملحق (ب) المرفق.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="section-title">Article 3: Term and Termination | المادة 3: مدة العقد وإنهائه</p>
+  <div class="article-body">
+    <p><strong>3.1.</strong> This MOU shall be effective for a period of one (1) year from the date of its signing, renewable automatically for similar periods unless either party notifies the other in writing of its intention not to renew at least sixty (60) days prior to the expiry of the term.</p>
+    <p class="ar"><strong>3.1.</strong> تسري مذكرة التفاهم هذه لمدة عام واحد (1) من تاريخ توقيعها، وتجدد تلقائيًا لمدد مماثلة ما لم يخطر أحد الطرفين الآخر كتابيًا بنيته في عدم التجديد قبل ستين (60) يومًا على الأقل من انتهاء المدة.</p>
+    <p><strong>3.2.</strong> Either party may terminate this MOU by providing the other party with a written notice of ninety (90) days.</p>
+    <p class="ar"><strong>3.2.</strong> يجوز لأي من الطرفين إنهاء مذكرة التفاهم هذه بموجب إشعار خطي للطرف الآخر قبل تسعين (90) يومًا.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="section-title">Article 4: Confidentiality | المادة 4: السرية</p>
+  <div class="article-body">
+    <p><strong>4.1.</strong> Each party agrees to keep confidential all information related to the business, operations, and customers of the other party, including the terms of this MOU. This obligation shall survive the termination of this MOU.</p>
+    <p class="ar"><strong>4.1.</strong> يوافق كل طرف على الحفاظ على سرية جميع المعلومات المتعلقة بأعمال وعمليات وعملاء الطرف الآخر، بما في ذلك شروط مذكرة التفاهم هذه. يظل هذا الالتزام ساريًا بعد إنهاء مذكرة التفاهم هذه.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="section-title">Article 5: Governing Law and Jurisdiction | المادة 5: القانون الحاكم والاختصاص القضائي</p>
+  <div class="article-body">
+    <p><strong>5.1.</strong> This MOU shall be governed by and construed in accordance with the laws of the State of Qatar and the regulations of the Qatar Financial Centre. Any dispute arising out of or in connection with this MOU shall be subject to the exclusive jurisdiction of the competent courts of Qatar.</p>
+    <p class="ar"><strong>5.1.</strong> تخضع مذكرة التفاهم هذه وتفسر وفقًا لقوانين دولة قطر ولوائح مركز قطر للمال. أي نزاع ينشأ عن أو فيما يتعلق بمذكرة التفاهم هذه يخضع للاختصاص الحصري للمحاكم المختصة في قطر.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="section-title">Article 6: Miscellaneous | المادة 6: أحكام متنوعة</p>
+  <div class="article-body">
+    <p><strong>6.1.</strong> This MOU represents the entire understanding between the parties and supersedes all prior discussions and agreements.</p>
+    <p class="ar"><strong>6.1.</strong> تمثل مذكرة التفاهم هذه كامل التفاهم بين الطرفين وتحل محل جميع المناقشات والاتفاقيات السابقة.</p>
+    <p><strong>6.2.</strong> Any amendment to this MOU must be made in writing and signed by authorized representatives of both parties.</p>
+    <p class="ar"><strong>6.2.</strong> يجب أن يكون أي تعديل على مذكرة التفاهم هذه كتابيًا وموقعًا من قبل ممثلين مفوضين من كلا الطرفين.</p>
+    <p><strong>6.3.</strong> This MOU is executed in two original copies, one for each party.</p>
+    <p class="ar"><strong>6.3.</strong> تم تحرير مذكرة التفاهم هذه من نسختين أصليتين، نسخة لكل طرف.</p>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="section-title">Signatures</p>
+  <p><em>In witness whereof, the parties have executed this MOU on the date first above written. | وبناءً على ما تقدم، وقع الطرفان على مذكرة التفاهم هذه في التاريخ المذكور أعلاه.</em></p>
+
+  <div class="signature-block">
+    <table>
+      <tr><td><strong>For and on behalf of BLOX QFC LLC</strong> | بالنيابة عن شركة بلوكس مركز قطر للمال (ذ.م.م)</td></tr>
+      <tr><td>Signature | التوقيع: _________________________</td></tr>
+      <tr><td>Name: Ahmed Shariefi | الاسم: أحمد شريفي</td></tr>
+      <tr><td>Title: Chief Executive Officer | المنصب: الرئيس التنفيذي</td></tr>
+      <tr><td>Date: _________________________</td></tr>
+    </table>
+  </div>
+  <div class="signature-block">
+    <table>
+      <tr><td><strong>For and on behalf of [DEALER NAME]</strong> | بالنيابة عن [اسم الوكيل]</td></tr>
+      <tr><td>Signature | التوقيع: _________________________</td></tr>
+      <tr><td>Name: <span class="placeholder">[Dealer Representative]</span> | الاسم: [اسم ممثل الوكيل]</td></tr>
+      <tr><td>Title: <span class="placeholder">[Representative Title]</span> | المنصب: [منصب الممثل]</td></tr>
+      <tr><td>Date: _________________________</td></tr>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="section-title">Appendix (A): Commission Structure | الملحق (أ): هيكل العمولة</p>
+  <p>For each vehicle financed through Blox, the Dealer agrees to pay a commission or a discount based on the following structure.</p>
+  <p class="ar">مقابل كل مركبة يتم تمويلها عبر بلوكس، يوافق الوكيل على دفع عمولة أو تقديم خصم بناءً على الهيكل التالي.</p>
+  <p><strong>New Vehicles | المركبات الجديدة</strong></p>
+  <table class="appendix">
+    <tr><th>Volume Tier (per month) | الشريحة (شهريًا)</th><th>Commission per Vehicle | العمولة لكل مركبة</th></tr>
+    <tr><td>1 – 10 vehicles</td><td>QAR 1,000 per vehicle</td></tr>
+    <tr><td>11 – 20 vehicles</td><td>QAR 2,500 per vehicle</td></tr>
+    <tr><td>20+ vehicles</td><td>Subject to special agreement between the Parties</td></tr>
+  </table>
+  <p><strong>Used Vehicles | المركبات المستعملة</strong></p>
+  <p>A flat fee of QAR 1,000 per vehicle. | مبلغ مقطوع قدره 1,000 ريال قطري لكل مركبة.</p>
+  <p>Commissions will be reconciled and paid monthly, within fifteen (15) days of the end of each calendar month.</p>
+  <p class="ar">ستتم تسوية العمولات ودفعها على أساس شهري، في غضون خمسة عشر (15) يومًا من نهاية كل شهر ميلادي.</p>
+
+  <div class="divider"></div>
+
+  <p class="section-title">Appendix (B): Customer Discount (Optional) | الملحق (ب): خصم العميل (اختياري)</p>
+  <p>The Dealer, at its sole discretion, may offer a special discount to customers financing their purchase through Blox. This discount will be applied directly to the vehicle’s selling price on the final invoice.</p>
+  <p class="ar">يجوز للوكيل، حسب تقديره الخاص، تقديم خصم خاص للعملاء الذين يمولون مشترياتهم عبر بلوكس. سيتم تطبيق هذا الخصم مباشرة على سعر بيع السيارة في الفاتورة النهائية.</p>
+  <p>&#8226; Discount Amount: <span class="placeholder">[Percentage]</span>% of the vehicle price or a flat amount of QAR <span class="placeholder">[Amount]</span>. | مبلغ الخصم: [النسبة المئوية]% من سعر المركبة أو مبلغ مقطوع قدره [المبلغ] ريال قطري.</p>
+
+  <footer class="blox-footer">
+    <span class="blox-footer-logo">BLOX</span>
+    <span>QFC LLC &bull; Qatar Financial Centre &bull; Confidential</span>
+  </footer>
+  </div><!-- .doc-body -->
+
+  <script>
+    (function() {
+      var btn = document.getElementById('downloadWordBtn');
+      if (!btn) return;
+
+      function getLogo() {
+        var img = document.querySelector('.cover-page .cover-logo img');
+        if (img && img.complete && img.naturalWidth) {
+          try {
+            var cv = document.createElement('canvas');
+            cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+            cv.getContext('2d').drawImage(img, 0, 0);
+            var d = cv.toDataURL('image/png');
+            if (d.indexOf('data:') === 0) {
+              var h = Math.round(120 * img.naturalHeight / img.naturalWidth);
+              return '<img src="' + d + '" width="120" height="' + h + '" />';
+            }
+          } catch (e) {}
+        }
+        return '<b style="font-size:28pt;color:#0E1909;font-family:Arial,sans-serif;">BLOX</b>';
+      }
+
+      function t(w, s) { return '<table width="' + w + '" border="0" cellpadding="0" cellspacing="0" style="width:' + w + ';border-collapse:collapse;' + (s || '') + '">'; }
+      function td(s, c) { return '<tr><td style="' + s + '">' + c + '</td></tr>'; }
+      function p(s, c) { return '<p style="' + s + '">' + c + '</p>'; }
+
+      var base = 'font-family:Arial,sans-serif;font-size:11pt;line-height:150%;color:#0E1909;';
+      var arBase = base + 'direction:rtl;text-align:right;';
+
+      function walkChildren(el) {
+        var out = '';
+        var kids = el.childNodes;
+        for (var i = 0; i < kids.length; i++) {
+          var n = kids[i];
+          if (n.nodeType === 3) {
+            var txt = n.textContent.trim();
+            if (txt) out += p(base + 'margin:0 0 6pt;', txt);
+            continue;
+          }
+          if (n.nodeType !== 1) continue;
+          var tag = n.tagName.toLowerCase();
+          var cls = n.className || '';
+          var htm = n.innerHTML;
+          var isAr = cls.indexOf('ar') !== -1;
+
+          if (cls.indexOf('doc-title') !== -1) {
+            out += p('font-size:15pt;font-weight:bold;color:#0E1909;font-family:Arial,sans-serif;margin:18pt 0 6pt;', htm);
+          } else if (cls.indexOf('doc-subtitle') !== -1) {
+            out += p('font-size:11pt;color:#787663;font-family:Arial,sans-serif;margin:0 0 14pt;', htm);
+          } else if (cls.indexOf('section-title') !== -1) {
+            out += t('100%', 'margin:16pt 0 10pt;') + td('width:100%;background:#F3F0ED;border-left:4pt solid #DAFF01;padding:8pt 12pt;font-size:12pt;font-weight:bold;color:#0E1909;font-family:Arial,sans-serif;', htm) + '</table>';
+          } else if (cls.indexOf('divider') !== -1) {
+            out += t('100%', 'margin:14pt 0;') + td('border-top:1pt solid #C9C4B7;font-size:1pt;line-height:1pt;', '&nbsp;') + '</table>';
+          } else if (cls.indexOf('article-num') !== -1) {
+            out += p('font-size:11pt;font-weight:bold;color:#0E1909;font-family:Arial,sans-serif;margin:12pt 0 6pt;', htm);
+          } else if (cls.indexOf('article-body') !== -1 || cls.indexOf('preamble') !== -1) {
+            var ps = n.querySelectorAll('p');
+            for (var j = 0; j < ps.length; j++) {
+              var pAr = ps[j].className.indexOf('ar') !== -1;
+              var st = pAr ? arBase : base;
+              out += p(st + 'margin:0 0 6pt;', ps[j].innerHTML);
+            }
+          } else if (tag === 'table' && cls.indexOf('parties') !== -1) {
+            out += buildPartiesTable(n);
+          } else if (tag === 'table' && cls.indexOf('appendix') !== -1) {
+            out += buildDataTable(n);
+          } else if (cls.indexOf('signature-block') !== -1) {
+            out += buildSignatureBlock(n);
+          } else if (cls.indexOf('blox-footer') !== -1) {
+            out += t('100%', 'margin-top:20pt;') + td('width:100%;border-top:3pt solid #DAFF01;padding:10pt 0;font-size:9pt;color:#787663;font-family:Arial,sans-serif;', '<b style="color:#0E1909;">BLOX</b> &nbsp; QFC LLC \u2022 Qatar Financial Centre \u2022 Confidential') + '</table>';
+          } else if (tag === 'p' || tag === 'div') {
+            var st2 = isAr ? arBase : base;
+            out += p(st2 + 'margin:0 0 6pt;', htm);
+          } else if (tag === 'em' || tag === 'strong' || tag === 'b' || tag === 'i') {
+            out += '<' + tag + '>' + htm + '</' + tag + '>';
+          } else if (tag === 'footer') {
+            out += t('100%', 'margin-top:20pt;') + td('width:100%;border-top:3pt solid #DAFF01;padding:10pt 0;font-size:9pt;color:#787663;font-family:Arial,sans-serif;', '<b style="color:#0E1909;">BLOX</b> &nbsp; QFC LLC \u2022 Qatar Financial Centre \u2022 Confidential') + '</table>';
+          } else {
+            out += p(base + 'margin:0 0 6pt;', htm);
+          }
+        }
+        return out;
+      }
+
+      function buildPartiesTable(tblEl) {
+        var rows = tblEl.querySelectorAll('tr');
+        var h = t('100%', 'margin:12pt 0;');
+        for (var r = 0; r < rows.length; r++) {
+          h += '<tr>';
+          var cells = rows[r].querySelectorAll('th, td');
+          for (var c = 0; c < cells.length; c++) {
+            var isH = cells[c].tagName === 'TH';
+            var isAr = cells[c].className.indexOf('ar') !== -1;
+            var st = 'width:50%;padding:8pt 10pt;vertical-align:top;border:1pt solid #C9C4B7;font-family:Arial,sans-serif;font-size:10.5pt;color:#0E1909;';
+            if (isH) st += 'font-weight:bold;background:#F3F0ED;';
+            if (isAr) st += 'direction:rtl;text-align:right;';
+            h += '<td style="' + st + '">' + cells[c].innerHTML + '</td>';
+          }
+          h += '</tr>';
+        }
+        h += '</table>';
+        return h;
+      }
+
+      function buildDataTable(tblEl) {
+        var rows = tblEl.querySelectorAll('tr');
+        var h = t('100%', 'margin:10pt 0;');
+        for (var r = 0; r < rows.length; r++) {
+          h += '<tr>';
+          var cells = rows[r].querySelectorAll('th, td');
+          for (var c = 0; c < cells.length; c++) {
+            var isH = cells[c].tagName === 'TH';
+            var st = 'padding:6pt 10pt;border:1pt solid #C9C4B7;font-family:Arial,sans-serif;font-size:10.5pt;color:#0E1909;text-align:left;';
+            if (isH) st += 'font-weight:bold;background:#F3F0ED;';
+            h += '<td style="' + st + '">' + cells[c].innerHTML + '</td>';
+          }
+          h += '</tr>';
+        }
+        h += '</table>';
+        return h;
+      }
+
+      function buildSignatureBlock(el) {
+        var h = t('100%', 'margin:20pt 0;');
+        h += td('width:100%;border-top:1pt solid #C9C4B7;font-size:1pt;', '&nbsp;');
+        var tds = el.querySelectorAll('td');
+        for (var i = 0; i < tds.length; i++) {
+          h += td('padding:5pt 0;font-family:Arial,sans-serif;font-size:10.5pt;color:#0E1909;', tds[i].innerHTML);
+        }
+        h += '</table>';
+        return h;
+      }
+
+      function buildWordDoc() {
+        var logo = getLogo();
+        var db = document.querySelector('.doc-body');
+        if (!db) { alert('Document body not found'); return null; }
+
+        var body = walkChildren(db);
+
+        var cover = t('100%', '') +
+          td('background:#DAFF01;padding:24pt 20pt;text-align:center;border-bottom:4pt solid #0E1909;mso-line-height-rule:exactly;', logo) +
+          '<tr><td style="background:#FFFFFF;padding:60pt 30pt 50pt;text-align:center;">' +
+            p('font-size:24pt;font-weight:bold;color:#0E1909;font-family:Arial,sans-serif;margin:0 0 30pt;', 'Memorandum of Understanding') +
+            p('font-size:11pt;color:#787663;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:2pt;margin:0 0 20pt;', 'BETWEEN') +
+            p('font-size:16pt;font-weight:bold;color:#0E1909;font-family:Arial,sans-serif;margin:0 0 4pt;', 'BLOX QFC LLC') +
+            p('font-size:10pt;color:#787663;font-family:Arial,sans-serif;margin:0 0 20pt;', '(Hereinafter referred to as \u201cBlox\u201d)') +
+            p('font-size:11pt;color:#787663;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:2pt;margin:0 0 20pt;', 'AND') +
+            p('font-size:16pt;font-weight:bold;color:#0E1909;font-family:Arial,sans-serif;margin:0 0 4pt;', '[DEALER NAME]') +
+            p('font-size:10pt;color:#787663;font-family:Arial,sans-serif;margin:0 0 20pt;', '(Hereinafter referred to as \u201cthe Dealer\u201d)') +
+          '</td></tr>' +
+          td('background:#F3F0ED;padding:12pt 20pt;text-align:center;border-top:1pt solid #C9C4B7;font-size:9pt;color:#787663;font-family:Arial,sans-serif;', 'Confidential \u2022 BLOX QFC LLC \u2022 Qatar Financial Centre') +
+          '</table>' +
+          '<br clear="all" style="mso-special-character:line-break;page-break-before:always;" />';
+
+        var head = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
+          '<head><meta charset="UTF-8" /><title>MOU - BLOX QFC LLC</title>' +
+          '<!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->' +
+          '<style>' +
+          '@page Section1 { size:595.3pt 841.9pt; margin:56.7pt 70.9pt 56.7pt 70.9pt; mso-header-margin:35.4pt; mso-footer-margin:35.4pt; mso-paper-source:0; }' +
+          'div.Section1 { page:Section1; }' +
+          'body { font-family:Arial,sans-serif; font-size:11pt; line-height:150%; color:#0E1909; }' +
+          'table { mso-cellspacing:0; }' +
+          'p { mso-style-type:personal; mso-pagination:none; }' +
+          '</style>' +
+          '</head>';
+
+        return head + '<body><div class="Section1">' + cover + body + '</div></body></html>';
+      }
+
+      btn.addEventListener('click', function() {
+        try {
+          var html = buildWordDoc();
+          if (!html) return;
+          var blob = new Blob(['\ufeff' + html], { type: 'application/msword' });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = 'MOU_Blox_Dealer.doc';
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(function() {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          }, 2000);
+        } catch (e) {
+          alert('Download failed: ' + (e.message || e));
+        }
+      });
+    })();
+  </script>
+
+</body>
+</html>

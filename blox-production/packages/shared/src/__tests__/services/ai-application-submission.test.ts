@@ -8,6 +8,10 @@ import { supabaseCache } from '../../services/supabase-cache.service';
 vi.mock('../../services/supabase.service', () => ({
   supabase: {
     from: vi.fn(),
+    auth: {
+      getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
+      refreshSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    },
   },
   handleSupabaseResponse: vi.fn((response: any) => {
     if (response.error) {

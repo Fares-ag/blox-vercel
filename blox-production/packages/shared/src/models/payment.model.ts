@@ -1,6 +1,6 @@
 export interface PaymentMethod {
   id: string;
-  type: 'card' | 'bank_transfer' | 'wallet' | 'blox_credit';
+  type: 'card' | 'credit_card' | 'debit_card' | 'bank_transfer' | 'wallet' | 'blox_credit';
   label: string;
   icon?: string;
   enabled: boolean;

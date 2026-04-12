@@ -34,6 +34,8 @@ export interface ReceiptData {
   transactionId?: string;
   paymentMethod?: string;
   paidDate?: string;
+  /** Optional line on receipt (e.g. "Settlement of 5 installments") */
+  description?: string;
 }
 
 export class ReceiptService {
@@ -44,7 +46,7 @@ export class ReceiptService {
     const JsPDF = await getJsPDF();
     const doc = new JsPDF('p', 'mm', 'a4');
     
-    const { application, payment, paidAmount, transactionId, paymentMethod, paidDate } = data;
+    const { application, payment, paidAmount, transactionId, paymentMethod, paidDate, description } = data;
     const paidAt = paidDate || payment.paidDate || moment().format('YYYY-MM-DD');
     const vehicleName = application.vehicle
       ? `${application.vehicle.make} ${application.vehicle.model}${application.vehicle.trim ? ` ${application.vehicle.trim}` : ''}`.trim()
@@ -97,6 +99,15 @@ export class ReceiptService {
     doc.text('Time:', 14, yPos);
     doc.setFont('helvetica', 'normal');
     doc.text(moment(paidAt).format('h:mm A'), 60, yPos);
+    
+    if (description) {
+      yPos += 7;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(...primaryColor);
+      doc.text(description, 14, yPos);
+      doc.setTextColor(...darkGray);
+    }
     
     yPos += 15;
     

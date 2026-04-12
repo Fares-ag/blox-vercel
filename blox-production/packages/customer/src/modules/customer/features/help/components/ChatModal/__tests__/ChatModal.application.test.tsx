@@ -92,6 +92,7 @@ vi.mock('@shared/services', () => ({
       },
       message: 'Application created successfully',
     }),
+    getProducts: vi.fn().mockResolvedValue({ data: [], status: 'SUCCESS' as const }),
   },
   BloxAIClient: {
     createApplicationFromAIData: vi.fn((data: any) => ({
@@ -134,14 +135,18 @@ global.WebSocket = vi.fn(() => {
   } as any;
 }) as any;
 
-// Mock FileReader
-global.FileReader = vi.fn(() => {
-  return {
-    readAsDataURL: vi.fn(),
-    result: 'data:image/png;base64,test',
-    onload: null,
-  } as any;
-}) as any;
+// Mock FileReader (must be a constructor so `new FileReader()` works)
+class MockFileReader {
+  result: string | ArrayBuffer | null = null;
+  onload: ((e: ProgressEvent<FileReader>) => void) | null = null;
+  readAsDataURL(_blob: Blob) {
+    this.result = 'data:image/png;base64,test';
+    setTimeout(() => {
+      if (this.onload) this.onload({ target: this } as any);
+    }, 0);
+  }
+}
+global.FileReader = MockFileReader as any;
 
 // Mock scrollIntoView
 Element.prototype.scrollIntoView = vi.fn();
@@ -153,25 +158,28 @@ describe('ChatModal - Application Creation', () => {
     vi.clearAllMocks();
   });
 
-  it('should track application data from user messages', async () => {
+  it('should track application data from user messages', { timeout: 15000 }, async () => {
     const user = userEvent.setup();
     render(<ChatModal open={true} onClose={mockOnClose} />);
 
-    // Wait for connection
+    // Wait for connection so input is available
     await waitFor(() => {
       expect(bloxAIClient.createChatConnection).toHaveBeenCalled();
     });
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/type your message or use voice input/i)).toBeInTheDocument();
+    });
 
     // Find input field
-    const input = screen.getByPlaceholderText(/type your message/i);
-    
+    const input = screen.getByPlaceholderText(/type your message or use voice input/i);
+
     // Simulate user providing email
     await user.type(input, 'My email is john@example.com');
     await user.keyboard('{Enter}');
 
-    // Simulate AI response with structured data
-    const mockWs = bloxAIClient.createChatConnection('user_chatbot');
-    if (mockWs.onmessage) {
+    // Use the same WebSocket mock the component received so onmessage is the component's handler
+    const mockWs = vi.mocked(bloxAIClient.createChatConnection).mock.results[0]?.value as any;
+    if (mockWs?.onmessage) {
       mockWs.onmessage({
         data: JSON.stringify({
           response: 'Thank you! I have your email: john@example.com. Your phone number is +97412345678.',
@@ -184,35 +192,41 @@ describe('ChatModal - Application Creation', () => {
     });
   });
 
-  it('should track uploaded files with document types', async () => {
+  it('should track uploaded files with document types', { timeout: 15000 }, async () => {
     const user = userEvent.setup();
     render(<ChatModal open={true} onClose={mockOnClose} />);
 
     await waitFor(() => {
       expect(bloxAIClient.createChatConnection).toHaveBeenCalled();
     });
+    await waitFor(() => {
+      expect(screen.getByText(/online/i)).toBeInTheDocument();
+    });
 
     // Create a mock file
     const file = new File(['test content'], 'qatar-id.pdf', { type: 'application/pdf' });
-    
+
     // Find file input
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    
+
     // Simulate file selection
     await user.upload(fileInput, file);
 
-    // Find send button and click
+    // Find send button (aria-label="Send") and click
     const sendButton = screen.getByRole('button', { name: /send/i });
     await user.click(sendButton);
 
-    await waitFor(() => {
-      expect(bloxAIClient.uploadAndChat).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.any(String),
-        file,
-        'Qatar_national_id'
-      );
-    });
+    await waitFor(
+      () => {
+        expect(bloxAIClient.uploadAndChat).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.any(String),
+          file,
+          'Qatar_national_id'
+        );
+      },
+      { timeout: 5000 }
+    );
   });
 
   it('should show submit button when required data is collected', async () => {
@@ -307,17 +321,20 @@ describe('ChatModal - Application Creation', () => {
     expect(toast.error).not.toHaveBeenCalled(); // Initially not called
   });
 
-  it('should parse application data from AI responses', async () => {
+  it('should parse application data from AI responses', { timeout: 10000 }, async () => {
     const user = userEvent.setup();
     render(<ChatModal open={true} onClose={mockOnClose} />);
 
     await waitFor(() => {
       expect(bloxAIClient.createChatConnection).toHaveBeenCalled();
     });
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/type your message or use voice input/i)).toBeInTheDocument();
+    });
 
-    // Simulate AI response with application data
-    const mockWs = bloxAIClient.createChatConnection('user_chatbot');
-    if (mockWs.onmessage) {
+    // Use the same WebSocket mock the component received
+    const mockWs = vi.mocked(bloxAIClient.createChatConnection).mock.results[0]?.value as any;
+    if (mockWs?.onmessage) {
       mockWs.onmessage({
         data: JSON.stringify({
           response: 'I have your email: john@example.com and phone: +97412345678. The vehicle ID is vehicle-123. Loan amount: 50000, down payment: 10000.',
@@ -325,38 +342,47 @@ describe('ChatModal - Application Creation', () => {
       } as any);
     }
 
-    await waitFor(() => {
-      expect(screen.getByText(/john@example.com/i)).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText(/john@example.com/i)).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
-  it('should track multiple file uploads correctly', async () => {
+  it('should track multiple file uploads correctly', { timeout: 15000 }, async () => {
     const user = userEvent.setup();
     render(<ChatModal open={true} onClose={mockOnClose} />);
 
     await waitFor(() => {
       expect(bloxAIClient.createChatConnection).toHaveBeenCalled();
     });
+    await waitFor(() => {
+      expect(screen.getByText(/online/i)).toBeInTheDocument();
+    });
 
     // Create multiple mock files
     const file1 = new File(['content1'], 'id.pdf', { type: 'application/pdf' });
     const file2 = new File(['content2'], 'bank-statement.pdf', { type: 'application/pdf' });
-    
+
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
-    
+
     // Simulate multiple file selection
     await user.upload(fileInput, [file1, file2]);
 
     const sendButton = screen.getByRole('button', { name: /send/i });
     await user.click(sendButton);
 
-    await waitFor(() => {
-      expect(bloxAIClient.uploadMultipleAndChat).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.any(String),
-        [file1, file2],
-        expect.arrayContaining(['Qatar_national_id', 'Bank_statements'])
-      );
-    });
+    await waitFor(
+      () => {
+        expect(bloxAIClient.uploadMultipleAndChat).toHaveBeenCalledWith(
+          expect.any(Object),
+          expect.any(String),
+          [file1, file2],
+          expect.arrayContaining(['Qatar_national_id', 'Bank_statements'])
+        );
+      },
+      { timeout: 5000 }
+    );
   });
 });

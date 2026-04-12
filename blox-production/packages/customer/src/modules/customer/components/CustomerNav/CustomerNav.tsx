@@ -102,7 +102,7 @@ export const CustomerNav: React.FC = () => {
       // Build return URL for payment callback
       const returnUrl = `${window.location.origin}/customer/credit-topup-callback?transactionId=${encodeURIComponent(transactionId)}&credits=${encodeURIComponent(credits)}`;
 
-      // Prepare SkipCash payment request
+      // Prepare SkipCash payment request (onlyDebitCard: true = direct to QPay card entry, single step)
       const skipCashRequest = {
         amount: totalCost,
         firstName: firstName,
@@ -119,6 +119,7 @@ export const CustomerNav: React.FC = () => {
           transactionId: transactionId,
           email: user.email, // Include email for webhook processing
         }),
+        onlyDebitCard: true,
       };
 
       // Process payment through SkipCash

@@ -19,13 +19,12 @@ import {
   ArrowBack,
   CreditCard,
   AccountBalance,
-  Wallet,
   Lock,
   CheckCircle,
   Stars,
   AttachMoney,
 } from '@mui/icons-material';
-import { supabaseApiService, receiptService, supabase, skipCashService, paymentPermissionsService } from '@shared/services';
+import { supabaseApiService, receiptService, supabase, skipCashService, paymentPermissionsService, creditsService } from '@shared/services';
 import type { PaymentMethod } from '@shared/models/payment.model';
 import type { Application, PaymentSchedule } from '@shared/models/application.model';
 import { Button as CustomButton, Loading } from '@shared/components';
@@ -38,14 +37,21 @@ import moment from 'moment';
 import { DeferPaymentDialog } from '../../../membership/components/DeferPaymentDialog/DeferPaymentDialog';
 import { membershipService } from '../../../../services/membership.service';
 import { deferralService } from '../../../../services/deferral.service';
+import { useCredits } from '../../../../hooks/useCredits';
 import { EventAvailable } from '@mui/icons-material';
 import './PaymentPage.scss';
 
 const PAYMENT_METHODS: PaymentMethod[] = [
   {
-    id: 'card',
-    type: 'card',
-    label: 'Credit/Debit Card',
+    id: 'credit_card',
+    type: 'credit_card',
+    label: 'Credit Card',
+    enabled: true,
+  },
+  {
+    id: 'debit_card',
+    type: 'debit_card',
+    label: 'Debit Card (QPay)',
     enabled: true,
   },
   {
@@ -60,12 +66,6 @@ const PAYMENT_METHODS: PaymentMethod[] = [
     label: 'Blox Credit',
     enabled: true,
   },
-  {
-    id: 'wallet',
-    type: 'wallet',
-    label: 'Digital Wallet',
-    enabled: false, // Not yet implemented
-  },
 ];
 
 export const PaymentPage: React.FC = () => {
@@ -76,7 +76,7 @@ export const PaymentPage: React.FC = () => {
   const [paymentSchedule, setPaymentSchedule] = useState<PaymentSchedule | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod['type']>('card');
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod['type']>('credit_card');
   const [amount, setAmount] = useState<number>(0);
   // Card details are collected on the SkipCash hosted checkout page.
   const [bankTransferDetails, setBankTransferDetails] = useState({
@@ -99,6 +99,7 @@ export const PaymentPage: React.FC = () => {
   const [loadingDiscount, setLoadingDiscount] = useState(false);
   const [canPay, setCanPay] = useState(true);
   const [checkingCanPay, setCheckingCanPay] = useState(true);
+  const { creditsBalance, refreshCredits } = useCredits();
 
   useEffect(() => {
     if (id) {
@@ -339,18 +340,26 @@ export const PaymentPage: React.FC = () => {
     }
 
     let isValid = true;
-    if (selectedMethod === 'card') {
+    if (selectedMethod === 'credit_card' || selectedMethod === 'debit_card') {
       isValid = validateCardDetails();
     } else if (selectedMethod === 'bank_transfer') {
       isValid = validateBankTransfer();
+    } else if (selectedMethod === 'blox_credit') {
+      const payAmount = isSettlement
+        ? (discountCalculation && discountCalculation.totalDiscount > 0 ? discountCalculation.finalAmount : amount)
+        : (useCustomAmount && customAmount ? parseFloat(customAmount) : amount);
+      if (creditsBalance < payAmount) {
+        toast.error(`Insufficient Blox Credits. You have ${formatCurrency(creditsBalance)}; need ${formatCurrency(payAmount)}.`);
+        return;
+      }
     }
     if (!isValid) return;
 
     try {
       setProcessing(true);
 
-      // Handle card payments through SkipCash
-      if (selectedMethod === 'card') {
+      // Handle card payments through SkipCash (credit card or debit card / QPay)
+      if (selectedMethod === 'credit_card' || selectedMethod === 'debit_card') {
         // Generate unique transaction ID using UUID (prevents collisions)
         // Remove dashes to fit SkipCash 40-char limit: TXN-(32 chars) = 36 chars
         const transactionId = `TXN-${crypto.randomUUID().replace(/-/g, '')}`;
@@ -381,6 +390,9 @@ export const PaymentPage: React.FC = () => {
         // Build return URL for payment callback
         const returnUrl = `${window.location.origin}/customer/applications/${application.id}/payment-callback?transactionId=${encodeURIComponent(transactionId)}&applicationId=${encodeURIComponent(application.id)}`;
         
+        // Debit card = QPay only; credit card = SkipCash credit flow
+        const isDebitCard = selectedMethod === 'debit_card';
+
         const skipCashRequest = {
           amount: paymentAmount,
           firstName: firstName,
@@ -398,8 +410,10 @@ export const PaymentPage: React.FC = () => {
             paymentScheduleId: paymentSchedule?.id,
             isSettlement: isSettlement,
             paymentId: paymentId,
-            transactionId: transactionId, // Include for webhook lookup
+            transactionId: transactionId,
+            paymentMethod: selectedMethod, // credit_card or debit_card for card_type in DB
           }),
+          onlyDebitCard: isDebitCard, // true = QPay (debit), false = credit card
         };
 
         // Process payment through SkipCash
@@ -443,40 +457,75 @@ export const PaymentPage: React.FC = () => {
           ? discountCalculation.finalAmount
           : amount;
 
-        // Mark all remaining payments as paid
-        // For settlement, we distribute the discounted amount proportionally across payments
-        let allSucceeded = true;
         const totalOriginalAmount = remainingPayments.reduce((sum, p) => sum + p.amount, 0);
-        
-        for (const payment of remainingPayments) {
-          // Calculate proportional amount for this payment
-          const paymentProportion = payment.amount / totalOriginalAmount;
-          const discountedPaymentAmount = finalSettlementAmount * paymentProportion;
-          
-          const result = await supabaseApiService.markInstallmentAsPaid(
-            application.id,
-            payment.dueDate,
-            discountedPaymentAmount
-          );
+        let allSucceeded = true;
 
-          if (result.status !== 'SUCCESS') {
-            console.error(`❌ Failed to mark installment as paid for ${payment.dueDate}:`, result.message);
-            allSucceeded = false;
-          } else {
-            // Update local application state after each successful payment
-            if (result.data) {
+        if (selectedMethod === 'blox_credit') {
+          // Pay each installment with Blox Credits (RPC deducts and marks paid)
+          let paidCount = 0;
+          for (const payment of remainingPayments) {
+            const paymentProportion = payment.amount / totalOriginalAmount;
+            const discountedPaymentAmount = finalSettlementAmount * paymentProportion;
+            const result = await creditsService.payInstallmentWithCredits(
+              application.id,
+              payment.dueDate,
+              discountedPaymentAmount
+            );
+            if (result.status !== 'SUCCESS' || !result.data?.success) {
+              const totalCount = remainingPayments.length;
+              const msg = paidCount > 0
+                ? `Partially paid: ${paidCount} of ${totalCount} installments. Insufficient Blox Credits for the rest.`
+                : (result.message || `Failed to pay installment for ${payment.dueDate}`);
+              toast.error(msg);
+              allSucceeded = false;
+              break;
+            }
+            paidCount += 1;
+            if (result.data?.newBalance !== undefined) refreshCredits();
+          }
+          if (allSucceeded) {
+            await loadApplication();
+            const discountMessage = discountCalculation && discountCalculation.totalDiscount > 0
+              ? ` with ${formatCurrency(discountCalculation.totalDiscount)} early settlement discount`
+              : '';
+            toast.success(`Successfully settled all ${remainingPayments.length} remaining payments using Blox Credits${discountMessage}!`);
+            navigate(`/customer/my-applications/${id}/payment-confirmation`, {
+              state: {
+                transactionId: `TXN-${Date.now()}`,
+                amount: finalSettlementAmount,
+                method: selectedMethod,
+                isSettlement,
+                paymentsSettled: remainingPayments.length,
+              },
+            });
+            setProcessing(false);
+            return;
+          }
+        } else {
+          // Bank transfer: mark all as paid via API
+          for (const payment of remainingPayments) {
+            const paymentProportion = payment.amount / totalOriginalAmount;
+            const discountedPaymentAmount = finalSettlementAmount * paymentProportion;
+            const result = await supabaseApiService.markInstallmentAsPaid(
+              application.id,
+              payment.dueDate,
+              discountedPaymentAmount
+            );
+            if (result.status !== 'SUCCESS') {
+              console.error(`❌ Failed to mark installment as paid for ${payment.dueDate}:`, result.message);
+              allSucceeded = false;
+            } else if (result.data) {
               setApplication(result.data);
             }
           }
-        }
-
-        if (!allSucceeded) {
-          toast.warning('Payment processed, but some installments may not have been updated. Please contact support if this persists.');
-        } else {
-          const discountMessage = discountCalculation && discountCalculation.totalDiscount > 0
-            ? ` with ${formatCurrency(discountCalculation.totalDiscount)} early settlement discount`
-            : '';
-          toast.success(`Successfully settled all ${remainingPayments.length} remaining payments${discountMessage}!`);
+          if (!allSucceeded) {
+            toast.warning('Payment processed, but some installments may not have been updated. Please contact support if this persists.');
+          } else {
+            const discountMessage = discountCalculation && discountCalculation.totalDiscount > 0
+              ? ` with ${formatCurrency(discountCalculation.totalDiscount)} early settlement discount`
+              : '';
+            toast.success(`Successfully settled all ${remainingPayments.length} remaining payments${discountMessage}!`);
+          }
         }
       } else if (!isDailyPayment && paymentSchedule) {
         // Determine the amount to pay (custom amount or full amount)
@@ -496,25 +545,42 @@ export const PaymentPage: React.FC = () => {
         }
 
         // Generate unique transaction ID using UUID (prevents collisions)
-        // Remove dashes to fit SkipCash 40-char limit: TXN-(32 chars) = 36 chars
         const transactionId = `TXN-${crypto.randomUUID().replace(/-/g, '')}`;
 
-        // Mark the installment as paid (fully or partially) in Supabase
-        const result = await supabaseApiService.markInstallmentAsPaid(
-          application.id,
-          paymentSchedule.dueDate,
-          paidAmount
-        );
+        let result: { status: string; data?: Application; message?: string };
+        if (selectedMethod === 'blox_credit') {
+          const payResult = await creditsService.payInstallmentWithCredits(
+            application.id,
+            paymentSchedule.dueDate,
+            paidAmount
+          );
+          if (payResult.status !== 'SUCCESS' || !payResult.data?.success) {
+            toast.error(payResult.message || 'Failed to pay with Blox Credits.');
+            setProcessing(false);
+            return;
+          }
+          refreshCredits();
+          const appResponse = await supabaseApiService.getApplicationById(application.id);
+          result = appResponse.status === 'SUCCESS' && appResponse.data
+            ? { status: 'SUCCESS', data: appResponse.data }
+            : { status: 'ERROR', message: 'Failed to load updated application' };
+        } else {
+          result = await supabaseApiService.markInstallmentAsPaid(
+            application.id,
+            paymentSchedule.dueDate,
+            paidAmount
+          );
+        }
 
         if (result.status !== 'SUCCESS') {
           console.error('❌ Failed to mark installment as paid:', result.message);
-          toast.error('Payment recorded, but failed to update installment status. Please contact support if this persists.');
+          toast.error(result.message || 'Payment recorded, but failed to update installment status. Please contact support if this persists.');
         } else {
           if (!result.data) {
             toast.error('Payment recorded, but no updated application data was returned.');
+            setProcessing(false);
             return;
           }
-          // Refresh local application state so the UI reflects the updated schedule
           setApplication(result.data);
           
           // Generate and store receipt
@@ -524,17 +590,6 @@ export const PaymentPage: React.FC = () => {
             );
             
             if (updatedPayment) {
-              // Generate receipt
-              const receiptDataUrl = await receiptService.generateReceipt({
-                application: result.data,
-                payment: updatedPayment,
-                paidAmount,
-                transactionId,
-                paymentMethod: selectedMethod,
-                paidDate: new Date().toISOString(),
-              });
-
-              // Store receipt URL in payment schedule
               const receiptBlob = await receiptService.generateAsBlob({
                 application: result.data,
                 payment: updatedPayment,
@@ -544,7 +599,6 @@ export const PaymentPage: React.FC = () => {
                 paidDate: new Date().toISOString(),
               });
 
-              // Upload receipt to Supabase Storage
               const receiptFileName = `receipt-${transactionId}.pdf`;
               const receiptPath = `receipts/${application.id}/${receiptFileName}`;
               
@@ -560,7 +614,6 @@ export const PaymentPage: React.FC = () => {
                   .from('documents')
                   .getPublicUrl(receiptPath);
 
-                // Update payment schedule with receipt URL
                 const updatedSchedule = result.data.installmentPlan?.schedule?.map((p: PaymentSchedule) => {
                   if (p.dueDate === paymentSchedule.dueDate) {
                     return {
@@ -584,7 +637,6 @@ export const PaymentPage: React.FC = () => {
             }
           } catch (receiptError) {
             console.error('❌ Failed to generate receipt:', receiptError);
-            // Don't fail the payment if receipt generation fails
           }
         }
       }
@@ -597,6 +649,7 @@ export const PaymentPage: React.FC = () => {
           method: selectedMethod,
           isSettlement,
           paymentsSettled: isSettlement ? remainingPaymentsCount : 1,
+          dueDate: paymentSchedule?.dueDate,
         },
       });
     } catch (error: any) {
@@ -731,10 +784,10 @@ export const PaymentPage: React.FC = () => {
                   control={<Radio />}
                   label={
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      {method.type === 'card' && <CreditCard />}
+                      {method.type === 'credit_card' && <CreditCard />}
+                      {method.type === 'debit_card' && <AccountBalance />}
                       {method.type === 'bank_transfer' && <AccountBalance />}
-                      {method.type === 'wallet' && <Wallet />}
-                        {method.type === 'blox_credit' && <Stars />}
+                      {method.type === 'blox_credit' && <Stars />}
                       {method.label}
                     </Box>
                   }
@@ -744,11 +797,26 @@ export const PaymentPage: React.FC = () => {
 
             <Divider sx={{ my: 3 }} />
 
-            {/* Card Payment (SkipCash Hosted Checkout) */}
-            {selectedMethod === 'card' && (
+            {/* Credit Card: SkipCash. Debit Card: QPay only. */}
+            {selectedMethod === 'credit_card' && (
               <Box className="payment-form">
                 <Alert severity="info">
-                  You’ll be redirected to our secure payment gateway (SkipCash) to enter your card details.
+                  You’ll be redirected to our secure payment gateway to enter your credit card details.
+                </Alert>
+              </Box>
+            )}
+            {selectedMethod === 'debit_card' && (
+              <Box className="payment-form">
+                <Alert severity="info">
+                  You’ll be redirected to QPay to enter your debit card details.
+                </Alert>
+              </Box>
+            )}
+
+            {selectedMethod === 'blox_credit' && (
+              <Box className="payment-form">
+                <Alert severity="info">
+                  Your Blox Credits balance: <strong>{formatCurrency(creditsBalance)}</strong>. The payment amount will be deducted from your balance.
                 </Alert>
               </Box>
             )}
@@ -825,7 +893,7 @@ export const PaymentPage: React.FC = () => {
               fullWidth
               onClick={handleSubmit}
               loading={processing}
-              disabled={checkingCanPay || !canPay || !amount || amount <= 0}
+              disabled={processing || checkingCanPay || !canPay || !amount || amount <= 0}
               startIcon={processing ? <CircularProgress size={20} /> : <CheckCircle />}
             >
               {processing 

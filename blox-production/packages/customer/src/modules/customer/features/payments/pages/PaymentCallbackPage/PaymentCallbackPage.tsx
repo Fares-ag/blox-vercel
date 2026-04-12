@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Box, Typography, Paper, Button, CircularProgress, Alert } from '@mui/material';
-import { CheckCircle, Error as ErrorIcon, ArrowBack, Refresh } from '@mui/icons-material';
+import { CheckCircle, Error as ErrorIcon, ArrowBack, Refresh, FileDownload } from '@mui/icons-material';
 import { formatCurrency } from '@shared/utils/formatters';
 import { Button as CustomButton, Loading } from '@shared/components';
-import { skipCashService, supabase } from '@shared/services';
+import { skipCashService, supabase, supabaseApiService, receiptService } from '@shared/services';
+import type { PaymentSchedule } from '@shared/models/application.model';
 import type { SkipCashVerifyRequest } from '@shared/services/skipcash.service';
 import { toast } from 'react-toastify';
 import './PaymentCallbackPage.scss';
@@ -20,6 +21,7 @@ export const PaymentCallbackPage: React.FC = () => {
   const [paymentData, setPaymentData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [verifying, setVerifying] = useState(true);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
   useEffect(() => {
     if (transactionId) {
@@ -130,6 +132,48 @@ export const PaymentCallbackPage: React.FC = () => {
     }
   };
 
+  const handlePrintReceipt = async () => {
+    if (!applicationId || !transactionId || !paymentData?.amount) {
+      window.print();
+      return;
+    }
+    setDownloadingReceipt(true);
+    try {
+      const appResponse = await supabaseApiService.getApplicationById(applicationId);
+      if (appResponse.status !== 'SUCCESS' || !appResponse.data) {
+        window.print();
+        return;
+      }
+      const paidAmount = parseFloat(paymentData.amount) || paymentData.amount;
+      const payment: PaymentSchedule = {
+        dueDate: new Date().toISOString().split('T')[0],
+        amount: paidAmount,
+        paidAmount,
+        remainingAmount: 0,
+        status: 'paid',
+        paidDate: new Date().toISOString().split('T')[0],
+      } as PaymentSchedule;
+      await receiptService.generateAndDownload(
+        {
+          application: appResponse.data,
+          payment,
+          paidAmount,
+          transactionId,
+          paymentMethod: paymentData.cardType ? `Card (${paymentData.cardType})` : 'card',
+          paidDate: new Date().toISOString(),
+        },
+        `receipt-${transactionId}.pdf`
+      );
+      toast.success('Receipt downloaded');
+    } catch (err) {
+      console.error('Receipt download failed:', err);
+      window.print();
+      toast.info('Opening print view instead');
+    } finally {
+      setDownloadingReceipt(false);
+    }
+  };
+
   if (verifying && status === 'loading') {
     return (
       <Box className="payment-callback-page">
@@ -205,10 +249,19 @@ export const PaymentCallbackPage: React.FC = () => {
             <Box className="action-buttons">
               <CustomButton
                 variant="primary"
+                startIcon={<FileDownload />}
+                onClick={handlePrintReceipt}
+                disabled={downloadingReceipt}
+              >
+                {downloadingReceipt ? 'Preparing…' : 'Download Receipt'}
+              </CustomButton>
+              <Button
+                variant="outlined"
+                startIcon={<ArrowBack />}
                 onClick={handleBackToApplication}
               >
                 Back to Application
-              </CustomButton>
+              </Button>
             </Box>
           </>
         )}
