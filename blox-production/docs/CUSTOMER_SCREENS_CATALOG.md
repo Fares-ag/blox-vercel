@@ -33,7 +33,7 @@ This document describes **every routed customer screen** in the React customer a
 | **Route** | `/customer/home` |
 | **Access** | Public |
 | **Purpose** | Marketing entry: explain Blox and drive browse or signup |
-| **Information** | Hero: badge (“Managing 20M+ QAR in Loan Books”), H1 (“Your Journey to Vehicle Ownership Starts Here”), subtitle about transparent financing. **Features:** six cards (Wide Vehicle Selection, Flexible Financing, Secure & Transparent, Easy Payments, Quick Approval, Blox Membership) with icon + short copy. **Benefits:** bullet list (no hidden fees, transparent pricing, 24/7 support, etc.). **How it works:** four numbered steps (Browse → Apply → Get Approved → Drive Away). |
+| **Information** | Hero: H1 (“Your Journey to Vehicle Ownership Starts Here”), subtitle about transparent financing; stats row (e.g. clear pricing & terms, vehicles available, support). **Features:** six cards (Wide Vehicle Selection, Flexible Financing, Secure & Transparent, Easy Payments, Quick Approval, Blox Membership) with icon + short copy. **Benefits:** bullet list (no hidden fees, transparent pricing, 24/7 support, etc.). **How it works:** four numbered steps (Browse → Apply → Get Approved → Drive Away). |
 | **Actions** | Primary: Browse Vehicles → `/customer/vehicles`. Secondary: Get Started → `/customer/auth/signup`. |
 | **Design / layout** | `LandingPage.scss`; `Container` + `GridLegacy`; stacked hero then sections; `CustomButton` primary/secondary; responsive `Stack` for CTAs (column on xs). |
 

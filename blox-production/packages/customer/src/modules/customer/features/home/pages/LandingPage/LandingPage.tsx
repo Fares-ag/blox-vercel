@@ -145,8 +145,8 @@ export const LandingPage: React.FC = () => {
             </Stack>
             <Box className="hero-stats">
               <Box className="stat-item">
-                <Typography variant="h4" className="stat-value">20M+</Typography>
-                <Typography variant="body2" className="stat-label">QAR Loan Book</Typography>
+                <Typography variant="h4" className="stat-value">Clear</Typography>
+                <Typography variant="body2" className="stat-label">Pricing & terms</Typography>
               </Box>
               <Box className="stat-item">
                 <Typography variant="h4" className="stat-value">500+</Typography>
@@ -272,10 +272,10 @@ export const LandingPage: React.FC = () => {
                   <CardContent sx={{ p: 3 }}>
                     <Box className="stat-box">
                       <Typography variant="h3" className="stat-number">
-                        20M+
+                        Clear
                       </Typography>
                       <Typography variant="body2" className="stat-label">
-                        QAR Loan Book
+                        Pricing & terms
                       </Typography>
                     </Box>
                     <Box className="stat-box">
