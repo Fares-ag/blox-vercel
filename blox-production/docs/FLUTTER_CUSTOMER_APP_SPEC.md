@@ -62,6 +62,7 @@ Web customer reads (Vite):
 
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
+- **`SUPABASE_VEHICLES_TABLE`** — must be **`products`**. The web app loads inventory from `public.products` (`supabase-api.service.ts` → `.from('products')`). There is **no** `public.vehicles` table. If the Flutter template defaults to `vehicles`, set this to `products` in `env.json` or `--dart-define=SUPABASE_VEHICLES_TABLE=products`.
 - Optional: `API_BASE_URL`, `FILE_BASE_URL` if the Flutter app calls the same REST endpoints as `packages/shared/src/services/api.service.ts`.
 
 Never ship service role keys in the client.
