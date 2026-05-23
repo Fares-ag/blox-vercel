@@ -39,39 +39,7 @@ export const VehicleBrowsePage: React.FC = () => {
         // Only show active vehicles (admin can control visibility via status field)
         let filteredVehicles = response.data.filter((v) => v.status === 'active');
 
-        // Exclude vehicles that are already tied to other customers' active applications
-        try {
-          const applicationsResponse = await supabaseApiService.getApplications();
-          if (applicationsResponse.status === 'SUCCESS' && applicationsResponse.data) {
-            const currentEmail = user?.email?.toLowerCase() || null;
-            const reservedStatuses = new Set([
-              'active',
-              'under_review',
-              'contract_signing_required',
-              'contracts_submitted',
-              'contract_under_review',
-              'down_payment_required',
-            ]);
-
-            const reservedVehicleIds = new Set(
-              applicationsResponse.data
-                .filter((app) => {
-                  const statusMatch = reservedStatuses.has(app.status);
-                  const isOtherCustomer =
-                    currentEmail && app.customerEmail
-                      ? app.customerEmail.toLowerCase() !== currentEmail
-                      : true;
-                  return statusMatch && isOtherCustomer && app.vehicleId;
-                })
-                .map((app) => app.vehicleId as string)
-            );
-
-            filteredVehicles = filteredVehicles.filter((v) => !reservedVehicleIds.has(v.id));
-          }
-        } catch (e) {
-          // If applications lookup fails, we just don't filter by reservations
-          console.error('Failed to filter reserved vehicles', e);
-        }
+        // All active vehicles are shown regardless of existing applications
 
         // Apply search filter
         if (searchTerm) {
