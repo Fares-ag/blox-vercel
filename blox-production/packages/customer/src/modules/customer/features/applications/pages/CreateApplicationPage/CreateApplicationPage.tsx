@@ -679,6 +679,7 @@ export const CreateApplicationPage: React.FC = () => {
             },
             income: {
               monthlyIncome: 0,
+              totalIncome: 0,
             },
           },
           installmentPlan: {
