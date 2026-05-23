@@ -98,6 +98,16 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
+      {/* Create Application - Public (supports both guests and authenticated users; guests sign up inline) */}
+      <Route
+        path="/customer/applications/new"
+        element={
+          <CustomerNavWrapper>
+            <CreateApplicationPage />
+          </CustomerNavWrapper>
+        }
+      />
+
       {/* Public Routes - No Auth Required */}
       <Route
         path="/customer/home"
@@ -137,7 +147,6 @@ export const AppRoutes: React.FC = () => {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="my-applications" element={<ApplicationsListPage />} />
         <Route path="my-applications/:id" element={<ApplicationDetailPage />} />
-        <Route path="applications/new" element={<CreateApplicationPage />} />
         <Route path="applications/:id/payment" element={<PaymentPage />} />
         <Route path="applications/:id/payment/:paymentId" element={<PaymentPage />} />
         <Route path="applications/:id/payment-callback" element={<PaymentCallbackPage />} />
