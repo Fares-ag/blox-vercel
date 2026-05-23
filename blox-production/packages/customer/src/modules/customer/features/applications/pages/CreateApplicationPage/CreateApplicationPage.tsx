@@ -658,7 +658,7 @@ export const CreateApplicationPage: React.FC = () => {
           customerEmail: resolvedCustomerEmail,
           customerPhone: data.phone,
           vehicleId: vehicle.id,
-          offerId: defaultOffer.id || undefined,
+          offerId: defaultOffer?.id ?? '',
           status: 'under_review',
           loanAmount: loanAmount || (vehicle.price - downPayment),
           downPayment: downPayment,
@@ -670,6 +670,16 @@ export const CreateApplicationPage: React.FC = () => {
             nationalId: data.nationalId,
             gender: data.gender,
             nationality: data.nationality,
+            employment: {
+              company: '',
+              position: '',
+              employmentType: '',
+              employmentDuration: '',
+              salary: 0,
+            },
+            income: {
+              monthlyIncome: 0,
+            },
           },
           installmentPlan: {
             tenure: tenureString,

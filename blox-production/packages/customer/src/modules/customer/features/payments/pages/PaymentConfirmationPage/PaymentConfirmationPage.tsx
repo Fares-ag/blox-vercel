@@ -81,7 +81,7 @@ export const PaymentConfirmationPage: React.FC = () => {
               Transaction ID:
             </Typography>
             <Typography variant="body1" className="value">
-              {transactionId || 'N/A'}
+              {(transactionId as string) || 'N/A'}
             </Typography>
           </Box>
           <Box className="detail-row">
@@ -89,7 +89,7 @@ export const PaymentConfirmationPage: React.FC = () => {
               Amount Paid:
             </Typography>
             <Typography variant="h6" className="amount">
-              {amount ? formatCurrency(amount) : 'N/A'}
+              {amount ? formatCurrency(amount as number) : 'N/A'}
             </Typography>
           </Box>
           <Box className="detail-row">
