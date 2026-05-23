@@ -98,9 +98,9 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
-      {/* Create Application - Public (supports both guests and authenticated users; guests sign up inline) */}
+      {/* Create Application - Public (completely outside the /customer AuthGuard block) */}
       <Route
-        path="/customer/applications/new"
+        path="/apply"
         element={
           <CustomerNavWrapper>
             <CreateApplicationPage />

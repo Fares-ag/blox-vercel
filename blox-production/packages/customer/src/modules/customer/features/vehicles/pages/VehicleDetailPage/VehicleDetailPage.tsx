@@ -103,7 +103,7 @@ export const VehicleDetailPage: React.FC = () => {
         Object.entries(calculatorData).map(([key, value]) => [key, String(value)])
       ),
     });
-    navigate(`/customer/applications/new?${params.toString()}`);
+    navigate(`/apply?${params.toString()}`);
   };
 
   if (loading) {
