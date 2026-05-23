@@ -1,0 +1,52 @@
+export interface PaymentMethod {
+  id: string;
+  type: 'card' | 'credit_card' | 'debit_card' | 'bank_transfer' | 'wallet' | 'blox_credit';
+  label: string;
+  icon?: string;
+  enabled: boolean;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  applicationId: string;
+  paymentScheduleId?: string; // If paying a specific installment
+  amount: number;
+  method: PaymentMethod['type'];
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  transactionId?: string;
+  receiptUrl?: string;
+  createdAt: string;
+  completedAt?: string;
+  failureReason?: string;
+}
+
+export interface PaymentRequest {
+  applicationId: string;
+  paymentScheduleId?: string;
+  amount: number;
+  method: PaymentMethod['type'];
+  cardDetails?: {
+    cardNumber: string;
+    expiryMonth: string;
+    expiryYear: string;
+    cvv: string;
+    cardholderName: string;
+  };
+  bankTransferDetails?: {
+    bankName: string;
+    accountNumber: string;
+    reference: string;
+  };
+}
+
+export interface SkipCashPaymentStatus {
+  paymentId: string;
+  transactionId: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled';
+  amount: number;
+  paymentUrl?: string;
+  completedAt?: string;
+  failureReason?: string;
+}
+
+

@@ -1,0 +1,60 @@
+.customer-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+
+  .customer-content {
+    flex: 1;
+    // Layout-level padding for pages that don't include their own container spacing.
+    // Use a fluid value so content doesn't feel cramped on mobile or too wide on desktop.
+    padding: clamp(12px, 3vw, 24px);
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    // Avoid nested scroll containers (common mobile UX bug); let the document scroll.
+    overflow-y: visible;
+  }
+
+  // Standard background for all pages except dashboard
+  &.with-green-background {
+    background: var(--background);
+    position: relative;
+
+    &::before {
+      display: none;
+    }
+
+    // Blox Black accent block in bottom-right corner (20% height, ~50% width)
+    &::after {
+      content: '';
+      position: fixed;
+      bottom: 0;
+      right: 0;
+      width: 50%;
+      height: 20%;
+      background: var(--blox-black); /* Blox Black */
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .customer-content {
+      position: relative;
+      z-index: 1;
+    }
+  }
+
+  .fab-chat {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background-color: #00CFA2;
+    z-index: 1300; // Above most content, below critical overlays if any
+
+    &:hover {
+      background-color: #0A6B6A;
+    }
+  }
+}
+

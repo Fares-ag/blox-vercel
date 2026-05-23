@@ -1,0 +1,2 @@
+export { PackageDetailPage } from './PackageDetailPage';
+

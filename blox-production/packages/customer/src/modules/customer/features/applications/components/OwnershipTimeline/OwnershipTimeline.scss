@@ -1,0 +1,46 @@
+.ownership-timeline {
+  .MuiPaper-root {
+    background-color: var(--card-background);
+    border: 1px solid var(--divider-color);
+    border-radius: var(--radius-card);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+  }
+
+  .MuiStepContent-root {
+    border-left: 2px solid var(--divider-color);
+    margin-left: 20px;
+    padding-left: 24px;
+  }
+
+  .MuiStep-root {
+    .MuiStepLabel-root {
+      .MuiStepLabel-label {
+        margin-top: 8px;
+      }
+    }
+  }
+
+  .ownership-header .MuiTypography-h4 {
+    color: var(--primary-text);
+  }
+
+  .ownership-stats .stat-value {
+    color: var(--primary-text);
+  }
+
+  .milestone-chip-ownership {
+    background-color: rgba(30, 126, 50, 0.12) !important;
+    color: #1B5E20 !important;
+  }
+
+  .milestone-chip-amount {
+    background-color: rgba(14, 25, 9, 0.06) !important;
+    color: var(--primary-text) !important;
+  }
+
+  .milestone-chip-date {
+    background-color: rgba(0, 0, 0, 0.04) !important;
+    color: var(--secondary-text) !important;
+  }
+}
+

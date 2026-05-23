@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # If the requested file or directory exists, serve it directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Otherwise, route everything to index.html (React Router / BrowserRouter SPA)
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Some GoDaddy setups may ignore mod_rewrite; this helps in many shared hosting configs
+ErrorDocument 404 /index.html
+
+

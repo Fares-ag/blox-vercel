@@ -1,0 +1,228 @@
+.applications-list-page {
+  padding: var(--spacing-xl);
+  width: 100%;
+  max-width: 100%;
+  position: relative;
+
+  .page-header {
+    margin-bottom: var(--spacing-xl);
+
+    .page-title {
+      font-weight: 700;
+      color: var(--primary-text);
+      font-family: 'IBM Plex Sans', sans-serif;
+      letter-spacing: -0.02em;
+      font-size: 32px;
+    }
+  }
+
+  .metrics-grid {
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    width: 100%;
+
+    .metric-card {
+      flex: 1;
+      min-width: 0;
+      transition: all var(--transition-base);
+      background-color: var(--card-background);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--divider-color);
+      box-shadow: var(--card-shadow);
+
+
+      .card-icon {
+        margin-bottom: var(--spacing-md);
+        font-size: 36px;
+        opacity: 1;
+      }
+
+      .card-title {
+        font-size: 13px;
+        color: var(--primary-text);
+        margin-bottom: var(--spacing-sm);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        opacity: 1;
+      }
+
+      .card-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--primary-text);
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+      }
+
+      &.payable .card-value {
+        color: var(--primary-color);
+      }
+
+      &.receivable .card-value {
+        color: var(--primary-text);
+      }
+
+      &.profitability .card-value {
+        color: var(--primary-text);
+      }
+
+      &.active .card-value {
+        color: var(--primary-color);
+        font-size: 20px;
+      }
+    }
+  }
+
+  .status-tabs-container {
+    margin-bottom: var(--spacing-xl);
+    border-bottom: 2px solid var(--divider-color);
+    background: var(--card-background);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--divider-color);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    padding: 0 var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+
+    .status-tabs {
+      .MuiTab-root {
+        text-transform: none;
+        font-weight: 700;
+        color: var(--primary-text);
+        min-height: 52px;
+        padding: var(--spacing-md) var(--spacing-lg);
+        transition: all var(--transition-base);
+        letter-spacing: -0.01em;
+        opacity: 1;
+
+
+        &.Mui-selected {
+          color: var(--primary-color);
+          background-color: transparent;
+          opacity: 1;
+        }
+      }
+
+      .MuiTabs-indicator {
+        background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        height: 3px;
+        border-radius: 3px 3px 0 0;
+      }
+    }
+  }
+
+  .list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+
+    .list-title {
+      font-weight: 600;
+      color: var(--primary-text);
+      margin: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: var(--spacing-md);
+      align-items: center;
+      flex-wrap: wrap;
+
+      .search-bar {
+        min-width: 200px;
+        flex: 0 1 auto;
+      }
+
+      .filters-button {
+        text-transform: none;
+        font-weight: 600;
+      }
+
+      .new-app-button {
+        background-color: var(--primary-color);
+        color: var(--primary-btn-color);
+        text-transform: none;
+        font-weight: 600;
+        padding: 10px var(--spacing-lg);
+
+        &:hover {
+          background-color: var(--primary-btn-hover);
+        }
+      }
+    }
+  }
+
+  .table-section {
+    width: 100%;
+
+    :global(.MuiTableCell-head) {
+      background-color: var(--table-header);
+      color: var(--table-header-color);
+      font-weight: 600;
+    }
+  }
+
+  .fab-chat {
+    position: fixed;
+    bottom: var(--spacing-lg);
+    right: var(--spacing-lg);
+    background-color: var(--primary-color);
+
+    &:hover {
+      background-color: var(--primary-btn-hover);
+    }
+  }
+
+  @media (max-width: 960px) {
+    padding: var(--spacing-md);
+
+    .metrics-grid {
+      flex-wrap: wrap;
+      gap: var(--spacing-md);
+
+      .metric-card {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 200px;
+      }
+    }
+
+    .list-header {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .header-actions {
+        width: 100%;
+
+        .search-bar {
+          flex: 1;
+          min-width: 100%;
+        }
+
+        button {
+          flex: 1;
+        }
+      }
+    }
+
+    .status-tabs-container {
+      .status-tabs {
+        .MuiTab-root {
+          font-size: 12px;
+          padding: var(--spacing-sm) var(--spacing-md);
+        }
+      }
+    }
+  }
+
+  @media (max-width: 600px) {
+    .metrics-grid {
+      .metric-card {
+        flex: 1 1 100%;
+      }
+    }
+  }
+}

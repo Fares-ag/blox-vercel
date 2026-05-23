@@ -1,0 +1,257 @@
+.custom-button {
+  font-family: 'IBM Plex Sans', sans-serif;
+  text-transform: none;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+
+  /* PRIMARY - Lime Yellow with Blox Black text */
+  &.btn-primary {
+    background-color: var(--primary-btn-bg); /* Lime Yellow */
+    color: var(--primary-btn-color); /* Blox Black */
+    height: 44px;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 0 var(--spacing-lg);
+    border-radius: var(--radius-md);
+    border: none;
+    box-shadow: none;
+
+    &:hover {
+      background-color: var(--primary-btn-hover); /* Darker Lime Yellow */
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-ring-primary);
+      outline-offset: 2px;
+    }
+
+    &:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    &:disabled {
+      background-color: var(--disabled-bg); /* Mid Grey */
+      color: var(--custom-text-color); /* Dark Grey */
+      box-shadow: none;
+      transform: none;
+      cursor: not-allowed;
+    }
+  }
+
+  /* SECONDARY - Light Grey with Blox Black text */
+  &.btn-secondary {
+    background-color: var(--secondary-btn-bg); /* Light Grey */
+    color: var(--secondary-btn-color); /* Blox Black */
+    border: none;
+    height: 44px;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 0 var(--spacing-lg);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+
+    &:hover {
+      background-color: var(--secondary-btn-hover); /* Slightly darker light grey */
+      box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-ring-secondary);
+      outline-offset: 2px;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      background-color: var(--disabled-bg); /* Mid Grey */
+      color: var(--custom-text-color); /* Dark Grey */
+      transform: none;
+      cursor: not-allowed;
+    }
+  }
+
+  /* SECONDARY NEUTRAL - Light Grey with Dark Grey text */
+  &.btn-secondary-neutral {
+    background-color: var(--secondary-neutral-bg); /* Light Grey */
+    color: var(--secondary-neutral-color); /* Dark Grey */
+    border: none;
+    height: 44px;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 0 var(--spacing-lg);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+
+    &:hover {
+      background-color: var(--secondary-neutral-hover); /* Slightly darker light grey */
+      box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-ring-neutral);
+      outline-offset: 2px;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      background-color: #EDEDEF; /* Very light grey */
+      color: #C9C4B7; /* Mid Grey */
+      transform: none;
+      cursor: not-allowed;
+    }
+  }
+
+  /* DESTRUCTIVE - Light Grey with Dark Grey border and Blox Black text */
+  &.btn-destructive {
+    background-color: var(--destructive-btn-bg); /* Light Grey */
+    color: var(--destructive-btn-color); /* Blox Black */
+    border: 1.5px solid var(--destructive-btn-border); /* Dark Grey border */
+    height: 44px;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 0 var(--spacing-lg);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+
+    &:hover {
+      background-color: var(--destructive-btn-hover-bg); /* Light Grey */
+      border-color: var(--destructive-btn-hover-border); /* Dark Grey */
+      color: var(--destructive-btn-color); /* Blox Black */
+      box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-ring-neutral);
+      outline-offset: 2px;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      background-color: var(--destructive-btn-bg); /* Light Grey */
+      border-color: var(--field-border-color); /* Mid Grey */
+      color: var(--field-border-color); /* Mid Grey */
+      transform: none;
+      cursor: not-allowed;
+    }
+  }
+
+  /* TERTIARY - Text only, no background */
+  &.btn-tertiary {
+    background-color: transparent;
+    color: var(--tertiary-btn-color); /* Dark Grey */
+    border: none;
+    height: 44px;
+    font-size: 15px;
+    font-weight: 500;
+    padding: 0 var(--spacing-lg);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-base);
+
+    &:hover {
+      color: var(--primary-color); /* Lime Yellow */
+      background-color: transparent;
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-ring-neutral);
+      outline-offset: 2px;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      color: var(--field-border-color); /* Mid Grey */
+      transform: none;
+      cursor: not-allowed;
+    }
+  }
+
+  /* ICON BUTTON - Circular buttons with icons */
+  &.btn-icon {
+    background-color: var(--primary-btn-bg); /* Lime Yellow */
+    color: var(--primary-btn-color); /* Blox Black */
+    min-width: 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    box-shadow: var(--shadow-sm);
+    border: none;
+
+    &:hover {
+      background-color: var(--primary-btn-hover); /* Darker Lime Yellow */
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-ring-primary);
+      outline-offset: 2px;
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &:disabled {
+      background-color: var(--disabled-bg); /* Mid Grey */
+      color: var(--custom-text-color); /* Dark Grey */
+      box-shadow: none;
+      transform: none;
+      cursor: not-allowed;
+    }
+  }
+
+  /* SMALL BUTTON - Compact button variant */
+  &.btn-small {
+    background-color: var(--secondary-neutral-bg); /* Light Grey */
+    color: var(--secondary-neutral-color); /* Dark Grey */
+    border: 1px solid var(--field-border-color); /* Mid Grey */
+    height: 32px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 0 var(--spacing-md);
+    border-radius: var(--radius-round);
+    transition: all var(--transition-fast);
+
+    &:hover {
+      background-color: var(--secondary-neutral-hover);
+      border-color: var(--primary-color); /* Lime Yellow */
+      color: var(--primary-color); /* Lime Yellow */
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-ring-primary);
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      border-color: var(--field-border-color);
+      color: var(--custom-text-color);
+      background-color: var(--disabled-bg);
+      transform: none;
+      cursor: not-allowed;
+    }
+  }
+}

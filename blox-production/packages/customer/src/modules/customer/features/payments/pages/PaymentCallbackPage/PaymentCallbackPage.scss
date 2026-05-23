@@ -1,0 +1,153 @@
+.payment-callback-page {
+  // Clean, minimal design matching vehicle cards - Light Grey background (no gradient)
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  background-color: var(--background); /* Light Grey - no gradient */
+
+  .callback-card {
+    // Clean, minimal design matching vehicle cards
+    max-width: 600px;
+    width: 100%;
+    padding: var(--spacing-2xl);
+    text-align: center;
+    border-radius: var(--radius-card); /* 16px */
+    box-shadow: var(--card-shadow);
+    background-color: var(--card-background); /* Light Grey */
+    border: none; /* No border for clean look */
+    transition: all var(--transition-base);
+
+    &:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-2xl) 0;
+    }
+
+    .status-icon {
+      margin-bottom: var(--spacing-lg);
+      display: flex;
+      justify-content: center;
+
+      svg {
+        font-size: 80px;
+      }
+    }
+
+    .success-icon {
+      color: var(--primary-color); /* Lime Yellow for success */
+    }
+
+    .error-icon {
+      color: var(--primary-text); /* Blox Black for error */
+    }
+
+    .pending-icon {
+      color: var(--secondary-text); /* Dark Grey for pending */
+    }
+
+    .success-title,
+    .error-title,
+    .pending-title {
+      margin-bottom: var(--spacing-md);
+      font-weight: 700;
+      font-size: 24px;
+      letter-spacing: -0.01em;
+    }
+
+    .success-title {
+      color: var(--primary-color); /* Lime Yellow */
+    }
+
+    .error-title {
+      color: var(--primary-text); /* Blox Black */
+    }
+
+    .pending-title {
+      color: var(--secondary-text); /* Dark Grey */
+    }
+
+    .success-message,
+    .error-message,
+    .pending-message {
+      margin-bottom: var(--spacing-xl);
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      color: var(--primary-text); /* Blox Black */
+      line-height: 1.6;
+    }
+
+    .transaction-details {
+      // Clean, minimal design
+      background: var(--background); /* Light Grey */
+      border-radius: var(--radius-sm);
+      padding: var(--spacing-lg);
+      margin: var(--spacing-xl) 0;
+      text-align: left;
+
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-md) 0;
+        border-bottom: 1px solid var(--divider-color); /* Mid Grey */
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .label {
+          color: var(--secondary-text); /* Dark Grey */
+          font-size: 14px;
+        }
+
+        .value {
+          color: var(--primary-text); /* Blox Black */
+          font-weight: 600;
+          font-size: 14px;
+        }
+
+        .amount {
+          color: var(--primary-color); /* Lime Yellow */
+          font-weight: 700;
+          font-size: 18px;
+        }
+      }
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  .payment-callback-page {
+    padding: 1rem;
+
+    .callback-card {
+      padding: 2rem 1.5rem;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}
+

@@ -1,0 +1,2 @@
+export { EditInsuranceRatePage } from './EditInsuranceRatePage';
+

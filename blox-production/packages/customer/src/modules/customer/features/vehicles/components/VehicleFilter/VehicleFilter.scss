@@ -1,0 +1,114 @@
+.vehicle-filter {
+  font-family: 'IBM Plex Sans', sans-serif;
+  padding: var(--spacing-md);
+  background-color: var(--card-background);
+  border-radius: var(--radius-card);
+
+  .filter-title {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary-text);
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 2px solid var(--primary-color);
+  }
+
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .MuiAccordion-root {
+    box-shadow: none;
+    border: 1px solid var(--divider-color);
+    border-radius: var(--radius-md) !important;
+    margin-bottom: var(--spacing-sm);
+    background-color: var(--card-background);
+    font-family: 'IBM Plex Sans', sans-serif;
+    transition: all var(--transition-base);
+
+    &:hover {
+      border-color: var(--primary-color);
+      background-color: var(--card-hover);
+      box-shadow: var(--shadow-sm);
+    }
+
+    &:before {
+      display: none;
+    }
+
+    .MuiAccordionSummary-root {
+      padding: var(--spacing-sm) var(--spacing-md);
+      min-height: 48px;
+
+      .MuiAccordionSummary-content {
+        margin: 0;
+
+        .MuiTypography-root {
+          font-family: 'IBM Plex Sans', sans-serif;
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--primary-text);
+        }
+      }
+
+      .MuiAccordionSummary-expandIconWrapper {
+        color: var(--primary-color);
+      }
+    }
+
+    .MuiAccordionDetails-root {
+      padding: var(--spacing-md);
+      padding-top: var(--spacing-sm);
+      background-color: var(--card-background);
+    }
+  }
+
+  .filter-actions {
+    margin-top: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+
+    button {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      text-transform: none;
+    }
+  }
+
+  // Mobile adjustments
+  @media (max-width: 768px) {
+    padding: var(--spacing-md);
+
+    .filter-title {
+      font-size: 16px;
+      margin-bottom: var(--spacing-md);
+    }
+
+    .filter-group {
+      gap: var(--spacing-xs);
+    }
+
+    .MuiAccordion-root {
+      .MuiAccordionSummary-root {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        min-height: 44px;
+      }
+
+      .MuiAccordionDetails-root {
+        padding: var(--spacing-sm);
+      }
+    }
+
+    .filter-actions {
+      margin-top: var(--spacing-md);
+      gap: var(--spacing-xs);
+    }
+  }
+}
+

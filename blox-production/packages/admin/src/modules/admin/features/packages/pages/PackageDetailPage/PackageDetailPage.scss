@@ -1,0 +1,113 @@
+.package-detail-page {
+  padding: 24px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex: 1;
+
+      .back-button {
+        flex-shrink: 0;
+        color: var(--primary-color);
+        font-weight: 600;
+        text-transform: none;
+        &:hover {
+          background-color: rgba(var(--primary-color-rgb), 0.1);
+        }
+      }
+
+      .header-title-section {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .page-title {
+        font-weight: 700;
+        color: var(--primary-text);
+        font-size: 28px;
+      }
+
+      .package-id {
+        color: var(--secondary-text);
+        font-size: 14px;
+      }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+  }
+
+  .detail-section {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 24px;
+    width: 100%;
+
+    .section-title {
+      font-weight: 700;
+      color: var(--primary-text);
+      font-size: 20px;
+      margin-bottom: 16px;
+    }
+
+    .info-item {
+      .info-label {
+        color: var(--secondary-text);
+        font-size: 12px;
+        font-weight: 500;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        display: block;
+      }
+
+      .info-value {
+        font-weight: 600;
+        color: var(--primary-text);
+        font-size: 16px;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+
+      .header-left {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+
+        .back-button {
+          margin-bottom: 8px;
+        }
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+  }
+}
+

@@ -1,0 +1,236 @@
+.dashboard-page {
+  padding: var(--spacing-md);
+  max-width: 100%;
+  width: 100%;
+  background-color: var(--background);
+
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+  }
+
+  .stats-grid-container {
+    width: 100%;
+    display: flex;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    
+    @media (max-width: 960px) {
+      flex-wrap: wrap;
+      gap: var(--spacing-md);
+      
+      > * {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 250px;
+      }
+    }
+    
+    @media (max-width: 600px) {
+      > * {
+        flex: 1 1 100%;
+      }
+    }
+  }
+
+  .charts-grid-container {
+    width: 100%;
+    display: flex;
+    align-items: stretch;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    
+    @media (max-width: 960px) {
+      flex-direction: column;
+      align-items: stretch;
+      gap: var(--spacing-md);
+      
+      > * {
+        flex: 1 1 100% !important;
+      }
+    }
+  }
+
+  .bottom-grid {
+    margin-top: var(--spacing-lg);
+  }
+
+  .dashboard-panel {
+    background: var(--card-background);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--divider-color);
+    border-radius: var(--radius-card);
+    padding: var(--spacing-lg);
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    transition: all var(--transition-base);
+
+
+    .panel-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--primary-text);
+      margin-bottom: var(--spacing-md);
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+
+    .panel-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      
+        &.installments-panel {
+          display: flex;
+          flex-direction: column;
+          gap: var(--spacing-lg);
+
+          .no-data-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+
+            .no-data-text {
+              color: var(--primary-text);
+              font-size: 15px;
+              opacity: 1;
+              font-weight: 600;
+            }
+          }
+
+          .installments-charts {
+            display: flex;
+            gap: var(--spacing-lg);
+            align-items: center;
+
+            .bars-section {
+              flex: 1;
+              max-width: 300px;
+            }
+
+            .donut-section {
+              flex: 1;
+              max-width: 200px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+            }
+          }
+
+          .installments-summary {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--field-border-color);
+
+            .installment-item {
+              color: var(--primary-text);
+              font-size: 15px;
+              font-weight: 600;
+              opacity: 1;
+              line-height: 1.5;
+            }
+          }
+
+          .active-applications {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: var(--spacing-md);
+            border-top: 1px solid var(--field-border-color);
+
+            .applications-info {
+              display: flex;
+              align-items: center;
+              gap: var(--spacing-xs);
+
+              .MuiSvgIcon-root {
+                color: var(--status-active);
+              }
+            }
+          }
+        }
+    }
+  }
+
+  .payable-receivable-content {
+    display: flex;
+    gap: var(--spacing-lg);
+    flex-wrap: wrap;
+
+    .financial-item {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+      flex: 1;
+      min-width: 200px;
+
+      .financial-label {
+        color: var(--primary-text);
+        font-size: 14px;
+        opacity: 1;
+        font-weight: 600;
+        margin-bottom: var(--spacing-xs);
+      }
+
+      .financial-value {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1.2;
+
+        &.payable {
+          color: var(--status-unpaid);
+        }
+
+        &.receivable {
+          color: var(--status-paid);
+        }
+
+        &.average-payment-size {
+          color: var(--status-paid);
+        }
+      }
+    }
+  }
+
+  .no-data {
+    text-align: center;
+    color: var(--primary-text);
+    padding: var(--spacing-lg);
+    font-size: 15px;
+    opacity: 1;
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 960px) {
+  .dashboard-page {
+    .dashboard-panel {
+      .panel-content {
+        &.installments-panel {
+          .installments-charts {
+            flex-direction: column;
+            align-items: stretch;
+
+            .bars-section {
+              max-width: 100%;
+            }
+
+            .donut-section {
+              max-width: 100%;
+            }
+          }
+        }
+      }
+    }
+  }
+}

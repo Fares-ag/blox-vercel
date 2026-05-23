@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" fill="none" aria-hidden="true">
+  <!-- BLOX wordmark - Blox Black -->
+  <text x="0" y="34" font-family="'IBM Plex Sans', Arial, sans-serif" font-size="36" font-weight="700" fill="#0E1909" letter-spacing="-0.04em">BLOX</text>
+  <!-- Accent line - Blox Lime -->
+  <rect x="0" y="40" width="120" height="5" rx="2.5" fill="#DAFF01"/>
+</svg>

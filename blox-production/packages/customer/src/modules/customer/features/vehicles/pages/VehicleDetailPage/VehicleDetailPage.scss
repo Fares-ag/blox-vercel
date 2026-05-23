@@ -1,0 +1,280 @@
+.vehicle-detail-page {
+  width: 100%;
+  max-width: 100%;
+  min-height: 100vh;
+  padding: 24px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+  position: relative;
+  overflow-x: hidden;
+  background-color: var(--background); /* Light Grey background */
+
+  .back-button {
+    align-self: flex-start;
+    color: var(--primary-text); /* Blox Black */
+    font-weight: 600;
+  }
+
+  .detail-content {
+    display: flex;
+    gap: 24px;
+    width: 100%;
+    align-items: flex-start;
+
+    .left-column {
+      flex: 7;
+      min-width: 0;
+    }
+
+    .right-column {
+      flex: 3;
+      min-width: 300px;
+    }
+  }
+
+  .card {
+    // Clean, minimal design matching vehicle cards - Light Grey background (default)
+    background: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+    transition: all var(--transition-base);
+
+    &:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
+  }
+
+  .image-section {
+    padding: 20px;
+    text-align: center;
+    background: var(--card-background); /* Light Grey background - no gradient */
+
+    .main-image {
+      width: 100%;
+      max-height: 480px;
+      object-fit: contain;
+      border-radius: var(--radius-md);
+      background: var(--card-background); /* Light Grey */
+      box-shadow: var(--shadow-md);
+    }
+  }
+
+  .specifications-section,
+  .description-section {
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    padding: var(--spacing-lg);
+    background: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+
+    .section-title {
+      margin-bottom: var(--spacing-md);
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--primary-text); /* Blox Black */
+      font-family: 'IBM Plex Sans', sans-serif;
+      letter-spacing: -0.01em;
+    }
+
+    .spec-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: var(--spacing-md);
+    }
+
+    .spec-item {
+      padding: var(--spacing-md) var(--spacing-sm);
+      background: var(--background); /* Light Grey */
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--divider-color); /* Mid Grey */
+      transition: all var(--transition-base);
+
+      &:hover {
+        background-color: var(--card-hover); /* Slightly darker on hover */
+        transform: translateY(-2px);
+      }
+
+      .MuiTypography-caption {
+        font-size: 11px;
+        color: var(--secondary-text); /* Dark Grey */
+        opacity: 0.8;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+
+      .MuiTypography-body1 {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary-text); /* Blox Black */
+      }
+    }
+  }
+
+  .description-section {
+    .section-title {
+      margin-bottom: var(--spacing-sm);
+    }
+
+    p {
+      color: var(--primary-text); /* Blox Black */
+      line-height: 1.6;
+      font-size: 14px;
+    }
+  }
+
+  .pricing-section {
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    padding: var(--spacing-lg);
+    position: sticky;
+    top: var(--spacing-lg);
+    background: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+    transition: all var(--transition-base);
+
+    &:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .price-header {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-xs);
+      margin-bottom: var(--spacing-md);
+
+      .price {
+        font-weight: 800;
+        font-size: 28px;
+        line-height: 32px;
+        color: var(--blox-black); /* Black for better readability */
+        letter-spacing: -0.02em;
+      }
+    }
+
+    .action-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-md);
+
+      button {
+        text-transform: none;
+        font-weight: 600;
+      }
+    }
+
+    .features-box {
+      padding: var(--spacing-md);
+      background-color: rgba(218, 255, 1, 0.15); /* More visible Lime Yellow tint */
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(218, 255, 1, 0.4); /* More visible Lime Yellow border */
+      margin-top: var(--spacing-md);
+
+      .MuiTypography-subtitle2 {
+        color: var(--blox-black); /* Dark text for better contrast */
+        font-weight: 600;
+      }
+
+      .MuiTypography-body2 {
+        color: var(--blox-black); /* Dark text for better contrast */
+        opacity: 1; /* Full opacity for clarity */
+        line-height: 1.6;
+      }
+    }
+  }
+
+  .calculator-section {
+    // Clean, minimal design matching vehicle cards
+    padding: var(--spacing-lg);
+    background: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+
+    .section-title {
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--primary-text); /* Blox Black */
+      letter-spacing: -0.01em;
+      margin-bottom: var(--spacing-md);
+    }
+  }
+
+  .promotions-section {
+    // Clean, minimal design matching vehicle cards
+    padding: var(--spacing-lg);
+    background: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+  }
+
+  @media (max-width: 1024px) {
+    padding: 20px;
+
+    .detail-content {
+      flex-direction: column;
+
+      .right-column {
+        max-width: 100%;
+        width: 100%;
+      }
+    }
+
+    .pricing-section {
+      position: static;
+      margin-top: 16px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .image-section {
+      padding: 16px;
+
+      .main-image {
+        max-height: 360px;
+      }
+    }
+
+    .specifications-section,
+    .description-section {
+      padding: 18px;
+
+      .spec-list {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      }
+    }
+  }
+
+  @media (max-width: 480px) {
+    padding: 12px;
+
+    .pricing-section,
+    .calculator-section,
+    .specifications-section,
+    .description-section {
+      padding: 16px;
+    }
+
+    .image-section {
+      padding: 12px;
+
+      .main-image {
+        max-height: 280px;
+      }
+    }
+  }
+}
+

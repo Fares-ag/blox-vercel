@@ -1,0 +1,66 @@
+.user-detail-page {
+  padding: 24px;
+  width: 100%;
+
+  .back-button {
+    margin-bottom: 24px;
+  }
+
+  .page-header {
+    margin-bottom: 24px;
+
+    .header-left {
+      .page-title {
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .user-email {
+        font-size: 14px;
+      }
+    }
+  }
+
+  .info-card {
+    padding: 24px;
+    height: 100%;
+
+    .card-title {
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .info-item {
+      margin-bottom: 20px;
+
+      .info-label {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+      }
+    }
+  }
+
+  .stat-card {
+    .stat-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+
+      .stat-value {
+        font-weight: 700;
+      }
+    }
+  }
+
+  .applications-card {
+    padding: 24px;
+
+    .card-title {
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+  }
+}
+

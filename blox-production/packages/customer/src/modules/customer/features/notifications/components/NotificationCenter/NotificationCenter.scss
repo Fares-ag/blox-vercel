@@ -1,0 +1,180 @@
+.notification-button {
+  color: inherit;
+  transition: all var(--transition-base);
+
+  &:hover {
+    background-color: rgba(218, 255, 1, 0.1); /* Lime Yellow tint */
+  }
+
+  .MuiBadge-badge {
+    background-color: var(--primary-color); /* Lime Yellow for badge */
+    font-weight: 700;
+    font-size: 10px;
+    min-width: 18px;
+    height: 18px;
+    color: var(--primary-btn-color); /* Blox Black text */
+  }
+}
+
+.notification-center {
+  background: var(--blox-black); /* Black card */
+  color: var(--background-secondary); /* Light Grey text */
+  backdrop-filter: blur(10px);
+
+  .notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: rgba(218, 255, 1, 0.1); /* Lime Yellow tint - no gradient */
+    border-bottom: 1px solid var(--divider-color); /* Mid Grey border */
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .header-title {
+        font-weight: 700;
+        color: var(--background-secondary); /* Light Grey text on black */
+        font-size: 18px;
+      }
+    }
+
+    .mark-all-read-btn {
+      text-transform: none;
+      font-size: 12px;
+      color: var(--primary-color); /* Lime Yellow */
+      font-weight: 600;
+      padding: 4px 12px;
+
+      &:hover {
+        background-color: rgba(218, 255, 1, 0.15); /* Brighter Lime Yellow tint */
+      }
+    }
+  }
+
+  .empty-state {
+    padding: 60px 24px;
+    text-align: center;
+
+    .MuiTypography-body2 {
+      color: rgba(243, 240, 237, 0.85); /* Light text */
+      font-size: 14px;
+    }
+
+    .MuiTypography-caption {
+      color: rgba(243, 240, 237, 0.65); /* Muted light text */
+      font-size: 12px;
+    }
+  }
+
+  .notification-list {
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: rgba(243, 240, 237, 0.1); /* Light Grey with opacity */
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(218, 255, 1, 0.3); /* Lime Yellow with opacity */
+      border-radius: 3px;
+
+      &:hover {
+        background: rgba(218, 255, 1, 0.5); /* Brighter Lime Yellow */
+      }
+    }
+  }
+
+  .notification-item {
+    position: relative;
+    transition: all var(--transition-base);
+    color: var(--background-secondary); /* Light Grey text */
+
+    &:hover {
+      /* Keep hover subtle + high-contrast (avoid big hue shift) */
+      background-color: rgba(255, 255, 255, 0.04) !important;
+    }
+
+    &.unread {
+      /* Slight lime accent for unread, but keep it subtle */
+      background-color: rgba(218, 255, 1, 0.06);
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background-color: var(--primary-color); /* Lime Yellow */
+      }
+    }
+
+    .notification-icon-wrapper {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .notification-content {
+      min-width: 0;
+
+      .notification-title-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 4px;
+
+        .notification-title {
+          font-size: 14px;
+          line-height: 1.4;
+        }
+
+        .unread-dot {
+          width: 8px;
+          height: 8px;
+          background-color: var(--primary-color); /* Lime Yellow */
+          border-radius: 50%;
+          flex-shrink: 0;
+          animation: pulse 2s infinite;
+        }
+      }
+
+      .notification-message {
+        font-size: 13px;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        color: rgba(243, 240, 237, 0.8);
+      }
+
+      .notification-time {
+        font-size: 11px;
+        margin-top: 4px;
+        color: rgba(243, 240, 237, 0.6);
+      }
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.1);
+  }
+}

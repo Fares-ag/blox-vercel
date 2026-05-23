@@ -1,0 +1,300 @@
+.vehicle-card {
+  cursor: pointer;
+  transition: all var(--transition-base);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--card-background); /* Light Grey background - matches image */
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  border: none; /* No border for clean minimalist look */
+  box-shadow: var(--card-shadow);
+  font-family: 'IBM Plex Sans', sans-serif;
+  position: relative;
+
+  /* Card Theme Variants - Following Design Examples */
+  &.card-light {
+    background-color: var(--light-grey);
+    border: none;
+  }
+
+  &.card-dark {
+    background-color: var(--blox-black);
+    color: var(--background-secondary);
+    border: none;
+  }
+
+  &.card-border {
+    background-color: var(--light-grey);
+    border: 1px solid var(--divider-color);
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--card-shadow-hover);
+  }
+
+  /* Image Wrapper with Color Indicators - integrates image with card */
+  .vehicle-image-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: var(--card-background);
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  }
+
+  .company-badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 2;
+    background: var(--blox-black, #0e1909);
+    color: var(--primary-color, #d4f028);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: var(--radius-round, 100px);
+    backdrop-filter: blur(4px);
+    box-shadow: var(--shadow-xs);
+    max-width: 140px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .color-indicators {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    z-index: 2;
+    background: rgba(243, 240, 237, 0.95); /* Light Grey with opacity */
+    padding: 4px 8px;
+    border-radius: var(--radius-round);
+    backdrop-filter: blur(4px);
+    box-shadow: var(--shadow-xs);
+
+    .color-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      cursor: pointer;
+      transition: transform var(--transition-fast);
+
+      &:hover {
+        transform: scale(1.2);
+      }
+    }
+
+    .color-count {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--primary-text);
+      margin-left: 2px;
+    }
+  }
+
+  .vehicle-image {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    object-position: center center;
+    background: var(--card-background);
+    transition: transform var(--transition-base);
+    display: block;
+    flex-shrink: 0;
+  }
+
+  &:hover .vehicle-image {
+    transform: scale(1.03);
+  }
+
+  @media (min-width: 1024px) {
+    .vehicle-image {
+      height: 260px;
+    }
+  }
+
+  .MuiCardContent-root {
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    gap: var(--spacing-xs);
+  }
+
+  /* Brand Name - Lighter, smaller font */
+  .vehicle-brand {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--secondary-text); /* Dark Grey */
+    opacity: 0.8;
+    margin-bottom: 4px;
+  }
+
+  /* Model Name - Larger, bold black font */
+  .vehicle-model {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 24px;
+    color: var(--primary-text); /* Blox Black */
+    margin-bottom: var(--spacing-xs);
+  }
+
+  /* Description */
+  .vehicle-description {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+    color: var(--primary-text); /* Blox Black for description */
+    margin-bottom: var(--spacing-md);
+  }
+
+  /* Divider */
+  .vehicle-divider {
+    margin: var(--spacing-sm) 0 var(--spacing-md) 0;
+    border-color: var(--divider-color); /* Mid Grey */
+    opacity: 0.5;
+  }
+
+  /* Price - Bold black font */
+  .vehicle-price {
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary-text); /* Blox Black */
+    margin-bottom: var(--spacing-md);
+    line-height: 28px;
+  }
+
+  /* Marketing tagline */
+  .vehicle-tagline {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--primary-color, #d4f028);
+    background: var(--blox-black, #0e1909);
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: var(--radius-round, 100px);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  /* Benefits list */
+  .vehicle-benefits {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: var(--spacing-md);
+  }
+
+  .benefit-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .benefit-dot {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--primary-color, #d4f028);
+  }
+
+  .benefit-text {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--secondary-text);
+    line-height: 1.4;
+  }
+
+  /* Send Request Button - Lime Yellow with black text */
+  .send-request-button {
+    margin-top: var(--spacing-md);
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: none;
+    box-shadow: none;
+    min-height: 44px;
+
+    &:hover {
+      box-shadow: var(--shadow-sm);
+    }
+
+    &:active {
+      transform: translateY(1px);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--focus-ring-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  // Mobile adjustments
+  @media (max-width: 768px) {
+    .vehicle-image {
+      height: 190px;
+    }
+
+    .MuiCardContent-root {
+      padding: var(--spacing-md);
+    }
+
+    .vehicle-model {
+      font-size: 16px;
+    }
+
+    .vehicle-price {
+      font-size: 18px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .vehicle-image {
+      height: 170px;
+    }
+
+    .MuiCardContent-root {
+      padding: var(--spacing-sm);
+    }
+
+    .vehicle-model {
+      font-size: 16px;
+    }
+
+    .vehicle-price {
+      font-size: 16px;
+    }
+
+    .color-indicators {
+      top: 8px;
+      right: 8px;
+      padding: 3px 6px;
+
+      .color-dot {
+        width: 10px;
+        height: 10px;
+      }
+
+      .color-count {
+        font-size: 9px;
+      }
+    }
+  }
+}
+

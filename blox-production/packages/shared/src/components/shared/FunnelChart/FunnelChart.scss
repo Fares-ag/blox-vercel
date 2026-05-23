@@ -1,0 +1,64 @@
+.funnel-chart-container {
+  width: 100%;
+  padding: 16px;
+}
+
+.funnel-stages {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.funnel-stage {
+  position: relative;
+  width: 100%;
+}
+
+.funnel-stage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.stage-label {
+  color: #2E2C34;
+}
+
+.stage-metrics {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.stage-value {
+  color: #2E2C34;
+  font-weight: 600;
+}
+
+.stage-percentage {
+  color: #6B7280;
+  min-width: 50px;
+  text-align: right;
+}
+
+.funnel-bar {
+  height: 40px;
+  border-radius: 4px;
+  position: relative;
+  transition: width 0.3s ease, margin 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.funnel-bar-inner {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+  border-radius: 4px;
+}
+
+.drop-off-indicator {
+  margin-top: 4px;
+  text-align: center;
+}
+

@@ -1,0 +1,2 @@
+export { ClearStoragePage } from './ClearStoragePage';
+

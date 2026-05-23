@@ -1,0 +1,104 @@
+.payment-confirmation-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  padding: 24px;
+
+  .confirmation-card {
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    max-width: 600px;
+    width: 100%;
+    padding: var(--spacing-2xl);
+    text-align: center;
+    background-color: var(--card-background); /* Light Grey */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+    transition: all var(--transition-base);
+
+    &:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .success-icon {
+      margin-bottom: var(--spacing-lg);
+      color: var(--primary-color); /* Lime Yellow */
+    }
+
+    .success-title {
+      margin-bottom: var(--spacing-md);
+      font-weight: 700;
+      font-size: 24px;
+      color: var(--primary-color); /* Lime Yellow */
+      letter-spacing: -0.01em;
+    }
+
+    .success-message {
+      margin-bottom: var(--spacing-xl);
+      color: var(--primary-text); /* Blox Black */
+    }
+
+    .transaction-details {
+      // Clean, minimal design
+      background-color: var(--background); /* Light Grey */
+      border-radius: var(--radius-sm);
+      padding: var(--spacing-lg);
+      margin-bottom: var(--spacing-xl);
+
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-md) 0;
+        border-bottom: 1px solid var(--divider-color); /* Mid Grey */
+
+        &:last-child {
+          border-bottom: none;
+        }
+
+        .label {
+          color: var(--secondary-text); /* Dark Grey */
+          font-size: 14px;
+        }
+
+        .value {
+          color: var(--primary-text); /* Blox Black */
+          font-weight: 600;
+          font-size: 14px;
+        }
+
+        .amount {
+          color: var(--primary-color); /* Lime Yellow */
+          font-weight: 700;
+          font-size: 18px;
+        }
+      }
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  }
+
+  @media (max-width: 600px) {
+    padding: 16px;
+
+    .confirmation-card {
+      padding: 32px 24px;
+
+      .action-buttons {
+        flex-direction: column;
+
+        button {
+          width: 100%;
+        }
+      }
+    }
+  }
+}
+
+

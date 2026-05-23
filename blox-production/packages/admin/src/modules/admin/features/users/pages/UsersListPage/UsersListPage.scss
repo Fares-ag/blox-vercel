@@ -1,0 +1,27 @@
+.users-list-page {
+  padding: 24px;
+  width: 100%;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+  }
+
+  .search-section {
+    margin-bottom: 24px;
+  }
+
+  .table-section {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+}
+

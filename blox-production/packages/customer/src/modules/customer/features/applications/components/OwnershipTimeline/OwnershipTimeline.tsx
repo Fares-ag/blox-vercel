@@ -1,0 +1,201 @@
+import React from 'react';
+import {
+  Box,
+  Typography,
+  Paper,
+  Stepper,
+  Step,
+  StepLabel,
+  StepContent,
+  Chip,
+  LinearProgress,
+} from '@mui/material';
+import {
+  CheckCircle,
+  Schedule,
+  TrendingUp,
+  EmojiEvents,
+} from '@mui/icons-material';
+import type { Application } from '@shared/models/application.model';
+import { calculateOwnershipTimeline, type OwnershipMilestone } from '@shared/utils/ownership-timeline.utils';
+import { formatDate, formatCurrency } from '@shared/utils/formatters';
+import moment from 'moment';
+import './OwnershipTimeline.scss';
+
+interface OwnershipTimelineProps {
+  application: Application;
+}
+
+export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ application }) => {
+  const timeline = calculateOwnershipTimeline(application);
+
+  const getMilestoneIcon = (milestone: OwnershipMilestone) => {
+    if (milestone.milestone === 'full_owner') return <EmojiEvents sx={{ color: '#FF6B35' }} />;
+    if (milestone.milestone === 'almost_there') return <EmojiEvents sx={{ color: '#9C27B0' }} />;
+    if (milestone.milestone === 'halfway') return <EmojiEvents sx={{ color: '#2196F3' }} />;
+    if (milestone.paymentStatus === 'paid') return <CheckCircle sx={{ color: '#4CAF50' }} />;
+    if (milestone.paymentStatus === 'missed') return <Schedule sx={{ color: '#F44336' }} />;
+    return <Schedule sx={{ color: '#9E9E9E' }} />;
+  };
+
+  const getMilestoneColor = (milestone: OwnershipMilestone): string => {
+    if (milestone.paymentStatus === 'paid') return '#4CAF50';
+    if (milestone.paymentStatus === 'missed') return '#F44336';
+    return '#9E9E9E';
+  };
+
+  // Filter milestones to show key ones (every 25% or special milestones)
+  const keyMilestones = timeline.milestones.filter((m, index) => {
+    // Always show first and last
+    if (index === 0 || index === timeline.milestones.length - 1) return true;
+    // Show milestone markers
+    if (m.milestone) return true;
+    // Show every 4th payment for visibility
+    return index % 4 === 0;
+  });
+
+  return (
+    <Box className="ownership-timeline">
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <Box className="ownership-header" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
+          <Box>
+            <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)' }} gutterBottom>
+              Ownership Journey
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'var(--secondary-text)' }}>
+              Track your progress toward full ownership
+            </Typography>
+          </Box>
+          <Box sx={{ textAlign: 'right' }}>
+            <Typography variant="h4" fontWeight={700} sx={{ color: 'var(--primary-text)' }}>
+              {timeline.currentOwnership.toFixed(1)}%
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>
+              Current Ownership
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Progress Bar */}
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>0%</Typography>
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>100%</Typography>
+          </Box>
+          <LinearProgress
+            variant="determinate"
+            value={timeline.progressPercentage}
+            sx={{
+              height: 12,
+              borderRadius: 6,
+              backgroundColor: 'var(--card-hover)',
+              '& .MuiLinearProgress-bar': {
+                borderRadius: 6,
+                backgroundColor: '#2E7D32',
+              },
+            }}
+          />
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>
+              {formatCurrency(timeline.milestones[0]?.ownershipAmount || 0)}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>
+              {formatCurrency(application.vehicle?.price || 0)}
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Stats */}
+        <Box className="ownership-stats" sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
+          <Box>
+            <Typography variant="h6" fontWeight={700} className="stat-value" sx={{ color: 'var(--primary-text)' }}>
+              {timeline.completedPayments}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>Payments Completed</Typography>
+          </Box>
+          <Box>
+            <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)' }}>
+              {timeline.totalPayments - timeline.completedPayments}
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>Payments Remaining</Typography>
+          </Box>
+          {timeline.estimatedCompletionDate && (
+            <Box>
+              <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)' }}>
+                {moment(timeline.estimatedCompletionDate).format('MMM YYYY')}
+              </Typography>
+              <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>Est. Completion</Typography>
+            </Box>
+          )}
+        </Box>
+      </Paper>
+
+      {/* Timeline Stepper */}
+      <Paper sx={{ p: 3 }}>
+        <Typography variant="h6" fontWeight={700} gutterBottom sx={{ color: 'var(--primary-text)' }}>
+          Ownership Timeline
+        </Typography>
+        <Stepper orientation="vertical" sx={{ mt: 2 }}>
+          {keyMilestones.map((milestone, index) => (
+            <Step key={index} active={milestone.paymentStatus === 'paid'} completed={milestone.paymentStatus === 'paid'}>
+              <StepLabel
+                StepIconComponent={() => (
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: '50%',
+                      backgroundColor: milestone.paymentStatus === 'paid' ? '#2E7D32' : 'var(--card-hover)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: milestone.paymentStatus === 'paid' ? '#fff' : 'var(--secondary-text)',
+                    }}
+                  >
+                    {getMilestoneIcon(milestone)}
+                  </Box>
+                )}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                  <Typography variant="subtitle1" fontWeight={600} sx={{ color: 'var(--primary-text)' }}>
+                    {milestone.label}
+                  </Typography>
+                  {milestone.milestone && (
+                    <Chip
+                      label={milestone.milestone.replace('_', ' ').toUpperCase()}
+                      size="small"
+                      sx={{
+                        backgroundColor: getMilestoneColor(milestone),
+                        color: '#fff',
+                        fontWeight: 600,
+                        fontSize: '10px',
+                      }}
+                    />
+                  )}
+                </Box>
+              </StepLabel>
+              <StepContent>
+                <Box sx={{ pl: 4, pb: 2 }}>
+                  <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 1 }}>
+                    <Chip
+                      className="milestone-chip-ownership"
+                      label={`${milestone.ownershipPercentage.toFixed(1)}% Ownership`}
+                      size="small"
+                      icon={<TrendingUp sx={{ color: 'inherit !important' }} />}
+                    />
+                    <Chip className="milestone-chip-amount" label={formatCurrency(milestone.ownershipAmount)} size="small" />
+                    <Chip className="milestone-chip-date" label={formatDate(milestone.date)} size="small" />
+                  </Box>
+                  <Typography variant="body2" sx={{ color: 'var(--secondary-text)' }}>
+                    Payment #{milestone.paymentIndex + 1} of {timeline.totalPayments}
+                  </Typography>
+                </Box>
+              </StepContent>
+            </Step>
+          ))}
+        </Stepper>
+      </Paper>
+    </Box>
+  );
+};
+

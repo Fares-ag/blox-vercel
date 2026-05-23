@@ -1,0 +1,201 @@
+.payment-history-page {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  background-color: var(--background); /* Light Grey background */
+  min-height: 100vh;
+
+  .page-header {
+    margin-bottom: 32px;
+
+    .back-button {
+      margin-bottom: 16px;
+      text-transform: none;
+    }
+
+    .header-content {
+      .page-title {
+        font-weight: 700;
+        color: var(--primary-text); /* Blox Black */
+        margin-bottom: 8px;
+      }
+
+      .page-subtitle {
+        color: var(--secondary-text); /* Dark Grey */
+        font-size: 15px;
+      }
+    }
+  }
+
+  .filters-card {
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    padding: var(--spacing-lg);
+    border-radius: var(--radius-card);
+    background: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+    transition: all var(--transition-base);
+
+    .filters-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-md);
+      flex-wrap: wrap;
+      gap: var(--spacing-md);
+
+      .filters-title {
+        font-weight: 700;
+        font-size: 20px;
+        color: var(--primary-text); /* Blox Black */
+        display: flex;
+        align-items: center;
+        letter-spacing: -0.01em;
+      }
+
+      .export-buttons {
+        display: flex;
+        gap: var(--spacing-sm);
+      }
+    }
+
+    .filters-content {
+      .MuiFormControl-root {
+        margin: 0;
+      }
+    }
+  }
+
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+
+    .summary-card {
+      // Clean, minimal design matching vehicle cards
+      padding: var(--spacing-lg);
+      border-radius: var(--radius-card);
+      background: var(--card-background); /* Light Grey */
+      color: var(--primary-text); /* Blox Black text */
+      box-shadow: var(--card-shadow);
+      border: none; /* No border for clean look */
+      text-align: center;
+      transition: all var(--transition-base);
+
+      &:hover {
+        transform: translateY(-4px); /* Subtle lift */
+        box-shadow: var(--card-shadow-hover);
+        background-color: var(--card-hover); /* Slightly darker on hover */
+      }
+
+      .MuiTypography-body2 {
+        font-size: 14px;
+        color: var(--secondary-text); /* Dark Grey */
+        opacity: 0.8;
+        margin-bottom: var(--spacing-xs);
+      }
+
+      .MuiTypography-h5 {
+        margin-top: var(--spacing-xs);
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--primary-text); /* Blox Black */
+        letter-spacing: -0.02em;
+        
+        // Highlight amounts with Lime Yellow
+        &.highlight {
+          color: var(--primary-color); /* Lime Yellow */
+        }
+      }
+    }
+  }
+
+  .table-card {
+    // Clean, minimal design matching vehicle cards
+    border-radius: var(--radius-card);
+    background: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+    overflow: hidden;
+    transition: all var(--transition-base);
+
+    &:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .MuiTableContainer-root {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .MuiTableHead-root {
+      background-color: rgba(218, 255, 1, 0.1); /* Subtle Lime Yellow tint */
+
+      .MuiTableCell-head {
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--primary-text); /* Blox Black on light header */
+        border-bottom: 1px solid var(--divider-color); /* Mid Grey border */
+      }
+    }
+
+    .MuiTableRow-root {
+      color: var(--primary-text); /* Blox Black text */
+      transition: background-color var(--transition-base);
+      
+      &:hover {
+        background-color: rgba(218, 255, 1, 0.05); /* Subtle Lime Yellow tint on hover */
+      }
+    }
+
+    .MuiTableCell-root {
+      border-bottom: 1px solid var(--divider-color); /* Mid Grey border */
+      color: var(--primary-text); /* Blox Black text */
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 960px) {
+    padding: 16px;
+
+    .filters-card {
+      padding: 20px;
+
+      .filters-header {
+        flex-direction: column;
+        align-items: flex-start;
+
+        .export-buttons {
+          width: 100%;
+          flex-direction: column;
+
+          button {
+            width: 100%;
+          }
+        }
+      }
+    }
+
+    .summary-cards {
+      grid-template-columns: 1fr;
+    }
+
+    .table-card {
+      .MuiTableContainer-root {
+        -webkit-overflow-scrolling: touch;
+      }
+    }
+  }
+
+  @media (max-width: 600px) {
+    padding: 12px;
+
+    .filters-card {
+      padding: 16px;
+    }
+  }
+}
+

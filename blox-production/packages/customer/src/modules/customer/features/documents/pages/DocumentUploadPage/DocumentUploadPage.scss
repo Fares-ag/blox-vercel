@@ -1,0 +1,169 @@
+.document-upload-page {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .back-button {
+    margin-bottom: 24px;
+    color: #0E1909;
+    
+    &:hover {
+      background-color: rgba(22, 83, 91, 0.08);
+    }
+  }
+
+  .page-title {
+    margin-bottom: 32px;
+    font-weight: 600;
+    color: #0E1909;
+  }
+
+  .document-upload-section {
+    margin-bottom: 32px;
+  }
+
+  .document-card {
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    padding: var(--spacing-lg);
+    min-height: 180px;
+    display: flex;
+    flex-direction: column;
+    border: none; /* No border for clean look */
+    border-radius: var(--radius-card); /* 16px */
+    background-color: var(--card-background); /* Light Grey */
+    box-shadow: var(--card-shadow);
+    transition: all var(--transition-base);
+
+    &:hover {
+      transform: translateY(-4px); /* Subtle lift */
+      box-shadow: var(--card-shadow-hover);
+      background-color: var(--card-hover); /* Slightly darker on hover */
+    }
+
+    .document-header {
+      margin-bottom: 16px;
+
+      .document-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--primary-text); /* Blox Black */
+        font-family: 'IBM Plex Sans', sans-serif;
+
+        .required {
+          color: var(--primary-color); /* Lime Yellow for required indicator */
+          margin-left: 4px;
+          font-weight: 700;
+        }
+      }
+    }
+
+    .document-preview {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: var(--spacing-md);
+      background: var(--background); /* Light Grey */
+      border-radius: var(--radius-sm);
+      margin-top: auto;
+      border: 1px solid var(--divider-color); /* Mid Grey border */
+
+      .document-file-name {
+        flex: 1;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 12px;
+        color: var(--primary-text); /* Blox Black */
+        font-weight: 500;
+      }
+    }
+
+    .upload-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      gap: var(--spacing-sm);
+      padding: var(--spacing-xl) var(--spacing-md);
+      border: 2px dashed var(--divider-color); /* Mid Grey dashed border */
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition-base);
+      background-color: var(--background); /* Light Grey */
+      min-height: 120px;
+
+      &:hover {
+        border-color: var(--primary-color); /* Lime Yellow on hover */
+        background-color: rgba(218, 255, 1, 0.05); /* Subtle Lime Yellow tint */
+      }
+
+      .upload-button {
+        color: var(--primary-color); /* Lime Yellow */
+        padding: var(--spacing-md);
+        
+        svg {
+          font-size: 40px;
+        }
+
+        &:hover {
+          background-color: rgba(218, 255, 1, 0.1);
+        }
+
+        &:disabled {
+          color: var(--mid-grey); /* Mid Grey for disabled */
+        }
+      }
+
+      .MuiTypography-caption {
+        color: var(--secondary-text); /* Dark Grey */
+        font-size: 12px;
+        font-weight: 400;
+        margin-top: var(--spacing-sm);
+      }
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #E5E7EB;
+  }
+
+  @media (max-width: 960px) {
+    .document-card {
+      min-height: 160px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    padding: 16px;
+
+    .document-card {
+      min-height: 140px;
+      padding: 16px;
+
+      .upload-area {
+        padding: 24px 12px;
+        min-height: 100px;
+
+        .upload-button {
+          svg {
+            font-size: 32px;
+          }
+        }
+      }
+    }
+
+    .action-buttons {
+      flex-direction: column-reverse;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}

@@ -1,0 +1,346 @@
+.payment-calendar-page {
+  padding: 24px;
+  width: 100%;
+  background-color: var(--background); /* Light Grey background */
+  min-height: 100vh;
+
+  .back-button {
+    margin-bottom: 24px;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    gap: 16px;
+
+    .page-title {
+      font-weight: 600;
+    }
+
+    .month-navigation {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .current-month {
+        min-width: 150px;
+        text-align: center;
+        color: var(--primary-text); /* Blox Black text */
+      }
+    }
+  }
+
+  .calendar-layout {
+    display: flex;
+    gap: 24px;
+    width: 100%;
+    align-items: flex-start;
+
+    .calendar-section {
+      flex: 0 0 70%;
+      width: 70%;
+    }
+
+    .upcoming-section {
+      flex: 0 0 30%;
+      width: 30%;
+    }
+
+    @media (max-width: 960px) {
+      flex-direction: column;
+
+      .calendar-section,
+      .upcoming-section {
+        flex: 1 1 100%;
+        width: 100%;
+      }
+    }
+  }
+
+  .calendar-paper {
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    padding: var(--spacing-lg);
+    background-color: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+  }
+
+  .calendar-container {
+    .calendar-header {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+
+      .weekday-header {
+        text-align: center;
+        padding: 8px;
+        
+        .MuiTypography-root {
+          font-size: 13px;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+        }
+      }
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+
+      .calendar-day {
+        min-height: 100px;
+        border: 1px solid var(--divider-color); /* Mid Grey border */
+        border-radius: 4px;
+        padding: 8px;
+        background-color: var(--card-background); /* Light Grey background */
+        transition: all 0.2s;
+        color: var(--primary-text); /* Blox Black text */
+
+        &:hover {
+          background-color: var(--card-hover); /* Slightly darker light grey */
+        }
+
+        &.other-month {
+          opacity: 0.5;
+          .day-number {
+            color: var(--secondary-text); /* Dark Grey for better visibility */
+            opacity: 0.8;
+          }
+        }
+
+        &.today {
+          background-color: rgba(218, 255, 1, 0.15); /* Slightly brighter Lime Yellow tint */
+          border-color: var(--primary-color); /* Lime Yellow border */
+          border-width: 2px;
+          font-weight: 600;
+        }
+
+        .day-number {
+          font-weight: 700;
+          margin-bottom: 4px;
+          color: var(--primary-text); /* Blox Black text */
+          font-size: 14px;
+        }
+
+        .payments-list {
+          margin-top: 4px;
+
+          .payment-indicator {
+            padding: 3px 6px;
+            border-radius: 4px;
+            margin-bottom: 3px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+            font-size: 11px;
+
+            &.paid {
+              background-color: rgba(120, 118, 99, 0.25); /* Dark Grey tint - increased opacity */
+              color: var(--dark-grey); /* Dark Grey text */
+              border: 1px solid rgba(120, 118, 99, 0.3);
+            }
+
+            &.upcoming {
+              background-color: rgba(218, 255, 1, 0.3); /* Lime Yellow tint - increased opacity */
+              color: var(--primary-text); /* Blox Black text for better contrast */
+              border: 1px solid rgba(218, 255, 1, 0.5);
+            }
+
+            &.overdue {
+              background-color: rgba(249, 86, 104, 0.2); /* Red tint for overdue */
+              color: #C62828; /* Dark red text */
+              border: 1px solid rgba(249, 86, 104, 0.4);
+              font-weight: 700;
+            }
+
+            &.active {
+              background-color: rgba(218, 255, 1, 0.3); /* Lime Yellow tint - increased opacity */
+              color: var(--primary-text); /* Blox Black text for better contrast */
+              border: 1px solid rgba(218, 255, 1, 0.5);
+            }
+
+            &.deferred {
+              border-left: 3px solid var(--primary-color); /* Lime Yellow border */
+              background-color: rgba(218, 255, 1, 0.3); /* Lime Yellow tint - increased opacity */
+              color: var(--primary-text); /* Blox Black text for better contrast */
+              position: relative;
+              
+              &::before {
+                content: '⏱️';
+                margin-right: 2px;
+              }
+            }
+
+            &.partially-deferred {
+              border-left: 3px solid var(--dark-grey); /* Dark Grey border */
+              background-color: rgba(120, 118, 99, 0.25); /* Dark Grey tint - increased opacity */
+              color: var(--dark-grey); /* Dark Grey text */
+              position: relative;
+              
+              &::before {
+                content: '⏸️';
+                margin-right: 2px;
+              }
+            }
+
+            &:hover {
+              opacity: 0.9;
+              transform: scale(1.02);
+            }
+          }
+
+          .more-indicator {
+            color: var(--primary-text); /* Blox Black for better contrast */
+            font-weight: 600;
+            font-size: 10px;
+            opacity: 0.9;
+          }
+        }
+      }
+    }
+  }
+
+  .upcoming-payments-paper {
+    // Clean, minimal design matching vehicle cards - Light Grey background
+    padding: var(--spacing-lg);
+    background-color: var(--card-background); /* Light Grey */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    border: none; /* No border for clean look */
+    transition: all var(--transition-base);
+
+    &:hover {
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .section-title {
+      margin-bottom: var(--spacing-lg);
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--primary-text); /* Blox Black */
+      letter-spacing: -0.01em;
+    }
+
+    .payment-card {
+      background-color: var(--card-background); /* Light Grey */
+      color: var(--primary-text); /* Blox Black text */
+      border-radius: var(--radius-card);
+      box-shadow: var(--card-shadow);
+      border: none;
+      transition: all var(--transition-base);
+      
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--card-shadow-hover);
+        background-color: var(--card-hover); /* Slightly darker on hover */
+      }
+      
+      .payment-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: var(--spacing-xs);
+      }
+
+      .payment-amount {
+        color: var(--primary-color); /* Lime Yellow */
+        font-weight: 700;
+        font-size: 20px;
+        margin-bottom: var(--spacing-xs);
+        letter-spacing: -0.01em;
+      }
+    }
+  }
+
+  @media (max-width: 960px) {
+    padding: 16px;
+
+    .calendar-paper {
+      padding: 20px;
+    }
+
+    .calendar-container {
+      .calendar-grid {
+        .calendar-day {
+          min-height: 60px;
+          padding: 4px;
+
+          .payments-list {
+            .payment-indicator {
+              font-size: 10px;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  @media (max-width: 600px) {
+    padding: 12px;
+
+    .back-button {
+      margin-bottom: 16px;
+    }
+
+    .calendar-paper {
+      padding: 16px;
+    }
+
+    .page-header {
+      margin-bottom: 20px;
+    }
+
+    .month-navigation {
+      gap: 8px;
+
+      .current-month {
+        min-width: auto;
+        font-size: 14px;
+      }
+    }
+
+    .calendar-container {
+      .calendar-header {
+        gap: 4px;
+
+        .weekday-header {
+          padding: 4px;
+        }
+      }
+
+      .calendar-grid {
+        gap: 4px;
+
+        .calendar-day {
+          min-height: 52px;
+          padding: 3px;
+
+          .day-number {
+            font-size: 12px;
+          }
+
+          .payments-list {
+            .payment-indicator {
+              padding: 1px 2px;
+              border-radius: 3px;
+            }
+
+            .more-indicator {
+              font-size: 10px;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+

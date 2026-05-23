@@ -1,0 +1,296 @@
+.customer-nav {
+  /* Blox Brand Navigation: Light background with black text */
+  background: var(--card-background); /* Light Grey */
+  border-bottom: 1px solid var(--divider-color); /* Mid Grey border */
+  color: var(--primary-text); /* Blox Black text */
+  box-shadow: var(--card-shadow);
+  border-radius: 0 !important;
+
+  .nav-toolbar {
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    max-width: 100%;
+    min-height: 64px;
+
+    .logo-section {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      margin-right: 32px;
+
+      .logo-image {
+        height: 40px;
+        width: auto;
+        object-fit: contain;
+      }
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+
+      .nav-link {
+        color: var(--primary-text); /* Blox Black text */
+        text-transform: none;
+        font-weight: 600;
+        font-size: 15px;
+        letter-spacing: 0.01em;
+        padding: 10px 18px;
+        border-radius: var(--radius-md);
+        border: 1px solid transparent;
+        transition: all var(--transition-base);
+        font-family: 'IBM Plex Sans', sans-serif;
+
+        &:hover {
+          background-color: var(--card-hover) !important;
+          color: var(--primary-text) !important; /* Black text on hover */
+          border-color: var(--divider-color);
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-xs);
+        }
+
+        &.active {
+          color: var(--primary-btn-color); /* Blox Black text */
+          background-color: var(--primary-color); /* Lime Yellow background */
+          border-color: var(--primary-color);
+          font-weight: 700;
+          box-shadow: var(--shadow-sm);
+          
+          &:hover {
+            background-color: var(--primary-btn-hover) !important; /* Darker Lime Yellow */
+            border-color: var(--primary-btn-hover);
+            color: var(--primary-btn-color); /* Blox Black text */
+          }
+        }
+      }
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .blox-wallet {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        background: #0E1909;
+        border: 1px solid var(--divider-color);
+        border-radius: var(--radius-md);
+        transition: all var(--transition-base);
+        min-width: 140px;
+
+        &:hover {
+          background: #0E1909;
+          border-color: var(--primary-color); /* Lime Yellow */
+          transform: translateY(-1px);
+          box-shadow: var(--shadow-xs);
+        }
+
+        .wallet-icon-wrapper {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          background: rgba(218, 255, 1, 0.2);
+          border-radius: 0;
+
+          .wallet-icon {
+            color: var(--primary-color); /* Lime Yellow */
+            font-size: 20px;
+          }
+        }
+
+        .wallet-content {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          min-width: 0;
+
+          .wallet-label {
+            color: var(--background-secondary); /* Light Grey text on dark background */
+            opacity: 1;
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            line-height: 1;
+            margin-bottom: 2px;
+          }
+
+          .wallet-balance {
+            color: var(--background-secondary); /* Light Grey text on dark background */
+            font-size: 16px;
+            font-weight: 700;
+            line-height: 1.2;
+            font-family: 'IBM Plex Sans', sans-serif;
+          }
+        }
+
+        .wallet-add-button {
+          padding: 4px;
+          min-width: 24px;
+          width: 24px;
+          height: 24px;
+        }
+      }
+
+      .user-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: var(--radius-md);
+        transition: background-color var(--transition-base);
+
+        &:hover {
+          background-color: var(--card-hover);
+        }
+
+        .user-avatar {
+          width: 32px;
+          height: 32px;
+          border-radius: var(--radius-round);
+          background-color: var(--dark-grey); /* Dark Grey background */
+          color: var(--card-background); /* Light Grey text */
+          font-size: 14px;
+          font-weight: 600;
+        }
+
+        .user-name {
+          font-weight: 600;
+          color: var(--primary-text); /* Blox Black text */
+          font-size: 14px;
+          font-family: 'IBM Plex Sans', sans-serif;
+        }
+      }
+
+      .auth-buttons {
+        display: flex;
+        gap: 12px;
+
+        .login-button {
+          color: var(--primary-text); /* Blox Black text */
+          border-color: var(--divider-color); /* Mid Grey border */
+          border-width: 1.5px;
+          text-transform: none;
+          font-weight: 600;
+          font-size: 14px;
+          padding: 10px 24px;
+          font-family: 'IBM Plex Sans', sans-serif;
+          letter-spacing: 0.01em;
+          background-color: transparent;
+          border-radius: var(--radius-md) !important;
+
+          &:hover {
+            border-color: var(--primary-color); /* Lime Yellow border */
+            background-color: var(--card-hover);
+            color: var(--primary-text); /* Black text */
+            border-width: 1.5px;
+          }
+        }
+
+        .signup-button {
+          background-color: var(--primary-color); /* Lime Yellow */
+          color: var(--primary-btn-color); /* Blox Black text */
+          text-transform: none;
+          font-weight: 600;
+          font-size: 14px;
+          padding: 10px 24px;
+          font-family: 'IBM Plex Sans', sans-serif;
+          letter-spacing: 0.01em;
+          box-shadow: var(--shadow-xs);
+          border-radius: var(--radius-md) !important;
+          border: 1px solid var(--primary-color);
+
+          &:hover {
+            background-color: var(--primary-btn-hover); /* Darker Lime Yellow */
+            border-color: var(--primary-btn-hover);
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-1px);
+          }
+        }
+      }
+    }
+  }
+
+  .mobile-menu-button {
+    display: none;
+    color: var(--primary-text); /* Blox Black icon */
+
+    @media (max-width: 960px) {
+      display: flex;
+      margin-right: 8px;
+      margin-left: 0;
+    }
+  }
+
+  @media (max-width: 960px) {
+    .nav-toolbar {
+      padding: 12px 16px;
+
+      .logo-section {
+        margin-right: 16px;
+
+        .logo-image {
+          height: 32px;
+        }
+      }
+
+      .nav-links {
+        display: none; // Hide on mobile, use hamburger menu instead
+      }
+
+      .nav-actions {
+        .blox-wallet {
+          min-width: 100px;
+          padding: 6px 8px;
+          gap: 6px;
+
+          .wallet-content {
+            .wallet-label {
+              font-size: 9px;
+            }
+
+            .wallet-balance {
+              font-size: 14px;
+            }
+          }
+
+          .wallet-icon-wrapper {
+            width: 28px;
+            height: 28px;
+
+            .wallet-icon {
+              font-size: 18px;
+            }
+          }
+        }
+
+        .user-info {
+          .user-name {
+            display: none;
+          }
+        }
+
+        .auth-buttons {
+          gap: 8px;
+
+          .login-button,
+          .signup-button {
+            padding: 6px 12px;
+            font-size: 12px;
+          }
+        }
+      }
+    }
+  }
+}
+
+

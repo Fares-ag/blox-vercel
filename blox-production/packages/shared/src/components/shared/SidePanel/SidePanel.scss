@@ -1,0 +1,161 @@
+.side-panel {
+  .side-panel-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    color: white;
+  }
+
+  .logo-section {
+    padding: var(--spacing-md);
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+
+    .logo {
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--spacing-xs) 0;
+
+      .logo-image {
+        height: auto;
+        max-width: 120px;
+        object-fit: contain;
+        transition: all 0.3s ease;
+
+        &.collapsed {
+          max-width: 35px;
+        }
+      }
+    }
+
+    .collapse-button {
+      z-index: 10;
+      min-width: 36px;
+      min-height: 36px;
+
+      &.collapsed {
+        // When collapsed, ensure button is always visible and accessible
+        position: absolute !important;
+      }
+    }
+  }
+
+  .menu-list {
+    flex: 1;
+    padding: var(--spacing-sm) 0;
+
+    .menu-item {
+      margin: var(--spacing-xs) var(--spacing-sm);
+      border-radius: var(--radius-sm);
+      color: rgba(255, 255, 255, 0.9);
+      font-weight: 500;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.15);
+        color: white;
+        transform: translateX(4px);
+      }
+
+      &.active {
+        background-color: rgba(255, 255, 255, 0.25);
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      .menu-icon {
+        color: inherit;
+        min-width: 40px;
+      }
+
+      .MuiListItemText-primary {
+        font-family: 'IBM Plex Sans', sans-serif;
+        font-weight: inherit;
+        font-size: 14px;
+        letter-spacing: 0.01em;
+      }
+    }
+  }
+
+  .user-section {
+    padding: var(--spacing-sm);
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      padding: var(--spacing-sm);
+      gap: var(--spacing-sm);
+
+      .user-avatar {
+        width: 40px;
+        height: 40px;
+        background-color: var(--primary-btn-bg);
+      }
+
+      .user-details {
+        flex: 1;
+
+        .user-name {
+          font-weight: 600;
+          color: white;
+          font-size: 14px;
+          letter-spacing: 0.01em;
+        }
+
+        .user-email {
+          color: rgba(255, 255, 255, 0.8);
+          font-size: 12px;
+        }
+      }
+    }
+
+    .logout-button {
+      color: rgba(255, 255, 255, 0.8);
+      border-radius: var(--radius-sm);
+      margin-top: var(--spacing-xs);
+
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
+
+      .MuiListItemText-primary {
+        font-family: 'IBM Plex Sans', sans-serif;
+      }
+    }
+  }
+
+  &.collapsed {
+    .menu-item {
+      justify-content: center;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .logo-section {
+      padding: var(--spacing-md) var(--spacing-xs);
+      position: relative;
+      min-height: 80px;
+      
+      .logo {
+        margin-bottom: var(--spacing-sm);
+      }
+    }
+
+    .user-section {
+      .user-info {
+        justify-content: center;
+      }
+    }
+
+    .collapse-button {
+      // Make button more prominent when collapsed
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+  }
+}

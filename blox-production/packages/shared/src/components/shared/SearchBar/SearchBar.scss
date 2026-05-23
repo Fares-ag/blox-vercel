@@ -1,0 +1,32 @@
+.search-bar {
+  // Ensure the search input stands out clearly on gradients
+  .MuiOutlinedInput-root {
+    background-color: #ffffff;
+    box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.06);
+
+    // Default state: look like the old hover state
+    .MuiOutlinedInput-notchedOutline {
+      border-color: #DAFF01;
+    }
+
+    // Hover keeps the same look so there is no jump
+    &:hover .MuiOutlinedInput-notchedOutline {
+      border-color: #DAFF01;
+    }
+
+    // Focus only thickens the border slightly
+    &.Mui-focused .MuiOutlinedInput-notchedOutline {
+      border-color: #DAFF01;
+      border-width: 2px;
+    }
+  }
+
+  .MuiInputBase-input::placeholder {
+    color: #6b7280;
+    opacity: 1;
+  }
+
+  .search-icon {
+    color: #6b7280;
+  }
+}

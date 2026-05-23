@@ -1,0 +1,42 @@
+.payment-confirmation-dialog {
+  .MuiDialog-paper {
+    max-width: 500px;
+  }
+
+  .payment-info {
+    background: linear-gradient(135deg, #F0FDFA 0%, #E0F7F4 100%);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+
+  .proof-upload-section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #E5E7EB;
+  }
+
+  .file-upload-area {
+    transition: all 200ms ease;
+
+    &:hover {
+      transform: translateY(-2px);
+    }
+  }
+
+  .file-preview {
+    animation: slideIn 200ms ease;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+

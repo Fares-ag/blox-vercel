@@ -1,0 +1,176 @@
+.vehicle-browse-page {
+  min-height: 100vh;
+  padding: 24px;
+  width: 100%;
+  background-color: var(--background); /* Light Grey background */
+
+  .page-header {
+    margin-bottom: 32px;
+    
+    h2 {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 32px;
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--primary-text); /* Blox Black */
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .vehicle-count {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--secondary-text); /* Dark Grey */
+    }
+  }
+
+  .search-section {
+    margin-bottom: 24px;
+  }
+
+  .main-content-wrapper {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .filter-panel-wrapper {
+    flex-shrink: 0;
+    width: 280px;
+    position: sticky;
+    top: 24px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+
+    .MuiPaper-root {
+      background-color: var(--card-background); /* Light Grey card */
+      color: var(--primary-text); /* Blox Black text */
+      box-shadow: var(--card-shadow);
+      border-radius: var(--radius-card);
+      border: 1px solid var(--divider-color); /* Mid Grey border */
+    }
+  }
+
+  .vehicles-grid-wrapper {
+    flex: 1;
+    min-width: 0; // Allows flex item to shrink below content size
+  }
+
+  .vehicles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+  }
+
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+    background-color: var(--card-background); /* Light Grey card */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    border: 1px solid var(--divider-color); /* Mid Grey border */
+    padding: 40px;
+  }
+
+  .pagination-section {
+    margin-top: 40px;
+    padding: 24px;
+    text-align: center;
+    background-color: var(--card-background); /* Light Grey card */
+    color: var(--primary-text); /* Blox Black text */
+    border-radius: var(--radius-card);
+    border: 1px solid var(--divider-color); /* Mid Grey border */
+    box-shadow: var(--card-shadow);
+
+    .pagination-text {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--secondary-text); /* Dark Grey */
+    }
+  }
+
+  // Tablet (768px - 1024px)
+  @media (max-width: 1024px) {
+    padding: 20px;
+
+    .main-content-wrapper {
+      gap: 20px;
+    }
+
+    .filter-panel-wrapper {
+      width: 240px;
+    }
+
+    .vehicles-grid {
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+  }
+
+  // Mobile (below 768px)
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .page-header {
+      margin-bottom: 20px;
+
+      h2 {
+        font-size: 24px;
+        line-height: 31.2px;
+      }
+    }
+
+    .search-section {
+      margin-bottom: 20px;
+    }
+
+    .main-content-wrapper {
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .filter-panel-wrapper {
+      width: 100%;
+      position: static;
+      max-height: none;
+      order: 2; // Show filter below on mobile
+    }
+
+    .vehicles-grid-wrapper {
+      order: 1; // Show vehicles first on mobile
+      width: 100%;
+    }
+
+    .vehicles-grid {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+
+    .pagination-section {
+      margin-top: 24px;
+      padding: 16px;
+    }
+  }
+
+  // Small mobile (below 480px)
+  @media (max-width: 480px) {
+    padding: 12px 8px;
+
+    .page-header {
+      h2 {
+        font-size: 20px;
+        line-height: 26px;
+      }
+    }
+
+    .vehicles-grid {
+      gap: 12px;
+    }
+  }
+}
+

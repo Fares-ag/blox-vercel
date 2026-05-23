@@ -1,0 +1,280 @@
+.create-application-page {
+  padding: 24px;
+  min-height: 100vh;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  .back-button {
+    color: var(--primary-color); /* Lime Yellow */
+    font-weight: 600;
+    margin-bottom: var(--spacing-lg);
+    text-transform: none;
+
+    &:hover {
+      background-color: rgba(218, 255, 1, 0.1); /* Subtle Lime Yellow tint */
+    }
+  }
+
+  .application-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+
+    .form-section {
+      // Clean, minimal design matching vehicle cards - Light Grey background
+      background-color: var(--card-background); /* Light Grey */
+      border-radius: var(--radius-card); /* 16px */
+      box-shadow: var(--card-shadow);
+      border: none; /* No border for clean look */
+      padding: var(--spacing-lg);
+      transition: all var(--transition-base);
+
+      &:hover {
+        box-shadow: var(--card-shadow-hover);
+      }
+
+      .section-title {
+        font-weight: 700;
+        font-size: 20px;
+        color: var(--primary-text); /* Blox Black */
+        font-family: 'IBM Plex Sans', sans-serif;
+        margin-bottom: var(--spacing-xs);
+        letter-spacing: -0.01em;
+      }
+
+      .section-subtitle {
+        color: var(--secondary-text); /* Dark Grey */
+        font-size: 14px;
+        opacity: 0.8;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-top: 20px;
+
+        .form-field {
+          &.phone-field {
+            grid-column: 1 / -1;
+
+            .phone-input-wrapper {
+              display: flex;
+              gap: 12px;
+              align-items: flex-start;
+
+              .country-code-select {
+                flex: 0 0 100px;
+                margin-top: 8px;
+              }
+
+              .phone-input {
+                flex: 1;
+              }
+            }
+          }
+        }
+      }
+
+      .document-tabs {
+        margin-top: var(--spacing-lg);
+        border-bottom: 2px solid var(--divider-color); /* Mid Grey */
+
+        .MuiTab-root {
+          text-transform: none;
+          font-weight: 600;
+          color: var(--secondary-text); /* Dark Grey */
+          min-height: 48px;
+
+          &.Mui-selected {
+            color: var(--primary-color); /* Lime Yellow */
+          }
+
+          &:hover {
+            background-color: rgba(218, 255, 1, 0.05); /* Subtle Lime Yellow tint */
+          }
+        }
+
+        .MuiTabs-indicator {
+          background-color: var(--primary-color); /* Lime Yellow */
+          height: 3px;
+        }
+      }
+
+      .document-upload-area {
+        margin-top: 24px;
+
+        .drag-drop-area {
+          border: 2px dashed var(--divider-color); /* Mid Grey dashed border */
+          border-radius: var(--radius-sm);
+          padding: var(--spacing-2xl) var(--spacing-lg);
+          text-align: center;
+          background-color: var(--background); /* Light Grey */
+          transition: all var(--transition-base);
+          cursor: pointer;
+
+          &.drag-active {
+            border-color: var(--primary-color); /* Lime Yellow */
+            background-color: rgba(218, 255, 1, 0.05); /* Subtle Lime Yellow tint */
+          }
+
+          &.uploading {
+            opacity: 0.6;
+            pointer-events: none;
+          }
+
+          .upload-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-md);
+            cursor: pointer;
+
+            .upload-icon {
+              font-size: 48px;
+              color: var(--mid-grey); /* Mid Grey */
+            }
+
+            .upload-text {
+              font-weight: 500;
+              color: var(--primary-text); /* Blox Black */
+
+              .browse-link {
+                color: var(--primary-color); /* Lime Yellow */
+                text-decoration: underline;
+                cursor: pointer;
+
+                &:hover {
+                  color: var(--primary-btn-hover); /* Darker Lime Yellow */
+                }
+              }
+            }
+
+            .upload-hint {
+              font-size: 12px;
+              color: var(--secondary-text); /* Dark Grey */
+            }
+          }
+        }
+
+        .document-preview {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: var(--spacing-md);
+          background-color: var(--background); /* Light Grey */
+          border: 1px solid #DAFF01;
+          border-radius: 8px;
+
+          .document-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+
+            .document-name {
+              font-weight: 600;
+              color: #000000;
+            }
+          }
+        }
+      }
+    }
+
+    .authorization-section {
+      background-color: #ffffff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+
+      .checkbox-label {
+        margin: 0;
+
+        .MuiFormControlLabel-label {
+          font-size: 14px;
+          color: #374151;
+        }
+
+        .terms-link {
+          color: #DAFF01;
+          text-decoration: none;
+
+          &:hover {
+            text-decoration: underline;
+          }
+        }
+
+        .MuiCheckbox-root {
+          color: #9ca3af;
+
+          &.Mui-checked {
+            color: #DAFF01;
+          }
+        }
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 16px;
+
+      .submit-button {
+        background-color: #DAFF01;
+        color: #ffffff;
+        text-transform: none;
+        font-weight: 600;
+        padding: 12px 48px;
+        border-radius: 8px;
+
+        &:hover {
+          background-color: #0a6b6a;
+        }
+
+        &:disabled {
+          background-color: #d1d5db;
+          color: #9ca3af;
+        }
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    padding: 16px;
+
+    .application-form {
+      .form-section {
+        .form-grid {
+          grid-template-columns: 1fr;
+
+          .form-field.phone-field {
+            grid-column: 1;
+
+            .phone-input-wrapper {
+              flex-direction: column;
+
+              .country-code-select {
+                width: 100%;
+              }
+            }
+          }
+        }
+
+        .document-tabs {
+          .MuiTab-root {
+            font-size: 12px;
+            padding: 12px 8px;
+          }
+        }
+      }
+
+      .form-actions {
+        .submit-button {
+          width: 100%;
+        }
+      }
+    }
+  }
+}

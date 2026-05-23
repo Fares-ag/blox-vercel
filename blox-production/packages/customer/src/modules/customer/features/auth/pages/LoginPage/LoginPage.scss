@@ -1,0 +1,153 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--background); /* Solid background - no gradient */
+  padding: clamp(16px, 4vw, 32px);
+
+  .login-shell {
+    width: min(1100px, 100%);
+    background: var(--card-background); /* Light Grey */
+    border-radius: 16px;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+    padding: clamp(16px, 3vw, 32px);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(16px, 2vw, 24px);
+  }
+
+  .start-application-btn {
+    background-color: var(--blox-black) !important;
+    color: var(--primary-color) !important;
+    border: 1px solid var(--primary-color) !important;
+
+    &:hover {
+      background-color: #1a1a1a !important;
+      color: var(--primary-color) !important;
+      border-color: var(--primary-color) !important;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--primary-color);
+      outline-offset: 2px;
+    }
+  }
+
+  .banner {
+    background: var(--blox-black); /* Dark theme - no gradient */
+    color: var(--background-secondary);
+    border-radius: 12px;
+    padding: clamp(16px, 3vw, 24px);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    &::after {
+      content: '';
+      position: absolute;
+      right: -80px;
+      bottom: -80px;
+      width: 200px;
+      height: 200px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 50%;
+    }
+
+    .banner-kicker {
+      font-weight: 700;
+      letter-spacing: 0.2px;
+    }
+
+    .banner-body {
+      max-width: 760px;
+      line-height: 1.45;
+      color: var(--background-secondary); 
+    }
+
+    .banner-cta {
+      width: fit-content;
+      margin-top: 4px;
+      background: var(--primary-color); /* Lime Yellow */
+      color: var(--primary-btn-color);
+      &:hover {
+        background: var(--primary-btn-hover);
+      }
+    }
+  }
+
+  .login-form-card {
+    background: var(--card-background); /* Light Grey */
+    border: 1px solid var(--divider-color); /* Mid Grey */
+    border-radius: 12px;
+    padding: clamp(20px, 3vw, 28px);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .form-title {
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+
+  .form-subtitle {
+    margin-bottom: 8px;
+  }
+
+  .form-options {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .forgot-link {
+      color: var(--blox-black); /* Lime Yellow */
+      text-decoration: none;
+      font-size: 14px;
+
+      .forgot-cta {
+        font-weight: 600;
+        text-decoration: underline;
+      }
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .actions-row {
+    margin-top: 4px;
+  }
+
+  .signup-link {
+    text-align: center;
+    margin-top: 4px;
+
+    a {
+      color: var(--blox-black); /* Lime Yellow */
+      font-weight: 600;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  @media (max-width: 768px) {
+    .login-shell {
+      padding: 16px;
+    }
+
+    .banner {
+      padding: 16px;
+    }
+  }
+}
+
