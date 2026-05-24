@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Divider } from '@mui/material';
 import { Input } from '@shared/components';
+import { formatCurrency } from '@shared/utils/formatters';
 import moment from 'moment';
 import './InstallmentCalculator.scss';
 
@@ -47,7 +48,6 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
   const termMonths = TERM_MONTHS;
 
   const loanAmount = vehiclePrice - downPayment;
-  const totalAmount = vehiclePrice;
 
   // Round to 2 decimal places helper
   const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -98,10 +98,6 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
 
   const totalRent = useMemo(() =>
     round2(monthlySchedule.reduce((s, x) => s + x.rent, 0)),
-  [monthlySchedule]);
-
-  const totalInstallmentAmount = useMemo(() =>
-    round2(monthlySchedule.reduce((s, x) => s + x.totalPayment, 0)),
   [monthlySchedule]);
 
   // Group by year — 48 months = exactly 4 years of 12 months each
@@ -178,6 +174,42 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
         </Box>
       </Box>
 
+      {/* Payment Schedule */}
+      {termMonths > 0 && paymentSchedule.length > 0 && (
+        <>
+          <Divider sx={{ my: 3 }} />
+          <Box className="payment-schedule-section">
+            <Typography variant="h6" className="section-title">
+              Payment Schedule
+            </Typography>
+            {paymentSchedule.map((scheduleItem) => (
+              <Box key={scheduleItem.year} className="schedule-year">
+                <Typography variant="body2" fontWeight={600} className="year-label">
+                  Year {String(scheduleItem.year).padStart(2, '0')}
+                </Typography>
+                <Box className="schedule-details">
+                  <Box className="schedule-item">
+                    <Typography variant="body2" color="text.secondary">
+                      Total Installments (Year)
+                    </Typography>
+                    <Typography variant="body1" fontWeight={600}>
+                      {formatCurrency(scheduleItem.totalInstallmentsYear)}
+                    </Typography>
+                  </Box>
+                  <Box className="schedule-item">
+                    <Typography variant="body2" color="text.secondary">
+                      Monthly Installment
+                    </Typography>
+                    <Typography variant="body1" fontWeight={600}>
+                      {formatCurrency(scheduleItem.monthlyInstallment)}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </>
+      )}
     </Box>
   );
 };
