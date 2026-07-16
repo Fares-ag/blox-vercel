@@ -285,57 +285,16 @@ export const ApplicationsListPage: React.FC = () => {
     dispatch(setPage(1));
   }, [dispatch]);
 
-  // Calculate metrics
-  const metrics = useMemo(() => {
-    // Use fullFilteredList which contains ALL matching applications (before pagination)
-    // This ensures metrics reflect totals across ALL matching applications, not just current page
-    const filtered = fullFilteredList;
-    
-    // Total Payable = sum of all unpaid installments for the filtered applications
-    const totalPayable = filtered.reduce((sum, app) => {
-      const schedule = app.installmentPlan?.schedule || [];
-      const unpaidForApp = schedule.reduce((acc, payment) => {
-        if (payment.status === 'paid') return acc;
-        const amount = Number(payment.amount) || 0;
-        return acc + amount;
-      }, 0);
-      return sum + unpaidForApp;
-    }, 0);
-
-    // Total Receivable = total loan amount for the filtered applications
-    const totalReceivable = filtered.reduce((sum, app) => {
-      const loanAmount = Number(app.loanAmount) || 0;
-      return sum + loanAmount;
-    }, 0);
-
-    // Average Payment Size = average installment amount across all applications
-    let averagePaymentSize = 0;
-    let totalPaymentsCount = 0;
-    let totalPaymentAmount = 0;
-    
-    filtered.forEach((app) => {
-      const schedule = app.installmentPlan?.schedule || [];
-      schedule.forEach((payment) => {
-        const amount = Number(payment.amount) || 0;
-        if (amount > 0) {
-          totalPaymentAmount += amount;
-          totalPaymentsCount += 1;
-        }
-      });
-    });
-
-    if (totalPaymentsCount > 0 && !isNaN(totalPaymentAmount)) {
-      averagePaymentSize = totalPaymentAmount / totalPaymentsCount;
-      averagePaymentSize = Math.round(averagePaymentSize * 100) / 100;
-    }
-
-    return {
-      totalPayable: isNaN(totalPayable) ? 0 : totalPayable,
-      totalReceivable: isNaN(totalReceivable) ? 0 : totalReceivable,
-      averagePaymentSize: isNaN(averagePaymentSize) ? 0 : averagePaymentSize,
-      activeApplications: filtered.filter((app) => app.status === 'active' || app.status === 'under_review').length,
-    };
-  }, [fullFilteredList]);
+  // Demo metrics for Applications overview cards (placeholder book size)
+  const metrics = useMemo(
+    () => ({
+      totalPayable: 23_450_000,
+      totalReceivable: 23_875_000,
+      averagePaymentSize: 18_650,
+      activeApplications: 42,
+    }),
+    []
+  );
 
   // Calculate asset distribution percentage based on real ownership:
   // (down payment + sum of paid installments) / vehicle price
