@@ -16,7 +16,8 @@ import { formatCurrency } from '@shared/utils/formatters';
 import { Loading, EmptyState } from '@shared/components';
 import { supabaseApiService } from '@shared/services';
 import { InstallmentCalculator } from '../../components/InstallmentCalculator/InstallmentCalculator';
-import { vehicleService } from '../../../../services/vehicle.service';
+import { CUSTOMER_MAX_VEHICLE_PRICE_QAR, vehicleService } from '../../../../services/vehicle.service';
+import { getVehicleDisplayImage } from '../../utils/vehicle-image.utils';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import './VehicleDetailPage.scss';
@@ -64,20 +65,20 @@ export const VehicleDetailPage: React.FC = () => {
   const loadVehicle = async (vehicleId: string) => {
     try {
       setLoading(true);
-      
-      // Load from Supabase only
-      const supabaseResponse = await supabaseApiService.getProductById(vehicleId);
-      
-      if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
-        // Only show if vehicle is active
-        if (supabaseResponse.data.status === 'active') {
-          setVehicle(supabaseResponse.data);
+
+      // Prefer service (includes local catalog seed under 70k QAR)
+      const response = await vehicleService.getVehicleById(vehicleId);
+
+      if (response.status === 'SUCCESS' && response.data?.id) {
+        const product = response.data;
+        if (product.status === 'active' && product.price <= CUSTOMER_MAX_VEHICLE_PRICE_QAR) {
+          setVehicle(product);
         } else {
           toast.error('This vehicle is not available');
           navigate('/customer/vehicles');
         }
       } else {
-        throw new Error(supabaseResponse.message || 'Vehicle not found');
+        throw new Error(response.message || 'Vehicle not found');
       }
     } catch (error: unknown) {
       const err = error instanceof Error ? error : new Error('Failed to load vehicle details');
@@ -128,9 +129,7 @@ export const VehicleDetailPage: React.FC = () => {
     );
   }
 
-  const imageUrl = vehicle.images && vehicle.images.length > 0 
-    ? vehicle.images[0] 
-    : '/CarImage.png';
+  const imageUrl = getVehicleDisplayImage(vehicle);
 
   return (
     <Box className="vehicle-detail-page" sx={{ width: '100%', maxWidth: '100%', margin: 0 }}>

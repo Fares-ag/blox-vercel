@@ -1,6 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Paper } from '@mui/material';
-import { vehicleService, type VehicleFilters } from '../../../../services/vehicle.service';
+import {
+  CUSTOMER_MAX_VEHICLE_PRICE_QAR,
+  vehicleService,
+  type VehicleFilters,
+} from '../../../../services/vehicle.service';
+import { mergeCatalogWithSeed } from '../../data/catalog-seed';
 import type { Product } from '@shared/models/product.model';
 import { VehicleCard } from '../../components/VehicleCard/VehicleCard';
 import { VehicleFilter } from '../../components/VehicleFilter/VehicleFilter';
@@ -36,8 +41,10 @@ export const VehicleBrowsePage: React.FC = () => {
       // Fetch vehicles from Supabase via shared API service
       const response = await supabaseApiService.getProducts();
       if (response.status === 'SUCCESS' && response.data) {
-        // Only show active vehicles (admin can control visibility via status field)
-        let filteredVehicles = response.data.filter((v) => v.status === 'active');
+        // Merge local Qatar catalog seed; keep only active vehicles ≤ price cap
+        let filteredVehicles = mergeCatalogWithSeed(response.data).filter(
+          (v) => v.status === 'active' && v.price <= CUSTOMER_MAX_VEHICLE_PRICE_QAR
+        );
 
         // Exclude vehicles that are already tied to other customers' active applications
         try {
@@ -95,8 +102,12 @@ export const VehicleBrowsePage: React.FC = () => {
         if (filters.minPrice) {
           filteredVehicles = filteredVehicles.filter((v) => v.price >= filters.minPrice!);
         }
-        if (filters.maxPrice) {
-          filteredVehicles = filteredVehicles.filter((v) => v.price <= filters.maxPrice!);
+        {
+          const effectiveMaxPrice = Math.min(
+            filters.maxPrice ?? CUSTOMER_MAX_VEHICLE_PRICE_QAR,
+            CUSTOMER_MAX_VEHICLE_PRICE_QAR
+          );
+          filteredVehicles = filteredVehicles.filter((v) => v.price <= effectiveMaxPrice);
         }
         if (filters.minYear) {
           filteredVehicles = filteredVehicles.filter((v) => v.modelYear >= filters.minYear!);

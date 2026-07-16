@@ -8,7 +8,6 @@ import {
   StepLabel,
   StepContent,
   Chip,
-  LinearProgress,
 } from '@mui/material';
 import {
   CheckCircle,
@@ -20,6 +19,7 @@ import type { Application } from '@shared/models/application.model';
 import { calculateOwnershipTimeline, type OwnershipMilestone } from '@shared/utils/ownership-timeline.utils';
 import { formatDate, formatCurrency } from '@shared/utils/formatters';
 import moment from 'moment';
+import { OwnershipBlocksCanvas } from '../OwnershipBlocksCanvas/OwnershipBlocksCanvas';
 import './OwnershipTimeline.scss';
 
 interface OwnershipTimelineProps {
@@ -44,69 +44,18 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
     return '#9E9E9E';
   };
 
-  // Filter milestones to show key ones (every 25% or special milestones)
   const keyMilestones = timeline.milestones.filter((m, index) => {
-    // Always show first and last
     if (index === 0 || index === timeline.milestones.length - 1) return true;
-    // Show milestone markers
     if (m.milestone) return true;
-    // Show every 4th payment for visibility
     return index % 4 === 0;
   });
 
   return (
     <Box className="ownership-timeline">
+      <OwnershipBlocksCanvas ownershipPct={timeline.currentOwnership} />
+
       <Paper sx={{ p: 3, mb: 3 }}>
-        <Box className="ownership-header" sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-          <Box>
-            <Typography variant="h6" fontWeight={700} sx={{ color: 'var(--primary-text)' }} gutterBottom>
-              Ownership Journey
-            </Typography>
-            <Typography variant="body2" sx={{ color: 'var(--secondary-text)' }}>
-              Track your progress toward full ownership
-            </Typography>
-          </Box>
-          <Box sx={{ textAlign: 'right' }}>
-            <Typography variant="h4" fontWeight={700} sx={{ color: 'var(--primary-text)' }}>
-              {timeline.currentOwnership.toFixed(1)}%
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>
-              Current Ownership
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Progress Bar */}
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>0%</Typography>
-            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>100%</Typography>
-          </Box>
-          <LinearProgress
-            variant="determinate"
-            value={timeline.progressPercentage}
-            sx={{
-              height: 12,
-              borderRadius: 6,
-              backgroundColor: 'var(--card-hover)',
-              '& .MuiLinearProgress-bar': {
-                borderRadius: 6,
-                backgroundColor: '#2E7D32',
-              },
-            }}
-          />
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 1 }}>
-            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>
-              {formatCurrency(timeline.milestones[0]?.ownershipAmount || 0)}
-            </Typography>
-            <Typography variant="caption" sx={{ color: 'var(--secondary-text)' }}>
-              {formatCurrency(application.vehicle?.price || 0)}
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Stats */}
-        <Box className="ownership-stats" sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
+        <Box className="ownership-stats" sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
           <Box>
             <Typography variant="h6" fontWeight={700} className="stat-value" sx={{ color: 'var(--primary-text)' }}>
               {timeline.completedPayments}
@@ -130,7 +79,6 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
         </Box>
       </Paper>
 
-      {/* Timeline Stepper */}
       <Paper sx={{ p: 3 }}>
         <Typography variant="h6" fontWeight={700} gutterBottom sx={{ color: 'var(--primary-text)' }}>
           Ownership Timeline
@@ -198,4 +146,3 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
     </Box>
   );
 };
-

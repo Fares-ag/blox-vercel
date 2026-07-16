@@ -76,11 +76,13 @@ export const MainLayout: React.FC = () => {
               left: '8px',
               top: '16px',
               zIndex: 1200,
-              backgroundColor: '#008A6C',
-              color: 'white',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+              backgroundColor: 'var(--blox-black)',
+              color: 'var(--primary-color)',
+              boxShadow: 'var(--card-shadow)',
+              borderRadius: '10px',
               '&:hover': {
-                backgroundColor: '#16535B',
+                backgroundColor: 'var(--blox-black)',
+                color: 'var(--primary-dark)',
               },
             }}
             title="Expand sidebar"

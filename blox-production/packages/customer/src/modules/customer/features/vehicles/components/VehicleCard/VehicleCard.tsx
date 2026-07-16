@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardMedia, Typography, Box, Button, Divider } from '@mui/material';
 import type { Product } from '@shared/models/product.model';
 import { formatCurrency } from '@shared/utils/formatters';
+import { getVehicleDisplayImage } from '../../utils/vehicle-image.utils';
 import './VehicleCard.scss';
 
 interface VehicleCardProps {
@@ -43,9 +44,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = React.memo(({ vehicle }) 
     }
   }, [handleCardClick]);
 
-  const imageUrl = vehicle.images && vehicle.images.length > 0 
-    ? vehicle.images[0] 
-    : '/CarImage.png';
+  const imageUrl = getVehicleDisplayImage(vehicle);
 
   const availableColors = getAvailableColors(vehicle);
   // Always show at least 3 colors, with count if more available

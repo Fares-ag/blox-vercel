@@ -481,7 +481,7 @@ export const ActivityLogsPage: React.FC = () => {
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   <strong>Metadata:</strong>
                 </Typography>
-                <Paper sx={{ p: 2, backgroundColor: '#F3F0ED' }}>
+                <Paper sx={{ p: 2, backgroundColor: 'var(--light-grey)' }}>
                   <pre style={{ margin: 0, fontSize: '0.75rem', overflow: 'auto' }}>
                     {JSON.stringify(selectedLog.metadata, null, 2)}
                   </pre>

@@ -1,50 +1,74 @@
 .login-page {
-  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 2rem;
-}
+  min-height: 100vh;
+  background: linear-gradient(135deg, #787663 0%, #0E1909 100%);
+  padding: var(--spacing-md);
 
-.login-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  padding: 3rem;
-  width: 100%;
-  max-width: 450px;
-}
-
-.login-header {
-  text-align: center;
-  margin-bottom: 2rem;
-
-  .logo-image {
-    width: 120px;
-    height: auto;
-    margin-bottom: 1.5rem;
+  .login-container {
+    background: #ffffff;
+    border-radius: var(--radius-large-card, 16px);
+    padding: var(--spacing-xl, 32px) var(--spacing-lg, 24px);
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   }
 
-  .welcome-text {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #333;
+  .login-header {
+    text-align: center;
+    margin-bottom: var(--spacing-lg, 24px);
+
+    .logo-image {
+      max-width: 120px;
+      height: auto;
+      margin: 0 auto var(--spacing-md, 16px);
+      display: block;
+    }
+
+    .welcome-text {
+      color: var(--primary-text, #0e1909);
+      font-weight: 700;
+      margin-bottom: var(--spacing-xs, 4px);
+    }
+
+    .subtitle-text {
+      color: var(--custom-text-color, #787663);
+    }
   }
 
-  .subtitle-text {
-    color: #666;
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md, 16px);
+
+    .form-options {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+
+  .MuiFormControlLabel-label {
+    color: var(--secondary-text, #787663);
+    font-size: 14px;
+  }
+
+  .MuiCheckbox-root {
+    color: var(--mid-grey, #c9c4b7);
+
+    &.Mui-checked {
+      color: var(--primary-color, #daff01);
+    }
   }
 }
 
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
+@media (max-width: 600px) {
+  .login-page {
+    padding: var(--spacing-sm, 8px);
 
-.form-options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    .login-container {
+      padding: var(--spacing-lg, 24px) var(--spacing-md, 16px);
+    }
+  }
 }

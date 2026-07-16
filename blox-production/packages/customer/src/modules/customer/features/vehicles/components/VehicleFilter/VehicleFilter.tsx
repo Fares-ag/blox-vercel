@@ -3,7 +3,10 @@ import { Box, Typography, Accordion, AccordionSummary, AccordionDetails } from '
 import { ExpandMore } from '@mui/icons-material';
 import { Select, Input, Button } from '@shared/components';
 import type { SelectOption } from '@shared/components';
-import { vehicleService, type VehicleFilters } from '../../../../services/vehicle.service';
+import {
+  CUSTOMER_MAX_VEHICLE_PRICE_QAR,
+  type VehicleFilters,
+} from '../../../../services/vehicle.service';
 import './VehicleFilter.scss';
 
 interface VehicleFilterProps {
@@ -133,8 +136,15 @@ export const VehicleFilter: React.FC<VehicleFilterProps> = ({ filters, onChange 
               type="number"
               label="Max Price"
               value={localFilters.maxPrice?.toString() || ''}
-              onChange={(e) => handleFilterChange('maxPrice', e.target.value ? Number(e.target.value) : undefined)}
-              placeholder="500000"
+              onChange={(e) => {
+                const raw = e.target.value ? Number(e.target.value) : undefined;
+                const capped =
+                  raw === undefined
+                    ? undefined
+                    : Math.min(raw, CUSTOMER_MAX_VEHICLE_PRICE_QAR);
+                handleFilterChange('maxPrice', capped);
+              }}
+              placeholder={String(CUSTOMER_MAX_VEHICLE_PRICE_QAR)}
             />
           </Box>
         </AccordionDetails>
