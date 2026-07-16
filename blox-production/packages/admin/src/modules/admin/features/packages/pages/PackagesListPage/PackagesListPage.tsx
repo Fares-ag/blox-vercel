@@ -5,12 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import { setList, setLoading } from '../../../../store/slices/packages.slice';
 import { supabaseApiService } from '@shared/services';
 import type { Package } from '@shared/models/package.model';
-import { Table, type Column, Button } from '@shared/components';
+import { Table, type Column, Button, EmptyState, TableSkeleton } from '@shared/components';
 import { formatCurrency } from '@shared/utils/formatters';
 import { toast } from 'react-toastify';
 import './PackagesListPage.scss';
-
-// Using only Supabase - no API or localStorage fallbacks
 
 export const PackagesListPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -20,18 +18,18 @@ export const PackagesListPage: React.FC = () => {
   const loadPackages = useCallback(async () => {
     try {
       dispatch(setLoading(true));
-      
-      // Load from Supabase only
+
       const supabaseResponse = await supabaseApiService.getPackages();
-      
+
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         dispatch(setList(supabaseResponse.data));
       } else {
         throw new Error(supabaseResponse.message || 'Failed to load packages from Supabase');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Failed to load packages:', error);
-      toast.error(error.message || 'Failed to load packages from Supabase');
+      const message = error instanceof Error ? error.message : 'Failed to load packages from Supabase';
+      toast.error(message);
     } finally {
       dispatch(setLoading(false));
     }
@@ -65,18 +63,38 @@ export const PackagesListPage: React.FC = () => {
   return (
     <Box className="packages-list-page">
       <Box className="page-header">
-        <Typography variant="h2">Packages</Typography>
+        <Box>
+          <Typography variant="h2" className="page-title">
+            Packages
+          </Typography>
+          <Typography variant="body2" className="page-subtitle">
+            {list.length} packages · bundle pricing and product groups
+          </Typography>
+        </Box>
         <Button variant="primary" onClick={() => navigate('/admin/packages/add')}>
           Create Package
         </Button>
       </Box>
 
-      <Table
-        columns={columns}
-        rows={list}
-        loading={loading}
-        onRowClick={(row) => navigate(`/admin/packages/${row.id}`)}
-      />
+      <Box className="table-section">
+        {loading && list.length === 0 ? (
+          <TableSkeleton rows={8} columns={4} />
+        ) : !loading && list.length === 0 ? (
+          <EmptyState
+            title="No packages yet"
+            message="Create a package to group vehicles and pricing."
+            actionLabel="Create Package"
+            onAction={() => navigate('/admin/packages/add')}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            rows={list}
+            loading={loading}
+            onRowClick={(row) => navigate(`/admin/packages/${row.id}`)}
+          />
+        )}
+      </Box>
     </Box>
   );
 };

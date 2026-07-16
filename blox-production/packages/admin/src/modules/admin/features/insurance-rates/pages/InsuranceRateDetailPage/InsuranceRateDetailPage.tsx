@@ -6,7 +6,8 @@ import { ArrowBack, Edit, Delete } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading, removeInsuranceRate } from '../../../../store/slices/insurance-rates.slice';
 import { supabaseApiService } from '@shared/services';
-import { Button, StatusBadge, Loading, ConfirmDialog } from '@shared/components';
+import { Button, StatusBadge, ConfirmDialog } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { formatDate } from '@shared/utils/formatters';
 import { toast } from 'react-toastify';
 import './InsuranceRateDetailPage.scss';
@@ -73,7 +74,7 @@ export const InsuranceRateDetailPage: React.FC = () => {
   }, [id, dispatch, navigate]);
 
   if (loading) {
-    return <Loading fullScreen />;
+    return <PageSkeleton variant="detail" />;
   }
 
   const insuranceRate = selected;
@@ -82,7 +83,7 @@ export const InsuranceRateDetailPage: React.FC = () => {
     return (
       <Box className="insurance-rate-detail-page">
         <Alert severity="error">Insurance rate not found</Alert>
-        <Button variant="outlined" onClick={() => navigate('/admin/insurance-rates')} sx={{ mt: 2 }}>
+        <Button variant="secondary" onClick={() => navigate('/admin/insurance-rates')} sx={{ mt: 2 }}>
           Back to Insurance Rates
         </Button>
       </Box>
@@ -112,14 +113,14 @@ export const InsuranceRateDetailPage: React.FC = () => {
         <Box sx={{ display: 'flex', gap: 2 }}>
           <StatusBadge status={insuranceRate.status === 'active' ? 'Active' : 'Inactive'} type="application" />
           <Button
-            variant="outlined"
+            variant="secondary"
             startIcon={<Edit />}
             onClick={() => navigate(`/admin/insurance-rates/${id}/edit`)}
           >
             Edit
           </Button>
           <Button
-            variant="outlined"
+            variant="secondary"
             color="error"
             startIcon={<Delete />}
             onClick={handleDelete}
@@ -174,7 +175,7 @@ export const InsuranceRateDetailPage: React.FC = () => {
                   <Typography variant="caption" className="info-label">
                     Annual Rate (%)
                   </Typography>
-                  <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                  <Typography variant="body1" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                     {insuranceRate.annualRate}%
                   </Typography>
                 </Box>
@@ -184,7 +185,7 @@ export const InsuranceRateDetailPage: React.FC = () => {
                   <Typography variant="caption" className="info-label">
                     Provider Rate (%)
                   </Typography>
-                  <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                  <Typography variant="body1" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                     {insuranceRate.providerRate}%
                   </Typography>
                 </Box>

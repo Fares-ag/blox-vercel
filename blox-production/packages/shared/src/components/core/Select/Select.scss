@@ -3,41 +3,43 @@
 
   .MuiOutlinedInput-root {
     height: 48px;
-    border-radius: 8px;
-    background-color: #ffffff;
-    transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: var(--radius-sm);
+    background-color: var(--card-background);
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
 
     &:hover {
-      background-color: #ffffff;
+      background-color: var(--card-background);
       .MuiOutlinedInput-notchedOutline {
-        border-color: #DAFF01;
+        border-color: var(--field-border-hover);
       }
     }
 
     &.Mui-focused {
-      background-color: #ffffff;
+      background-color: var(--card-background);
+      box-shadow: var(--field-focus-ring);
+
       .MuiOutlinedInput-notchedOutline {
-        border-color: #DAFF01;
+        border-color: var(--field-border-focus);
         border-width: 2px;
       }
     }
 
     &.Mui-error {
       .MuiOutlinedInput-notchedOutline {
-        border-color: #F95668;
+        border-color: var(--blox-black);
       }
     }
 
     &.Mui-disabled {
-      background-color: #F9FAFB;
+      background-color: var(--disabled-bg);
       .MuiOutlinedInput-notchedOutline {
-        border-color: #E5E7EB;
+        border-color: var(--field-border-color);
       }
     }
   }
 
   .MuiInputLabel-root {
-    color: #0E1909;
+    color: var(--field-lable-color);
     font-weight: 500;
     font-size: 14px;
     font-family: 'IBM Plex Sans', sans-serif;
@@ -48,16 +50,16 @@
     }
 
     &.Mui-focused {
-      color: #DAFF01;
+      color: var(--field-lable-color);
     }
 
     &.Mui-error {
-      color: #F95668;
+      color: var(--blox-black);
     }
   }
 
   .MuiFormHelperText-root {
-    color: #6B7280;
+    color: var(--secondary-text);
     font-size: 12px;
     margin-top: 6px;
     margin-left: 0;
@@ -65,7 +67,7 @@
     font-weight: 400;
 
     &.Mui-error {
-      color: #F95668;
+      color: var(--blox-black);
     }
   }
 }

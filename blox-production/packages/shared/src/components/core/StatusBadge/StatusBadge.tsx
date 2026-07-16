@@ -8,10 +8,21 @@ export interface StatusBadgeProps {
   type?: 'application' | 'payment';
 }
 
+const LIME_STATUS_VARS = new Set([
+  'var(--status-due)',
+  'var(--status-active)',
+  'var(--status-under-review)',
+]);
+
+const isLimeFill = (bgColor: string): boolean => {
+  if (LIME_STATUS_VARS.has(bgColor)) return true;
+  const normalized = bgColor.toLowerCase();
+  return normalized.includes('daff01') || normalized.includes('b8d900');
+};
+
 export const StatusBadge: React.FC<StatusBadgeProps> = React.memo(({ status, type = 'application' }) => {
   const getColor = () => {
     if (type === 'payment') {
-      // Payment status colors
       const paymentStatuses: Record<string, string> = {
         due: 'var(--status-due)',
         active: 'var(--status-active)',
@@ -22,7 +33,6 @@ export const StatusBadge: React.FC<StatusBadgeProps> = React.memo(({ status, typ
       };
       return paymentStatuses[status.toLowerCase()] || 'var(--custom-text-color)';
     }
-    // Application status colors
     return getStatusColor(status);
   };
 
@@ -32,31 +42,30 @@ export const StatusBadge: React.FC<StatusBadgeProps> = React.memo(({ status, typ
     .join(' ');
 
   const backgroundColor = getColor();
-  // Determine text color based on background for proper contrast
+  const limeFill = isLimeFill(backgroundColor);
+
   const getTextColor = (bgColor: string): string => {
-    // Handle CSS variables
-    if (bgColor.startsWith('var(--')) {
-      if (bgColor === 'var(--status-due)' || bgColor === 'var(--status-active)') {
-        return '#0E1909'; // Blox Black for light backgrounds
-      }
-      return '#FFFFFF'; // White for dark backgrounds
+    if (limeFill) {
+      return 'var(--blox-black)';
     }
-    
-    // Handle hex colors
+    if (bgColor.startsWith('var(--')) {
+      return '#FFFFFF';
+    }
     if (bgColor.includes('FFC107') || bgColor.includes('FF9800')) {
-      // Amber/Yellow and Orange - use black text
       return '#0E1909';
     }
-    if (bgColor.includes('2196F3') || bgColor.includes('4CAF50') || bgColor.includes('9C27B0') || 
-        bgColor.includes('F44336') || bgColor.includes('757575')) {
-      // Blue, Green, Purple, Red, Grey - use white text
+    if (
+      bgColor.includes('2196F3') ||
+      bgColor.includes('4CAF50') ||
+      bgColor.includes('9C27B0') ||
+      bgColor.includes('F44336') ||
+      bgColor.includes('757575')
+    ) {
       return '#FFFFFF';
     }
     if (bgColor.includes('787663') || bgColor.includes('C9C4B7')) {
-      // Grey backgrounds - use white text
       return '#FFFFFF';
     }
-    // Default to white text
     return '#FFFFFF';
   };
 
@@ -71,6 +80,8 @@ export const StatusBadge: React.FC<StatusBadgeProps> = React.memo(({ status, typ
         fontSize: '13px',
         height: '26px',
         px: 1,
+        // Lime chips dissolve into #F3F0ED without an edge
+        border: limeFill ? '1px solid var(--blox-black)' : '1px solid transparent',
       }}
     />
   );

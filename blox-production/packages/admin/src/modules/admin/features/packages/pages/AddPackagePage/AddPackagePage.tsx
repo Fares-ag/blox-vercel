@@ -156,7 +156,7 @@ export const AddPackagePage: React.FC = () => {
                 <Box className="items-header">
                   <Typography variant="h6">Package Items</Typography>
                   <Button
-                    variant="outlined"
+                    variant="secondary"
                     startIcon={<Add />}
                     onClick={addItem}
                     size="small"
@@ -219,7 +219,7 @@ export const AddPackagePage: React.FC = () => {
           </Grid>
 
           <Box className="form-actions">
-            <Button variant="outlined" onClick={handleCancel} disabled={saving}>
+            <Button variant="secondary" onClick={handleCancel} disabled={saving}>
               Cancel
             </Button>
             <Button variant="primary" type="submit" loading={saving}>

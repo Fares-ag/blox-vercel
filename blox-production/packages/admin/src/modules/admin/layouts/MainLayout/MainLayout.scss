@@ -8,12 +8,14 @@
     flex: 1;
     overflow-y: auto;
     padding: var(--spacing-lg);
-    min-width: 0; // Prevents flex item from overflowing
+    min-width: 0;
     width: 100%;
     max-width: 100%;
+    /* Let App brand gradient show through — pages should not paint opaque page fills */
+    background: transparent;
   }
 
   .sidebar-toggle-button {
-    transition: all 0.3s ease;
+    transition: color var(--transition-base), transform var(--transition-base);
   }
 }

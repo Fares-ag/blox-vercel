@@ -19,6 +19,9 @@ export const LoginPage: React.FC = () => {
   const { login, loading, error } = useAuth();
   const [searchParams] = useSearchParams();
   const reason = searchParams.get('reason');
+  const showAccessDenied =
+    reason === 'not_admin' ||
+    Boolean(error && (error.includes('Access denied') || error.includes('Administrator privileges')));
 
   const {
     register,
@@ -37,39 +40,36 @@ export const LoginPage: React.FC = () => {
     const result = await login(data);
     if (result.success) {
       toast.success('Login successful!');
-    } else {
-      // Show error message - don't show toast if it's an access denied error (already shown as alert)
-      if (result.error?.includes('Access denied') || result.error?.includes('Administrator privileges')) {
-        // Error is already displayed via the error state
-      } else {
-        toast.error(result.error || 'Login failed');
-      }
+    } else if (
+      !result.error?.includes('Access denied') &&
+      !result.error?.includes('Administrator privileges')
+    ) {
+      toast.error(result.error || 'Login failed');
     }
   }, [login]);
 
   return (
     <Box className="login-page">
-      <Box className="login-container">
+      <Box className="login-container" component="main" aria-labelledby="admin-login-title">
         <Box className="login-header">
-          <img src="/BloxLogoNav.png" alt="Blox Logo" className="logo-image" />
-          <Typography variant="h3" className="welcome-text">
-            Welcome Back
+          <img src="/BloxLogoNav.png" alt="Blox" className="logo-image" />
+          <Typography id="admin-login-title" variant="h2" className="welcome-text">
+            Admin Portal
           </Typography>
           <Typography variant="body2" className="subtitle-text">
-            Sign in to continue to your account
+            Sign in to manage applications, vehicles, and operations
           </Typography>
         </Box>
 
-        <Box component="form" className="login-form" onSubmit={handleSubmit(onSubmit)}>
-          {(reason === 'not_admin' || (error && (error.includes('Access denied') || error.includes('Administrator privileges')))) ? (
-            <Alert severity="error" sx={{ mb: 2 }}>
+        <Box component="form" className="login-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          {showAccessDenied ? (
+            <Alert severity="error" className="login-alert" role="alert">
               <Typography variant="body2">
-                <strong>Access Denied:</strong> Administrator privileges required. Only admin users can access this portal. 
-                Please contact your administrator if you believe this is an error.
+                <strong>Access denied.</strong> Administrator privileges are required for this portal.
               </Typography>
             </Alert>
           ) : null}
-          
+
           <Input
             label="Email"
             type="email"
@@ -77,6 +77,7 @@ export const LoginPage: React.FC = () => {
             error={!!errors.email}
             helperText={errors.email?.message}
             autoComplete="email"
+            autoFocus
           />
 
           <Input
@@ -94,11 +95,17 @@ export const LoginPage: React.FC = () => {
               label="Remember me"
             />
             <Link component={RouterLink} to="/admin/auth/forgot-password" className="forgot-link">
-              Forgot Password?
+              Forgot password?
             </Link>
           </Box>
 
-          <Button type="submit" variant="primary" fullWidth loading={loading}>
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            loading={loading}
+            disabled={loading}
+          >
             Sign In
           </Button>
         </Box>

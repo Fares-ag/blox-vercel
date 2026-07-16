@@ -5,7 +5,12 @@
   position: relative;
 
   .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-md);
     margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
 
     .page-title {
       font-weight: 700;
@@ -13,6 +18,13 @@
       font-family: 'IBM Plex Sans', sans-serif;
       letter-spacing: -0.02em;
       font-size: 32px;
+      line-height: 1.2;
+    }
+
+    .page-subtitle {
+      margin-top: var(--spacing-xs);
+      color: var(--secondary-text);
+      font-size: 14px;
     }
   }
 
@@ -25,9 +37,8 @@
     .metric-card {
       flex: 1;
       min-width: 0;
-      transition: all var(--transition-base);
+      transition: box-shadow var(--transition-base), transform var(--transition-base);
       background-color: var(--card-background);
-      backdrop-filter: blur(10px);
       border: 1px solid var(--divider-color);
       box-shadow: var(--card-shadow);
 
@@ -56,20 +67,14 @@
         line-height: 1.2;
       }
 
-      &.payable .card-value {
-        color: var(--primary-color);
-      }
-
-      &.receivable .card-value {
-        color: var(--primary-text);
-      }
-
-      &.profitability .card-value {
+      &.payable .card-value,
+      &.receivable .card-value,
+      &.profitability .card-value,
+      &.active .card-value {
         color: var(--primary-text);
       }
 
       &.active .card-value {
-        color: var(--primary-color);
         font-size: 20px;
       }
     }
@@ -77,9 +82,7 @@
 
   .status-tabs-container {
     margin-bottom: var(--spacing-xl);
-    border-bottom: 2px solid var(--divider-color);
     background: var(--card-background);
-    backdrop-filter: blur(10px);
     border: 1px solid var(--divider-color);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
     padding: 0 var(--spacing-md);
@@ -88,28 +91,32 @@
     .status-tabs {
       .MuiTab-root {
         text-transform: none;
-        font-weight: 700;
-        color: var(--primary-text);
+        font-weight: 600;
+        color: var(--dark-grey);
         min-height: 52px;
         padding: var(--spacing-md) var(--spacing-lg);
-        transition: all var(--transition-base);
+        transition: color var(--transition-base);
         letter-spacing: -0.01em;
         opacity: 1;
 
-
         &.Mui-selected {
-          color: var(--primary-color);
+          color: var(--blox-black);
           background-color: transparent;
           opacity: 1;
         }
       }
 
       .MuiTabs-indicator {
-        background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+        background-color: var(--blox-black);
         height: 3px;
         border-radius: 3px 3px 0 0;
+        box-shadow: 0 0 0 1px var(--primary-color);
       }
     }
+  }
+
+  .filter-section {
+    margin-bottom: var(--spacing-md);
   }
 
   .list-header {

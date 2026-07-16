@@ -5,7 +5,8 @@ import Grid from '@mui/material/GridLegacy';
 import { ArrowBack } from '@mui/icons-material';
 import { supabaseApiService } from '@shared/services';
 import type { Promotion } from '@shared/models/promotion.model';
-import { Button, Input, Select, type SelectOption, DatePicker, Loading } from '@shared/components';
+import { Button, Input, Select, type SelectOption, DatePicker } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { toast } from 'react-toastify';
 import { useForm } from 'react-hook-form';
 import moment from 'moment';
@@ -74,7 +75,7 @@ export const AddPromotionPage: React.FC = () => {
   }, [navigate]);
 
   if (saving) {
-    return <Loading fullScreen message="Creating promotion..." />;
+    return <PageSkeleton variant="form" />;
   }
 
   return (

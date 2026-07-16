@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
-import { Box, Typography, Paper, Button, Alert, Divider } from '@mui/material';
+import { Box, Typography, Paper, Alert, Divider } from '@mui/material';
 import { DeleteForever, Refresh, Download, Upload } from '@mui/icons-material';
+import { Button } from '@shared/components';
 import { clearAllStorage, clearCustomerStorage, clearApplicationData, getStorageInfo, downloadStorage, restoreStorage } from '@shared/utils/storage.util';
 import { toast } from 'react-toastify';
 import './ClearStoragePage.scss';
@@ -139,7 +140,7 @@ export const ClearStoragePage: React.FC = () => {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
           <Typography variant="h6">Storage Information</Typography>
           <Button
-            variant="outlined"
+            variant="secondary"
             size="small"
             startIcon={<Refresh />}
             onClick={refreshInfo}
@@ -229,23 +230,23 @@ export const ClearStoragePage: React.FC = () => {
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
           <Button
-            variant="contained"
-            color="primary"
+            variant="primary"
+
             startIcon={<Download />}
             onClick={handleExport}
           >
             Export Storage
           </Button>
           <Button
-            variant="outlined"
-            color="primary"
+            variant="secondary"
+
             startIcon={<Upload />}
             onClick={() => fileInputRef.current?.click()}
           >
             Import Storage (Replace)
           </Button>
           <Button
-            variant="outlined"
+            variant="secondary"
             color="secondary"
             startIcon={<Upload />}
             onClick={() => {
@@ -283,8 +284,8 @@ export const ClearStoragePage: React.FC = () => {
             Keeps authentication tokens.
           </Typography>
           <Button
-            variant="outlined"
-            color="warning"
+            variant="secondary"
+            
             startIcon={<DeleteForever />}
             onClick={handleClearApplicationData}
             disabled={clearing}
@@ -302,8 +303,8 @@ export const ClearStoragePage: React.FC = () => {
             Keeps admin data.
           </Typography>
           <Button
-            variant="outlined"
-            color="warning"
+            variant="secondary"
+            
             startIcon={<DeleteForever />}
             onClick={handleClearCustomer}
             disabled={clearing}
@@ -312,8 +313,8 @@ export const ClearStoragePage: React.FC = () => {
           </Button>
         </Paper>
 
-        <Paper sx={{ p: 3, border: '2px solid', borderColor: 'error.main' }}>
-          <Typography variant="h6" gutterBottom color="error">
+        <Paper sx={{ p: 3, border: '2px solid var(--blox-black)' }}>
+          <Typography variant="h6" gutterBottom>
             Clear All Storage
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -321,8 +322,7 @@ export const ClearStoragePage: React.FC = () => {
             and all other stored data. You will be logged out.
           </Typography>
           <Button
-            variant="contained"
-            color="error"
+            variant="destructive"
             startIcon={<DeleteForever />}
             onClick={handleClearAll}
             disabled={clearing}

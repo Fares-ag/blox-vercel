@@ -215,7 +215,7 @@ export const CustomerInfoStep: React.FC<StepProps> = ({ data, updateData }) => {
 
   return (
     <Box component="form" className="customer-info-step">
-      <Paper variant="outlined" sx={{ p: 2, mb: 3, backgroundColor: '#f9fafb' }}>
+      <Paper variant="outlined" sx={{ p: 2, mb: 3, backgroundColor: 'var(--light-grey)' }}>
         <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
           Existing Customer
         </Typography>
@@ -224,7 +224,7 @@ export const CustomerInfoStep: React.FC<StepProps> = ({ data, updateData }) => {
             <Checkbox
               checked={useExistingCustomer}
               onChange={(e) => setUseExistingCustomer(e.target.checked)}
-              sx={{ color: '#DAFF01', '&.Mui-checked': { color: '#DAFF01' } }}
+              sx={{ color: 'var(--field-border-color)', '&.Mui-checked': { color: 'var(--blox-black)' } }}
             />
           }
           label="Select from existing customers"

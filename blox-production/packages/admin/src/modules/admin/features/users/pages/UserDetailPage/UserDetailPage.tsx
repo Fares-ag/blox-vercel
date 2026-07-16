@@ -25,7 +25,8 @@ import Grid from '@mui/material/GridLegacy';
 import { ArrowBack, Person, Email, Phone, Badge as BadgeIcon, Public, People, AttachMoney, WorkspacePremium, AccountBalance, Edit } from '@mui/icons-material';
 import { supabaseApiService, creditsService, supabase } from '@shared/services';
 import type { User, Application, Company } from '@shared/models';
-import { Button, StatusBadge, Loading } from '@shared/components';
+import { Button, StatusBadge } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { formatDate, formatCurrency } from '@shared/utils/formatters';
 import { toast } from 'react-toastify';
 import { ManageCreditsDialog, type CreditsAction } from '../../components/ManageCreditsDialog';
@@ -190,7 +191,7 @@ export const UserDetailPage: React.FC = () => {
   );
 
   if (loading && !user) {
-    return <Loading fullScreen message="Loading user details..." />;
+    return <PageSkeleton variant="detail" />;
   }
 
   if (!user) {

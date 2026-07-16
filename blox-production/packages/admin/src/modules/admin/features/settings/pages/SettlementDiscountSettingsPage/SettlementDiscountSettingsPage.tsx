@@ -3,7 +3,8 @@ import { Box, Typography, Paper, Switch, FormControlLabel, Divider, Alert } from
 import Grid from '@mui/material/GridLegacy';
 import { supabaseApiService } from '@shared/services';
 import type { SettlementDiscountSettings, TieredDiscount } from '@shared/models/settlement-discount.model';
-import { Button, Input, Select, type SelectOption, Loading } from '@shared/components';
+import { Button, Input, Select, type SelectOption } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { toast } from 'react-toastify';
 import { Settings, AttachMoney, Percent, AccountBalance, Add, Delete } from '@mui/icons-material';
 import './SettlementDiscountSettingsPage.scss';
@@ -123,14 +124,14 @@ export const SettlementDiscountSettingsPage: React.FC = () => {
   ];
 
   if (loading) {
-    return <Loading fullScreen message="Loading settlement discount settings..." />;
+    return <PageSkeleton variant="form" />;
   }
 
   return (
     <Box className="settlement-discount-settings-page">
       <Box className="page-header">
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Settings sx={{ fontSize: 32, color: '#00CFA2' }} />
+          <Settings sx={{ fontSize: 32, color: 'var(--blox-black)' }} />
           <Typography variant="h2">Early Payment Settlement Discount Settings</Typography>
         </Box>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 1 }}>
@@ -151,7 +152,7 @@ export const SettlementDiscountSettingsPage: React.FC = () => {
             {/* General Settings */}
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <Settings sx={{ color: '#00CFA2' }} />
+                <Settings sx={{ color: 'var(--blox-black)' }} />
                 <Typography variant="h5">General Settings</Typography>
               </Box>
               <Divider sx={{ mb: 3 }} />
@@ -217,7 +218,7 @@ export const SettlementDiscountSettingsPage: React.FC = () => {
             {/* Maximum Discount Caps */}
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 2 }}>
-                <AttachMoney sx={{ color: '#00CFA2' }} />
+                <AttachMoney sx={{ color: 'var(--blox-black)' }} />
                 <Typography variant="h5">Maximum Discount Caps</Typography>
               </Box>
               <Divider sx={{ mb: 3 }} />
@@ -250,7 +251,7 @@ export const SettlementDiscountSettingsPage: React.FC = () => {
             {/* Tiered Discounts */}
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 2 }}>
-                <Percent sx={{ color: '#00CFA2' }} />
+                <Percent sx={{ color: 'var(--blox-black)' }} />
                 <Typography variant="h5">Tiered Discounts</Typography>
               </Box>
               <Divider sx={{ mb: 3 }} />
@@ -469,7 +470,7 @@ export const SettlementDiscountSettingsPage: React.FC = () => {
                 ))}
                 <Grid item xs={12}>
                   <Button
-                    variant="outlined"
+                    variant="secondary"
                     startIcon={<Add />}
                     onClick={() => {
                       const lastTier = formData.tieredDiscounts.length > 0 
@@ -499,7 +500,7 @@ export const SettlementDiscountSettingsPage: React.FC = () => {
             {/* Principal Discount Settings */}
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 2 }}>
-                <AccountBalance sx={{ color: '#00CFA2' }} />
+                <AccountBalance sx={{ color: 'var(--blox-black)' }} />
                 <Typography variant="h5">Principal Amount Discount</Typography>
               </Box>
               <Divider sx={{ mb: 3 }} />
@@ -567,7 +568,7 @@ export const SettlementDiscountSettingsPage: React.FC = () => {
             {/* Interest/Rent Discount Settings */}
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, mt: 2 }}>
-                <Percent sx={{ color: '#00CFA2' }} />
+                <Percent sx={{ color: 'var(--blox-black)' }} />
                 <Typography variant="h5">Interest/Rent Discount</Typography>
               </Box>
               <Divider sx={{ mb: 3 }} />

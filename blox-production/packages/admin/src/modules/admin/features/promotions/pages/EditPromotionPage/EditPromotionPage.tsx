@@ -7,7 +7,8 @@ import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading } from '../../../../store/slices/promotions.slice';
 import { supabaseApiService } from '@shared/services';
 import type { Promotion } from '@shared/models/promotion.model';
-import { Button, Input, Select, type SelectOption, DatePicker, Loading } from '@shared/components';
+import { Button, Input, Select, type SelectOption, DatePicker } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { toast } from 'react-toastify';
 import { useForm } from 'react-hook-form';
 import moment from 'moment';
@@ -122,7 +123,7 @@ export const EditPromotionPage: React.FC = () => {
   }, [id, navigate]);
 
   if (loading && !selected) {
-    return <Loading fullScreen message="Loading promotion..." />;
+    return <PageSkeleton variant="form" />;
   }
 
   return (

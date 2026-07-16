@@ -83,9 +83,25 @@
     line-height: 1.2;
   }
 
-  /* Highlight important values with Lime Yellow */
+  /*
+   * Highlight on light cards: black type + lime accent bar
+   * (lime-as-text on white fails ~1.15:1). Lime text remains OK on dark cards.
+   */
   .card-value.highlight {
-    color: var(--primary-color); /* Lime Yellow for emphasis */
+    color: var(--primary-text);
+    position: relative;
+    padding-left: 12px;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0.12em;
+      bottom: 0.12em;
+      width: 3px;
+      border-radius: 2px;
+      background-color: var(--primary-color);
+    }
   }
 
   /* Dark card variant needs different text colors */
@@ -94,7 +110,12 @@
       color: var(--background-secondary); /* Light Grey on dark cards */
       
       &.highlight {
-        color: var(--primary-color); /* Lime Yellow for emphasis even on dark */
+        color: var(--primary-color); /* Lime on black — AA pass */
+        padding-left: 0;
+
+        &::before {
+          display: none;
+        }
       }
     }
   }

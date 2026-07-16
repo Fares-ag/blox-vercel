@@ -159,13 +159,19 @@ export const theme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: '10px',
-            transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
-            '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#C9C4B7', // Mid Grey
+            transition: 'border-color 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#8B8778', // Field idle — readable on white
             },
-            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#DAFF01', // Lime Yellow
-              borderWidth: '2px',
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: '#787663', // Dark Grey
+            },
+            '&.Mui-focused': {
+              boxShadow: '0 0 0 2px #DAFF01', // Brand outer ring
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: '#0E1909', // Black stroke for AA UI contrast
+                borderWidth: '2px',
+              },
             },
           },
         },
@@ -174,17 +180,41 @@ export const theme = createTheme({
     MuiCheckbox: {
       styleOverrides: {
         root: {
-          color: '#C9C4B7', // Mid Grey for unchecked
+          color: '#8B8778', // Readable unchecked edge
           borderRadius: '4px',
           transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+          // Black control on light surfaces (lime-only fills fail ~1.15:1)
           '&.Mui-checked': {
-            color: '#DAFF01', // Lime Yellow for checked
+            color: '#0E1909',
             '& .MuiSvgIcon-root': {
-              color: '#DAFF01', // Ensure checkmark is Lime Yellow
+              color: '#0E1909',
             },
           },
+          '&.Mui-focusVisible': {
+            outline: '2px solid #0E1909',
+            outlineOffset: 2,
+            boxShadow: '0 0 0 4px #DAFF01',
+          },
           '&:hover': {
-            backgroundColor: 'rgba(218, 255, 1, 0.08)', // Lime Yellow with opacity
+            backgroundColor: 'rgba(14, 25, 9, 0.06)',
+          },
+        },
+      },
+    },
+    MuiRadio: {
+      styleOverrides: {
+        root: {
+          color: '#8B8778',
+          '&.Mui-checked': {
+            color: '#0E1909',
+          },
+          '&.Mui-focusVisible': {
+            outline: '2px solid #0E1909',
+            outlineOffset: 2,
+            boxShadow: '0 0 0 4px #DAFF01',
+          },
+          '&:hover': {
+            backgroundColor: 'rgba(14, 25, 9, 0.06)',
           },
         },
       },
@@ -227,15 +257,18 @@ export const brandColors = {
   destructiveBtnHoverBorder: '#787663', // Dark Grey border for hover
   tertiaryBtnColor: '#787663',    // Dark Grey - Tertiary (text only)
   outlineBtnBorder: '#787663',   // Dark Grey border
-  // Focus States
-  focusRingPrimary: 'rgba(218, 255, 1, 0.4)', // Lime Yellow focus ring
-  focusRingSecondary: 'rgba(14, 25, 9, 0.2)', // Blox Black focus ring
-  focusRingNeutral: 'rgba(120, 118, 99, 0.2)', // Dark Grey focus ring
+  // Focus States — dual-tone (black = a11y, lime = brand accent)
+  focusRingPrimary: '#0E1909',
+  focusRingBrand: '#DAFF01',
+  focusRingSecondary: '#0E1909',
+  focusRingNeutral: '#787663',
+  fieldFocusRing: '0 0 0 2px #DAFF01',
   
   // Form Colors
   fieldLabelColor: '#0E1909',    // Blox Black
-  fieldBorderColor: '#C9C4B7',   // Mid Grey
-  fieldBorderFocus: '#DAFF01',   // Lime Yellow focus
+  fieldBorderColor: '#8B8778',   // Idle field edge (~3.6:1 on white)
+  fieldBorderHover: '#787663',   // Dark Grey
+  fieldBorderFocus: '#0E1909',   // Black focus stroke
   fieldPlaceholder: '#787663',    // Dark Grey
   fieldBackground: '#FFFFFF',     // White
   

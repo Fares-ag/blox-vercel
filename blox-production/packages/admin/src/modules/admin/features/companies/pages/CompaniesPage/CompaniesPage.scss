@@ -1,17 +1,47 @@
 .companies-page {
-  padding: 24px;
+  padding: var(--spacing-lg);
+  background: transparent;
 
   .page-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: 16px;
-    gap: 12px;
+    margin-bottom: var(--spacing-lg);
+    gap: var(--spacing-md);
     flex-wrap: wrap;
+
+    .page-title {
+      font-weight: 700;
+      font-size: 32px;
+      color: var(--primary-text);
+      letter-spacing: -0.02em;
+    }
+
+    .page-subtitle {
+      margin-top: var(--spacing-xs);
+      color: var(--secondary-text);
+      font-size: 14px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+      flex-wrap: wrap;
+    }
   }
 
   .table-section {
-    padding: 12px;
+    padding: var(--spacing-md);
+    background: var(--card-background);
+    border: 1px solid var(--divider-color);
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+  }
+
+  .company-dialog-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding-top: var(--spacing-sm);
   }
 }
-

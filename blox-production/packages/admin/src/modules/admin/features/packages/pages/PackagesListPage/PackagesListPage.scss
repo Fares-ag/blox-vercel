@@ -1,10 +1,34 @@
 .packages-list-page {
+  padding: var(--spacing-lg);
+  background: transparent;
+
   .page-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: var(--spacing-lg);
     flex-wrap: wrap;
     gap: var(--spacing-md);
+
+    .page-title {
+      font-weight: 700;
+      font-size: 32px;
+      color: var(--primary-text);
+      letter-spacing: -0.02em;
+    }
+
+    .page-subtitle {
+      margin-top: var(--spacing-xs);
+      color: var(--secondary-text);
+      font-size: 14px;
+    }
+  }
+
+  .table-section {
+    background: var(--card-background);
+    border: 1px solid var(--divider-color);
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    padding: var(--spacing-md);
   }
 }

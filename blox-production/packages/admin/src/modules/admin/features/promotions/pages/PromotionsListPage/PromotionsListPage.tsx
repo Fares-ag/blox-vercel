@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { setList, setLoading } from '../../../../store/slices/promotions.slice';
 import { supabaseApiService } from '@shared/services';
 import type { Promotion } from '@shared/models/promotion.model';
-import { Table, type Column, Button, StatusBadge, SearchBar, ExportButton, ConfirmDialog } from '@shared/components';
+import { Table, type Column, Button, StatusBadge, SearchBar, ExportButton, ConfirmDialog, EmptyState, TableSkeleton } from '@shared/components';
 import { formatDate } from '@shared/utils/formatters';
 import { devLogger } from '@shared/utils/logger.util';
 import { toast } from 'react-toastify';
@@ -141,7 +141,7 @@ export const PromotionsListPage: React.FC = () => {
           <Button variant="small" onClick={(e) => { e.stopPropagation(); navigate(`/admin/promotions/${row.id}/edit`); }}>
             Edit
           </Button>
-          <Button variant="small" color="error" onClick={(e) => { e.stopPropagation(); handleDelete(row.id); }}>
+          <Button variant="destructive" onClick={(e) => { e.stopPropagation(); handleDelete(row.id); }}>
             Delete
           </Button>
         </Box>
@@ -152,7 +152,14 @@ export const PromotionsListPage: React.FC = () => {
   return (
     <Box className="promotions-list-page">
       <Box className="page-header">
-        <Typography variant="h2">Promotions</Typography>
+        <Box>
+          <Typography variant="h2" className="page-title">
+            Promotions
+          </Typography>
+          <Typography variant="body2" className="page-subtitle">
+            {list.length} promotions · discounts and campaign windows
+          </Typography>
+        </Box>
         <Box className="header-actions">
           <ExportButton data={list} filename="promotions" />
           <Button variant="primary" onClick={() => navigate('/admin/promotions/add')}>
@@ -171,12 +178,23 @@ export const PromotionsListPage: React.FC = () => {
       </Box>
 
       <Box className="table-section">
-        <Table
-          columns={columns}
-          rows={list}
-          loading={loading}
-          onRowClick={(row) => navigate(`/admin/promotions/${row.id}`)}
-        />
+        {loading && list.length === 0 ? (
+          <TableSkeleton rows={8} columns={6} />
+        ) : !loading && list.length === 0 ? (
+          <EmptyState
+            title="No promotions found"
+            message={searchTerm ? 'Try a different search.' : 'Create a promotion to get started.'}
+            actionLabel="Create Promotion"
+            onAction={() => navigate('/admin/promotions/add')}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            rows={list}
+            loading={loading}
+            onRowClick={(row) => navigate(`/admin/promotions/${row.id}`)}
+          />
+        )}
       </Box>
 
       <ConfirmDialog

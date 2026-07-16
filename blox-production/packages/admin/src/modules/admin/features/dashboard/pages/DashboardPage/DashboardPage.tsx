@@ -15,7 +15,7 @@ import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setStats, setFilters, setLoading, setError } from '../../../../store/slices/dashboard.slice';
 import { supabase } from '@shared/services';
 import type { DashboardStats } from '@shared/models/dashboard.model';
-import { Card, Loading, DatePicker, Button, HorizontalBarChart, SegmentedBarChart, VerticalBarChart, LineChart, FunnelChart, Table } from '@shared/components';
+import { Card, DatePicker, Button, HorizontalBarChart, SegmentedBarChart, VerticalBarChart, LineChart, FunnelChart, Table, Skeleton, EmptyState } from '@shared/components';
 import { analyticsService, reportExportService } from '@shared/services';
 import type { AnalyticsData } from '@shared/models/dashboard.model';
 import { formatCurrency } from '@shared/utils/formatters';
@@ -180,20 +180,20 @@ export const DashboardPage: React.FC = () => {
       {
         label: 'Projected Revenue',
         data: analyticsData.revenueForecast.map((r) => r.projectedRevenue),
-        borderColor: '#00CFA2',
-        backgroundColor: 'rgba(0, 207, 162, 0.1)',
+        borderColor: '#0E1909',
+        backgroundColor: 'rgba(218, 255, 1, 0.15)',
       },
       {
         label: 'Actual Revenue',
         data: analyticsData.revenueForecast.map((r) => r.actualRevenue),
-        borderColor: '#09C97F',
-        backgroundColor: 'rgba(9, 201, 127, 0.1)',
+        borderColor: '#B8D900',
+        backgroundColor: 'rgba(184, 217, 0, 0.15)',
       },
       {
         label: 'Forecasted Revenue',
         data: analyticsData.revenueForecast.map((r) => r.forecastedRevenue),
-        borderColor: '#BCB4FF',
-        backgroundColor: 'rgba(188, 180, 255, 0.1)',
+        borderColor: '#C9C4B7',
+        backgroundColor: 'rgba(201, 196, 183, 0.25)',
         borderDash: [5, 5],
       },
     ];
@@ -209,45 +209,56 @@ export const DashboardPage: React.FC = () => {
       {
         label: 'Collection Rate (%)',
         data: analyticsData.paymentCollectionRates.map((r) => r.collectionRate),
-        borderColor: '#09C97F',
-        backgroundColor: 'rgba(9, 201, 127, 0.1)',
+        borderColor: '#B8D900',
+        backgroundColor: 'rgba(184, 217, 0, 0.15)',
       },
       {
         label: 'Overdue Rate (%)',
         data: analyticsData.paymentCollectionRates.map((r) => r.overdueRate),
-        borderColor: '#F95668',
-        backgroundColor: 'rgba(249, 86, 104, 0.1)',
+        borderColor: '#0E1909',
+        backgroundColor: 'rgba(14, 25, 9, 0.08)',
       },
     ];
   }, [analyticsData?.paymentCollectionRates]);
 
   if (loading && !stats) {
-    return <Loading fullScreen message="Loading dashboard..." />;
+    return (
+      <Box className="dashboard-page">
+        <Box className="dashboard-header">
+          <Box>
+            <Typography variant="h2" sx={{ fontWeight: 700, color: 'var(--primary-text)', fontSize: 32, letterSpacing: '-0.02em', mb: 0.5 }}>
+              Dashboard
+            </Typography>
+            <Typography variant="body2" sx={{ color: 'var(--secondary-text)' }}>
+              Operations overview and revenue health
+            </Typography>
+          </Box>
+        </Box>
+        <Box className="stats-grid-container">
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={120} />
+          ))}
+        </Box>
+        <Box className="charts-grid-container">
+          <Skeleton height={320} />
+          <Skeleton height={320} />
+        </Box>
+      </Box>
+    );
   }
 
-  // If there's no stats data (e.g. API failed), show a friendly message instead of dummy data
   if (!stats) {
     return (
       <Box className="dashboard-page">
         <Box className="dashboard-header">
-          <Typography variant="h2" sx={{ fontWeight: 700, color: 'var(--primary-text)', fontSize: 32, letterSpacing: '-0.02em' }}>Dashboard</Typography>
+          <Typography variant="h2" sx={{ fontWeight: 700, color: 'var(--primary-text)', fontSize: 32, letterSpacing: '-0.02em' }}>
+            Dashboard
+          </Typography>
         </Box>
-        <Paper
-          className="dashboard-panel"
-          sx={{
-            mt: 4,
-            maxWidth: 600,
-            marginInline: 'auto',
-            textAlign: 'center',
-          }}
-        >
-          <Typography variant="h3" sx={{ mb: 2, fontWeight: 700, color: 'var(--primary-text)', fontSize: 24 }}>
-            No dashboard data available
-          </Typography>
-          <Typography variant="body2" sx={{ color: 'var(--secondary-text)', opacity: 0.9, fontSize: 15, fontWeight: 500 }}>
-            {error || 'The dashboard API did not return any data for the selected date range.'}
-          </Typography>
-        </Paper>
+        <EmptyState
+          title="No dashboard data available"
+          message={error || 'The dashboard did not return any data for the selected date range.'}
+        />
       </Box>
     );
   }
@@ -257,7 +268,7 @@ export const DashboardPage: React.FC = () => {
     datasets: [
       {
         data: [stats.paidInstallments, stats.unpaidInstallments],
-        backgroundColor: ['#09C97F', '#F95668'],
+        backgroundColor: ['#B8D900', '#0E1909'],
         borderWidth: 0,
       },
     ],
@@ -266,7 +277,14 @@ export const DashboardPage: React.FC = () => {
   return (
     <Box className="dashboard-page">
       <Box className="dashboard-header">
-        <Typography variant="h2" sx={{ fontWeight: 700, color: 'var(--primary-text)', fontSize: 32, letterSpacing: '-0.02em', marginBottom: 0 }}>Dashboard</Typography>
+        <Box>
+          <Typography variant="h2" sx={{ fontWeight: 700, color: 'var(--primary-text)', fontSize: 32, letterSpacing: '-0.02em', marginBottom: 0 }}>
+            Dashboard
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'var(--secondary-text)', mt: 0.5 }}>
+            Operations overview and revenue health
+          </Typography>
+        </Box>
         <Box sx={{ display: 'flex', gap: 'var(--spacing-sm)', alignItems: 'center', flexWrap: 'wrap' }}>
           <Button
             variant="secondary"
@@ -484,7 +502,7 @@ export const DashboardPage: React.FC = () => {
               label="Total Assets Ownership"
               value={stats.totalAssetsOwnership}
               maxValue={100}
-              color="#008A6C"
+              color="#0E1909"
             />
             <SegmentedBarChart
               label="Total Assets Distributions"
@@ -492,12 +510,12 @@ export const DashboardPage: React.FC = () => {
                 {
                   label: 'Owned by Customer',
                   value: stats.customerOwnershipPercentage,
-                  color: '#E2B13C',
+                  color: '#787663',
                 },
                 {
                   label: 'Owned by Blox',
                   value: stats.bloxOwnershipPercentage,
-                  color: '#09C97F',
+                  color: '#B8D900',
                 },
               ]}
               total={100}
@@ -534,12 +552,12 @@ export const DashboardPage: React.FC = () => {
                     {
                       label: 'Paid Installments',
                       value: stats.paidInstallments,
-                      color: '#09C97F',
+                      color: '#B8D900',
                     },
                     {
                       label: 'Unpaid Installments',
                       value: stats.unpaidInstallments,
-                      color: '#F95668',
+                      color: '#0E1909',
                     },
                   ]}
                   />
@@ -631,7 +649,7 @@ export const DashboardPage: React.FC = () => {
         </Typography>
         
         {analyticsLoading ? (
-          <Loading message="Loading enhanced analytics..." />
+          <Skeleton height={280} />
         ) : analyticsData ? (
           <>
             {/* Revenue Forecasting */}
@@ -657,7 +675,7 @@ export const DashboardPage: React.FC = () => {
                   </Button>
                 </Box>
                 {analyticsLoading ? (
-                  <Loading message="Loading revenue forecast..." />
+                  <Skeleton height={280} />
                 ) : revenueForecastDatasets.length > 0 ? (
                   <LineChart
                     title=""
@@ -667,9 +685,7 @@ export const DashboardPage: React.FC = () => {
                     yAxisLabel="Amount (QAR)"
                   />
                 ) : (
-                  <Typography variant="body2" sx={{ textAlign: 'center', py: 4, color: 'var(--primary-text)', opacity: 1, fontSize: 15, fontWeight: 600 }}>
-                    No revenue forecast data available
-                  </Typography>
+                  <EmptyState title="No revenue forecast" message="Forecast data will appear once there is activity in range." />
                 )}
               </Paper>
             </Grid>
@@ -698,7 +714,7 @@ export const DashboardPage: React.FC = () => {
                   </Button>
                 </Box>
                 {analyticsLoading ? (
-                  <Loading message="Loading conversion funnel..." />
+                  <Skeleton height={280} />
                 ) : analyticsData.conversionFunnel.length > 0 ? (
                   <FunnelChart
                     stages={analyticsData.conversionFunnel.map((stage) => ({
@@ -706,13 +722,11 @@ export const DashboardPage: React.FC = () => {
                       value: stage.count,
                       percentage: stage.percentage,
                       dropOffRate: stage.dropOffRate,
-                      color: stage.stage === 'Active' ? '#09C97F' : stage.stage === 'Completed' ? '#00CFA2' : '#BCB4FF',
+                      color: stage.stage === 'Active' ? '#B8D900' : stage.stage === 'Completed' ? '#0E1909' : '#C9C4B7',
                     }))}
                   />
                 ) : (
-                  <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>
-                    No conversion funnel data available
-                  </Typography>
+                  <EmptyState title="No funnel data" message="Conversion stages will appear once applications exist in range." />
                 )}
               </Paper>
             </Grid>
@@ -739,7 +753,7 @@ export const DashboardPage: React.FC = () => {
                   </Button>
                 </Box>
                 {analyticsLoading ? (
-                  <Loading message="Loading payment collection rates..." />
+                  <Skeleton height={280} />
                 ) : paymentCollectionDatasets.length > 0 ? (
                   <LineChart
                     title=""
@@ -802,7 +816,7 @@ export const DashboardPage: React.FC = () => {
                   </Box>
                 </Box>
                 {analyticsLoading ? (
-                  <Loading message="Loading customer lifetime value..." />
+                  <Skeleton height={280} />
                 ) : analyticsData.topCustomers.length > 0 ? (
                   <Table
                     columns={[

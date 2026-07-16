@@ -1077,7 +1077,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
 
       {/* Balloon Payment Configuration - Available for both new and existing loans */}
       {data.vehicle && (
-        <Paper variant="outlined" sx={{ mt: 3, p: 3, backgroundColor: '#f9fafb' }}>
+        <Paper variant="outlined" sx={{ mt: 3, p: 3, backgroundColor: 'var(--light-grey)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
             <Typography variant="h5" sx={{ fontWeight: 600 }}>
               Payment Structure
@@ -1104,7 +1104,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                     setBalloonPercent(20);
                   }
                 }}
-                sx={{ color: '#00cfa2', '&.Mui-checked': { color: '#00cfa2' } }}
+                sx={{ color: 'var(--blox-black)', '&.Mui-checked': { color: 'var(--blox-black)' } }}
               />
             }
             label="Use Balloon Payment Structure"
@@ -1206,9 +1206,9 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
       )}
 
       {/* Existing Loan Section */}
-      <Paper variant="outlined" sx={{ mt: 3, p: 3, backgroundColor: '#f9fafb' }}>
+      <Paper variant="outlined" sx={{ mt: 3, p: 3, backgroundColor: 'var(--light-grey)' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-          <History sx={{ color: '#00cfa2' }} />
+          <History sx={{ color: 'var(--blox-black)' }} />
           <Typography variant="h5" sx={{ fontWeight: 600 }}>
             Existing Loan Information
           </Typography>
@@ -1233,7 +1233,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                   });
                 }
               }}
-              sx={{ color: '#00cfa2', '&.Mui-checked': { color: '#00cfa2' } }}
+              sx={{ color: 'var(--blox-black)', '&.Mui-checked': { color: 'var(--blox-black)' } }}
             />
           }
           label="This application is for an existing loan"
@@ -1263,17 +1263,17 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
               >
                 <FormControlLabel
                   value="auto"
-                  control={<Radio sx={{ color: '#00cfa2', '&.Mui-checked': { color: '#00cfa2' } }} />}
+                  control={<Radio sx={{ color: 'var(--blox-black)', '&.Mui-checked': { color: 'var(--blox-black)' } }} />}
                   label="Auto-generate (calculate from rates)"
                 />
                 <FormControlLabel
                   value="fixed"
-                  control={<Radio sx={{ color: '#00cfa2', '&.Mui-checked': { color: '#00cfa2' } }} />}
+                  control={<Radio sx={{ color: 'var(--blox-black)', '&.Mui-checked': { color: 'var(--blox-black)' } }} />}
                   label="Fixed monthly (amortized)"
                 />
                 <FormControlLabel
                   value="manual"
-                  control={<Radio sx={{ color: '#00cfa2', '&.Mui-checked': { color: '#00cfa2' } }} />}
+                  control={<Radio sx={{ color: 'var(--blox-black)', '&.Mui-checked': { color: 'var(--blox-black)' } }} />}
                   label="Manual entry (full control)"
                 />
               </RadioGroup>
@@ -1304,7 +1304,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                           setBalloonPercent(20);
                         }
                       }}
-                      sx={{ color: '#00cfa2', '&.Mui-checked': { color: '#00cfa2' } }}
+                      sx={{ color: 'var(--blox-black)', '&.Mui-checked': { color: 'var(--blox-black)' } }}
                     />
                   }
                   label="Add balloon payment at end of term"
@@ -1476,7 +1476,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                     sx={{
                       '& .MuiInputBase-input:disabled': {
                         fontWeight: 600,
-                        color: '#00cfa2',
+                        color: 'var(--blox-black)',
                       },
                     }}
                   />
@@ -1602,11 +1602,11 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                             key={index} 
                             hover
                             sx={{
-                              backgroundColor: payment.isBalloon ? '#fff3e0' : 'inherit',
+                              backgroundColor: payment.isBalloon ? 'rgba(218, 255, 1, 0.18)' : 'inherit',
                               '&:hover': {
-                                backgroundColor: payment.isBalloon ? '#ffe0b2' : '#f5f5f5',
+                                backgroundColor: payment.isBalloon ? 'rgba(218, 255, 1, 0.28)' : 'var(--light-grey)',
                               },
-                              borderLeft: payment.isBalloon ? '4px solid #ff9800' : 'none',
+                              borderLeft: payment.isBalloon ? '4px solid var(--blox-black)' : 'none',
                             }}
                           >
                             {editingScheduleIndex === index ? (
@@ -1690,16 +1690,17 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                                       <Typography
                                         variant="caption"
                                         sx={{
-                                          px: 0.5,
+                                          px: 0.75,
                                           py: 0.25,
-                                          borderRadius: 0.5,
-                                          backgroundColor: '#ff9800',
-                                          color: '#fff',
+                                          borderRadius: '8px',
+                                          backgroundColor: 'var(--primary-color)',
+                                          color: 'var(--blox-black)',
+                                          border: '1px solid var(--blox-black)',
                                           fontWeight: 600,
-                                          fontSize: '0.65rem',
+                                          fontSize: '0.7rem',
                                         }}
                                       >
-                                        BALLOON
+                                        Balloon
                                       </Typography>
                                     </Box>
                                   ) : (
@@ -1710,7 +1711,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                                 <TableCell 
                                   sx={{ 
                                     fontWeight: 600,
-                                    color: payment.isBalloon ? '#ff9800' : 'inherit',
+                                    color: payment.isBalloon ? 'var(--blox-black)' : 'inherit',
                                   }}
                                 >
                                   {formatCurrency(payment.amount)}
@@ -1820,7 +1821,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                         <Typography variant="caption" color="text.secondary">
                           Loan Amount
                         </Typography>
-                        <Typography variant="body1" fontWeight={600} sx={{ color: '#00cfa2' }}>
+                        <Typography variant="body1" fontWeight={600} sx={{ color: 'var(--blox-black)' }}>
                           {formatCurrency(loanAmount)}
                         </Typography>
                       </Grid>
@@ -1884,7 +1885,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                         <Typography variant="caption" color="text.secondary">
                           Total Monthly Payment including rent
                         </Typography>
-                        <Typography variant="body1" fontWeight={600} sx={{ color: '#00cfa2' }}>
+                        <Typography variant="body1" fontWeight={600} sx={{ color: 'var(--blox-black)' }}>
                           {formatCurrency(monthlyPayment)}
                         </Typography>
                       </Grid>
@@ -1900,7 +1901,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                         <Typography variant="caption" color="text.secondary">
                           Total Asset + total rent
                         </Typography>
-                        <Typography variant="body1" fontWeight={600} sx={{ color: '#00cfa2' }}>
+                        <Typography variant="body1" fontWeight={600} sx={{ color: 'var(--blox-black)' }}>
                           {formatCurrency(carValue + totalRent)}
                         </Typography>
                       </Grid>
@@ -1916,7 +1917,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                         <Typography variant="caption" color="text.secondary">
                           Past Payments (Paid)
                         </Typography>
-                        <Typography variant="h6" sx={{ color: '#00cfa2', fontWeight: 600 }}>
+                        <Typography variant="h6" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                           {paidCount}
                         </Typography>
                       </Box>
@@ -2171,7 +2172,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                           <React.Fragment key={scheduleItem.month}>
                             {isYearStart && (
                               <TableRow sx={{ backgroundColor: '#F0F9FF' }}>
-                                <TableCell colSpan={7} sx={{ fontWeight: 600, color: '#00CFA2', py: 1 }}>
+                                <TableCell colSpan={7} sx={{ fontWeight: 600, color: '#0E1909', py: 1 }}>
                                   Year {String(scheduleItem.year).padStart(2, '0')}
                                 </TableCell>
                               </TableRow>
@@ -2179,7 +2180,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                             <TableRow 
                               sx={{ 
                                 '&:hover': { backgroundColor: '#FAFAFA' },
-                                borderLeft: isYearStart ? '3px solid #00CFA2' : 'none'
+                                borderLeft: isYearStart ? '3px solid #0E1909' : 'none'
                               }}
                             >
                               <TableCell>
@@ -2203,7 +2204,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                                 </Typography>
                               </TableCell>
                               <TableCell align="right">
-                                <Typography variant="body2" fontWeight={600} sx={{ color: '#00CFA2' }}>
+                                <Typography variant="body2" fontWeight={600} sx={{ color: '#0E1909' }}>
                                   {formatCurrency(scheduleItem.totalPayment)}
                                 </Typography>
                               </TableCell>

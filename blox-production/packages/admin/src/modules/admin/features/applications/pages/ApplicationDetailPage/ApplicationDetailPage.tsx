@@ -53,7 +53,8 @@ import { setSelected, setLoading, updateApplication, removeApplication, setList 
 import { supabaseApiService } from '@shared/services';
 import type { Application, Company, Document, PaymentSchedule, PaymentStatus } from '@shared/models';
 import type { ProductAttribute } from '@shared/models/product.model';
-import { Button, StatusBadge, Loading, HorizontalBarChart, SegmentedBarChart } from '@shared/components';
+import { Button, StatusBadge, HorizontalBarChart, SegmentedBarChart } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { formatDate, formatCurrency, formatDateTable } from '@shared/utils/formatters';
 import { parseTenureToMonths } from '@shared/utils/tenure.utils';
 import { calculateOwnership, calculateBalloonOwnership } from '@shared/utils/ownership.utils';
@@ -308,7 +309,7 @@ export const ApplicationDetailPage: React.FC = () => {
   };
 
   if (loading) {
-    return <Loading fullScreen message="Loading application details..." />;
+    return <PageSkeleton variant="detail" />;
   }
 
   // Generate payment schedule if not present
@@ -1451,7 +1452,7 @@ export const ApplicationDetailPage: React.FC = () => {
                       <Typography variant="caption" className="info-label">
                         Price
                       </Typography>
-                      <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                      <Typography variant="body1" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                         {formatCurrency(displayData.vehicle.price)}
                       </Typography>
                     </Box>
@@ -1562,7 +1563,7 @@ export const ApplicationDetailPage: React.FC = () => {
                         ? 'Monthly Payment'
                         : 'First Month Payment'}
                     </Typography>
-                    <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                    <Typography variant="body1" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                       {formatCurrency(displayData.installmentPlan.monthlyAmount)}
                     </Typography>
                     {displayData.installmentPlan.calculationMethod !== 'amortized_fixed' && (
@@ -1580,7 +1581,7 @@ export const ApplicationDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Total Amount
                     </Typography>
-                    <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                    <Typography variant="body1" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                       {formatCurrency(displayData.installmentPlan.totalAmount)}
                     </Typography>
                   </Box>
@@ -1590,7 +1591,7 @@ export const ApplicationDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Down Payment
                     </Typography>
-                    <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                    <Typography variant="body1" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                       {formatCurrency(displayData.downPayment)}
                     </Typography>
                   </Box>
@@ -1600,7 +1601,7 @@ export const ApplicationDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Loan Amount
                     </Typography>
-                    <Typography variant="body1" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                    <Typography variant="body1" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                       {formatCurrency(displayData.loanAmount)}
                     </Typography>
                   </Box>
@@ -1666,10 +1667,10 @@ export const ApplicationDetailPage: React.FC = () => {
 
           {/* Signed Contract Section - Show when contract is submitted */}
           {displayData.status === 'contracts_submitted' && displayData.contractSigned && (
-            <Paper className="detail-section" sx={{ border: '2px solid #DAFF01', backgroundColor: '#F0FDFA' }}>
+            <Paper className="detail-section" sx={{ border: '2px solid var(--blox-black)', backgroundColor: 'var(--light-grey)' }}>
               <Box className="section-header">
-                <CheckCircle className="section-icon" sx={{ color: '#DAFF01' }} />
-                <Typography variant="h5" className="section-title" sx={{ color: '#DAFF01' }}>
+                <CheckCircle className="section-icon" sx={{ color: 'var(--blox-black)' }} />
+                <Typography variant="h5" className="section-title" sx={{ color: 'var(--blox-black)' }}>
                   Signed Contract - Awaiting Review
                 </Typography>
               </Box>
@@ -1848,7 +1849,7 @@ export const ApplicationDetailPage: React.FC = () => {
                     {
                       label: 'Owned by Blox',
                       value: bloxOwnershipPercentage,
-                      color: '#09C97F',
+                      color: 'var(--primary-dark)',
                     },
                   ]}
                   total={100}
@@ -1901,7 +1902,7 @@ export const ApplicationDetailPage: React.FC = () => {
           <Box className="tab-panel">
             <Box sx={{ mb: 3 }}>
               <Box className="section-header" sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                <Receipt className="section-icon" sx={{ color: '#DAFF01', fontSize: 24 }} />
+                <Receipt className="section-icon" sx={{ color: 'var(--blox-black)', fontSize: 24 }} />
                 <Typography variant="h5" className="section-title" sx={{ fontWeight: 700, color: '#000000', fontFamily: "'IBM Plex Sans', sans-serif", margin: 0 }}>
                   Transactions
                 </Typography>
@@ -1975,7 +1976,7 @@ export const ApplicationDetailPage: React.FC = () => {
                 sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2, justifyContent: 'space-between' }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                  <Schedule className="section-icon" sx={{ color: '#DAFF01', fontSize: 24 }} />
+                  <Schedule className="section-icon" sx={{ color: 'var(--blox-black)', fontSize: 24 }} />
                   <Typography
                     variant="h5"
                     className="section-title"

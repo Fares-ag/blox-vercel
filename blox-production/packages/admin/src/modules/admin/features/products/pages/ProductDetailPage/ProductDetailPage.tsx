@@ -6,7 +6,8 @@ import Grid from '@mui/material/GridLegacy';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading, removeProduct } from '../../../../store/slices/products.slice';
 import { supabaseApiService } from '@shared/services';
-import { Button, StatusBadge, Loading, ConfirmDialog } from '@shared/components';
+import { Button, StatusBadge, ConfirmDialog } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { formatCurrency, formatDate } from '@shared/utils/formatters';
 import { toast } from 'react-toastify';
 import './ProductDetailPage.scss';
@@ -124,7 +125,7 @@ export const ProductDetailPage: React.FC = () => {
   }, []);
 
   if (loading) {
-    return <Loading fullScreen message="Loading vehicle details..." />;
+    return <PageSkeleton variant="detail" />;
   }
 
   // Use only selected data - no dummy data

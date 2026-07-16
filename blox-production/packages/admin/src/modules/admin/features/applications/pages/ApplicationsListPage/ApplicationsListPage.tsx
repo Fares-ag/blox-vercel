@@ -6,20 +6,78 @@ import {
   TrendingUp,
   People,
   Visibility,
-  FilterList,
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { useNavigate } from 'react-router-dom';
 import { setList, setLoading, setError, setPage, setLimit } from '../../../../store/slices/applications.slice';
 import { supabaseApiService } from '@shared/services';
 import type { Application, ApplicationStatus } from '@shared/models/application.model';
-import { Table, type Column, Button, StatusBadge, SearchBar, Card } from '@shared/components';
+import {
+  Table,
+  type Column,
+  Button,
+  StatusBadge,
+  SearchBar,
+  Card,
+  EmptyState,
+  FilterPanel,
+  type FilterConfig,
+  TableSkeleton,
+} from '@shared/components';
 import { toast } from 'react-toastify';
 import './ApplicationsListPage.scss';
 
-// Using only Supabase - no API or localStorage fallbacks
-
 type StatusFilter = 'all' | 'inprogress' | 'active' | 'rejected' | 'completed' | 'cancelled';
+
+type ScheduleHealth = 'on_track' | 'overdue' | 'none';
+
+const getOverdueCount = (app: Application): number => {
+  const schedule = app.installmentPlan?.schedule || [];
+  const now = Date.now();
+  return schedule.filter((p) => {
+    if (p.status === 'paid') return false;
+    return new Date(p.dueDate).getTime() < now;
+  }).length;
+};
+
+const getScheduleHealth = (app: Application): ScheduleHealth => {
+  const schedule = app.installmentPlan?.schedule || [];
+  if (schedule.length === 0) return 'none';
+  return getOverdueCount(app) > 0 ? 'overdue' : 'on_track';
+};
+
+const brandChip = {
+  onTrack: {
+    bg: 'rgba(218, 255, 1, 0.22)',
+    fg: 'var(--blox-black)',
+    border: '1px solid var(--blox-black)',
+  },
+  overdue: {
+    bg: 'var(--light-grey)',
+    fg: 'var(--blox-black)',
+    border: '1px solid var(--blox-black)',
+  },
+  high: {
+    bg: 'var(--blox-black)',
+    fg: 'var(--light-grey)',
+    border: '1px solid var(--blox-black)',
+  },
+  medium: {
+    bg: 'rgba(120, 118, 99, 0.16)',
+    fg: 'var(--blox-black)',
+    border: '1px solid var(--dark-grey)',
+  },
+  low: {
+    bg: 'rgba(218, 255, 1, 0.18)',
+    fg: 'var(--blox-black)',
+    border: '1px solid var(--blox-black)',
+  },
+  muted: {
+    bg: 'var(--card-hover)',
+    fg: 'var(--secondary-text)',
+    border: '1px solid var(--divider-color)',
+  },
+} as const;
 
 export const ApplicationsListPage: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -29,9 +87,9 @@ export const ApplicationsListPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [activeTab, setActiveTab] = useState(0);
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  // Store full filtered list (before pagination) for metrics calculation
   const [fullFilteredList, setFullFilteredList] = useState<Application[]>([]);
-  // Track last load time to force refresh when needed
+  const [catalogApps, setCatalogApps] = useState<Application[]>([]);
+  const [advancedFilters, setAdvancedFilters] = useState<Record<string, unknown>>({});
   const [lastLoadTime, setLastLoadTime] = useState(Date.now());
 
   // Debounce search term to avoid excessive API calls
@@ -84,10 +142,34 @@ export const ApplicationsListPage: React.FC = () => {
           );
         }
         
-        // Apply status filter
-        const filtered = filterApplicationsByStatus(applications, statusFilter);
-        
-        // Store full filtered list for metrics calculation (before pagination)
+        setCatalogApps(applications);
+
+        // Apply status + advanced filters
+        let filtered = filterApplicationsByStatus(applications, statusFilter);
+
+        const companyId = typeof advancedFilters.companyId === 'string' ? advancedFilters.companyId : '';
+        if (companyId) {
+          filtered = filtered.filter((app) => app.companyId === companyId || app.company?.id === companyId);
+        }
+
+        const scheduleHealth =
+          typeof advancedFilters.scheduleHealth === 'string' ? advancedFilters.scheduleHealth : '';
+        if (scheduleHealth) {
+          filtered = filtered.filter((app) => getScheduleHealth(app) === scheduleHealth);
+        }
+
+        const createdRange = advancedFilters.createdRange as
+          | { startDate?: string | null; endDate?: string | null }
+          | undefined;
+        if (createdRange?.startDate) {
+          const start = new Date(createdRange.startDate).getTime();
+          filtered = filtered.filter((app) => new Date(app.createdAt).getTime() >= start);
+        }
+        if (createdRange?.endDate) {
+          const end = new Date(createdRange.endDate).getTime() + 24 * 60 * 60 * 1000 - 1;
+          filtered = filtered.filter((app) => new Date(app.createdAt).getTime() <= end);
+        }
+
         setFullFilteredList(filtered);
         
         // Pagination
@@ -108,7 +190,69 @@ export const ApplicationsListPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  }, [pagination.page, pagination.limit, debouncedSearchTerm, statusFilter, dispatch, filterApplicationsByStatus]);
+  }, [
+    pagination.page,
+    pagination.limit,
+    debouncedSearchTerm,
+    statusFilter,
+    advancedFilters,
+    dispatch,
+    filterApplicationsByStatus,
+  ]);
+
+  const companyOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    catalogApps.forEach((app) => {
+      const id = app.companyId || app.company?.id;
+      const name = app.company?.name || app.companyId;
+      if (id && name) map.set(id, name);
+    });
+    return [
+      { value: '', label: 'All companies' },
+      ...Array.from(map.entries()).map(([value, label]) => ({ value, label })),
+    ];
+  }, [catalogApps]);
+
+  const filterConfigs: FilterConfig[] = useMemo(
+    () => [
+      {
+        id: 'companyId',
+        label: 'Company',
+        type: 'select',
+        options: companyOptions,
+      },
+      {
+        id: 'scheduleHealth',
+        label: 'Payment schedule',
+        type: 'select',
+        options: [
+          { value: '', label: 'All schedules' },
+          { value: 'on_track', label: 'On track' },
+          { value: 'overdue', label: 'Overdue' },
+          { value: 'none', label: 'No schedule' },
+        ],
+      },
+      {
+        id: 'createdRange',
+        label: 'Created date',
+        type: 'daterange',
+      },
+    ],
+    [companyOptions]
+  );
+
+  const handleAdvancedFiltersChange = useCallback(
+    (values: Record<string, unknown>) => {
+      setAdvancedFilters(values);
+      dispatch(setPage(1));
+    },
+    [dispatch]
+  );
+
+  const handleClearAdvancedFilters = useCallback(() => {
+    setAdvancedFilters({});
+    dispatch(setPage(1));
+  }, [dispatch]);
 
   useEffect(() => {
     loadApplications();
@@ -230,38 +374,30 @@ export const ApplicationsListPage: React.FC = () => {
       label: 'Payment Health',
       minWidth: 140,
       format: (_, row: Application) => {
-        const schedule = row.installmentPlan?.schedule || [];
-        if (schedule.length === 0) {
+        const health = getScheduleHealth(row);
+        if (health === 'none') {
           return (
             <Box
               sx={{
                 display: 'inline-flex',
                 px: 1.5,
                 py: 0.5,
-                borderRadius: 999,
-                fontSize: 13,
+                borderRadius: '10px',
+                fontSize: 12,
                 fontWeight: 600,
-                bgcolor: 'var(--card-hover)',
-                color: 'var(--secondary-text)',
+                bgcolor: brandChip.muted.bg,
+                color: brandChip.muted.fg,
+                border: brandChip.muted.border,
               }}
             >
-              No Schedule
+              No schedule
             </Box>
           );
         }
 
-        const now = new Date();
-        const overdueCount = schedule.filter((p) => {
-          if (p.status === 'paid') return false;
-          const due = new Date(p.dueDate);
-          return due.getTime() < now.getTime();
-        }).length;
-
-        const isOnTrack = overdueCount === 0;
-        const label = isOnTrack ? 'On Track' : `Overdue (${overdueCount})`;
-        const colors = isOnTrack
-          ? { bg: 'rgba(34,197,94,0.12)', fg: '#16A34A' }
-          : { bg: 'rgba(248,113,113,0.12)', fg: '#DC2626' };
+        const overdueCount = getOverdueCount(row);
+        const label = health === 'on_track' ? 'On track' : `Overdue (${overdueCount})`;
+        const colors = health === 'on_track' ? brandChip.onTrack : brandChip.overdue;
 
         return (
           <Box
@@ -269,11 +405,12 @@ export const ApplicationsListPage: React.FC = () => {
               display: 'inline-flex',
               px: 1.5,
               py: 0.5,
-              borderRadius: 999,
-              fontSize: 13,
+              borderRadius: '10px',
+              fontSize: 12,
               fontWeight: 600,
               bgcolor: colors.bg,
               color: colors.fg,
+              border: colors.border,
             }}
           >
             {label}
@@ -296,13 +433,7 @@ export const ApplicationsListPage: React.FC = () => {
 
         const ownershipAmount = downPayment + paidTotal;
         const ownershipPct = vehiclePrice > 0 ? (ownershipAmount / vehiclePrice) * 100 : 0;
-
-        const now = new Date();
-        const overdueCount = schedule.filter((p) => {
-          if (p.status === 'paid') return false;
-          const due = new Date(p.dueDate);
-          return due.getTime() < now.getTime();
-        }).length;
+        const overdueCount = getOverdueCount(row);
 
         let level: 'High' | 'Medium' | 'Low' = 'Low';
         if (overdueCount >= 2 || ownershipPct < 10) {
@@ -312,11 +443,7 @@ export const ApplicationsListPage: React.FC = () => {
         }
 
         const colors =
-          level === 'High'
-            ? { bg: 'rgba(248,113,113,0.12)', fg: '#DC2626' }
-            : level === 'Medium'
-            ? { bg: 'rgba(250,204,21,0.16)', fg: '#B45309' }
-            : { bg: 'rgba(34,197,94,0.12)', fg: '#16A34A' };
+          level === 'High' ? brandChip.high : level === 'Medium' ? brandChip.medium : brandChip.low;
 
         return (
           <Box
@@ -324,10 +451,11 @@ export const ApplicationsListPage: React.FC = () => {
               display: 'inline-flex',
               px: 1.5,
               py: 0.5,
-              borderRadius: 999,
-              fontSize: 13,
+              borderRadius: '10px',
+              fontSize: 12,
               fontWeight: 600,
               bgcolor: colors.bg,
+              border: colors.border,
               color: colors.fg,
             }}
           >
@@ -374,13 +502,13 @@ export const ApplicationsListPage: React.FC = () => {
               <Box
                 sx={{
                   width: `${customerPercentage}%`,
-                  backgroundColor: '#E2B13C',
+                  backgroundColor: 'var(--dark-grey)',
                 }}
               />
               <Box
                 sx={{
                   width: `${bloxPercentage}%`,
-                  backgroundColor: '#09C97F',
+                  backgroundColor: 'var(--primary-color)',
                 }}
               />
             </Box>
@@ -395,11 +523,15 @@ export const ApplicationsListPage: React.FC = () => {
       align: 'center',
       format: (_, row: Application) => (
         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-          <Tooltip title="View">
-            <IconButton size="small" onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/admin/applications/view/${row.id}`);
-            }}>
+          <Tooltip title="View application">
+            <IconButton
+              size="small"
+              aria-label={`View application ${row.id}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/admin/applications/view/${row.id}`);
+              }}
+            >
               <Visibility fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -410,50 +542,55 @@ export const ApplicationsListPage: React.FC = () => {
 
   return (
     <Box className="applications-list-page">
-      {/* Header */}
       <Box className="page-header">
-        <Typography variant="h2" className="page-title">
-          Applications - {fullFilteredList.length}
-        </Typography>
+        <Box>
+          <Typography variant="h2" className="page-title">
+            Applications
+          </Typography>
+          <Typography variant="body2" className="page-subtitle">
+            {fullFilteredList.length} in this view · review, approve, and track ownership
+          </Typography>
+        </Box>
+        <Button variant="primary" onClick={() => navigate('/admin/applications/add')} className="new-app-button">
+          + New Application
+        </Button>
       </Box>
 
-      {/* Metrics Cards */}
       <Box className="metrics-grid">
         <Card
           title="Total Payable"
           value={metrics.totalPayable}
           moduleType="currency"
-          icon={<AttachMoney sx={{ color: '#DAFF01' }} />}
+          icon={<AttachMoney sx={{ color: 'var(--blox-black)' }} />}
           className="metric-card payable"
         />
         <Card
           title="Total Receivable"
           value={metrics.totalReceivable}
           moduleType="currency"
-          icon={<AccountBalance sx={{ color: '#2196F3' }} />}
+          icon={<AccountBalance sx={{ color: 'var(--blox-black)' }} />}
           className="metric-card receivable"
         />
         <Card
           title="Average Payment Size"
           value={metrics.averagePaymentSize}
           moduleType="currency"
-          icon={<TrendingUp sx={{ color: '#FF9800' }} />}
+          icon={<TrendingUp sx={{ color: 'var(--blox-black)' }} />}
           className="metric-card profitability"
         />
         <Card
           title="Active Applications"
           value={metrics.activeApplications}
           moduleType="number"
-          icon={<People sx={{ color: '#DAFF01' }} />}
+          icon={<People sx={{ color: 'var(--blox-black)' }} />}
           className="metric-card active"
         />
       </Box>
 
-      {/* Status Filter Tabs */}
       <Box className="status-tabs-container">
         <Tabs value={activeTab} onChange={handleTabChange} className="status-tabs">
           <Tab label="All" />
-          <Tab label="InProgress" />
+          <Tab label="In progress" />
           <Tab label="Active" />
           <Tab label="Rejected" />
           <Tab label="Completed" />
@@ -461,41 +598,54 @@ export const ApplicationsListPage: React.FC = () => {
         </Tabs>
       </Box>
 
-      {/* List Header */}
       <Box className="list-header">
         <Typography variant="h6" className="list-title">
-          List of Applications
+          List of applications
         </Typography>
         <Box className="header-actions">
           <SearchBar
             value={searchTerm}
             onChange={setSearchTerm}
             onSearch={handleSearch}
-            placeholder="Search"
+            placeholder="Search applications"
             className="search-bar"
           />
-          <Button variant="secondary" startIcon={<FilterList />} className="filters-button">
-            Filters
-          </Button>
-          <Button variant="primary" onClick={() => navigate('/admin/applications/add')} className="new-app-button">
-            + New Application
-          </Button>
         </Box>
       </Box>
 
-      {/* Table Section */}
-      <Box className="table-section">
-        <Table
-          columns={columns}
-          rows={list}
-          loading={loading}
-          page={pagination.page - 1}
-          rowsPerPage={pagination.limit}
-          totalRows={pagination.total}
-          onPageChange={(page) => dispatch(setPage(page + 1))}
-          onRowsPerPageChange={(limit) => dispatch(setLimit(limit))}
-          onRowClick={(row) => navigate(`/admin/applications/view/${row.id}`)}
+      <Box className="filter-section">
+        <FilterPanel
+          filters={filterConfigs}
+          values={advancedFilters}
+          onChange={handleAdvancedFiltersChange}
+          onClear={handleClearAdvancedFilters}
+          title="More filters"
         />
+      </Box>
+
+      <Box className="table-section">
+        {loading && list.length === 0 ? (
+          <TableSkeleton rows={8} columns={7} />
+        ) : !loading && list.length === 0 ? (
+          <EmptyState
+            title="No applications match"
+            message="Try another status tab, clear search, or reset filters."
+            actionLabel={Object.keys(advancedFilters).length > 0 ? 'Clear filters' : undefined}
+            onAction={Object.keys(advancedFilters).length > 0 ? handleClearAdvancedFilters : undefined}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            rows={list}
+            loading={loading}
+            page={pagination.page - 1}
+            rowsPerPage={pagination.limit}
+            totalRows={pagination.total}
+            onPageChange={(page) => dispatch(setPage(page + 1))}
+            onRowsPerPageChange={(limit) => dispatch(setLimit(limit))}
+            onRowClick={(row) => navigate(`/admin/applications/view/${row.id}`)}
+          />
+        )}
       </Box>
     </Box>
   );

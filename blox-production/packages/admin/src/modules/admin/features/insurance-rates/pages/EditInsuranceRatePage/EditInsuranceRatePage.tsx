@@ -6,7 +6,8 @@ import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading, updateInsuranceRate } from '../../../../store/slices/insurance-rates.slice';
 import { supabaseApiService } from '@shared/services';
 import type { InsuranceRate } from '@shared/models/insurance-rate.model';
-import { Button, Input, Loading, Select, type SelectOption } from '@shared/components';
+import { Button, Input, Select, type SelectOption } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { toast } from 'react-toastify';
 import { useForm } from 'react-hook-form';
 import './EditInsuranceRatePage.scss';
@@ -107,7 +108,7 @@ export const EditInsuranceRatePage: React.FC = () => {
   }, [id, dispatch, navigate]);
 
   if (loading && !selected) {
-    return <Loading fullScreen message="Loading insurance rate..." />;
+    return <PageSkeleton variant="form" />;
   }
 
   return (

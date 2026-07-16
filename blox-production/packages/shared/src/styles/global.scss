@@ -34,18 +34,27 @@
   --tertiary-btn-color: #787663;     /* Dark Grey - Tertiary (text only) */
   --outline-btn-border: #787663;     /* Dark Grey border */
   
-  /* Focus States */
-  --focus-ring-primary: rgba(218, 255, 1, 0.4); /* Lime Yellow focus ring */
-  --focus-ring-secondary: rgba(14, 25, 9, 0.2); /* Blox Black focus ring */
-  --focus-ring-neutral: rgba(120, 118, 99, 0.2); /* Dark Grey focus ring */
+  /*
+   * Focus States — dual-tone on light UI:
+   * black provides WCAG 3:1 UI contrast; lime is brand accent only when paired.
+   * Lime alone on white/light-grey fails contrast (~1.15:1) — do not use as solo ring.
+   */
+  --focus-ring-primary: #0E1909;    /* Solid black — readable on light surfaces */
+  --focus-ring-brand: #DAFF01;      /* Brand accent; pair with black, or alone on dark */
+  --focus-ring-secondary: #0E1909;  /* Blox Black focus ring */
+  --focus-ring-neutral: #787663;    /* Dark Grey focus ring */
+  /* Outer lime halo; always pair with --field-border-focus (black) stroke */
+  --field-focus-ring: 0 0 0 2px #DAFF01;
 
   /* Form & UI Colors */
   --field-lable-color: #0E1909;     /* Blox Black */
   --table-header: #0E1909;          /* Blox Black */
   --table-header-color: #DAFF01;    /* Lime Yellow text on Blox Black */
   --custom-text-color: #787663;     /* Dark Grey */
-  --field-border-color: #C9C4B7;   /* Mid Grey */
-  --field-border-focus: #DAFF01;    /* Lime Yellow focus */
+  /* Idle field edge (~3.6:1 on white). Dividers stay --mid-grey / --divider-color. */
+  --field-border-color: #8B8778;
+  --field-border-hover: #787663;    /* Dark Grey — clearer than lime on light */
+  --field-border-focus: #0E1909;    /* Black focus stroke (a11y); lime via --field-focus-ring */
   --primary-text: #0E1909;          /* Blox Black */
   --secondary-text: #787663;        /* Dark Grey */
   --field-placeholder: #787663;     /* Dark Grey */

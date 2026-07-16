@@ -7,7 +7,8 @@ import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading, updatePackage } from '../../../../store/slices/packages.slice';
 import { supabaseApiService } from '@shared/services';
 import type { Package, PackageItem } from '@shared/models/package.model';
-import { Button, Input, Select, type SelectOption, Loading } from '@shared/components';
+import { Button, Input, Select, type SelectOption } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { toast } from 'react-toastify';
 import { useForm, useFieldArray } from 'react-hook-form';
 import './EditPackagePage.scss';
@@ -133,7 +134,7 @@ export const EditPackagePage: React.FC = () => {
   }, [append]);
 
   if (loading && !selected) {
-    return <Loading fullScreen message="Loading package..." />;
+    return <PageSkeleton variant="form" />;
   }
 
   return (
@@ -212,7 +213,7 @@ export const EditPackagePage: React.FC = () => {
                 <Box className="items-header">
                   <Typography variant="h6">Package Items</Typography>
                   <Button
-                    variant="outlined"
+                    variant="secondary"
                     startIcon={<Add />}
                     onClick={addItem}
                     size="small"
@@ -275,7 +276,7 @@ export const EditPackagePage: React.FC = () => {
           </Grid>
 
           <Box className="form-actions">
-            <Button variant="outlined" onClick={handleCancel} disabled={saving}>
+            <Button variant="secondary" onClick={handleCancel} disabled={saving}>
               Cancel
             </Button>
             <Button variant="primary" type="submit" loading={saving}>

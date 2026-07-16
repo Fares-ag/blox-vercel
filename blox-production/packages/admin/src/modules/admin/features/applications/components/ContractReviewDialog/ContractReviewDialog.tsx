@@ -92,7 +92,7 @@ export const ContractReviewDialog: React.FC<ContractReviewDialogProps> = ({
               control={<Radio />}
               label={
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CheckCircle sx={{ color: '#09C97F', fontSize: 20 }} />
+                  <CheckCircle sx={{ color: 'var(--primary-dark)', fontSize: 20 }} />
                   <Box>
                     <Typography variant="body1" fontWeight={600}>
                       Approve Contract

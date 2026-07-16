@@ -1,7 +1,7 @@
 .add-vehicle-page {
   padding: 24px;
   min-height: 100vh;
-  background: #f5f5f5;
+  background: transparent;
   width: 100%;
   max-width: 100%;
 
@@ -16,8 +16,8 @@
       font-weight: 600;
       text-transform: none;
       padding: 10px 20px;
-      border: 1px solid #DAFF01;
-      color: #DAFF01;
+      border: 1px solid var(--blox-black);
+      color: var(--blox-black);
       background-color: #ffffff;
 
       &:hover {
@@ -56,7 +56,7 @@
       margin-bottom: 24px;
 
       .section-icon {
-        color: #DAFF01;
+        color: var(--blox-black);
         font-size: 32px;
         margin-top: 4px;
       }
@@ -102,7 +102,7 @@
       }
 
       &:hover {
-        border-color: #DAFF01;
+        border-color: var(--blox-black);
         background: linear-gradient(to bottom, #f0fdfa, #ffffff);
 
         &::before {
@@ -110,7 +110,7 @@
         }
 
         .upload-icon {
-          color: #DAFF01;
+          color: var(--blox-black);
           transform: scale(1.1);
         }
       }
@@ -160,7 +160,7 @@
         transition: all 0.3s ease;
 
         &:hover {
-          border-color: #DAFF01;
+          border-color: var(--blox-black);
           box-shadow: 0 4px 12px rgba(218, 255, 1, 0.2);
           transform: translateY(-2px);
 
@@ -212,7 +212,7 @@
       transition: all 0.2s ease;
 
       &:hover {
-        border-color: #DAFF01;
+        border-color: var(--blox-black);
         background: #f0fdfa;
       }
 

@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { setList, setLoading, setPage, setLimit, setFilters, clearFilters, removeProduct, setError } from '../../../../store/slices/products.slice';
 import { supabaseApiService } from '@shared/services';
 import type { Product } from '@shared/models/product.model';
-import { Table, type Column, Button, StatusBadge, SearchBar, FilterPanel, type FilterConfig, ExportButton, ConfirmDialog } from '@shared/components';
+import { Table, type Column, Button, StatusBadge, SearchBar, FilterPanel, type FilterConfig, ExportButton, ConfirmDialog, EmptyState, TableSkeleton } from '@shared/components';
 import { formatCurrency } from '@shared/utils/formatters';
 import { useDebounce } from '@shared/utils';
 import { toast } from 'react-toastify';
@@ -341,17 +341,28 @@ export const ProductsListPage: React.FC = () => {
             Select All
           </Typography>
         </Box>
-        <Table
-          columns={columns}
-          rows={list}
-          loading={loading}
-          page={pagination.page - 1}
-          rowsPerPage={pagination.limit}
-          totalRows={pagination.total}
-          onPageChange={(page) => dispatch(setPage(page + 1))}
-          onRowsPerPageChange={(limit) => dispatch(setLimit(limit))}
-          onRowClick={(row) => navigate(`/admin/vehicles/${row.id}`)}
-        />
+        {loading && list.length === 0 ? (
+          <TableSkeleton rows={8} columns={6} />
+        ) : !loading && list.length === 0 ? (
+          <EmptyState
+            title="No vehicles match"
+            message="Adjust filters or add a vehicle to the catalog."
+            actionLabel="Add Vehicle"
+            onAction={() => navigate('/admin/vehicles/add')}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            rows={list}
+            loading={loading}
+            page={pagination.page - 1}
+            rowsPerPage={pagination.limit}
+            totalRows={pagination.total}
+            onPageChange={(page) => dispatch(setPage(page + 1))}
+            onRowsPerPageChange={(limit) => dispatch(setLimit(limit))}
+            onRowClick={(row) => navigate(`/admin/vehicles/${row.id}`)}
+          />
+        )}
       </Box>
 
       <ConfirmDialog

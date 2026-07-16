@@ -28,6 +28,7 @@
     &:focus-visible {
       outline: 2px solid var(--focus-ring-primary);
       outline-offset: 2px;
+      box-shadow: 0 0 0 4px var(--focus-ring-brand);
     }
 
     &:active {
@@ -165,14 +166,16 @@
     transition: all var(--transition-base);
 
     &:hover {
-      color: var(--primary-color); /* Lime Yellow */
+      /* Lime-as-text fails on light (~1.15:1); darken label instead */
+      color: var(--blox-black);
       background-color: transparent;
       transform: translateY(-1px);
     }
 
     &:focus-visible {
-      outline: 2px solid var(--focus-ring-neutral);
+      outline: 2px solid var(--focus-ring-primary);
       outline-offset: 2px;
+      box-shadow: 0 0 0 4px var(--focus-ring-brand);
     }
 
     &:active {
@@ -207,6 +210,7 @@
     &:focus-visible {
       outline: 2px solid var(--focus-ring-primary);
       outline-offset: 2px;
+      box-shadow: 0 0 0 4px var(--focus-ring-brand);
     }
 
     &:active {
@@ -236,14 +240,16 @@
 
     &:hover {
       background-color: var(--secondary-neutral-hover);
-      border-color: var(--primary-color); /* Lime Yellow */
-      color: var(--primary-color); /* Lime Yellow */
+      border-color: var(--blox-black);
+      color: var(--blox-black);
+      box-shadow: inset 0 0 0 1px var(--primary-color);
       transform: translateY(-1px);
     }
 
     &:focus-visible {
       outline: 2px solid var(--focus-ring-primary);
       outline-offset: 2px;
+      box-shadow: 0 0 0 4px var(--focus-ring-brand);
     }
 
     &:disabled {

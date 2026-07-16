@@ -7,14 +7,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  TextField,
   FormControlLabel,
   Switch,
-  MenuItem,
 } from '@mui/material';
 import { supabaseApiService } from '@shared/services';
 import type { Company } from '@shared/models';
-import { Button, Table, type Column, Loading, ConfirmDialog } from '@shared/components';
+import { Button, Table, type Column, ConfirmDialog, EmptyState, TableSkeleton, Input, Select } from '@shared/components';
 import { toast } from 'react-toastify';
 import './CompaniesPage.scss';
 
@@ -167,16 +165,19 @@ export const CompaniesPage: React.FC = () => {
     setDeleteOpen(true);
   };
 
-  if (loading && companies.length === 0) {
-    return <Loading fullScreen message="Loading companies..." />;
-  }
-
   return (
     <Box className="companies-page">
       <Box className="page-header">
-        <Typography variant="h2">Companies</Typography>
+        <Box>
+          <Typography variant="h2" className="page-title">
+            Companies
+          </Typography>
+          <Typography variant="body2" className="page-subtitle">
+            {companies.length} partners · manage billing eligibility and status
+          </Typography>
+        </Box>
         <Box className="header-actions">
-          <Button variant="secondary" onClick={loadCompanies}>
+          <Button variant="secondary" onClick={loadCompanies} loading={loading}>
             Refresh
           </Button>
           <Button variant="primary" onClick={openCreate}>
@@ -185,53 +186,55 @@ export const CompaniesPage: React.FC = () => {
         </Box>
       </Box>
 
-      <Paper className="table-section">
-        <Table
-          columns={columns}
-          rows={companies}
-          loading={loading}
-          onRowClick={(row) => openEdit(row)}
-          emptyMessage="No companies yet. Click “Create Company” to add one."
-        />
+      <Paper className="table-section" elevation={0}>
+        {loading && companies.length === 0 ? (
+          <TableSkeleton rows={6} columns={4} />
+        ) : !loading && companies.length === 0 ? (
+          <EmptyState
+            title="No companies yet"
+            message="Create a company to attach applications and payment eligibility."
+            actionLabel="Create Company"
+            onAction={openCreate}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            rows={companies}
+            loading={loading}
+            onRowClick={(row) => openEdit(row)}
+          />
+        )}
       </Paper>
 
       <Dialog open={createOpen} onClose={() => setCreateOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Create Company</DialogTitle>
-        <DialogContent>
-          <TextField
+        <DialogContent className="company-dialog-form">
+          <Input
             label="Name"
-            fullWidth
             value={form.name}
             onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-            sx={{ mt: 2 }}
           />
-          <TextField
+          <Input
             label="Code (optional)"
-            fullWidth
             value={form.code}
             onChange={(e) => setForm((p) => ({ ...p, code: e.target.value }))}
-            sx={{ mt: 2 }}
           />
-          <TextField
+          <Input
             label="Description (optional)"
-            fullWidth
             multiline
             minRows={2}
             value={form.description}
             onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-            sx={{ mt: 2 }}
           />
-          <TextField
+          <Select
             label="Status"
-            select
-            fullWidth
             value={form.status}
             onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as CompanyFormState['status'] }))}
-            sx={{ mt: 2 }}
-          >
-            <MenuItem value="active">Active</MenuItem>
-            <MenuItem value="inactive">Inactive</MenuItem>
-          </TextField>
+            options={[
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' },
+            ]}
+          />
           <FormControlLabel
             sx={{ mt: 1 }}
             control={
@@ -255,41 +258,33 @@ export const CompaniesPage: React.FC = () => {
 
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Edit Company</DialogTitle>
-        <DialogContent>
-          <TextField
+        <DialogContent className="company-dialog-form">
+          <Input
             label="Name"
-            fullWidth
             value={form.name}
             onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-            sx={{ mt: 2 }}
           />
-          <TextField
+          <Input
             label="Code (optional)"
-            fullWidth
             value={form.code}
             onChange={(e) => setForm((p) => ({ ...p, code: e.target.value }))}
-            sx={{ mt: 2 }}
           />
-          <TextField
+          <Input
             label="Description (optional)"
-            fullWidth
             multiline
             minRows={2}
             value={form.description}
             onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-            sx={{ mt: 2 }}
           />
-          <TextField
+          <Select
             label="Status"
-            select
-            fullWidth
             value={form.status}
             onChange={(e) => setForm((p) => ({ ...p, status: e.target.value as CompanyFormState['status'] }))}
-            sx={{ mt: 2 }}
-          >
-            <MenuItem value="active">Active</MenuItem>
-            <MenuItem value="inactive">Inactive</MenuItem>
-          </TextField>
+            options={[
+              { value: 'active', label: 'Active' },
+              { value: 'inactive', label: 'Inactive' },
+            ]}
+          />
           <FormControlLabel
             sx={{ mt: 1 }}
             control={

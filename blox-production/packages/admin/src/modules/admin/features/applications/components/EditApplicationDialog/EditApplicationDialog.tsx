@@ -288,11 +288,11 @@ export const EditApplicationDialog: React.FC<EditApplicationDialogProps> = ({
 
         <Grid container spacing={3}>
           <Grid item xs={12}>
-            <Box sx={{ p: 2, backgroundColor: '#f5f5f5', borderRadius: 1, mb: 2 }}>
+            <Box sx={{ p: 2, backgroundColor: 'var(--light-grey)', borderRadius: 1, mb: 2 }}>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 Vehicle Price
               </Typography>
-              <Typography variant="h6" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+              <Typography variant="h6" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                 {formatCurrency(vehiclePrice)}
               </Typography>
             </Box>

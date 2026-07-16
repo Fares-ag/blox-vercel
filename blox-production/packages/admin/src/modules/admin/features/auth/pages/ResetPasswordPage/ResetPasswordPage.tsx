@@ -4,7 +4,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import { Box, Typography, Link } from '@mui/material';
 import { useAuth } from '../../../../hooks/useAuth';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Input, Button } from '@shared/components';
+import { Input, Button, Skeleton } from '@shared/components';
 import { resetPasswordSchema } from '@shared/utils/validators';
 import { toast } from 'react-toastify';
 import { supabase } from '@shared/services/supabase.service';
@@ -25,16 +25,15 @@ export const ResetPasswordPage: React.FC = () => {
 
   const validateSession = useCallback(async () => {
     try {
-      // Check if there's an active session (Supabase handles this automatically when user clicks reset link)
       const { data: { session } } = await supabase.auth.getSession();
-      if (session && session.user) {
+      if (session?.user) {
         setSessionValid(true);
         setUserEmail(session.user.email || null);
       } else {
         setSessionValid(false);
         setUserEmail(null);
       }
-    } catch (error) {
+    } catch {
       setSessionValid(false);
       setUserEmail(null);
     } finally {
@@ -74,8 +73,11 @@ export const ResetPasswordPage: React.FC = () => {
   if (validating) {
     return (
       <Box className="reset-password-page">
-        <Box className="reset-password-container">
-          <Typography variant="body1">Validating session...</Typography>
+        <Box className="reset-password-container" component="main" display="flex" flexDirection="column" gap={2}>
+          <Skeleton height={40} width={180} />
+          <Skeleton height={56} />
+          <Skeleton height={56} />
+          <Skeleton height={44} />
         </Box>
       </Box>
     );
@@ -84,13 +86,15 @@ export const ResetPasswordPage: React.FC = () => {
   if (!sessionValid) {
     return (
       <Box className="reset-password-page">
-        <Box className="reset-password-container">
-          <Typography variant="h3">Invalid Reset Link</Typography>
-          <Typography variant="body2" sx={{ mt: 2, mb: 2 }}>
+        <Box className="reset-password-container" component="main" aria-labelledby="reset-invalid-title">
+          <Typography id="reset-invalid-title" variant="h2" className="welcome-text">
+            Invalid reset link
+          </Typography>
+          <Typography variant="body2" className="subtitle-text session-alert">
             This reset link is invalid or has expired. Please request a new one.
           </Typography>
           <Link component={RouterLink} to="/admin/auth/forgot-password">
-            Request New Reset Link
+            Request new reset link
           </Link>
         </Box>
       </Box>
@@ -99,32 +103,35 @@ export const ResetPasswordPage: React.FC = () => {
 
   return (
     <Box className="reset-password-page">
-      <Box className="reset-password-container">
+      <Box className="reset-password-container" component="main" aria-labelledby="reset-password-title">
         <Box className="reset-password-header">
-          <img src="/BloxLogo.png" alt="Blox Logo" className="logo-image" />
-          <Typography variant="h3">Reset Password</Typography>
-          {userEmail && (
-            <Typography variant="body2" className="subtitle-text" sx={{ mt: 1, mb: 1 }}>
-              Resetting password for: <strong>{userEmail}</strong>
+          <img src="/BloxLogoNav.png" alt="Blox" className="logo-image" />
+          <Typography id="reset-password-title" variant="h2" className="welcome-text">
+            Reset password
+          </Typography>
+          {userEmail ? (
+            <Typography variant="body2" className="subtitle-text">
+              For <strong>{userEmail}</strong>
             </Typography>
-          )}
+          ) : null}
           <Typography variant="body2" className="subtitle-text">
-            Enter your new password
+            Choose a new password for your Admin account
           </Typography>
         </Box>
 
-        <Box component="form" className="reset-password-form" onSubmit={handleSubmit(onSubmit)}>
+        <Box component="form" className="reset-password-form" onSubmit={handleSubmit(onSubmit)} noValidate>
           <Input
-            label="New Password"
+            label="New password"
             type="password"
             {...register('password')}
             error={!!errors.password}
             helperText={errors.password?.message}
             autoComplete="new-password"
+            autoFocus
           />
 
           <Input
-            label="Confirm Password"
+            label="Confirm password"
             type="password"
             {...register('confirmPassword')}
             error={!!errors.confirmPassword}
@@ -132,13 +139,13 @@ export const ResetPasswordPage: React.FC = () => {
             autoComplete="new-password"
           />
 
-          <Button type="submit" variant="primary" fullWidth loading={loading}>
-            Reset Password
+          <Button type="submit" variant="primary" fullWidth loading={loading} disabled={loading}>
+            Reset password
           </Button>
 
           <Box className="back-to-login">
             <Link component={RouterLink} to="/admin/auth/login">
-              Back to Login
+              Back to login
             </Link>
           </Box>
         </Box>

@@ -6,17 +6,19 @@
     min-height: 48px;
     border-radius: var(--radius-sm);
     background-color: var(--card-background);
-    transition: all var(--transition-base);
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
 
     &:hover {
       background-color: var(--card-background);
       .MuiOutlinedInput-notchedOutline {
-        border-color: var(--field-border-focus);
+        border-color: var(--field-border-hover);
       }
     }
 
     &.Mui-focused {
       background-color: var(--card-background);
+      box-shadow: var(--field-focus-ring);
+
       .MuiOutlinedInput-notchedOutline {
         border-color: var(--field-border-focus);
         border-width: 2px;
@@ -78,7 +80,7 @@
     }
 
     &.Mui-focused {
-      color: var(--field-border-focus);
+      color: var(--field-lable-color);
     }
 
     &.Mui-error {

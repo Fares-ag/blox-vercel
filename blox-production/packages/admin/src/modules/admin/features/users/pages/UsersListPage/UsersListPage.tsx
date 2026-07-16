@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabaseApiService } from '@shared/services';
 import { supabase } from '@shared/services/supabase.service';
 import type { User } from '@shared/models/user.model';
-import { Table, type Column, SearchBar, Button, Loading } from '@shared/components';
+import { Table, type Column, SearchBar, Button, EmptyState, TableSkeleton } from '@shared/components';
 import { formatDateTable } from '@shared/utils/formatters';
 import { toast } from 'react-toastify';
 import './UsersListPage.scss';
@@ -21,14 +21,13 @@ export const UsersListPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // If there's no Supabase session, admin-only RPCs will fail with 400/401.
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         toast.error('You are not logged in to Supabase. Please log out and sign in again as an admin user.');
       }
 
       const response = await supabaseApiService.getUsers();
-      
+
       if (response.status === 'SUCCESS' && response.data) {
         setUsers(response.data);
         if (response.message?.includes('admin_get_users')) {
@@ -115,13 +114,21 @@ export const UsersListPage: React.FC = () => {
       id: 'membershipStatus',
       label: 'Membership',
       minWidth: 120,
-      format: (value) => (
-        <Chip
-          label={value === 'active' ? 'Active' : value === 'inactive' ? 'Inactive' : 'None'}
-          color={value === 'active' ? 'success' : value === 'inactive' ? 'default' : 'default'}
-          size="small"
-        />
-      ),
+      format: (value) => {
+        const active = value === 'active';
+        return (
+          <Chip
+            label={active ? 'Active' : value === 'inactive' ? 'Inactive' : 'None'}
+            size="small"
+            sx={{
+              fontWeight: 600,
+              backgroundColor: active ? 'rgba(218, 255, 1, 0.22)' : 'var(--light-grey)',
+              color: 'var(--blox-black)',
+              border: '1px solid var(--blox-black)',
+            }}
+          />
+        );
+      },
     },
     {
       id: 'creditsBalance',
@@ -131,7 +138,11 @@ export const UsersListPage: React.FC = () => {
       format: (value) => {
         const credits = typeof value === 'number' ? value : 0;
         return (
-          <Typography variant="body2" fontWeight={600} color={credits > 0 ? 'primary' : 'text.secondary'}>
+          <Typography
+            variant="body2"
+            fontWeight={600}
+            sx={{ color: credits > 0 ? 'var(--blox-black)' : 'var(--secondary-text)' }}
+          >
             {credits.toLocaleString()}
           </Typography>
         );
@@ -145,19 +156,20 @@ export const UsersListPage: React.FC = () => {
     },
   ];
 
-  if (loading && users.length === 0) {
-    return <Loading fullScreen message="Loading users..." />;
-  }
-
   return (
     <Box className="users-list-page">
       <Box className="page-header">
-        <Typography variant="h2">Users</Typography>
-        <Box className="header-actions">
-          <Button variant="primary" onClick={loadUsers}>
-            Refresh
-          </Button>
+        <Box>
+          <Typography variant="h2" className="page-title">
+            Users
+          </Typography>
+          <Typography variant="body2" className="page-subtitle">
+            {filteredUsers.length} customers · search and open a profile
+          </Typography>
         </Box>
+        <Button variant="secondary" onClick={loadUsers} loading={loading}>
+          Refresh
+        </Button>
       </Box>
 
       <Box className="search-section">
@@ -170,19 +182,27 @@ export const UsersListPage: React.FC = () => {
       </Box>
 
       <Box className="table-section">
-        <Table
-          columns={columns}
-          rows={paginatedUsers}
-          loading={loading}
-          page={page}
-          rowsPerPage={rowsPerPage}
-          totalRows={filteredUsers.length}
-          onPageChange={setPage}
-          onRowsPerPageChange={setRowsPerPage}
-          onRowClick={(row) => navigate(`/admin/users/${encodeURIComponent(row.email)}`)}
-        />
+        {loading && users.length === 0 ? (
+          <TableSkeleton rows={8} columns={6} />
+        ) : !loading && filteredUsers.length === 0 ? (
+          <EmptyState
+            title="No users found"
+            message={searchTerm ? 'Try a different search term.' : 'No customer accounts to show yet.'}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            rows={paginatedUsers}
+            loading={loading}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            totalRows={filteredUsers.length}
+            onPageChange={setPage}
+            onRowsPerPageChange={setRowsPerPage}
+            onRowClick={(row) => navigate(`/admin/users/${encodeURIComponent(row.email)}`)}
+          />
+        )}
       </Box>
     </Box>
   );
 };
-

@@ -6,7 +6,8 @@ import { ArrowBack, Edit, Delete } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading } from '../../../../store/slices/promotions.slice';
 import { supabaseApiService } from '@shared/services';
-import { Button, StatusBadge, Loading, ConfirmDialog } from '@shared/components';
+import { Button, StatusBadge, ConfirmDialog } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { formatDate } from '@shared/utils/formatters';
 import { toast } from 'react-toastify';
 import './PromotionDetailPage.scss';
@@ -68,7 +69,7 @@ export const PromotionDetailPage: React.FC = () => {
   }, [id, navigate]);
 
   if (loading && !selected) {
-    return <Loading fullScreen message="Loading promotion..." />;
+    return <PageSkeleton variant="detail" />;
   }
 
   const displayData = selected;
@@ -163,7 +164,7 @@ export const PromotionDetailPage: React.FC = () => {
                   <Typography variant="caption" className="info-label">
                     Discount Value
                   </Typography>
-                  <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                  <Typography variant="h5" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                     {displayData.discountValue}
                     {displayData.discountType === 'percentage' ? '%' : ' QAR'}
                   </Typography>

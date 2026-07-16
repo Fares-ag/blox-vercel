@@ -7,7 +7,8 @@ import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading } from '../../../../store/slices/offers.slice';
 import { supabaseApiService } from '@shared/services';
 import type { InsuranceRate } from '@shared/models/insurance-rate.model';
-import { Button, StatusBadge, Loading, ConfirmDialog } from '@shared/components';
+import { Button, StatusBadge, ConfirmDialog } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { formatDate } from '@shared/utils/formatters';
 import { toast } from 'react-toastify';
 import './OfferDetailPage.scss';
@@ -101,7 +102,7 @@ export const OfferDetailPage: React.FC = () => {
   }, [id, navigate]);
 
   if (loading && !selected) {
-    return <Loading fullScreen message="Loading offer..." />;
+    return <PageSkeleton variant="detail" />;
   }
 
   const displayData = selected;
@@ -198,7 +199,7 @@ export const OfferDetailPage: React.FC = () => {
                   <Typography variant="caption" className="info-label">
                     Annual Rent Rate
                   </Typography>
-                  <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                  <Typography variant="h5" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                     {displayData.annualRentRate}%
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -211,7 +212,7 @@ export const OfferDetailPage: React.FC = () => {
                   <Typography variant="caption" className="info-label">
                     Annual Rent Rate (Funder)
                   </Typography>
-                  <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                  <Typography variant="h5" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                     {displayData.annualRentRateFunder}%
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -271,7 +272,7 @@ export const OfferDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Annual Insurance Rate
                     </Typography>
-                    <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                    <Typography variant="h5" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                       {insuranceRate.annualRate}%
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -284,7 +285,7 @@ export const OfferDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Annual Insurance Rate (Provider)
                     </Typography>
-                    <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                    <Typography variant="h5" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                       {insuranceRate.providerRate}%
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -308,7 +309,7 @@ export const OfferDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Annual Insurance Rate
                     </Typography>
-                    <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                    <Typography variant="h5" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                       {displayData.annualInsuranceRate}%
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
@@ -321,7 +322,7 @@ export const OfferDetailPage: React.FC = () => {
                     <Typography variant="caption" className="info-label">
                       Annual Insurance Rate (Provider)
                     </Typography>
-                    <Typography variant="h5" className="info-value" sx={{ color: '#DAFF01', fontWeight: 600 }}>
+                    <Typography variant="h5" className="info-value" sx={{ color: 'var(--blox-black)', fontWeight: 600 }}>
                       {displayData.annualInsuranceRateProvider}%
                     </Typography>
                     <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>

@@ -198,19 +198,20 @@
         }
 
         .terms-link {
-          color: #DAFF01;
-          text-decoration: none;
+          color: var(--blox-black);
+          text-decoration: underline;
+          text-underline-offset: 2px;
 
           &:hover {
-            text-decoration: underline;
+            color: var(--dark-grey);
           }
         }
 
         .MuiCheckbox-root {
-          color: #9ca3af;
+          color: var(--field-border-color);
 
           &.Mui-checked {
-            color: #DAFF01;
+            color: var(--blox-black);
           }
         }
       }
@@ -222,15 +223,15 @@
       gap: 16px;
 
       .submit-button {
-        background-color: #DAFF01;
-        color: #ffffff;
+        background-color: var(--primary-btn-bg);
+        color: var(--primary-btn-color); /* Black on lime — required for AA */
         text-transform: none;
         font-weight: 600;
         padding: 12px 48px;
         border-radius: 8px;
 
         &:hover {
-          background-color: #0a6b6a;
+          background-color: var(--primary-btn-hover);
         }
 
         &:disabled {

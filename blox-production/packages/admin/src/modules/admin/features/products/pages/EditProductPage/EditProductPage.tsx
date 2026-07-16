@@ -7,7 +7,8 @@ import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading, updateProduct } from '../../../../store/slices/products.slice';
 import { supabaseApiService } from '@shared/services';
 import type { Product, ProductAttribute } from '@shared/models/product.model';
-import { Button, Input, Select, type SelectOption, Loading } from '@shared/components';
+import { Button, Input, Select, type SelectOption } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { toast } from 'react-toastify';
 import { useForm, useFieldArray } from 'react-hook-form';
 import './EditProductPage.scss';
@@ -202,7 +203,7 @@ export const EditProductPage: React.FC = () => {
   };
 
   if (loading && !selected) {
-    return <Loading fullScreen message="Loading vehicle..." />;
+    return <PageSkeleton variant="form" />;
   }
 
   return (

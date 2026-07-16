@@ -64,7 +64,7 @@ export const Select: React.FC<SelectProps> = ({
               transform: 'translate(14px, -9px) scale(0.85)',
             },
             '&.Mui-focused': {
-              color: 'var(--field-border-focus)',
+              color: 'var(--field-lable-color)',
             },
             '&.Mui-error': {
               color: 'var(--blox-black)',
@@ -91,7 +91,7 @@ export const Select: React.FC<SelectProps> = ({
           height: '48px',
           borderRadius: 'var(--radius-sm)',
           backgroundColor: 'var(--card-background)',
-          transition: 'all var(--transition-base)',
+          transition: 'border-color var(--transition-base), box-shadow var(--transition-base)',
           '& .MuiOutlinedInput-notchedOutline': {
             borderColor: 'var(--field-border-color)',
             borderWidth: '1px',
@@ -99,12 +99,13 @@ export const Select: React.FC<SelectProps> = ({
           '&:hover': {
             backgroundColor: 'var(--card-background)',
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: 'var(--field-border-focus)',
+              borderColor: 'var(--field-border-hover)',
               borderWidth: '1px',
             },
           },
           '&.Mui-focused': {
             backgroundColor: 'var(--card-background)',
+            boxShadow: 'var(--field-focus-ring)',
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: 'var(--field-border-focus)',
               borderWidth: '2px',

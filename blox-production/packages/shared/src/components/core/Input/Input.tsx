@@ -8,40 +8,56 @@ export interface InputProps extends Omit<TextFieldProps, 'variant'> {
   variant?: 'outlined' | 'filled' | 'standard';
 }
 
+/** Dual-tone focus: black stroke (a11y) + lime outer ring (brand). */
+const fieldFocusSx: SxProps<Theme> = {
+  '& .MuiOutlinedInput-root': {
+    borderRadius: 'var(--radius-sm)',
+    backgroundColor: 'transparent',
+    transition: 'border-color var(--transition-base), box-shadow var(--transition-base)',
+    '& fieldset': {
+      borderColor: 'var(--field-border-color)',
+    },
+    '&:hover fieldset': {
+      borderColor: 'var(--field-border-hover)',
+    },
+    '&.Mui-focused': {
+      boxShadow: 'var(--field-focus-ring)',
+      '& fieldset': {
+        borderColor: 'var(--field-border-focus)',
+        borderWidth: '2px',
+      },
+    },
+  },
+  '& .MuiInputLabel-root': {
+    color: 'var(--field-lable-color)',
+  },
+  '& .MuiInputLabel-root.Mui-focused': {
+    color: 'var(--field-lable-color)',
+  },
+  '& .MuiInputBase-input::placeholder': {
+    color: 'var(--field-placeholder)',
+    opacity: 1,
+  },
+};
+
 export const Input: React.FC<InputProps> = React.memo(({
   variant = 'outlined',
   className = '',
   sx,
   ...props
 }) => {
-  const defaultSx: SxProps<Theme> = {
-    '& .MuiOutlinedInput-root': {
-      borderRadius: 'var(--radius-sm)',
-      backgroundColor: variant === 'filled' ? 'var(--disabled-bg)' : 'transparent',
-      '& fieldset': {
-        borderColor: 'var(--field-border-color)',
-      },
-      '&:hover fieldset': {
-        borderColor: 'var(--field-lable-color)',
-      },
-      '&.Mui-focused fieldset': {
-        borderColor: 'var(--field-lable-color)',
-      },
-    },
-    '& .MuiInputLabel-root': {
-      color: 'var(--field-lable-color)',
-    },
-    '& .MuiInputLabel-root.Mui-focused': {
-      color: 'var(--field-lable-color)',
-    },
-    '& .MuiInputBase-input::placeholder': {
-      color: 'var(--field-placeholder)',
-      opacity: 1,
-    },
-  };
+  const filledSx: SxProps<Theme> =
+    variant === 'filled'
+      ? {
+          '& .MuiOutlinedInput-root': {
+            backgroundColor: 'var(--disabled-bg)',
+          },
+        }
+      : {};
 
-  // MUI's `sx` type is broad (object | array | function). We intentionally merge in a permissive way.
-  const mergedSx = (sx ? [defaultSx, sx as any] : defaultSx) as SxProps<Theme>;
+  const mergedSx = (sx
+    ? [fieldFocusSx, filledSx, sx as SxProps<Theme>]
+    : [fieldFocusSx, filledSx]) as SxProps<Theme>;
 
   return (
     <TextField
@@ -54,7 +70,6 @@ export const Input: React.FC<InputProps> = React.memo(({
     />
   );
 }, (prevProps, nextProps) => {
-  // Memo comparison: re-render if value or key props change
   return prevProps.value === nextProps.value &&
          prevProps.variant === nextProps.variant &&
          prevProps.disabled === nextProps.disabled &&

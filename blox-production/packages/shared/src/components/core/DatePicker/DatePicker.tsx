@@ -43,14 +43,19 @@ export const DatePicker: React.FC<DatePickerProps> = ({
             sx: {
               '& .MuiOutlinedInput-root': {
                 borderRadius: 'var(--radius-sm)',
+                transition: 'border-color var(--transition-base), box-shadow var(--transition-base)',
                 '& fieldset': {
                   borderColor: 'var(--field-border-color)',
                 },
                 '&:hover fieldset': {
-                  borderColor: 'var(--field-lable-color)',
+                  borderColor: 'var(--field-border-hover)',
                 },
-                '&.Mui-focused fieldset': {
-                  borderColor: 'var(--field-lable-color)',
+                '&.Mui-focused': {
+                  boxShadow: 'var(--field-focus-ring)',
+                  '& fieldset': {
+                    borderColor: 'var(--field-border-focus)',
+                    borderWidth: '2px',
+                  },
                 },
               },
               '& .MuiInputLabel-root': {

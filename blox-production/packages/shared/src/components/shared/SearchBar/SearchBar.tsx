@@ -35,21 +35,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         fullWidth
         sx={{
           '& .MuiOutlinedInput-root': {
-            backgroundColor: '#ffffff',
-            boxShadow: '0 0 0 1px rgba(15, 23, 42, 0.06)',
-            '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#DAFF01',
-            },
-            '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#DAFF01',
-            },
-            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#DAFF01',
-              borderWidth: 2,
-            },
+            backgroundColor: 'var(--card-background)',
           },
           '& .MuiInputBase-input::placeholder': {
-            color: '#6b7280',
+            color: 'var(--field-placeholder)',
             opacity: 1,
           },
         }}
@@ -59,6 +48,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               size="small"
               onClick={() => onSearch?.(value)}
               className="search-icon"
+              aria-label="Search"
+              title="Search"
             >
               <Search />
             </IconButton>

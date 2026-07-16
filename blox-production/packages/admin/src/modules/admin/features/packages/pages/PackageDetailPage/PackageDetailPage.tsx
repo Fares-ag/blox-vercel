@@ -6,7 +6,8 @@ import { ArrowBack, Edit, Delete } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading, removePackage } from '../../../../store/slices/packages.slice';
 import { supabaseApiService } from '@shared/services';
-import { Button, StatusBadge, Loading, ConfirmDialog } from '@shared/components';
+import { Button, StatusBadge, ConfirmDialog } from '@shared/components';
+import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { formatCurrency, formatDate } from '@shared/utils/formatters';
 import { toast } from 'react-toastify';
 import './PackageDetailPage.scss';
@@ -69,7 +70,7 @@ export const PackageDetailPage: React.FC = () => {
   }, [id, dispatch, navigate]);
 
   if (loading && !selected) {
-    return <Loading fullScreen message="Loading package..." />;
+    return <PageSkeleton variant="detail" />;
   }
 
   if (!selected) {
@@ -118,14 +119,14 @@ export const PackageDetailPage: React.FC = () => {
         <Box className="header-actions">
           <StatusBadge status={selected.status} />
           <Button
-            variant="outlined"
+            variant="secondary"
             startIcon={<Edit />}
             onClick={() => navigate(`/admin/packages/${selected.id}/edit`)}
           >
             Edit
           </Button>
           <Button
-            variant="outlined"
+            variant="secondary"
             color="error"
             startIcon={<Delete />}
             onClick={() => setDeleteDialogOpen(true)}

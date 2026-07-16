@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { setList, setLoading } from '../../../../store/slices/offers.slice';
 import { supabaseApiService } from '@shared/services';
 import type { Offer } from '@shared/models/offer.model';
-import { Table, type Column, Button, StatusBadge, SearchBar, ExportButton, ConfirmDialog } from '@shared/components';
+import { Table, type Column, Button, StatusBadge, SearchBar, ExportButton, ConfirmDialog, EmptyState, TableSkeleton } from '@shared/components';
 import { toast } from 'react-toastify';
 import './OffersListPage.scss';
 
@@ -132,7 +132,7 @@ export const OffersListPage: React.FC = () => {
           <Button variant="small" onClick={(e) => { e.stopPropagation(); navigate(`/admin/offers/${row.id}/edit`); }}>
             Edit
           </Button>
-          <Button variant="small" color="error" onClick={(e) => { e.stopPropagation(); handleDelete(row.id); }}>
+          <Button variant="destructive" onClick={(e) => { e.stopPropagation(); handleDelete(row.id); }}>
             Delete
           </Button>
         </Box>
@@ -143,7 +143,14 @@ export const OffersListPage: React.FC = () => {
   return (
     <Box className="offers-list-page">
       <Box className="page-header">
-        <Typography variant="h2">Offers</Typography>
+        <Box>
+          <Typography variant="h2" className="page-title">
+            Offers
+          </Typography>
+          <Typography variant="body2" className="page-subtitle">
+            {list.length} financing offers · create and manage rate templates
+          </Typography>
+        </Box>
         <Box className="header-actions">
           <ExportButton data={list} filename="offers" />
           <Button variant="primary" onClick={() => navigate('/admin/offers/add')}>
@@ -162,12 +169,23 @@ export const OffersListPage: React.FC = () => {
       </Box>
 
       <Box className="table-section">
-        <Table
-          columns={columns}
-          rows={list}
-          loading={loading}
-          onRowClick={(row) => navigate(`/admin/offers/${row.id}`)}
-        />
+        {loading && list.length === 0 ? (
+          <TableSkeleton rows={8} columns={5} />
+        ) : !loading && list.length === 0 ? (
+          <EmptyState
+            title="No offers found"
+            message={searchTerm ? 'Try a different search.' : 'Create an offer to get started.'}
+            actionLabel="Create Offer"
+            onAction={() => navigate('/admin/offers/add')}
+          />
+        ) : (
+          <Table
+            columns={columns}
+            rows={list}
+            loading={loading}
+            onRowClick={(row) => navigate(`/admin/offers/${row.id}`)}
+          />
+        )}
       </Box>
 
       <ConfirmDialog

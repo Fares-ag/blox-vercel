@@ -1,29 +1,45 @@
 .promotions-list-page {
+  padding: var(--spacing-lg);
+  background: transparent;
+
   .page-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: var(--spacing-lg);
     flex-wrap: wrap;
     gap: var(--spacing-md);
 
+    .page-title {
+      font-weight: 700;
+      font-size: 32px;
+      color: var(--primary-text);
+      letter-spacing: -0.02em;
+    }
+
+    .page-subtitle {
+      margin-top: var(--spacing-xs);
+      color: var(--secondary-text);
+      font-size: 14px;
+    }
+
     .header-actions {
       display: flex;
-      gap: 12px;
+      gap: var(--spacing-sm);
       align-items: center;
     }
   }
 
   .search-section {
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
   }
 
   .table-section {
-    background-color: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    background: var(--card-background);
+    border: 1px solid var(--divider-color);
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    padding: var(--spacing-md);
     overflow: hidden;
   }
 }
