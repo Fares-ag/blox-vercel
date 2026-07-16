@@ -23,24 +23,16 @@ export const MainLayout: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    console.log('[MainLayout] Logout initiated');
     try {
-      console.log('[MainLayout] Calling authService.logout()...');
       await authService.logout();
-      console.log('[MainLayout] authService.logout() completed');
-    } catch (error) {
-      console.error('[MainLayout] Logout error:', error);
-      // Continue with logout even if authService.logout() fails
+    } catch {
+      // Continue logout cleanup even if remote sign-out fails
     }
-    
+
     try {
-      console.log('[MainLayout] Dispatching logout action...');
       dispatch(logout());
-      console.log('[MainLayout] Navigating to login page...');
       navigate('/super-admin/auth/login', { replace: true });
-    } catch (error) {
-      console.error('[MainLayout] Error during logout cleanup:', error);
-      // Force navigation even if dispatch fails
+    } catch {
       window.location.href = '/super-admin/auth/login';
     }
   };
@@ -71,6 +63,8 @@ export const MainLayout: React.FC = () => {
           <IconButton
             className="sidebar-toggle-button"
             onClick={() => setCollapsed(false)}
+            aria-label="Expand sidebar"
+            title="Expand sidebar"
             sx={{
               position: 'fixed',
               left: '8px',
@@ -80,12 +74,17 @@ export const MainLayout: React.FC = () => {
               color: 'var(--primary-color)',
               boxShadow: 'var(--card-shadow)',
               borderRadius: '10px',
+              transition: 'color 160ms ease, transform 160ms ease',
               '&:hover': {
                 backgroundColor: 'var(--blox-black)',
                 color: 'var(--primary-dark)',
+                transform: 'translateY(-1px)',
+              },
+              '&:focus-visible': {
+                outline: '2px solid var(--primary-color)',
+                outlineOffset: 2,
               },
             }}
-            title="Expand sidebar"
           >
             <Menu />
           </IconButton>

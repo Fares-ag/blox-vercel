@@ -61,10 +61,10 @@
       }
 
       &.active {
-        background-color: rgba(255, 255, 255, 0.25);
-        color: white;
+        background-color: rgba(218, 255, 1, 0.18);
+        color: var(--primary-color, #daff01);
         font-weight: 600;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        box-shadow: inset 3px 0 0 var(--primary-color, #daff01);
       }
 
       .menu-icon {

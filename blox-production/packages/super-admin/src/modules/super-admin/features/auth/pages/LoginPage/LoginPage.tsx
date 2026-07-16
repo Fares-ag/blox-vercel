@@ -37,35 +37,33 @@ export const LoginPage: React.FC = () => {
     const result = await login(data);
     if (result.success) {
       toast.success('Login successful!');
-    } else {
-      if (!result.error?.includes('Access denied')) {
-        toast.error(result.error || 'Login failed');
-      }
+    } else if (!result.error?.includes('Access denied')) {
+      toast.error(result.error || 'Login failed');
     }
   }, [login]);
 
   return (
     <Box className="login-page">
-      <Box className="login-container">
+      <Box className="login-container" component="main" aria-labelledby="super-admin-login-title">
         <Box className="login-header">
-          <img src="/BloxLogoNav.png" alt="Blox Logo" className="logo-image" />
-          <Typography variant="h3" className="welcome-text">
+          <img src="/BloxLogoNav.png" alt="Blox" className="logo-image" />
+          <Typography id="super-admin-login-title" variant="h2" className="welcome-text">
             Super Admin Portal
           </Typography>
           <Typography variant="body2" className="subtitle-text">
-            Sign in to access activity logs and system monitoring
+            Sign in to monitor activity and system health
           </Typography>
         </Box>
 
-        <Box component="form" className="login-form" onSubmit={handleSubmit(onSubmit)}>
+        <Box component="form" className="login-form" onSubmit={handleSubmit(onSubmit)} noValidate>
           {reason === 'not_super_admin' ? (
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" className="login-alert" role="alert">
               <Typography variant="body2">
-                <strong>Access Denied:</strong> Super administrator privileges required. Only super admin users can access this portal.
+                <strong>Access denied.</strong> Super administrator privileges are required for this portal.
               </Typography>
             </Alert>
           ) : null}
-          
+
           <Input
             label="Email"
             type="email"
@@ -73,6 +71,7 @@ export const LoginPage: React.FC = () => {
             error={!!errors.email}
             helperText={errors.email?.message}
             autoComplete="email"
+            autoFocus
           />
 
           <Input

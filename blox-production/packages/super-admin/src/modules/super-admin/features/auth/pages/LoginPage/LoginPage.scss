@@ -3,37 +3,54 @@
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #787663 0%, #0E1909 100%);
+  background: linear-gradient(135deg, #787663 0%, #0e1909 100%);
   padding: var(--spacing-md);
 
   .login-container {
-    background: #ffffff;
-    border-radius: var(--radius-large-card, 16px);
-    padding: var(--spacing-xl, 32px) var(--spacing-lg, 24px);
+    background: var(--card-background, #ffffff);
+    border-radius: var(--radius-large-card, 24px);
+    padding: var(--spacing-2xl, 48px) var(--spacing-xl, 32px);
     width: 100%;
-    max-width: 450px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    max-width: 440px;
+    box-shadow: 0 16px 48px rgba(14, 25, 9, 0.28);
   }
 
   .login-header {
     text-align: center;
-    margin-bottom: var(--spacing-lg, 24px);
+    margin-bottom: var(--spacing-xl, 32px);
 
     .logo-image {
-      max-width: 120px;
+      max-width: 112px;
       height: auto;
-      margin: 0 auto var(--spacing-md, 16px);
+      margin: 0 auto var(--spacing-lg, 24px);
       display: block;
     }
 
     .welcome-text {
       color: var(--primary-text, #0e1909);
       font-weight: 700;
-      margin-bottom: var(--spacing-xs, 4px);
+      font-size: 28px;
+      line-height: 1.2;
+      margin-bottom: var(--spacing-sm, 8px);
     }
 
     .subtitle-text {
-      color: var(--custom-text-color, #787663);
+      color: var(--secondary-text, #787663);
+      font-size: 14px;
+      line-height: 1.45;
+      max-width: 320px;
+      margin: 0 auto;
+    }
+  }
+
+  .login-alert {
+    border-radius: 12px;
+    border: 1px solid rgba(14, 25, 9, 0.12);
+    background: rgba(14, 25, 9, 0.04);
+    color: var(--primary-text, #0e1909);
+
+    .MuiAlert-icon {
+      color: var(--blox-black, #0e1909);
     }
   }
 
@@ -44,9 +61,14 @@
 
     .form-options {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
+      margin-top: calc(var(--spacing-xs, 4px) * -1);
     }
+  }
+
+  .MuiFormControlLabel-root {
+    margin-left: -4px;
   }
 
   .MuiFormControlLabel-label {
@@ -56,9 +78,28 @@
 
   .MuiCheckbox-root {
     color: var(--mid-grey, #c9c4b7);
+    padding: 8px;
 
     &.Mui-checked {
-      color: var(--primary-color, #daff01);
+      color: var(--blox-black, #0e1909);
+    }
+
+    &.Mui-focusVisible {
+      outline: 2px solid var(--primary-color, #daff01);
+      outline-offset: 2px;
+    }
+
+    .MuiSvgIcon-root {
+      // Keep checkmark readable on lime-ish focus; use black filled check
+    }
+  }
+
+  .MuiCheckbox-root.Mui-checked {
+    color: var(--primary-color, #daff01);
+
+    .MuiSvgIcon-root {
+      // Ensure check icon contrast: lime box with black glyph via theme
+      filter: none;
     }
   }
 }
@@ -66,9 +107,21 @@
 @media (max-width: 600px) {
   .login-page {
     padding: var(--spacing-sm, 8px);
+    align-items: flex-start;
+    padding-top: var(--spacing-xl, 32px);
 
     .login-container {
       padding: var(--spacing-lg, 24px) var(--spacing-md, 16px);
+      border-radius: var(--radius-card, 16px);
+      max-width: 100%;
+    }
+
+    .login-header {
+      margin-bottom: var(--spacing-lg, 24px);
+
+      .welcome-text {
+        font-size: 24px;
+      }
     }
   }
 }
