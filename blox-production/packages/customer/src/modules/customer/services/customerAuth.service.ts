@@ -113,14 +113,31 @@ class CustomerAuthService {
       throw new Error('Login failed: No user or session returned');
     }
 
-    // Map Supabase user to your User model
+    // Prefer role from users table (authoritative) over user_metadata defaulting to customer
+    let role: User['role'] = (data.user.user_metadata?.role as User['role']) || ('unknown' as User['role']);
+    try {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', data.user.id)
+        .maybeSingle();
+      if (profile?.role) {
+        role = profile.role as User['role'];
+      }
+    } catch {
+      // keep metadata role; never invent customer
+    }
+    if (role !== 'customer' && role !== 'admin' && role !== 'super_admin') {
+      role = 'unknown' as User['role'];
+    }
+
     const user: User = {
       id: data.user.id,
       email: data.user.email || '',
       name: data.user.user_metadata?.first_name && data.user.user_metadata?.last_name
         ? `${data.user.user_metadata.first_name} ${data.user.user_metadata.last_name}`.trim()
         : data.user.email || '',
-      role: data.user.user_metadata?.role || 'customer',
+      role,
       permissions: data.user.user_metadata?.permissions || [],
     };
 
@@ -169,6 +186,18 @@ class CustomerAuthService {
 
     if (error) {
       throw new Error(error.message || 'Registration failed');
+    }
+
+    // With "Confirm email" enabled, duplicate signups return a fake user (random id,
+    // empty identities) instead of an error — that id is not in auth.users.
+    const identities = signUpResponse.user?.identities;
+    if (
+      signUpResponse.user &&
+      !signUpResponse.session &&
+      Array.isArray(identities) &&
+      identities.length === 0
+    ) {
+      throw new Error('User already registered');
     }
 
     return {
@@ -252,6 +281,38 @@ class CustomerAuthService {
     }
   }
 
+  /**
+   * Change password for a logged-in user.
+   * Re-authenticates with the current password before updating.
+   */
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user?.email) {
+      throw new Error('You must be signed in to change your password');
+    }
+
+    const { error: reauthError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: currentPassword,
+    });
+
+    if (reauthError) {
+      throw new Error('Current password is incorrect');
+    }
+
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (error) {
+      throw new Error(error.message || 'Failed to change password');
+    }
+  }
+
   async getToken(): Promise<string | null> {
     const { data: { session } } = await supabase.auth.getSession();
     return session?.access_token || null;
@@ -267,7 +328,7 @@ class CustomerAuthService {
       name: user.user_metadata?.first_name && user.user_metadata?.last_name
         ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim()
         : user.email || '',
-      role: user.user_metadata?.role || 'customer',
+      role: (user.user_metadata?.role as User['role']) || ('unknown' as User['role']),
       permissions: user.user_metadata?.permissions || [],
     };
   }
@@ -299,9 +360,12 @@ class CustomerAuthService {
           name: user.user_metadata?.first_name && user.user_metadata?.last_name
             ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim()
             : user.email || '',
-      role: roleRaw || 'customer',
-          permissions: user.user_metadata?.permissions || [],
-        };
+      role:
+        roleRaw === 'customer' || roleRaw === 'admin' || roleRaw === 'super_admin'
+          ? roleRaw
+          : ('unknown' as User['role']),
+      permissions: user.user_metadata?.permissions || [],
+    };
   }
 
   isAuthenticatedSync(): boolean {
@@ -334,7 +398,12 @@ class CustomerAuthService {
           name: session.user.user_metadata?.first_name && session.user.user_metadata?.last_name
             ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name}`.trim()
             : session.user.email || '',
-          role: session.user.user_metadata?.role || 'customer',
+          role:
+            session.user.user_metadata?.role === 'customer' ||
+            session.user.user_metadata?.role === 'admin' ||
+            session.user.user_metadata?.role === 'super_admin'
+              ? session.user.user_metadata.role
+              : ('unknown' as User['role']),
           permissions: session.user.user_metadata?.permissions || [],
         };
         callback(user, session);

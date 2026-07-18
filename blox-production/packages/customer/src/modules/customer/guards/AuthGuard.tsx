@@ -1,38 +1,44 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../store/hooks';
 import { Config } from '@shared/config/app.config';
 import { customerAuthService } from '../services/customerAuth.service';
 import { Box, Typography, Alert, Button } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { Loading } from '@shared/components';
 
 interface AuthGuardProps {
   children: React.ReactNode;
 }
 
 export const AuthGuard = ({ children }: AuthGuardProps) => {
-  const { isAuthenticated } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, user, initialized } = useAppSelector((state) => state.auth);
   const location = useLocation();
   const navigate = useNavigate();
   const [checkingEmail, setCheckingEmail] = useState(true);
-  const [emailVerified, setEmailVerified] = useState(true);
+  const [emailVerified, setEmailVerified] = useState(false);
   const [userEmail, setUserEmail] = useState<string | undefined>();
 
   useEffect(() => {
     const checkEmailVerification = async () => {
-      if (isAuthenticated) {
-        try {
-          const status = await customerAuthService.checkEmailVerificationStatus();
-          setEmailVerified(status.verified);
-          setUserEmail(status.email);
-        } catch (error) {
-          console.error('Error checking email verification:', error);
-          setEmailVerified(true); // Default to allowing access if check fails
-        }
+      if (!isAuthenticated) {
+        setCheckingEmail(false);
+        return;
       }
-      setCheckingEmail(false);
+
+      try {
+        const status = await customerAuthService.checkEmailVerificationStatus();
+        setEmailVerified(status.verified);
+        setUserEmail(status.email);
+      } catch (error) {
+        console.error('Error checking email verification:', error);
+        // Fail closed: do not grant access when verification status is unknown
+        setEmailVerified(false);
+      } finally {
+        setCheckingEmail(false);
+      }
     };
 
+    setCheckingEmail(true);
     checkEmailVerification();
   }, [isAuthenticated]);
 
@@ -40,8 +46,17 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     return <>{children}</>;
   }
 
+  if (!initialized) {
+    return <Loading fullScreen message="Loading..." />;
+  }
+
   if (!isAuthenticated) {
     return <Navigate to="/customer/auth/login" state={{ from: location }} replace />;
+  }
+
+  // Customer app: exact role required (missing/unknown → deny)
+  if (user?.role !== 'customer') {
+    return <Navigate to="/customer/auth/login?reason=not_customer" replace />;
   }
 
   if (checkingEmail) {
@@ -72,18 +87,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
           </Typography>
           <Button
             variant="contained"
-            onClick={async () => {
-              // Resend verification email
-              if (userEmail) {
-                try {
-                  // Supabase doesn't have a direct resend verification method in the client
-                  // User needs to use the link from the original email or sign up again
-                  navigate('/customer/auth/login');
-                } catch (error) {
-                  console.error('Error resending verification:', error);
-                }
-              }
-            }}
+            onClick={() => navigate('/customer/auth/login')}
             sx={{ mt: 1 }}
           >
             Go to Login
@@ -95,4 +99,3 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
 
   return <>{children}</>;
 };
-

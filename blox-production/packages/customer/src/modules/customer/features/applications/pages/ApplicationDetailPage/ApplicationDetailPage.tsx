@@ -165,38 +165,42 @@ export const ApplicationDetailPage: React.FC = () => {
 
     try {
       setUploading(true);
-      
-      // Convert file to base64 for storage (in a real app, this would be uploaded to a server)
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64File = reader.result as string;
-        
-        // Update application in Supabase
-        if (!id) {
-          throw new Error('Application ID is required');
-        }
-        
-        const updateResponse = await supabaseApiService.updateApplication(id, {
-          contractSigned: true,
-          signedContractFile: base64File,
-          signedContractFileName: uploadedFile.name,
-          signedContractUploadedAt: new Date().toISOString(),
-          status: 'contracts_submitted',
-          updatedAt: new Date().toISOString(),
-        });
-        
-        if (updateResponse.status !== 'SUCCESS') {
-          throw new Error(updateResponse.message || 'Failed to update application');
-        }
 
-        // Reload the application to show updated status
-        await loadApplicationDetails(id!);
-        
-        toast.success('Signed contract uploaded successfully! Your application is now submitted for admin review.');
-        setUploadedFile(null);
-      };
-      
-      reader.readAsDataURL(uploadedFile);
+      if (!id) {
+        throw new Error('Application ID is required');
+      }
+
+      // Await FileReader — do not clear uploading in an outer finally before onloadend.
+      const base64File = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (typeof reader.result === 'string') {
+            resolve(reader.result);
+          } else {
+            reject(new Error('Failed to read file'));
+          }
+        };
+        reader.onerror = () => reject(new Error('Failed to read file'));
+        reader.readAsDataURL(uploadedFile);
+      });
+
+      const updateResponse = await supabaseApiService.updateApplication(id, {
+        contractSigned: true,
+        signedContractFile: base64File,
+        signedContractFileName: uploadedFile.name,
+        signedContractUploadedAt: new Date().toISOString(),
+        status: 'contracts_submitted',
+        updatedAt: new Date().toISOString(),
+      });
+
+      if (updateResponse.status !== 'SUCCESS') {
+        throw new Error(updateResponse.message || 'Failed to update application');
+      }
+
+      await loadApplicationDetails(id);
+
+      toast.success('Signed contract uploaded successfully! Your application is now submitted for admin review.');
+      setUploadedFile(null);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to upload signed contract';
       toast.error(errorMessage);

@@ -400,10 +400,10 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
               }}
               sx={{
                 '& .MuiSwitch-switchBase.Mui-checked': {
-                  color: '#00CFA2',
+                  color: '#111111',
                 },
                 '& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track': {
-                  backgroundColor: '#00CFA2',
+                  backgroundColor: '#111111',
                 },
               }}
             />

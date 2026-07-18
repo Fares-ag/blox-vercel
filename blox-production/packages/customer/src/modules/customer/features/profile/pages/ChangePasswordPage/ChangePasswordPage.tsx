@@ -4,6 +4,7 @@ import { Box, Typography, Paper, TextField, Button, Alert } from '@mui/material'
 import { ArrowBack, Lock } from '@mui/icons-material';
 import { Button as CustomButton } from '@shared/components';
 import { toast } from 'react-toastify';
+import { customerAuthService } from '../../../../services/customerAuth.service';
 import './ChangePasswordPage.scss';
 
 export const ChangePasswordPage: React.FC = () => {
@@ -53,15 +54,10 @@ export const ChangePasswordPage: React.FC = () => {
 
     try {
       setLoading(true);
-      // TODO: Replace with actual API call
-      // await apiService.put('/customer/change-password', {
-      //   currentPassword: formData.currentPassword,
-      //   newPassword: formData.newPassword,
-      // });
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
+      await customerAuthService.changePassword(
+        formData.currentPassword,
+        formData.newPassword
+      );
       toast.success('Password changed successfully');
       navigate(-1);
     } catch (error: unknown) {
@@ -143,5 +139,3 @@ export const ChangePasswordPage: React.FC = () => {
     </Box>
   );
 };
-
-

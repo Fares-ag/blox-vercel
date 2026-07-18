@@ -11,13 +11,13 @@ After trying a payment, check Supabase function logs for:
 1. **Secret key length**: Should be ~600+ characters
    - If less than 500, the secret is incomplete
    
-2. **Secret key starts with**: Should be `BJZAz2n0CduW8O2+27u6XLLiZlqsdhia99coxTuVe6ZMlv9b7etZ0KNn0106y89RI279OBmC0TzI0Q+B6SQe0Bx8nQ1Vz7alzpqlHRlDcDrQG4DrizrTN2kY33UYX8d/63AAJbM8w5iSmYSvsile6kR5eZ9Z4bTSA0uxGu7+VIrK9AXdfHV7hLdi0iruVUC8BAcJYqrGvrA9mkClrXy9tsN7GQqxNMvBa3BvQnuKJBwU/ebq0cE1s+ugGqUyF5PPNG3OG3yjCb0NbZ6hTRcrXAqvhUcevK1lMiNfQtjLbTMLvv42fMiLgDbuabqNs11kErYeiuEXpkkazfnRysDAC0aS3bOxm6XBjgHucvfUMAehMNycfDi6eUSroPgfh3ZfPE/gcLZPgj2ptCmGYPHUyPnzXJG+MDcNDR9ZjOKGJ1EnN3pEgljMQcCmerDtux+yGx1QJBVe+SJW9w/UyzFEWxMuPyvzBmvWk4+NbErxiBVWEZQFiFJElHAh8hSDTBN6j76Bvt+7qwsMHeA86wH2kQ==`
+2. **Secret key starts with**: Should be `<REDACTED_SKIPCASH_SECRET_KEY>`
 
 3. **Secret key ends with**: Should be `==`
 
 4. **Combined data for signature**: Shows the exact string being hashed
 
-5. **Using KeyId**: Should be `536f4a14-3f0a-42d6-b584-dfe2b8bdc3ed`
+5. **Using KeyId**: Should be `<REDACTED_KEY_ID>`
 
 ## Possible Causes
 
@@ -34,7 +34,7 @@ After trying a payment, check Supabase function logs for:
 ### 3. KeyId Mismatch
 - **Symptom**: KeyId in logs doesn't match SkipCash dashboard
 - **Fix**: Update `SKIPCASH_KEY_ID` in Supabase to match exactly
-- **Verify**: Should be `536f4a14-3f0a-42d6-b584-dfe2b8bdc3ed`
+- **Verify**: Should be `<REDACTED_KEY_ID>`
 
 ### 4. Signature Calculation Issue
 - **Symptom**: Secret is complete but signature still wrong

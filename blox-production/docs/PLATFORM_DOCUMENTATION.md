@@ -97,7 +97,7 @@ Each app uses **React Router**, **MUI**, **Redux Toolkit** (where applicable), a
 
 | App | JWT / profile role | Guard behaviour (when `Config.bypassGuards` is false) |
 |-----|-------------------|------------------------------------------------------|
-| **Customer** | Any authenticated Supabase user | **`AuthGuard`** requires login; **email verification** is enforced — unverified users see a blocking screen until they verify (see §3.5). There is **no** `customer`-only role check in this guard (distinction from admin is by **URL / app**). |
+| **Customer** | `user.role === 'customer'` | **`AuthGuard`** requires login, **exact role `customer`** (missing/unknown → deny / redirect login with `?reason=not_customer`), and **email verification** (unverified users see a blocking screen until they verify — see §3.5). |
 | **Admin** | `user.role === 'admin'` | **Admin `AuthGuard`** redirects non-admins to login with `?reason=not_admin`. |
 | **Super-admin** | `user.role === 'super_admin'` | **Super-admin `AuthGuard`** redirects users who are not super-admins to login with `?reason=not_super_admin`. |
 

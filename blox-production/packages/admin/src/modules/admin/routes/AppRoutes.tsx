@@ -53,6 +53,11 @@ const UsersListPage = React.lazy(() => import('../features/users/pages/UsersList
 const UserDetailPage = React.lazy(() => import('../features/users/pages/UserDetailPage/UserDetailPage').then(m => ({ default: m.UserDetailPage })));
 const SettlementDiscountSettingsPage = React.lazy(() => import('../features/settings/pages/SettlementDiscountSettingsPage/SettlementDiscountSettingsPage').then(m => ({ default: m.SettlementDiscountSettingsPage })));
 const CompaniesPage = React.lazy(() => import('../features/companies/pages/CompaniesPage/CompaniesPage').then(m => ({ default: m.CompaniesPage })));
+const PendingBankTransfersPage = React.lazy(() =>
+  import('../features/payments/pages/PendingBankTransfersPage/PendingBankTransfersPage').then((m) => ({
+    default: m.PendingBankTransfersPage,
+  }))
+);
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -96,6 +101,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="applications" element={<ApplicationsListPage />} />
         <Route path="applications/add" element={<AddApplicationPage />} />
         <Route path="applications/view/:id" element={<ApplicationDetailPage />} />
+        <Route path="payments/pending-bank" element={<PendingBankTransfersPage />} />
         <Route path="vehicles" element={<ProductsListPage />} />
         <Route path="vehicles/add" element={<AddVehiclePage />} />
         <Route path="vehicles/:id" element={<ProductDetailPage />} />
@@ -125,7 +131,10 @@ export const AppRoutes: React.FC = () => {
         <Route path="companies" element={<CompaniesPage />} />
         <Route path="ledgers" element={<LedgersListPage />} />
         <Route path="settings/settlement-discounts" element={<SettlementDiscountSettingsPage />} />
-        <Route path="dev-tools/clear-storage" element={<ClearStoragePage />} />
+        {/* Dev-only: blocked in production builds */}
+        {!import.meta.env.PROD && (
+          <Route path="dev-tools/clear-storage" element={<ClearStoragePage />} />
+        )}
       </Route>
 
       {/* Default Redirect - only for root path */}

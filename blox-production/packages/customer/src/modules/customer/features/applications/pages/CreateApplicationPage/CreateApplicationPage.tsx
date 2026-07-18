@@ -42,6 +42,7 @@ import { supabaseApiService } from '@shared/services';
 import { supabase } from '@shared/services/supabase.service';
 import { devLogger } from '@shared/utils/logger.util';
 import { customerAuthService } from '../../../../services/customerAuth.service';
+import { vehicleService, CUSTOMER_MAX_VEHICLE_PRICE_QAR } from '../../../../services/vehicle.service';
 import { toast } from 'react-toastify';
 import { MembershipConfig } from '@shared/config/app.config';
 import { formatMonthsToTenure } from '@shared/utils/tenure.utils';
@@ -310,14 +311,19 @@ export const CreateApplicationPage: React.FC = () => {
   const loadVehicle = async (id: string) => {
     try {
       setLoading(true);
-      
-      // Load from Supabase only
-      const supabaseResponse = await supabaseApiService.getProductById(id);
-      
-      if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data && supabaseResponse.data.status === 'active') {
-        setVehicle(supabaseResponse.data);
+
+      // Enforce ≤70k customer catalog rule (same as browse/detail)
+      const response = await vehicleService.getVehicleById(id);
+
+      if (response.status === 'SUCCESS' && response.data && response.data.status === 'active') {
+        if (response.data.price > CUSTOMER_MAX_VEHICLE_PRICE_QAR) {
+          toast.error('This vehicle is not available for customer applications');
+          navigate('/customer/vehicles');
+          return;
+        }
+        setVehicle(response.data);
       } else {
-        toast.error('Vehicle not found or inactive');
+        toast.error(response.message || 'Vehicle not found or inactive');
         navigate('/customer/vehicles');
       }
     } catch (error: unknown) {
@@ -332,7 +338,7 @@ export const CreateApplicationPage: React.FC = () => {
 
   const handleFileUpload = useCallback(
     async (category: string, file: File) => {
-      // Validate file
+      // Keep File locally until application is created, then upload with real id
       const maxSize = 5 * 1024 * 1024; // 5MB
       const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf'];
 
@@ -349,28 +355,6 @@ export const CreateApplicationPage: React.FC = () => {
       setUploading((prev) => ({ ...prev, [category]: true }));
 
       try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('category', category);
-
-        // TODO: Replace with actual API call
-        // const response = await apiService.uploadFile('/customer/upload-document', formData);
-        // if (response.status === 'SUCCESS' && response.data) {
-        //   setDocuments((prev) => ({
-        //     ...prev,
-        //     [category]: {
-        //       id: response.data.id,
-        //       name: file.name,
-        //       file,
-        //       category,
-        //       url: response.data.url,
-        //     },
-        //   });
-        //   toast.success('Document uploaded successfully');
-        // }
-
-        // Simulate upload
-        await new Promise((resolve) => setTimeout(resolve, 1000));
         setDocuments((prev) => ({
           ...prev,
           [category]: {
@@ -380,9 +364,9 @@ export const CreateApplicationPage: React.FC = () => {
             category,
           },
         }));
-        toast.success('Document uploaded successfully');
+        toast.success('Document attached. It will be uploaded when you submit.');
       } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to upload document';
+        const errorMessage = error instanceof Error ? error.message : 'Failed to attach document';
         toast.error(errorMessage);
       } finally {
         setUploading((prev) => ({ ...prev, [category]: false }));
@@ -390,6 +374,55 @@ export const CreateApplicationPage: React.FC = () => {
     },
     []
   );
+
+  const uploadDocumentsForApplication = async (
+    applicationId: string,
+    docs: Record<string, DocumentFile>
+  ) => {
+    const uploaded: Array<{
+      id: string;
+      name: string;
+      type: string;
+      category: string;
+      url: string;
+      uploadedAt: string;
+    }> = [];
+
+    for (const doc of Object.values(docs)) {
+      if (!doc.file) {
+        throw new Error(`Missing file for ${doc.category}`);
+      }
+      const fileExt = doc.file.name.split('.').pop() || 'bin';
+      const fileName = `${Date.now()}-${doc.category}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `application-documents/${applicationId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, doc.file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message || `Failed to upload ${doc.name}`);
+      }
+
+      // Bucket is private — store path; public URL is not readable without signing.
+      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(filePath);
+
+      uploaded.push({
+        id: `DOC${Date.now()}-${doc.category}`,
+        name: doc.name || `${doc.category} document`,
+        type: doc.file.type || 'application/pdf',
+        category: doc.category,
+        path: filePath,
+        url: urlData?.publicUrl || filePath,
+        uploadedAt: new Date().toISOString(),
+      });
+    }
+
+    return uploaded;
+  };
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -440,44 +473,6 @@ export const CreateApplicationPage: React.FC = () => {
         ? user.email.trim().toLowerCase()
         : data.email.trim().toLowerCase();
 
-    // Check for blocking existing application
-    const customerEmail = resolvedCustomerEmail;
-    
-    // Load applications from Supabase
-    const supabaseResponse = await supabaseApiService.getApplications();
-    const allApplications: Application[] = supabaseResponse.status === 'SUCCESS' && supabaseResponse.data 
-      ? supabaseResponse.data 
-      : [];
-
-    const customerApplications = allApplications.filter(
-      (app) => app.customerEmail.toLowerCase() === customerEmail
-    );
-
-    // Note: 'submission_cancelled' is NOT a blocking status - users can create new applications after cancelling
-    const blockingStatuses: ApplicationStatus[] = [
-      'under_review',
-      'contract_signing_required',
-      'resubmission_required',
-      'contracts_submitted',
-      'contract_under_review',
-      'down_payment_required',
-      'down_payment_submitted',
-      'completed',
-    ];
-
-    const blockingApplication = customerApplications.find(
-      (app) => !['active', 'rejected'].includes(app.status) && blockingStatuses.includes(app.status)
-    );
-
-    if (blockingApplication) {
-      toast.error(
-        `You already have an application with status "${blockingApplication.status.replace(/_/g, ' ')}". ` +
-        `Please wait until your current application is approved (active) or rejected before applying for a new one.`
-      );
-      navigate(`/customer/my-applications/${blockingApplication.id}`);
-      return;
-    }
-    
     if (!vehicle) {
       toast.error('Vehicle information is missing');
       return;
@@ -492,6 +487,32 @@ export const CreateApplicationPage: React.FC = () => {
     try {
       setSubmitting(true);
       console.log('Starting application submission...');
+
+      // Blocking check via SECURITY DEFINER RPC (works for anon/guest; RLS SELECT does not).
+      const customerEmail = resolvedCustomerEmail;
+      const { data: blockingAppId, error: blockingRpcError } = await supabase.rpc(
+        'has_blocking_application',
+        { p_email: customerEmail }
+      );
+      // Fail closed — never allow submit when we cannot verify blocking status.
+      if (blockingRpcError) {
+        console.error('has_blocking_application RPC failed:', blockingRpcError.message);
+        toast.error(
+          'We could not verify whether you already have an application. Please try again.'
+        );
+        return;
+      }
+      if (typeof blockingAppId === 'string' && blockingAppId.length > 0) {
+        toast.error(
+          'You already have an application in progress. Please wait until it is approved or rejected before applying again.'
+        );
+        if (isAuthenticated) {
+          navigate(`/customer/my-applications/${blockingAppId}`);
+        } else {
+          navigate('/customer/auth/login');
+        }
+        return;
+      }
 
       /** When email confirmation is on, signUp returns session null — DB insert uses RPC instead of RLS. */
       let signupAuthUserId: string | undefined;
@@ -525,22 +546,11 @@ export const CreateApplicationPage: React.FC = () => {
               permissions: u.user_metadata?.permissions || [],
             };
             dispatch(setCredentials({ user: mappedUser, token: newSession.access_token }));
-            await supabase.auth.refreshSession();
-            const {
-              data: { user: createdUser },
-            } = await supabase.auth.getUser();
-            if (createdUser && !createdUser.email_confirmed_at) {
-              toast.success(
-                'Account created! Please check your email to verify your account before viewing applications.'
-              );
-            } else {
-              toast.success('Account created successfully!');
-            }
+            // Do not toast account success here — wait until the application row is saved.
           } else if (newUser?.id) {
+            // Email confirm pending: no JWT yet — create via RPC after this block.
+            // Do not toast success here; wait until the application row is saved.
             signupAuthUserId = newUser.id;
-            toast.success(
-              'Account created! Check your email to confirm your address — your application is being saved. After confirming, log in to track it under My Applications.'
-            );
           } else {
             toast.error('Account could not be created. Please try again or log in.');
             return;
@@ -617,20 +627,11 @@ export const CreateApplicationPage: React.FC = () => {
         console.error('❌ Error loading offers:', error);
       }
       
-      // Fallback to default offer if no offers found
-      const defaultOffer: Offer = selectedOffer || {
-        id: 'OFFER001',
-        name: 'Standard Offer',
-        annualRentRate: 12.0,
-        annualRentRateFunder: 4.5,
-        annualInsuranceRate: 2.5,
-        annualInsuranceRateProvider: 2.0,
-        isDefault: true,
-        status: 'active',
-        isAdmin: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      if (!selectedOffer) {
+        toast.error('No active financing offer is available. Please contact support.');
+        return;
+      }
+      const defaultOffer: Offer = selectedOffer;
 
       // Calculate tenure - use consistent format matching Config.tenure format
       // For full years: "X Years", for partial: "X Months"
@@ -715,14 +716,7 @@ export const CreateApplicationPage: React.FC = () => {
             annualRentalRate: annualRentRateDecimal, // Store the rate used for calculation
             schedule: schedule,
           },
-          documents: Object.values(documents).map((doc) => ({
-            id: `DOC${Date.now()}-${doc.category}`,
-            name: doc.name || `${doc.category} document`,
-            type: doc.file?.type || 'application/pdf',
-            category: doc.category,
-            url: doc.url || '',
-            uploadedAt: new Date().toISOString(),
-          })),
+          documents: [], // Uploaded after create with real applicationId
           bloxMembership: hasBloxMembership ? {
             isActive: true,
             membershipType: membershipType,
@@ -742,23 +736,53 @@ export const CreateApplicationPage: React.FC = () => {
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         console.log('Application created successfully:', supabaseResponse.data);
         const applicationId = supabaseResponse.data.id;
+
+        // Upload attached documents to Storage, then persist URLs on the application
+        if (Object.keys(documents).length > 0) {
+          try {
+            const uploadedDocs = await uploadDocumentsForApplication(applicationId, documents);
+            const updateDocs = await supabaseApiService.updateApplication(applicationId, {
+              documents: uploadedDocs,
+            });
+            if (updateDocs.status !== 'SUCCESS') {
+              throw new Error(updateDocs.message || 'Failed to save document URLs');
+            }
+          } catch (docError: unknown) {
+            const msg = docError instanceof Error ? docError.message : 'Document upload failed';
+            console.error('❌ Document upload after create failed:', docError);
+            toast.error(
+              `Application created, but document upload failed: ${msg}. Please upload documents from My Applications.`
+            );
+            navigate(`/customer/my-applications/${applicationId}`);
+            return;
+          }
+        }
         
-        // Create notification for the customer
-        try {
-          await supabaseApiService.createNotification({
+        // Notification is best-effort — never block navigation on it
+        void supabaseApiService
+          .createNotification({
             userEmail: resolvedCustomerEmail,
             type: 'success',
             title: 'Application Submitted',
             message: `Your application #${applicationId.slice(0, 8)} has been submitted successfully and is now under review.`,
             link: `/customer/my-applications/${applicationId}`,
+          })
+          .catch((notificationError) => {
+            console.error('Failed to create notification:', notificationError);
           });
-        } catch (notificationError) {
-          console.error('Failed to create notification:', notificationError);
-          // Don't block the flow if notification fails
-        }
         
         // If account was just created and email needs verification
-        if (!isAuthenticated) {
+        if (signupAuthUserId) {
+          toast.success(
+            'Account created! Check your email to confirm your address — your application is saved. After confirming, log in to track it under My Applications.'
+          );
+          navigate('/customer/auth/login', {
+            state: {
+              message:
+                'Please check your email to verify your account. Once verified, you can login to view your applications.',
+            },
+          });
+        } else if (!isAuthenticated) {
           const { data: { user } } = await supabase.auth.getUser();
           if (user && !user.email_confirmed_at) {
             toast.success('Application submitted! Please verify your email to view your applications.');
@@ -768,7 +792,6 @@ export const CreateApplicationPage: React.FC = () => {
               } 
             });
           } else {
-            // User is authenticated or email doesn't need verification
             toast.success('Application submitted successfully!');
             navigate('/customer/my-applications');
           }

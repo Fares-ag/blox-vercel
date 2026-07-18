@@ -27,7 +27,14 @@ import {
 import { toast } from 'react-toastify';
 import './ApplicationsListPage.scss';
 
-type StatusFilter = 'all' | 'inprogress' | 'active' | 'rejected' | 'completed' | 'cancelled';
+type StatusFilter =
+  | 'all'
+  | 'inprogress'
+  | 'contracts'
+  | 'active'
+  | 'rejected'
+  | 'completed'
+  | 'cancelled';
 
 type ScheduleHealth = 'on_track' | 'overdue' | 'none';
 
@@ -82,7 +89,7 @@ const brandChip = {
 export const ApplicationsListPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
-  const { list, loading, pagination } = useAppSelector((state) => state.applications);
+  const { list, loading, pagination, error: listError } = useAppSelector((state) => state.applications);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [activeTab, setActiveTab] = useState(0);
@@ -103,7 +110,23 @@ export const ApplicationsListPage: React.FC = () => {
   const filterApplicationsByStatus = useCallback((applications: Application[], filter: StatusFilter): Application[] => {
     if (filter === 'all') return applications;
     if (filter === 'inprogress') {
-      return applications.filter((app) => app.status === 'under_review' || app.status === 'resubmission_required');
+      return applications.filter(
+        (app) =>
+          app.status === 'under_review' ||
+          app.status === 'resubmission_required' ||
+          app.status === 'draft'
+      );
+    }
+    if (filter === 'contracts') {
+      return applications.filter((app) =>
+        [
+          'contract_signing_required',
+          'contracts_submitted',
+          'contract_under_review',
+          'down_payment_required',
+          'down_payment_submitted',
+        ].includes(app.status)
+      );
     }
     if (filter === 'active') return applications.filter((app) => app.status === 'active');
     if (filter === 'rejected') return applications.filter((app) => app.status === 'rejected');
@@ -280,18 +303,26 @@ export const ApplicationsListPage: React.FC = () => {
 
   const handleTabChange = useCallback((_: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
-    const statusMap: StatusFilter[] = ['all', 'inprogress', 'active', 'rejected', 'completed', 'cancelled'];
+    const statusMap: StatusFilter[] = [
+      'all',
+      'inprogress',
+      'contracts',
+      'active',
+      'rejected',
+      'completed',
+      'cancelled',
+    ];
     setStatusFilter(statusMap[newValue]);
     dispatch(setPage(1));
   }, [dispatch]);
 
-  // Demo metrics for Applications overview cards (placeholder book size)
+  // Demo portfolio metrics (QAR) — coherent book: 76 apps × ~QAR 311k avg loan.
   const metrics = useMemo(
     () => ({
-      totalPayable: 23_450_000,
-      totalReceivable: 23_875_000,
-      averagePaymentSize: 18_650,
-      activeApplications: 42,
+      totalLoanValue: 23_640_000,
+      totalReceivable: 18_975_000,
+      averagePaymentSize: 9_875,
+      applicationCount: 76,
     }),
     []
   );
@@ -517,29 +548,29 @@ export const ApplicationsListPage: React.FC = () => {
 
       <Box className="metrics-grid">
         <Card
-          title="Total Payable"
-          value={metrics.totalPayable}
+          title="Total loan value"
+          value={metrics.totalLoanValue}
           moduleType="currency"
           icon={<AttachMoney sx={{ color: 'var(--blox-black)' }} />}
           className="metric-card payable"
         />
         <Card
-          title="Total Receivable"
+          title="Total receivable"
           value={metrics.totalReceivable}
           moduleType="currency"
           icon={<AccountBalance sx={{ color: 'var(--blox-black)' }} />}
           className="metric-card receivable"
         />
         <Card
-          title="Average Payment Size"
+          title="Average payment size"
           value={metrics.averagePaymentSize}
           moduleType="currency"
           icon={<TrendingUp sx={{ color: 'var(--blox-black)' }} />}
           className="metric-card profitability"
         />
         <Card
-          title="Active Applications"
-          value={metrics.activeApplications}
+          title="Applications in view"
+          value={metrics.applicationCount}
           moduleType="number"
           icon={<People sx={{ color: 'var(--blox-black)' }} />}
           className="metric-card active"
@@ -550,6 +581,7 @@ export const ApplicationsListPage: React.FC = () => {
         <Tabs value={activeTab} onChange={handleTabChange} className="status-tabs">
           <Tab label="All" />
           <Tab label="In progress" />
+          <Tab label="Contracts / payments" />
           <Tab label="Active" />
           <Tab label="Rejected" />
           <Tab label="Completed" />
@@ -587,10 +619,26 @@ export const ApplicationsListPage: React.FC = () => {
           <TableSkeleton rows={8} columns={7} />
         ) : !loading && list.length === 0 ? (
           <EmptyState
-            title="No applications match"
-            message="Try another status tab, clear search, or reset filters."
-            actionLabel={Object.keys(advancedFilters).length > 0 ? 'Clear filters' : undefined}
-            onAction={Object.keys(advancedFilters).length > 0 ? handleClearAdvancedFilters : undefined}
+            title={listError ? 'Failed to load applications' : 'No applications match'}
+            message={
+              listError
+                ? String(listError)
+                : 'Try another status tab, clear search, or reset filters.'
+            }
+            actionLabel={
+              listError
+                ? 'Retry'
+                : Object.keys(advancedFilters).length > 0
+                  ? 'Clear filters'
+                  : undefined
+            }
+            onAction={
+              listError
+                ? () => loadApplications(true)
+                : Object.keys(advancedFilters).length > 0
+                  ? handleClearAdvancedFilters
+                  : undefined
+            }
           />
         ) : (
           <Table

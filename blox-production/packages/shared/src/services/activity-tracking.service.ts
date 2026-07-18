@@ -148,41 +148,25 @@ class ActivityTrackingService {
         resourceType: activityLog.resourceType,
       });
       
-      const { data: insertData, error } = await supabase
-        .from('activity_logs')
-        .insert({
-          user_id: activityLog.userId || null,
-          user_email: activityLog.userEmail,
+      // Fail closed: only SECURITY DEFINER RPC (no direct client INSERT — forgeable)
+      const { error: rpcError } = await supabase.rpc('log_activity_secure', {
+        p_action: activityLog.actionType,
+        p_resource_type: activityLog.resourceType,
+        p_resource_id: activityLog.resourceId || null,
+        p_resource_name: activityLog.resourceName || null,
+        p_description: activityLog.description,
+        p_metadata: {
+          ...(activityLog.metadata || {}),
           user_role: activityLog.userRole,
-          action_type: activityLog.actionType,
-          resource_type: activityLog.resourceType,
-          resource_id: activityLog.resourceId || null,
-          resource_name: activityLog.resourceName || null,
-          description: activityLog.description,
-          metadata: activityLog.metadata,
-          ip_address: activityLog.ipAddress || null,
-          user_agent: activityLog.userAgent || null,
-          session_id: activityLog.sessionId || null,
-        })
-        .select();
+          user_email: activityLog.userEmail,
+        },
+      });
 
-      if (error) {
-        // Log detailed error information
-        console.error('[ActivityTracking] Failed to log activity:', error);
-        console.error('[ActivityTracking] Error details:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-        });
-        
-        // Check if it's an RLS policy error
-        if (error.code === '42501' || error.message?.includes('row-level security') || error.message?.includes('policy')) {
-          console.error('[ActivityTracking] RLS Policy Error: INSERT is being blocked. Please check the INSERT policy on activity_logs table.');
-        }
-      } else {
-        console.log('[ActivityTracking] Activity logged successfully:', insertData);
+      if (rpcError) {
+        console.error('[ActivityTracking] log_activity_secure failed:', rpcError);
+        return;
       }
+      console.log('[ActivityTracking] Activity logged via log_activity_secure');
     } catch (error) {
       // Log the error but don't throw - activity logging should not break the app
       console.error('[ActivityTracking] Activity logging exception:', error);
@@ -287,8 +271,7 @@ class ActivityTrackingService {
           const currentRole = authUser?.user_metadata?.role || authUser?.user_metadata?.user_role || 'unknown';
           throw new Error(
             `Access denied: You must be logged in as super_admin to view activity logs. ` +
-            `Current user: ${authUser?.email || 'unknown'}, Current role: ${currentRole}. ` +
-            `Please log out and log in as ahmed@blox.market (super_admin).`
+            `Current role: ${currentRole || 'unknown'}.`
           );
         }
         

@@ -58,6 +58,11 @@ export const ContractSigningPage: React.FC = () => {
       const supabaseResponse = await supabaseApiService.getApplicationById(id);
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
+        if (supabaseResponse.data.status !== 'contract_signing_required') {
+          toast.error('Contract signing is only available when a contract is ready for signature.');
+          navigate(`/customer/my-applications/${id}`);
+          return;
+        }
         setApplication(supabaseResponse.data);
       } else {
         throw new Error(supabaseResponse.message || 'Application not found');
@@ -119,6 +124,12 @@ export const ContractSigningPage: React.FC = () => {
       return;
     }
 
+    if (application.status !== 'contract_signing_required') {
+      toast.error('Contract signing is only available when a contract is ready for signature.');
+      navigate(`/customer/my-applications/${id}`);
+      return;
+    }
+
     try {
       setUploading(true);
       
@@ -145,14 +156,15 @@ export const ContractSigningPage: React.FC = () => {
         throw new Error(uploadError.message || 'Failed to upload signed contract');
       }
 
-      // Get public URL
+      // Private bucket — persist storage path (signed on read). Keep public URL shape for legacy readers.
       const { data: urlData } = supabase.storage
         .from('documents')
         .getPublicUrl(filePath);
 
-      const contractUrl = urlData.publicUrl;
+      const contractUrl = filePath;
+      const legacyPublicUrl = urlData?.publicUrl || filePath;
 
-      console.log('✅ Contract uploaded to storage:', contractUrl);
+      console.log('✅ Contract uploaded to storage:', { contractUrl, legacyPublicUrl });
       
       // Update application in Supabase
       console.log('📤 Updating application with contract:', { 

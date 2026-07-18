@@ -30,7 +30,7 @@ class AuthService {
 
         if (is406Error) {
           // Silently use metadata - this is expected if RLS blocks access
-          return roleFromMetadata || 'customer';
+          return roleFromMetadata || 'unknown';
         }
 
         if (!error && data?.role) {
@@ -56,12 +56,12 @@ class AuthService {
                                  emailError?.message?.includes('Not Acceptable');
 
           if (isEmail406Error) {
-            return roleFromMetadata || 'customer';
+            return roleFromMetadata || 'unknown';
           }
         }
 
-        // Default to metadata if available, otherwise customer
-        return roleFromMetadata || 'customer';
+        // Default to metadata if available, otherwise unknown
+        return roleFromMetadata || 'unknown';
       } catch (error: any) {
         // If it's a 406 or table access error, use metadata immediately
         const is406Error = (error as any)?.status === 406 || 
@@ -70,9 +70,9 @@ class AuthService {
                           error?.message?.includes('Not Acceptable');
 
         if (is406Error) {
-          return roleFromMetadata || 'customer';
+          return roleFromMetadata || 'unknown';
         }
-        return roleFromMetadata || 'customer';
+        return roleFromMetadata || 'unknown';
       }
     })();
 
@@ -92,7 +92,7 @@ class AuthService {
     // If timeout, use metadata immediately
     if (result === 'timeout') {
       devLogger.debug('Users table query timed out, using user_metadata (this is expected if users table is not accessible)');
-      return roleFromMetadata || 'customer';
+      return roleFromMetadata || 'unknown';
     }
 
     return result as string;
@@ -274,7 +274,7 @@ class AuthService {
           name: user.user_metadata?.first_name && user.user_metadata?.last_name
             ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim()
             : user.email || '',
-      role: roleRaw || 'customer',
+      role: roleRaw || 'unknown',
           permissions: user.user_metadata?.permissions || [],
         };
   }

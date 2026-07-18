@@ -8,6 +8,7 @@ interface AuthGuardProps {
   children: React.ReactNode;
 }
 
+/** Super Admin portal: super_admin only. Missing/unknown role → deny. */
 export const AuthGuard = ({ children }: AuthGuardProps) => {
   const { isAuthenticated, user, initialized } = useAppSelector((state) => state.auth);
   const location = useLocation();
@@ -24,8 +25,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     return <Navigate to="/super-admin/auth/login" state={{ from: location }} replace />;
   }
 
-  // Super admin app should be super_admin-only
-  if (user?.role && user.role !== 'super_admin') {
+  if (user?.role !== 'super_admin') {
     return <Navigate to="/super-admin/auth/login?reason=not_super_admin" replace />;
   }
 

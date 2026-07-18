@@ -58,7 +58,7 @@ import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { formatDate, formatCurrency, formatDateTable } from '@shared/utils/formatters';
 import { parseTenureToMonths } from '@shared/utils/tenure.utils';
 import { calculateOwnership, calculateBalloonOwnership } from '@shared/utils/ownership.utils';
-import { aggregateDailyScheduleToMonthly, isScheduleLikelyDaily, normalizeInstallmentInterval } from '@shared/utils';
+import { aggregateDailyScheduleToMonthly, isScheduleLikelyDaily, normalizeInstallmentInterval, openDocumentsStorageRef } from '@shared/utils';
 import { toast } from 'react-toastify';
 import moment from 'moment';
 import { ContractGenerationForm, type ContractFormData } from '../../components/ContractGenerationForm/ContractGenerationForm';
@@ -71,6 +71,15 @@ import { supabase } from '@shared/services/supabase.service';
 import './ApplicationDetailPage.scss';
 
 // Using only Supabase - no API or localStorage fallbacks
+
+async function openApplicationDocument(doc: Pick<Document, 'url'> & { path?: string }) {
+  try {
+    await openDocumentsStorageRef(supabase, { path: doc.path, url: doc.url });
+  } catch (error) {
+    console.error('Failed to open document', error);
+    toast.error('Unable to open document');
+  }
+}
 
 export const ApplicationDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -223,12 +232,8 @@ export const ApplicationDetailPage: React.FC = () => {
           throw new Error(uploadError.message || 'Failed to upload proof document');
         }
 
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from('documents')
-          .getPublicUrl(filePath);
-
-        proofDocumentUrl = urlData.publicUrl;
+        // Private bucket — store path (signed on read).
+        proofDocumentUrl = filePath;
         proofDocumentName = proofFile.name;
       }
 
@@ -236,69 +241,79 @@ export const ApplicationDetailPage: React.FC = () => {
         throw new Error('Installment plan is missing for this application');
       }
 
-      // Update payment schedule
       const currentSchedule = selected.installmentPlan.schedule || [];
-      const updatedSchedule = [...currentSchedule];
-      const paymentToUpdate = updatedSchedule[selectedPaymentIndex];
-      const paymentAmount = paymentToUpdate.amount;
-      
-      updatedSchedule[selectedPaymentIndex] = {
-        ...paymentToUpdate,
-        status: 'paid' as PaymentStatus,
-        paidDate: moment().format('YYYY-MM-DD'),
-        paymentMethod,
-        proofDocument: proofDocumentUrl ? {
-          name: proofDocumentName || 'proof.pdf',
-          url: proofDocumentUrl,
-          uploadedAt: new Date().toISOString(),
-        } : undefined,
-      };
-
-      // Update application in Supabase
-      const updateResponse = await supabaseApiService.updateApplication(id, {
-        installmentPlan: {
-          ...selected.installmentPlan,
-          schedule: updatedSchedule,
-        },
-      });
-
-      if (updateResponse.status === 'SUCCESS') {
-        toast.success(`Installment #${selectedPaymentIndex + 1} marked as paid`);
-        
-        // Log payment activity
-        try {
-          const { activityTrackingService } = await import('@shared/services');
-          await activityTrackingService.logActivity('payment', 'payment', {
-            resourceId: id,
-            resourceName: `Payment #${selectedPaymentIndex + 1} for Application #${id.slice(0, 8)}`,
-            description: `Payment confirmed: ${formatCurrency(paymentAmount)} via ${paymentMethod}`,
-            metadata: {
-              applicationId: id,
-              paymentIndex: selectedPaymentIndex,
-              amount: paymentAmount,
-              paymentMethod: paymentMethod,
-              hasProof: !!proofDocumentUrl,
-            },
-          });
-        } catch (error) {
-          console.error('Failed to log payment activity:', error);
-        }
-        
-        // Create notification for customer
-        await createNotificationForCustomer(
-          'success',
-          'Payment Confirmed',
-          `Your payment of ${formatCurrency(paymentAmount)} for installment #${selectedPaymentIndex + 1} has been confirmed.`,
-          `/customer/my-applications/${id}`
-        );
-        
-        // Reload application details
-        await loadApplicationDetails(id);
-        setPaymentDialogOpen(false);
-        setSelectedPaymentIndex(null);
-      } else {
-        throw new Error(updateResponse.message || 'Failed to update payment');
+      const paymentToUpdate = currentSchedule[selectedPaymentIndex];
+      if (!paymentToUpdate?.dueDate) {
+        throw new Error('Payment due date is missing');
       }
+      const paymentAmount =
+        paymentToUpdate.remainingAmount ?? paymentToUpdate.amount ?? 0;
+
+      // Dual-write payment_schedules + installment_plan JSON
+      const markResponse = await supabaseApiService.markInstallmentAsPaid(
+        id,
+        paymentToUpdate.dueDate,
+        paymentAmount,
+        proofDocumentUrl
+      );
+
+      if (markResponse.status !== 'SUCCESS' || !markResponse.data) {
+        throw new Error(markResponse.message || 'Failed to mark installment as paid');
+      }
+
+      // Persist payment method / proof on the JSON schedule row
+      const refreshedPlan = markResponse.data.installmentPlan;
+      if (refreshedPlan?.schedule) {
+        const withMethod = refreshedPlan.schedule.map((p, idx) =>
+          idx === selectedPaymentIndex || p.dueDate === paymentToUpdate.dueDate
+            ? {
+                ...p,
+                paymentMethod,
+                proofDocument: proofDocumentUrl
+                  ? {
+                      name: proofDocumentName || 'proof.pdf',
+                      url: proofDocumentUrl,
+                      uploadedAt: new Date().toISOString(),
+                    }
+                  : p.proofDocument,
+              }
+            : p
+        );
+        await supabaseApiService.updateApplication(id, {
+          installmentPlan: { ...refreshedPlan, schedule: withMethod } as any,
+        });
+      }
+
+      toast.success(`Installment #${selectedPaymentIndex + 1} marked as paid`);
+
+      try {
+        const { activityTrackingService } = await import('@shared/services');
+        await activityTrackingService.logActivity('payment', 'payment', {
+          resourceId: id,
+          resourceName: `Payment #${selectedPaymentIndex + 1} for Application #${id.slice(0, 8)}`,
+          description: `Payment confirmed: ${formatCurrency(paymentAmount)} via ${paymentMethod}`,
+          metadata: {
+            applicationId: id,
+            paymentIndex: selectedPaymentIndex,
+            amount: paymentAmount,
+            paymentMethod: paymentMethod,
+            hasProof: !!proofDocumentUrl,
+          },
+        });
+      } catch (error) {
+        console.error('Failed to log payment activity:', error);
+      }
+
+      await createNotificationForCustomer(
+        'success',
+        'Payment Confirmed',
+        `Your payment of ${formatCurrency(paymentAmount)} for installment #${selectedPaymentIndex + 1} has been confirmed.`,
+        `/customer/my-applications/${id}`
+      );
+
+      await loadApplicationDetails(id);
+      setPaymentDialogOpen(false);
+      setSelectedPaymentIndex(null);
     } catch (error: unknown) {
       console.error('❌ Failed to confirm payment:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to confirm payment';
@@ -333,8 +348,7 @@ export const ApplicationDetailPage: React.FC = () => {
     
     const monthlyAmount = application.installmentPlan.monthlyAmount || 0;
 
-    // Determine status using month-level comparison for consistency
-    // Past month = paid, current month = active, future = upcoming
+    // Never invent paid history — past unpaid periods are overdue, not paid
     for (let i = 0; i < tenureMonths; i++) {
       const dueDate = moment(startDate).add(i, 'months');
       const isPast = dueDate.isBefore(now, 'month');
@@ -342,7 +356,8 @@ export const ApplicationDetailPage: React.FC = () => {
 
       let status: PaymentStatus;
       if (isPast) {
-        status = 'paid';
+        // Past unpaid periods are due (never invent "paid")
+        status = 'due';
       } else if (isCurrentMonth) {
         status = 'active';
       } else {
@@ -353,7 +368,6 @@ export const ApplicationDetailPage: React.FC = () => {
         dueDate: dueDate.format('YYYY-MM-DD'),
         amount: monthlyAmount,
         status,
-        paidDate: isPast ? dueDate.format('YYYY-MM-DD') : undefined,
       });
     }
 
@@ -1741,12 +1755,12 @@ export const ApplicationDetailPage: React.FC = () => {
                       </Typography>
                       <Box className="document-actions">
                         <Tooltip title="View">
-                          <IconButton size="small" onClick={() => window.open(doc.url, '_blank')}>
+                          <IconButton size="small" onClick={() => void openApplicationDocument(doc)}>
                             <Visibility fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Download">
-                          <IconButton size="small" onClick={() => window.open(doc.url, '_blank')}>
+                          <IconButton size="small" onClick={() => void openApplicationDocument(doc)}>
                             <Download fontSize="small" />
                           </IconButton>
                         </Tooltip>
@@ -2225,12 +2239,12 @@ export const ApplicationDetailPage: React.FC = () => {
                           </Box>
                           <Box>
                             <Tooltip title="View">
-                              <IconButton size="small" onClick={() => window.open(doc.url, '_blank')}>
+                              <IconButton size="small" onClick={() => void openApplicationDocument(doc)}>
                                 <Visibility fontSize="small" />
                               </IconButton>
                             </Tooltip>
                             <Tooltip title="Download">
-                              <IconButton size="small" onClick={() => window.open(doc.url, '_blank')}>
+                              <IconButton size="small" onClick={() => void openApplicationDocument(doc)}>
                                 <Download fontSize="small" />
                               </IconButton>
                             </Tooltip>

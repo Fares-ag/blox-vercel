@@ -56,19 +56,18 @@ export const DocumentUploadStep: React.FC<StepProps> = ({ data, updateData }) =>
           throw new Error(uploadError.message || 'Failed to upload file to storage');
         }
 
-        // Get public URL
+        // Private bucket — store path for signed reads.
         const { data: urlData } = supabase.storage
           .from('documents')
           .getPublicUrl(filePath);
-
-        const publicUrl = urlData.publicUrl;
 
         const newDoc = {
           id: `DOC${Date.now()}-${category}`,
           name: file.name,
           type: file.type,
           category,
-          url: publicUrl, // Store Supabase Storage URL
+          path: filePath,
+          url: urlData?.publicUrl || filePath,
           uploadedAt: new Date().toISOString(),
         };
 

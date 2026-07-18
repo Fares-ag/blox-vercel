@@ -160,7 +160,6 @@ export const AppRoutes: React.FC = () => {
 
       {/* Default Redirect */}
       <Route path="/" element={<Navigate to="/customer/home" replace />} />
-      <Route path="/customer" element={<Navigate to="/customer/home" replace />} />
       <Route path="*" element={<Navigate to="/customer/home" replace />} />
     </Routes>
   );

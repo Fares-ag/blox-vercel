@@ -8,6 +8,7 @@ interface AuthState {
   token: string | null;
   isAuthenticated: boolean;
   loading: boolean;
+  initialized: boolean;
   error: string | null;
 }
 
@@ -16,6 +17,7 @@ const initialState: AuthState = {
   token: customerAuthService.getTokenSync(),
   isAuthenticated: customerAuthService.isAuthenticatedSync(),
   loading: false,
+  initialized: false,
   error: null,
 };
 
@@ -33,6 +35,7 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
+      state.initialized = true;
       state.error = null;
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
@@ -41,9 +44,11 @@ const authSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
+    setInitialized: (state) => {
+      state.initialized = true;
+    },
   },
 });
 
-export const { setCredentials, logout, setLoading, setError } = authSlice.actions;
+export const { setCredentials, logout, setLoading, setError, setInitialized } = authSlice.actions;
 export default authSlice.reducer;
-

@@ -9,7 +9,7 @@
 The signature calculation is failing. This could be due to:
 
 1. **Wrong KeyId or Secret Key**
-   - Verify the KeyId `536f4a14-3f0a-42d6-b584-dfe2b8bdc3ed` matches SkipCash dashboard
+   - Verify the KeyId `<REDACTED_KEY_ID>` matches SkipCash dashboard
    - Verify the Secret Key is the correct one (not webhook key)
 
 2. **Combined Data String Format**
@@ -25,7 +25,7 @@ The signature calculation is failing. This could be due to:
 
 1. Go to SkipCash Dashboard → **Sandbox** → **Credentials**
 2. Verify:
-   - **Key ID** matches: `536f4a14-3f0a-42d6-b584-dfe2b8bdc3ed`
+   - **Key ID** matches: `<REDACTED_KEY_ID>`
    - **Key Secret** matches the long string we added
    - These are the **API credentials**, not webhook credentials
 
@@ -33,8 +33,8 @@ The signature calculation is failing. This could be due to:
 
 1. Go to Supabase Dashboard → **Settings** → **Edge Functions** → **Secrets**
 2. Verify:
-   - `SKIPCASH_KEY_ID` = `536f4a14-3f0a-42d6-b584-dfe2b8bdc3ed`
-   - `SKIPCASH_SECRET_KEY` = The long string (starts with `BJZAz2n0CduW8O2+27u6XLLiZlqsdhia99coxTuVe6ZMlv9b7etZ0KNn0106y89RI279OBmC0TzI0Q+B6SQe0Bx8nQ1Vz7alzpqlHRlDcDrQG4DrizrTN2kY33UYX8d/63AAJbM8w5iSmYSvsile6kR5eZ9Z4bTSA0uxGu7+VIrK9AXdfHV7hLdi0iruVUC8BAcJYqrGvrA9mkClrXy9tsN7GQqxNMvBa3BvQnuKJBwU/ebq0cE1s+ugGqUyF5PPNG3OG3yjCb0NbZ6hTRcrXAqvhUcevK1lMiNfQtjLbTMLvv42fMiLgDbuabqNs11kErYeiuEXpkkazfnRysDAC0aS3bOxm6XBjgHucvfUMAehMNycfDi6eUSroPgfh3ZfPE/gcLZPgj2ptCmGYPHUyPnzXJG+MDcNDR9ZjOKGJ1EnN3pEgljMQcCmerDtux+yGx1QJBVe+SJW9w/UyzFEWxMuPyvzBmvWk4+NbErxiBVWEZQFiFJElHAh8hSDTBN6j76Bvt+7qwsMHeA86wH2kQ==`)
+   - `SKIPCASH_KEY_ID` = `<REDACTED_KEY_ID>`
+   - `SKIPCASH_SECRET_KEY` = The long string (starts with `<REDACTED_SKIPCASH_SECRET_KEY>`)
    - Make sure there are NO extra spaces
    - Make sure the entire secret is copied (ends with `==`)
 

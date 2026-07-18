@@ -77,24 +77,12 @@ class VehicleService {
    * Get vehicle by ID (public - no auth required)
    */
   async getVehicleById(id: string): Promise<ApiResponse<Product>> {
-    const seeded = CATALOG_SEED_VEHICLES.find((v) => v.id === id);
-    if (seeded) {
-      if (seeded.status !== 'active' || seeded.price > CUSTOMER_MAX_VEHICLE_PRICE_QAR) {
-        return {
-          status: 'ERROR',
-          message: 'This vehicle is not available',
-          data: {} as Product,
-        };
-      }
-      return { status: 'SUCCESS', data: seeded, message: 'Vehicle loaded from catalog seed' };
-    }
-
-    // Use Supabase products table directly
+    // Only products that exist in Supabase are apply-eligible (FK on applications.vehicle_id).
     const response = await supabaseApiService.getProductById(id);
     if (response.status !== 'SUCCESS' || !response.data) {
       return {
         status: 'ERROR',
-        message: response.message || 'Failed to load vehicle from Supabase',
+        message: response.message || 'Vehicle not found',
         data: {} as Product,
       };
     }
@@ -108,7 +96,12 @@ class VehicleService {
         data: {} as Product,
       };
     }
-    return response;
+    const seeded = CATALOG_SEED_VEHICLES.find((v) => v.id === id);
+    return {
+      status: 'SUCCESS',
+      data: seeded ? { ...response.data, ...seeded, id: response.data.id } : response.data,
+      message: response.message,
+    };
   }
 
   /**

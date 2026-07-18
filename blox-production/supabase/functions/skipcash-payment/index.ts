@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  resolveApplicationPayable,
+  validateClientAmount,
+  resolveUseSandbox,
+} from "../_shared/payment-schedule.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -225,13 +230,14 @@ serve(async (req) => {
     }
 
     // Get SkipCash credentials from environment variables
+    // SKIPCASH_USE_SANDBOX must be explicitly "true" or "false" (no implicit default).
     const skipCashConfig = {
       sandboxURL: Deno.env.get('SKIPCASH_SANDBOX_URL') || 'https://skipcashtest.azurewebsites.net',
       productionURL: Deno.env.get('SKIPCASH_PRODUCTION_URL') || 'https://api.skipcash.app',
       secretKey: Deno.env.get('SKIPCASH_SECRET_KEY') || '',
       keyId: Deno.env.get('SKIPCASH_KEY_ID') || '',
       clientId: Deno.env.get('SKIPCASH_CLIENT_ID') || '',
-      useSandbox: Deno.env.get('SKIPCASH_USE_SANDBOX') !== 'false', // Default to sandbox for safety
+      useSandbox: resolveUseSandbox(),
     };
 
     // Check credentials
@@ -318,6 +324,85 @@ serve(async (req) => {
           throw e; // Re-throw validation errors
         }
         // Ignore JSON parse errors (custom1 might not be JSON)
+      }
+    }
+
+    // SERVER-SIDE AMOUNT CAP for application installments / settlements
+    // Client may pay less (partial / discount) but never more than remaining balance.
+    let resolvedPaymentScheduleId: string | null = null;
+    let resolvedDueDate: string | null = null;
+    if (applicationId) {
+      const serviceClient = createClient(supabaseUrl, supabaseServiceKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      });
+
+      let customObj: Record<string, unknown> = {};
+      try {
+        customObj = paymentDetails.custom1 ? JSON.parse(paymentDetails.custom1) : {};
+      } catch {
+        customObj = {};
+      }
+
+      const payable = await resolveApplicationPayable(serviceClient, applicationId, {
+        isSettlement: !!customObj.isSettlement,
+        paymentScheduleId: (customObj.paymentScheduleId as string) || null,
+        dueDate: (customObj.dueDate as string) || null,
+      });
+
+      if (payable.maxPayable <= 0) {
+        throw new Error('No remaining balance to pay for this application');
+      }
+
+      paymentDetails.amount = validateClientAmount(
+        Number(paymentDetails.amount),
+        payable.maxPayable
+      );
+
+      resolvedPaymentScheduleId = payable.targetRow?.id || null;
+      resolvedDueDate = payable.targetDueDate;
+
+      // Enrich custom1 so webhook can dual-write the correct schedule row
+      if (!customObj.isSettlement) {
+        if (resolvedPaymentScheduleId) {
+          customObj.paymentScheduleId = resolvedPaymentScheduleId;
+        }
+        if (resolvedDueDate) {
+          customObj.dueDate = resolvedDueDate;
+        }
+        paymentDetails.custom1 = JSON.stringify(customObj);
+      }
+
+      // Soft idempotency: reject duplicate pending sessions for same schedule within 2 minutes
+      if (!customObj.isSettlement && resolvedPaymentScheduleId) {
+        try {
+          const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
+          const { data: pendingRows } = await serviceClient
+            .from('payment_transactions')
+            .select('id, transaction_id, status, created_at')
+            .eq('application_id', applicationId)
+            .eq('status', 'pending')
+            .eq('payment_schedule_id', resolvedPaymentScheduleId)
+            .gte('created_at', twoMinutesAgo)
+            .limit(5);
+
+          if (pendingRows && pendingRows.length > 0) {
+            console.warn('Duplicate pending payment session detected', {
+              applicationId,
+              resolvedPaymentScheduleId,
+              pendingCount: pendingRows.length,
+            });
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error:
+                  'A payment session is already in progress for this installment. Please wait a moment or complete the existing checkout.',
+              }),
+              { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+            );
+          }
+        } catch (idempotencyErr) {
+          console.warn('Pending-session idempotency check skipped:', idempotencyErr);
+        }
       }
     }
 
@@ -527,45 +612,65 @@ serve(async (req) => {
       }
     }
 
-    // Create payment transaction record (card_type: credit vs debit for analytics)
-    if (applicationId) {
-      try {
-        let cardType: string | null = null;
-        if (paymentDetails.custom1) {
-          try {
-            const customData = JSON.parse(paymentDetails.custom1);
-            const pm = customData.paymentMethod;
-            if (pm === 'credit_card') cardType = 'credit';
-            else if (pm === 'debit_card') cardType = 'debit';
-          } catch (_) {
-            /* ignore */
+    // SkipCash returns: resultObj.payUrl and resultObj.id
+    const resultObj = json.resultObj || {};
+
+    // Create payment transaction record (installment or credit top-up)
+    try {
+      let cardType: string | null = null;
+      let isCreditTopup = false;
+      let customEmail: string | null = null;
+      if (paymentDetails.custom1) {
+        try {
+          const customData = JSON.parse(paymentDetails.custom1);
+          const pm = customData.paymentMethod;
+          if (pm === 'credit_card') cardType = 'credit';
+          else if (pm === 'debit_card') cardType = 'debit';
+          isCreditTopup = customData.type === 'credit_topup';
+          if (typeof customData.email === 'string' && customData.email.trim()) {
+            customEmail = customData.email.trim().toLowerCase();
           }
+        } catch (_) {
+          /* ignore */
         }
+      }
+
+      const payerEmail = (
+        customEmail ||
+        (typeof paymentDetails.email === 'string' ? paymentDetails.email.trim().toLowerCase() : '') ||
+        ''
+      ) || null;
+
+      if (applicationId || isCreditTopup) {
         const insertPayload: Record<string, unknown> = {
           application_id: applicationId,
           amount: paymentDetails.amount,
           method: 'card',
           status: 'pending',
           transaction_id: paymentDetails.transactionId,
+          payer_email: payerEmail,
         };
+        if (resultObj?.id) {
+          (insertPayload as any).skipcash_payment_id = resultObj.id;
+        }
+        if (resolvedPaymentScheduleId) {
+          (insertPayload as any).payment_schedule_id = resolvedPaymentScheduleId;
+        }
         if (cardType) (insertPayload as any).card_type = cardType;
+
         const { error: insertError } = await supabaseClient
           .from('payment_transactions')
           .insert(insertPayload);
-        
+
         if (insertError) {
           console.error('Failed to create payment transaction record:', insertError);
-          // Don't fail the request if DB insert fails
         }
-      } catch (err) {
-        console.error('Error creating payment transaction record:', err);
-        // Don't fail the request if DB insert fails
       }
+    } catch (err) {
+      console.error('Error creating payment transaction record:', err);
     }
 
-    // SkipCash returns: resultObj.payUrl and resultObj.id
     // Map to our expected format for frontend compatibility
-    const resultObj = json.resultObj || {};
     const paymentResponse = {
       resultObj: {
         ...resultObj,

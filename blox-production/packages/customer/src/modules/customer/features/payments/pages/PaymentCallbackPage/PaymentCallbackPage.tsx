@@ -85,6 +85,13 @@ export const PaymentCallbackPage: React.FC = () => {
               transactionId,
               note: 'Webhook may still be processing',
             });
+            // Do not show success until payment_transactions is completed
+            setStatus('pending');
+            setPaymentData(result.data);
+            setError(
+              'Your payment was received by the gateway and is still confirming in our system. This usually takes a few seconds — refresh shortly.'
+            );
+            return;
           }
 
           setStatus('success');

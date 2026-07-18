@@ -8,6 +8,7 @@ interface AuthGuardProps {
   children: React.ReactNode;
 }
 
+/** Admin portal: admin or super_admin only. Missing/unknown role → deny. */
 export const AuthGuard = ({ children }: AuthGuardProps) => {
   const { isAuthenticated, user, initialized } = useAppSelector((state) => state.auth);
   const location = useLocation();
@@ -16,8 +17,6 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     return <>{children}</>;
   }
 
-  // Wait for auth to be initialized before making redirect decisions
-  // This prevents redirects during the initial auth check on page refresh
   if (!initialized) {
     return <Loading fullScreen message="Loading..." />;
   }
@@ -26,9 +25,9 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     return <Navigate to="/admin/auth/login" state={{ from: location }} replace />;
   }
 
-  // Admin app should be admin-only. If a customer logs in, RLS will deny writes anyway,
-  // but this makes the UX explicit and avoids confusing 403s.
-  if (user?.role && user.role !== 'admin') {
+  const role = user?.role;
+  const allowed = role === 'admin' || role === 'super_admin';
+  if (!allowed) {
     return <Navigate to="/admin/auth/login?reason=not_admin" replace />;
   }
 

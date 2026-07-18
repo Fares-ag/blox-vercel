@@ -23,7 +23,7 @@ export const GuestGuard = ({ children }: GuestGuardProps) => {
 
   // Only redirect to dashboard if user is authenticated AND is an admin
   // Non-admin users should stay on login page (they'll be blocked by login handler anyway)
-  if (isAuthenticated && user?.role === 'admin') {
+  if (isAuthenticated && (user?.role === 'admin' || user?.role === 'super_admin')) {
     return <Navigate to="/admin/dashboard" replace />;
   }
 

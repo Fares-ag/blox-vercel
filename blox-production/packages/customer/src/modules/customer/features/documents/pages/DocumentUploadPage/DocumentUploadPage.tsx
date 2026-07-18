@@ -58,6 +58,12 @@ export const DocumentUploadPage: React.FC = () => {
         const response = await supabaseApiService.getApplicationById(id);
         if (response.status === 'SUCCESS' && response.data) {
           dispatch(setSelected(response.data));
+
+          if (response.data.status !== 'resubmission_required') {
+            toast.error('Documents can only be resubmitted when the application requires resubmission.');
+            navigate(`/customer/my-applications/${id}`);
+            return;
+          }
           
           // Map existing documents by category
           const docsByCategory: Record<string, any> = {};
@@ -136,19 +142,18 @@ export const DocumentUploadPage: React.FC = () => {
         throw new Error(uploadError.message || 'Failed to upload file to storage');
       }
 
-      // Get public URL
+      // Bucket is private — store path for signed reads; keep url for backward compat.
       const { data: urlData } = supabase.storage
         .from('documents')
         .getPublicUrl(filePath);
-
-      const publicUrl = urlData.publicUrl;
 
       const newDoc = {
         id: `DOC${Date.now()}-${category}`,
         name: file.name,
         type: file.type,
         category: category,
-        url: publicUrl,
+        path: filePath,
+        url: urlData?.publicUrl || filePath,
         uploadedAt: new Date().toISOString(),
       };
 
@@ -191,12 +196,26 @@ export const DocumentUploadPage: React.FC = () => {
       return;
     }
 
+    // Only allowed when admin requested resubmission
+    if (selected.status !== 'resubmission_required') {
+      toast.error('Documents can only be resubmitted when the application requires resubmission.');
+      navigate(`/customer/my-applications/${id}`);
+      return;
+    }
+
     // Check required documents
     const requiredCategories = documentCategories.filter(cat => cat.required);
     const missingRequired = requiredCategories.filter(cat => !documents[cat.id]);
     
     if (missingRequired.length > 0) {
       toast.error(`Please upload required documents: ${missingRequired.map(c => c.name).join(', ')}`);
+      return;
+    }
+
+    // Refuse empty URLs (must be real Storage uploads)
+    const missingUrls = Object.values(documents).filter((doc: any) => !doc.url);
+    if (missingUrls.length > 0) {
+      toast.error('Please wait for all documents to finish uploading before submitting.');
       return;
     }
 
@@ -209,6 +228,7 @@ export const DocumentUploadPage: React.FC = () => {
         name: doc.name || 'document',
         type: doc.type || 'application/pdf',
         category: doc.category,
+        path: doc.path || undefined,
         url: doc.url || '',
         uploadedAt: doc.uploadedAt || new Date().toISOString(),
       }));
@@ -244,15 +264,15 @@ export const DocumentUploadPage: React.FC = () => {
         name: doc.name || 'document',
         type: doc.type || 'application/pdf',
         category: doc.category || 'other',
+        path: doc.path || undefined,
         url: doc.url || '',
         uploadedAt: doc.uploadedAt || new Date().toISOString(),
       }));
 
-      // Update application with new documents and status
-      // ALWAYS update status to 'under_review' when documents are resubmitted
+      // Resubmission only: under_review from resubmission_required
       const updateData: Partial<Application> = {
         documents: cleanedDocuments,
-        status: 'under_review', // Always set to under_review when resubmitting
+        status: 'under_review',
       };
 
       console.log('✅ Updating status to under_review', { 

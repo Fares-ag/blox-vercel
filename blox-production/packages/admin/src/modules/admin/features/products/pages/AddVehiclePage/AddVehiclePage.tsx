@@ -79,36 +79,27 @@ export const AddVehiclePage: React.FC = () => {
 
     setUploadingImages(true);
     try {
+      const { supabase } = await import('@shared/services');
       const uploadPromises = validFiles.map(async (file) => {
-        // TODO: Replace with actual API call when backend is ready
-        // const formData = new FormData();
-        // formData.append('file', file);
-        // formData.append('type', 'image');
-        // const response = await apiService.uploadFile('/product/upload-image', formData);
-        // if (response.status === 'SUCCESS' && response.data) {
-        //   return response.data.url;
-        // }
-
-        // Convert to base64 data URL for localStorage persistence
-        return new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const result = e.target?.result;
-            if (typeof result === 'string') {
-              resolve(result); // This is a base64 data URL
-            } else {
-              reject(new Error('Failed to read file'));
-            }
-          };
-          reader.onerror = () => reject(new Error('Failed to read file'));
-          reader.readAsDataURL(file);
-        });
+        const ext = file.name.split('.').pop() || 'jpg';
+        const filePath = `vehicle-images/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(filePath, file, { cacheControl: '3600', upsert: false });
+        if (uploadError) {
+          throw new Error(uploadError.message || `Failed to upload ${file.name}`);
+        }
+        const { data: urlData } = supabase.storage.from('documents').getPublicUrl(filePath);
+        if (!urlData?.publicUrl) {
+          throw new Error(`Failed to resolve URL for ${file.name}`);
+        }
+        return urlData.publicUrl;
       });
 
       const urls = await Promise.all(uploadPromises);
       setUploadedImages((prev) => [...prev, ...urls]);
       setValue('images', [...uploadedImages, ...urls] as any);
-      toast.success(`${validFiles.length} image(s) uploaded successfully`);
+      toast.success(`${validFiles.length} image(s) uploaded to storage`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to upload images');
     } finally {

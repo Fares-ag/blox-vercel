@@ -125,7 +125,7 @@ export const OwnershipBlocksCanvas: React.FC<OwnershipBlocksCanvasProps> = ({
               Ownership Journey
             </Typography>
             <Typography variant="body2" sx={{ color: 'var(--secondary-text)' }}>
-              Each payment transfers more blocks to you
+              Illustrative view based on your payment schedule — not a live LMS ledger
             </Typography>
           </Box>
 

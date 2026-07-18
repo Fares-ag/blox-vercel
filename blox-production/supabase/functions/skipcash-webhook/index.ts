@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { applyCompletedPaymentDualWrite } from "../_shared/payment-schedule.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -192,6 +193,7 @@ serve(async (req) => {
     // Parse Custom1 to get application context or credit top-up info (and transactionId fallback)
     let applicationId: string | null = null;
     let paymentScheduleId: string | null = null;
+    let paymentDueDate: string | null = null;
     let isSettlement = false;
     let isCreditTopup = false;
     let creditsAmount = 0;
@@ -203,6 +205,7 @@ serve(async (req) => {
         const customData = JSON.parse(webhookData.Custom1);
         applicationId = customData.applicationId || null;
         paymentScheduleId = customData.paymentScheduleId || null;
+        paymentDueDate = customData.dueDate || null;
         isSettlement = customData.isSettlement || false;
         isCreditTopup = customData.type === 'credit_topup';
         creditsAmount = Number(customData.credits) || 0;
@@ -242,17 +245,41 @@ serve(async (req) => {
         .eq('transaction_id', transactionId)
         .single();
 
-      // If payment already exists with same SkipCash payment ID, this is a duplicate webhook
-      if (existingPayment && existingPayment.skipcash_payment_id === webhookData.PaymentId) {
-        console.log('Duplicate webhook detected, skipping', {
-          transactionId,
-          paymentId: webhookData.PaymentId,
-          existingStatus: existingPayment.status,
-        });
+      // Duplicate delivery: if already completed, still ensure schedule dual-write
+      // (prior attempt may have returned 500 after txn upsert but before schedule update)
+      if (
+        existingPayment &&
+        existingPayment.skipcash_payment_id === webhookData.PaymentId &&
+        existingPayment.status === 'completed'
+      ) {
+        if (applicationId) {
+          try {
+            const amountNumEarly = parseFloat(webhookData.Amount);
+            const trustedAmount = Number.isFinite(amountNumEarly) ? amountNumEarly : 0;
+            await applyCompletedPaymentDualWrite(supabaseClient, applicationId, {
+              amount: trustedAmount,
+              isSettlement,
+              paymentScheduleId,
+              dueDate: paymentDueDate,
+            });
+          } catch (retryErr) {
+            console.error('Duplicate webhook: schedule dual-write retry failed', retryErr);
+            return new Response(
+              JSON.stringify({
+                success: false,
+                error: 'Schedule dual-write failed; please retry',
+              }),
+              {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 500,
+              }
+            );
+          }
+        }
         return new Response(
           JSON.stringify({
             success: true,
-            message: 'Webhook already processed (duplicate)',
+            message: 'Webhook already processed (duplicate); schedule ensured',
           }),
           {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -300,9 +327,20 @@ serve(async (req) => {
 
       // Upsert payment transaction (with idempotency key).
       // We do not send card_type here so the value set by skipcash-payment (from custom1) is preserved on conflict.
-      const { data: transaction, error: upsertError } = await supabaseClient
-        .from('payment_transactions')
-        .upsert({
+      // Resolve payer email for ownership (credit Custom1.email or application owner)
+      let payerEmail = customerEmail;
+      if (!payerEmail && applicationId) {
+        const { data: appOwner } = await supabaseClient
+          .from('applications')
+          .select('customer_email')
+          .eq('id', applicationId)
+          .maybeSingle();
+        if (appOwner?.customer_email) {
+          payerEmail = String(appOwner.customer_email).toLowerCase();
+        }
+      }
+
+      const upsertRow: Record<string, unknown> = {
           transaction_id: transactionId,
           skipcash_payment_id: webhookData.PaymentId, // Idempotency key
           application_id: applicationId,
@@ -312,7 +350,14 @@ serve(async (req) => {
           status: dbStatus,
           completed_at: dbStatus === 'completed' ? new Date().toISOString() : null,
           failure_reason: updateData.failure_reason,
-        }, {
+      };
+      if (payerEmail) {
+        upsertRow.payer_email = payerEmail;
+      }
+
+      const { data: transaction, error: upsertError } = await supabaseClient
+        .from('payment_transactions')
+        .upsert(upsertRow, {
           onConflict: 'transaction_id',
         })
         .select()
@@ -320,6 +365,18 @@ serve(async (req) => {
 
       if (upsertError) {
         console.error('Failed to upsert payment transaction:', upsertError);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'Failed to upsert payment transaction; please retry',
+            paymentId: webhookData.PaymentId,
+            transactionId,
+          }),
+          {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            status: 500,
+          }
+        );
       }
       if (!Number.isFinite(amountNum)) {
         console.warn('Webhook Amount was not a valid number', { Amount: webhookData.Amount, transactionId });
@@ -363,104 +420,40 @@ serve(async (req) => {
         }
       }
 
-      // If payment is completed, update the payment schedule and application
+      // If payment is completed, dual-write payment_schedules + installment_plan JSON
       if (dbStatus === 'completed' && applicationId && transaction) {
-        // Get the application to update payment schedule
-        const { data: application, error: appError } = await supabaseClient
-          .from('applications')
-          .select('installment_plan')
-          .eq('id', applicationId)
-          .single();
+        try {
+          const trustedAmount =
+            Number((transaction as any)?.amount) > 0
+              ? Number((transaction as any).amount)
+              : amount;
 
-        if (!appError && application?.installment_plan) {
-          const installmentPlan = application.installment_plan as any;
-          const schedule = installmentPlan.schedule || [];
-
-          if (isSettlement) {
-            // Settlement: Mark all remaining payments as paid
-            const updatedSchedule = schedule.map((payment: any) => {
-              if (payment.status !== 'paid') {
-                return {
-                  ...payment,
-                  status: 'paid',
-                  paidDate: new Date().toISOString().split('T')[0],
-                };
-              }
-              return payment;
-            });
-
-            // Update application with new schedule
-            await supabaseClient
-              .from('applications')
-              .update({
-                installment_plan: {
-                  ...installmentPlan,
-                  schedule: updatedSchedule,
-                },
-              })
-              .eq('id', applicationId)
-              .catch(err => {
-                console.error('Failed to update application payment schedule:', err);
-              });
-          } else if (paymentScheduleId) {
-            // Single payment: Update specific payment schedule
-            const updatedSchedule = schedule.map((payment: any) => {
-              if (payment.id === paymentScheduleId) {
-                return {
-                  ...payment,
-                  status: 'paid',
-                  paidDate: new Date().toISOString().split('T')[0],
-                };
-              }
-              return payment;
-            });
-
-            // Update application with new schedule
-            await supabaseClient
-              .from('applications')
-              .update({
-                installment_plan: {
-                  ...installmentPlan,
-                  schedule: updatedSchedule,
-                },
-              })
-              .eq('id', applicationId)
-              .catch(err => {
-                console.error('Failed to update application payment schedule:', err);
-              });
-          } else {
-            // No specific schedule ID, mark first upcoming payment as paid
-            const updatedSchedule = schedule.map((payment: any, index: number) => {
-              if (index === 0 && (payment.status === 'upcoming' || payment.status === 'active')) {
-                return {
-                  ...payment,
-                  status: 'paid',
-                  paidDate: new Date().toISOString().split('T')[0],
-                };
-              }
-              return payment;
-            });
-
-            // Update application with new schedule
-            await supabaseClient
-              .from('applications')
-              .update({
-                installment_plan: {
-                  ...installmentPlan,
-                  schedule: updatedSchedule,
-                },
-              })
-              .eq('id', applicationId)
-              .catch(err => {
-                console.error('Failed to update application payment schedule:', err);
-              });
-          }
+          await applyCompletedPaymentDualWrite(supabaseClient, applicationId, {
+            amount: trustedAmount,
+            isSettlement,
+            paymentScheduleId,
+            dueDate: paymentDueDate,
+          });
+        } catch (scheduleErr) {
+          console.error('Failed to dual-write payment schedule:', scheduleErr);
+          // Durable failure: ask SkipCash to redeliver. Dual-write is idempotent for already-paid rows.
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: 'Schedule dual-write failed; please retry',
+              paymentId: webhookData.PaymentId,
+              transactionId,
+            }),
+            {
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              status: 500,
+            }
+          );
         }
       }
     }
 
-    // Always return 200 to acknowledge receipt
-    // SkipCash requires HTTP 200 for successful webhook processing
+    // Acknowledge successful processing
     return new Response(
       JSON.stringify({
         success: true,
@@ -476,6 +469,7 @@ serve(async (req) => {
     );
   } catch (error: any) {
     console.error('SkipCash webhook error:', error);
+    // Non-2xx so SkipCash redelivers; signature failures return 401 earlier.
     return new Response(
       JSON.stringify({
         success: false,
@@ -483,7 +477,7 @@ serve(async (req) => {
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200, // Return 200 even on error to prevent infinite retries
+        status: 500,
       }
     );
   }

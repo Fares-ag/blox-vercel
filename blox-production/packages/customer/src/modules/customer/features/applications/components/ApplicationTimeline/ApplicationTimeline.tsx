@@ -29,37 +29,37 @@ const STATUS_CONFIG: Record<
 > = {
   draft: { label: 'Draft Created', color: '#FF9800', icon: <Pending /> }, // Orange
   under_review: { label: 'Under Review', color: '#FFC107', icon: <AccessTime /> }, // Amber/Yellow
-  active: { label: 'Approved', color: '#2196F3', icon: <CheckCircle /> }, // Blue - Approved status
-  completed: { label: 'Completed', color: '#4CAF50', icon: <CheckCircle /> }, // Green
-  rejected: { label: 'Rejected', color: '#F44336', icon: <Cancel /> }, // Red
+  active: { label: 'Approved', color: '#2A2A2A', icon: <CheckCircle /> },
+  completed: { label: 'Completed', color: '#2E7D32', icon: <CheckCircle /> },
+  rejected: { label: 'Rejected', color: '#C62828', icon: <Cancel /> },
   contract_signing_required: {
     label: 'Contract Signing Required',
-    color: '#9C27B0', // Purple
+    color: '#5C5346',
     icon: <AccessTime />,
   },
   resubmission_required: {
     label: 'Resubmission Required',
-    color: '#FF9800', // Orange
+    color: '#E65100',
     icon: <Pending />,
   },
   contracts_submitted: {
     label: 'Contracts Submitted',
-    color: '#2196F3', // Blue
+    color: '#2A2A2A',
     icon: <CheckCircle />,
   },
   contract_under_review: {
     label: 'Contract Under Review',
-    color: '#FFC107', // Amber/Yellow
+    color: '#F9A825',
     icon: <AccessTime />,
   },
   down_payment_required: {
     label: 'Down Payment Required',
-    color: '#FF9800', // Orange
+    color: '#E65100',
     icon: <AccessTime />,
   },
   down_payment_submitted: {
     label: 'Down Payment Submitted',
-    color: '#2196F3', // Blue
+    color: '#2A2A2A',
     icon: <CheckCircle />,
   },
   submission_cancelled: {

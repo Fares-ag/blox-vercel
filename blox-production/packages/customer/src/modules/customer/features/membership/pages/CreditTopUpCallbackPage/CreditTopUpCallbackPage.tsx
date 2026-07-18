@@ -126,18 +126,21 @@ export const CreditTopUpCallbackPage: React.FC = () => {
         const statusId = statusIdParam ? parseInt(statusIdParam, 10) : null;
 
         if (statusId === 2 || statusParam === 'paid' || statusParam === 'completed') {
-          setStatus('success');
+          // Never trust URL status alone — claim credits (server-validated) before success UI
           setCredits(creditsToAdd);
-
           if (creditsToAdd > 0 && user?.email) {
             const claimed = await claimCreditsWithRetry(creditsToAdd, pendingDataKey);
-            if (!claimed) {
+            if (claimed) {
+              setStatus('success');
+            } else {
               setStatus('pending');
-              setError(null);
-              setCredits(creditsToAdd);
+              setError(
+                'Payment may have succeeded, but credits are still confirming. Please wait a moment and refresh.'
+              );
             }
           } else {
-            localStorage.removeItem(pendingDataKey);
+            setStatus('pending');
+            setError('Unable to confirm credit top-up. Please contact support if credits do not appear.');
           }
           setVerifying(false);
           return;

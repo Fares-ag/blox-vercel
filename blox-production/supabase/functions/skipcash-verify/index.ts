@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  applyCompletedPaymentDualWrite,
+  resolveUseSandbox,
+} from "../_shared/payment-schedule.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,18 +11,62 @@ const corsHeaders = {
 };
 
 interface SkipCashVerifyRequest {
-  paymentId: string;
+  paymentId?: string;
   transactionId?: string;
 }
 
+function mapSkipCashStatus(json: any): 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' {
+  const rawStatus = json.status ?? json.resultObj?.status ?? json.statusId ?? 'pending';
+  const statusNum = Number(rawStatus);
+  const paymentStatus = String(rawStatus).toLowerCase();
+  if (paymentStatus === 'completed' || paymentStatus === 'success' || paymentStatus === 'paid' || statusNum === 2) {
+    return 'completed';
+  }
+  if (paymentStatus === 'failed' || paymentStatus === 'error' || statusNum === 4 || statusNum === 5 || statusNum === 8) {
+    return 'failed';
+  }
+  if (paymentStatus === 'cancelled' || statusNum === 3) {
+    return 'cancelled';
+  }
+  if (paymentStatus === 'processing' || statusNum === 1 || statusNum === 7) {
+    return 'processing';
+  }
+  return 'pending';
+}
+
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    // Parse request body
+    const authHeader = req.headers.get('Authorization') || '';
+    if (!authHeader.toLowerCase().startsWith('bearer ')) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Authorization required' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 },
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: userData, error: userError } = await userClient.auth.getUser();
+    const user = userData?.user;
+    if (userError || !user?.email) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Invalid or expired session' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 },
+      );
+    }
+    const userEmail = user.email.toLowerCase();
+
     let verifyRequest: SkipCashVerifyRequest;
     try {
       const bodyText = await req.text();
@@ -26,102 +74,126 @@ serve(async (req) => {
         throw new Error('Request body is empty');
       }
       verifyRequest = JSON.parse(bodyText);
-      console.log('Verify request keys:', verifyRequest ? Object.keys(verifyRequest) : []);
     } catch (parseError: any) {
-      console.error('Failed to parse request body:', parseError?.message ?? parseError);
       throw new Error(`Invalid request body: ${parseError?.message || 'Expected valid JSON'}`);
     }
 
     if (!verifyRequest.paymentId && !verifyRequest.transactionId) {
       throw new Error('Payment ID or Transaction ID is required');
     }
-    
-    // If only transactionId is provided, look up payment from database first
-    let paymentId = verifyRequest.paymentId;
-    if (!paymentId && verifyRequest.transactionId) {
-      const supabaseClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false
-          }
-        }
-      );
-      
-      const { data: transaction, error: lookupError } = await supabaseClient
+
+    const serviceClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // Load local transaction when transactionId provided (required for ownership + binding)
+    let localTxn: any = null;
+    if (verifyRequest.transactionId) {
+      const { data, error } = await serviceClient
         .from('payment_transactions')
-        .select('skipcash_payment_id, status')
+        .select('id, transaction_id, status, amount, application_id, payment_schedule_id, skipcash_payment_id, payer_email')
         .eq('transaction_id', verifyRequest.transactionId)
-        .single();
-      
-      if (!lookupError && transaction?.skipcash_payment_id) {
-        paymentId = transaction.skipcash_payment_id;
-      } else if (!lookupError && transaction) {
-        // Return status from database if payment ID not found
+        .maybeSingle();
+      if (error) {
+        console.error('Transaction lookup failed', error);
+        throw new Error('Failed to look up payment transaction');
+      }
+      if (!data) {
+        throw new Error('Payment transaction not found');
+      }
+      localTxn = data;
+
+      // Ownership: payer_email or application customer_email
+      let ownerEmail = (localTxn.payer_email || '').toLowerCase();
+      if (!ownerEmail && localTxn.application_id) {
+        const { data: app } = await serviceClient
+          .from('applications')
+          .select('customer_email')
+          .eq('id', localTxn.application_id)
+          .maybeSingle();
+        ownerEmail = (app?.customer_email || '').toLowerCase();
+      }
+      if (!ownerEmail || ownerEmail !== userEmail) {
         return new Response(
-          JSON.stringify({
-            success: true,
-            data: {
-              status: transaction.status,
-              statusId: transaction.status === 'completed' ? 2 : 
-                       transaction.status === 'failed' ? 4 :
-                       transaction.status === 'cancelled' ? 3 : 1,
-              transactionId: verifyRequest.transactionId,
-            },
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          }
+          JSON.stringify({ success: false, error: 'Not authorized for this payment' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 },
         );
       }
     }
-    
-    if (!paymentId) {
-      throw new Error('Payment ID not found. Please provide paymentId or ensure transaction exists in database.');
+
+    let paymentId = verifyRequest.paymentId || localTxn?.skipcash_payment_id || null;
+
+    // Bind client paymentId to stored SkipCash id when both exist
+    if (
+      verifyRequest.paymentId &&
+      localTxn?.skipcash_payment_id &&
+      String(verifyRequest.paymentId) !== String(localTxn.skipcash_payment_id)
+    ) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Payment ID does not match this transaction',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 },
+      );
     }
 
-    // Get SkipCash credentials
+    if (!paymentId && localTxn) {
+      // No SkipCash id yet — return DB status only (do not invent a payment id)
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: {
+            status: localTxn.status,
+            statusId:
+              localTxn.status === 'completed' ? 2 :
+              localTxn.status === 'failed' ? 4 :
+              localTxn.status === 'cancelled' ? 3 : 1,
+            transactionId: verifyRequest.transactionId,
+            dbConfirmed: localTxn.status === 'completed',
+          },
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+      );
+    }
+
+    if (!paymentId) {
+      throw new Error('Payment ID not found. Provide paymentId or a transaction with skipcash_payment_id.');
+    }
+
+    // Require transactionId for any DB mutation path
+    if (!verifyRequest.transactionId) {
+      throw new Error('transactionId is required to verify and update payment status');
+    }
+
     const skipCashConfig = {
       sandboxURL: Deno.env.get('SKIPCASH_SANDBOX_URL') || 'https://skipcashtest.azurewebsites.net',
       productionURL: Deno.env.get('SKIPCASH_PRODUCTION_URL') || 'https://api.skipcash.app',
       secretKey: Deno.env.get('SKIPCASH_SECRET_KEY') || '',
       keyId: Deno.env.get('SKIPCASH_KEY_ID') || '',
-      useSandbox: Deno.env.get('SKIPCASH_USE_SANDBOX') !== 'false',
+      useSandbox: resolveUseSandbox(),
     };
 
     if (!skipCashConfig.secretKey || !skipCashConfig.keyId) {
       throw new Error('SkipCash credentials not configured');
     }
 
-    // Build verification request
     const combinedData = `PaymentId=${paymentId},KeyId=${skipCashConfig.keyId}`;
-    
-    // Generate HMAC SHA256 hash
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(skipCashConfig.secretKey);
-    const messageData = encoder.encode(combinedData);
-    
     const cryptoKey = await crypto.subtle.importKey(
       'raw',
-      keyData,
+      encoder.encode(skipCashConfig.secretKey),
       { name: 'HMAC', hash: 'SHA-256' },
       false,
-      ['sign']
+      ['sign'],
     );
-
-    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(combinedData));
     const hashInBase64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
 
-    // Make API call to verify payment
-    const apiUrl = skipCashConfig.useSandbox 
-      ? skipCashConfig.sandboxURL 
+    const apiUrl = skipCashConfig.useSandbox
+      ? skipCashConfig.sandboxURL
       : skipCashConfig.productionURL;
-
     const verifyUrl = `${apiUrl}/api/v1/payments/${paymentId}`;
-    console.log('Verifying payment with SkipCash:', { url: verifyUrl, paymentId });
 
     const response = await fetch(verifyUrl, {
       method: 'GET',
@@ -131,168 +203,122 @@ serve(async (req) => {
       },
     });
 
-    let json: any;
     const responseText = await response.text();
-    
-    console.log('SkipCash API response:', { status: response.status, statusText: response.statusText, bodyLength: responseText.length });
-    
+    let json: any;
     try {
       json = JSON.parse(responseText);
-      console.log('SkipCash verify response:', { status: json?.status, statusId: json?.statusId, hasResultObj: !!json?.resultObj });
-    } catch (parseError: any) {
-      console.error('Failed to parse SkipCash response:', {
-        responseText: responseText.substring(0, 500),
-        parseError: parseError.message,
-      });
-      throw new Error(`Invalid response from SkipCash API: ${response.status} ${response.statusText}. Response: ${responseText.substring(0, 200)}`);
+    } catch {
+      throw new Error(`Invalid response from SkipCash API: ${response.status} ${response.statusText}`);
     }
 
     if (!response.ok) {
-      // Extract error message properly (could be string or object)
-      let errorMessage: string;
-      if (json.message && typeof json.message === 'string') {
-        errorMessage = json.message;
-      } else if (json.error) {
-        if (typeof json.error === 'string') {
-          errorMessage = json.error;
-        } else if (typeof json.error === 'object' && json.error !== null) {
-          // Error is an object, try to extract message from it
-          errorMessage = json.error.message || 
-                        json.error.error || 
-                        json.error.errorMessage ||
-                        (json.error.Message || json.error.Error) ||
-                        JSON.stringify(json.error);
-        } else {
-          errorMessage = String(json.error);
-        }
-      } else if (json.errorMessage && typeof json.errorMessage === 'string') {
-        errorMessage = json.errorMessage;
-      } else {
-        // No clear error message, return the full response as context
-        errorMessage = `SkipCash API error (${response.status}): ${JSON.stringify(json)}`;
-      }
-      
-      // Provide more helpful error messages for common cases
-      if (errorMessage.toLowerCase() === 'forbidden' || response.status === 403) {
-        errorMessage = `Payment verification failed: Access denied. This may mean the payment ID doesn't exist, has expired, or belongs to a different account. Payment ID: ${paymentId}`;
+      let errorMessage =
+        (typeof json.message === 'string' && json.message) ||
+        (typeof json.error === 'string' && json.error) ||
+        `SkipCash API error (${response.status})`;
+      if (response.status === 403) {
+        errorMessage = `Payment verification failed: Access denied. Payment ID: ${paymentId}`;
       } else if (response.status === 404) {
-        errorMessage = `Payment not found. The payment ID may be invalid or the payment may have been deleted. Payment ID: ${paymentId}`;
-      } else if (response.status === 401) {
-        errorMessage = `Authentication failed. Please check SkipCash credentials.`;
+        errorMessage = `Payment not found. Payment ID: ${paymentId}`;
       }
-      
-      console.error('SkipCash API error:', { status: response.status, statusText: response.statusText, extractedErrorMessage: errorMessage, paymentId });
       throw new Error(errorMessage);
     }
 
-    console.log('SkipCash verification response:', { status: json.status || json.resultObj?.status, paymentId });
+    const dbStatus = mapSkipCashStatus(json);
 
-    // Update payment transaction in database if transactionId is provided
-    if (verifyRequest.transactionId) {
-      const supabaseClient = createClient(
-        Deno.env.get('SUPABASE_URL') ?? '',
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-        {
-          auth: {
-            autoRefreshToken: false,
-            persistSession: false
+    // Update only the owned, bound transaction row
+    const updatePayload: Record<string, unknown> = {
+      status: dbStatus,
+      skipcash_payment_id: paymentId,
+      completed_at: dbStatus === 'completed' ? new Date().toISOString() : null,
+      failure_reason: dbStatus === 'failed' ? String(json?.message ?? 'Payment failed') : null,
+    };
+    if (!localTxn?.payer_email) {
+      updatePayload.payer_email = userEmail;
+    }
+
+    const { error: updateError } = await serviceClient
+      .from('payment_transactions')
+      .update(updatePayload)
+      .eq('transaction_id', verifyRequest.transactionId)
+      .eq('id', localTxn.id);
+
+    if (updateError) {
+      console.error('Failed to update payment transaction:', updateError);
+      throw new Error('Failed to update payment transaction');
+    }
+
+    // Schedule dual-write when installment payment completed (credit top-ups have no application)
+    let scheduleApplied = false;
+    if (dbStatus === 'completed' && localTxn.application_id) {
+      try {
+        // Recover dueDate / schedule id from SkipCash custom fields when present
+        const customRaw = json?.resultObj?.custom1 ?? json?.custom1;
+        let paymentScheduleId: string | null = localTxn.payment_schedule_id || null;
+        let dueDate: string | null = null;
+        let isSettlement = false;
+        if (typeof customRaw === 'string' && customRaw.trim()) {
+          try {
+            const customObj = JSON.parse(customRaw);
+            paymentScheduleId = customObj.paymentScheduleId || paymentScheduleId;
+            dueDate = customObj.dueDate || null;
+            isSettlement = !!customObj.isSettlement;
+          } catch {
+            /* ignore */
           }
         }
-      );
 
-      // Determine status from SkipCash response (status may be string or number e.g. StatusId: 0–8)
-      const rawStatus = json.status ?? json.resultObj?.status ?? json.statusId ?? 'pending';
-      const statusNum = Number(rawStatus);
-      const paymentStatus = String(rawStatus).toLowerCase();
-      let dbStatus: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' = 'pending';
-      if (paymentStatus === 'completed' || paymentStatus === 'success' || statusNum === 2) {
-        dbStatus = 'completed';
-      } else if (paymentStatus === 'failed' || paymentStatus === 'error' || statusNum === 4 || statusNum === 5 || statusNum === 8) {
-        dbStatus = 'failed';
-      } else if (paymentStatus === 'cancelled' || statusNum === 3) {
-        dbStatus = 'cancelled';
-      } else if (paymentStatus === 'processing' || statusNum === 1 || statusNum === 7) {
-        dbStatus = 'processing';
-      }
-
-      await supabaseClient
-        .from('payment_transactions')
-        .update({
-          status: dbStatus,
-          completed_at: dbStatus === 'completed' ? new Date().toISOString() : null,
-          failure_reason: dbStatus === 'failed' ? String(json?.message ?? 'Payment failed') : null,
-        })
-        .eq('transaction_id', verifyRequest.transactionId)
-        .catch(err => {
-          console.error('Failed to update payment transaction:', err);
+        await applyCompletedPaymentDualWrite(serviceClient, localTxn.application_id, {
+          amount: Number(localTxn.amount) || 0,
+          isSettlement,
+          paymentScheduleId,
+          dueDate,
         });
+        scheduleApplied = true;
+      } catch (scheduleErr) {
+        console.error('Verify dual-write failed (webhook may retry):', scheduleErr);
+        // Return success for SkipCash status but signal schedule pending
+        return new Response(
+          JSON.stringify({
+            success: true,
+            data: {
+              ...(json.resultObj || json),
+              dbStatus,
+              dbConfirmed: true,
+              scheduleApplied: false,
+              scheduleError: 'Schedule dual-write pending; webhook may complete it',
+            },
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
+        );
+      }
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        data: json.resultObj || json,
+        data: {
+          ...(json.resultObj || json),
+          dbStatus,
+          dbConfirmed: dbStatus === 'completed',
+          scheduleApplied,
+          transactionId: verifyRequest.transactionId,
+        },
       }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
     );
   } catch (error: any) {
-    console.error('SkipCash verification error - full error object:', error);
-    console.error('SkipCash verification error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-      errorType: typeof error,
-      isErrorInstance: error instanceof Error,
-      errorKeys: error ? Object.keys(error) : [],
-    });
-    
-    // Extract error message properly
-    let errorMessage: string;
-    if (error instanceof Error) {
-      errorMessage = error.message || 'Payment verification failed';
-    } else if (typeof error === 'string') {
-      errorMessage = error;
-    } else if (error && typeof error === 'object') {
-      // Error is an object, extract message
-      errorMessage = error.message || 
-                    error.error || 
-                    error.errorMessage ||
-                    (error.toString && error.toString() !== '[object Object]' ? error.toString() : JSON.stringify(error));
-    } else {
-      errorMessage = String(error) || 'Payment verification failed';
-    }
-    
-    // If message is still [object Object], provide a better fallback
-    if (errorMessage === '[object Object]' || errorMessage.includes('[object Object]')) {
-      errorMessage = 'Payment verification failed. Check SkipCash API response for details.';
-    }
-    
-    const statusCode = error.status || 400;
-    
-    console.log('Returning error response:', {
-      success: false,
-      error: errorMessage,
-      statusCode,
-    });
-    
+    const errorMessage =
+      error instanceof Error
+        ? (error.message || 'Payment verification failed')
+        : String(error) || 'Payment verification failed';
+
     return new Response(
-      JSON.stringify({
-        success: false,
-        error: errorMessage,
-        details: Deno.env.get('DENO_ENV') === 'development' ? {
-          stack: error.stack,
-          name: error.name,
-          originalError: error instanceof Error ? error.message : String(error),
-        } : undefined,
-      }),
+      JSON.stringify({ success: false, error: errorMessage }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: statusCode,
-      }
+        status: error?.status || 400,
+      },
     );
   }
 });
-

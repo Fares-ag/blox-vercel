@@ -49,11 +49,11 @@
     position: fixed;
     bottom: 24px;
     right: 24px;
-    background-color: #00CFA2;
+    background-color: #111111;
     z-index: 1300; // Above most content, below critical overlays if any
 
     &:hover {
-      background-color: #0A6B6A;
+      background-color: #000000;
     }
   }
 }

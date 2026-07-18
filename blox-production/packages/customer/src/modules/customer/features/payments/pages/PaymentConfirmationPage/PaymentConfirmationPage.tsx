@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { Box, Typography, Paper, Button } from '@mui/material';
-import { CheckCircle, FileDownload, ArrowBack } from '@mui/icons-material';
+import { Box, Typography, Paper, Button, Alert } from '@mui/material';
+import { CheckCircle, HourglassEmpty, FileDownload, ArrowBack } from '@mui/icons-material';
 import { formatCurrency } from '@shared/utils/formatters';
 import { Button as CustomButton } from '@shared/components';
 import { supabaseApiService, receiptService } from '@shared/services';
@@ -13,10 +13,25 @@ export const PaymentConfirmationPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const { transactionId, amount, method, dueDate, isSettlement, paymentsSettled } = (location.state as Record<string, unknown>) || {};
+  const {
+    transactionId,
+    amount,
+    method,
+    dueDate,
+    isSettlement,
+    paymentsSettled,
+    pendingReview,
+  } = (location.state as Record<string, unknown>) || {};
   const [downloading, setDownloading] = useState(false);
 
+  const isPendingReview =
+    pendingReview === true || method === 'bank_transfer';
+
   const handleDownloadReceipt = async () => {
+    if (isPendingReview) {
+      toast.info('Receipt is available after admin confirms your bank transfer.');
+      return;
+    }
     if (!id) {
       window.print();
       return;
@@ -62,18 +77,44 @@ export const PaymentConfirmationPage: React.FC = () => {
     }
   };
 
+  const methodLabel =
+    method === 'credit_card'
+      ? 'Credit Card'
+      : method === 'debit_card'
+        ? 'Debit Card (QPay)'
+        : method === 'bank_transfer'
+          ? 'Bank Transfer'
+          : method === 'blox_credit'
+            ? 'Blox Credit'
+            : method === 'card'
+              ? 'Credit/Debit Card'
+              : 'N/A';
+
   return (
     <Box className="payment-confirmation-page">
       <Paper className="confirmation-card">
         <Box className="success-icon">
-          <CheckCircle sx={{ fontSize: 80 }} />
+          {isPendingReview ? (
+            <HourglassEmpty sx={{ fontSize: 80 }} />
+          ) : (
+            <CheckCircle sx={{ fontSize: 80 }} />
+          )}
         </Box>
         <Typography variant="h4" className="success-title">
-          Payment Successful!
+          {isPendingReview ? 'Bank Transfer Submitted' : 'Payment Successful!'}
         </Typography>
         <Typography variant="body1" className="success-message">
-          Your payment has been processed successfully.
+          {isPendingReview
+            ? 'Your transfer details were submitted for verification. Installments are marked paid only after admin confirmation.'
+            : 'Your payment has been processed successfully.'}
         </Typography>
+
+        {isPendingReview && (
+          <Alert severity="info" sx={{ mt: 2, mb: 1, textAlign: 'left' }}>
+            Keep your bank reference handy. You will see the installment update in My Applications
+            once an admin confirms the transfer.
+          </Alert>
+        )}
 
         <Box className="transaction-details">
           <Box className="detail-row">
@@ -81,15 +122,15 @@ export const PaymentConfirmationPage: React.FC = () => {
               Transaction ID:
             </Typography>
             <Typography variant="body1" className="value">
-              {transactionId || 'N/A'}
+              {(transactionId as string) || 'N/A'}
             </Typography>
           </Box>
           <Box className="detail-row">
             <Typography variant="body2" className="label">
-              Amount Paid:
+              {isPendingReview ? 'Amount Submitted:' : 'Amount Paid:'}
             </Typography>
             <Typography variant="h6" className="amount">
-              {amount ? formatCurrency(amount) : 'N/A'}
+              {amount ? formatCurrency(amount as number) : 'N/A'}
             </Typography>
           </Box>
           <Box className="detail-row">
@@ -97,7 +138,15 @@ export const PaymentConfirmationPage: React.FC = () => {
               Payment Method:
             </Typography>
             <Typography variant="body1" className="value">
-              {method === 'credit_card' ? 'Credit Card' : method === 'debit_card' ? 'Debit Card (QPay)' : method === 'bank_transfer' ? 'Bank Transfer' : method === 'blox_credit' ? 'Blox Credit' : method === 'card' ? 'Credit/Debit Card' : 'N/A'}
+              {methodLabel}
+            </Typography>
+          </Box>
+          <Box className="detail-row">
+            <Typography variant="body2" className="label">
+              Status:
+            </Typography>
+            <Typography variant="body1" className="value">
+              {isPendingReview ? 'Pending admin verification' : 'Completed'}
             </Typography>
           </Box>
           <Box className="detail-row">
@@ -111,18 +160,20 @@ export const PaymentConfirmationPage: React.FC = () => {
         </Box>
 
         <Box className="action-buttons">
-          <CustomButton
-            variant="primary"
-            startIcon={<FileDownload />}
-            onClick={handleDownloadReceipt}
-            disabled={downloading}
-          >
-            {downloading ? 'Preparing…' : 'Download Receipt'}
-          </CustomButton>
+          {!isPendingReview && (
+            <CustomButton
+              variant="primary"
+              startIcon={<FileDownload />}
+              onClick={handleDownloadReceipt}
+              disabled={downloading}
+            >
+              {downloading ? 'Preparing…' : 'Download Receipt'}
+            </CustomButton>
+          )}
           <Button
             variant="outlined"
             startIcon={<ArrowBack />}
-            onClick={() => navigate(`/customer/my-applications/${id}`)}
+            onClick={() => navigate(id ? `/customer/my-applications/${id}` : '/customer/my-applications')}
           >
             Back to Application
           </Button>
@@ -131,5 +182,3 @@ export const PaymentConfirmationPage: React.FC = () => {
     </Box>
   );
 };
-
-

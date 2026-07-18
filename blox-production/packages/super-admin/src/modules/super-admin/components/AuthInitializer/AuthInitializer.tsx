@@ -28,7 +28,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
                         error?.message?.includes('Not Acceptable');
 
       if (is406Error) {
-        return roleFromMetadata || 'customer';
+        return roleFromMetadata || 'unknown';
       }
 
       if (!error && data?.role) {
@@ -52,11 +52,11 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
                                emailError?.message?.includes('Not Acceptable');
 
         if (isEmail406Error) {
-          return roleFromMetadata || 'customer';
+          return roleFromMetadata || 'unknown';
         }
       }
 
-      return roleFromMetadata || 'customer';
+      return roleFromMetadata || 'unknown';
     } catch (error: unknown) {
       const err = error as any;
       const is406Error =
@@ -66,9 +66,9 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
         String(err?.message || '').includes('Not Acceptable');
 
       if (is406Error) {
-        return roleFromMetadata || 'customer';
+        return roleFromMetadata || 'unknown';
       }
-      return roleFromMetadata || 'customer';
+      return roleFromMetadata || 'unknown';
     }
   })();
 
@@ -79,7 +79,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
   }
   
   if (result === 'timeout') {
-    return roleFromMetadata || 'customer';
+    return roleFromMetadata || 'unknown';
   }
 
   return result as string;
@@ -134,37 +134,47 @@ export const AuthInitializer: React.FC = () => {
 
     initializeAuth();
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        dispatch(logout());
-        navigate('/super-admin/auth/login');
-      } else if (session?.user) {
-        const role = await fetchUserRoleFromDB(
-          session.user.id,
-          session.user.email || '',
-          session.user.user_metadata
-        );
+    // Defer supabase.* calls — awaiting them inside onAuthStateChange deadlocks the auth lock.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      const accessToken = session?.access_token;
+      const sessionUser = session?.user;
 
-        if (role !== 'super_admin') {
-          dispatch(logout());
-          await authService.logout();
-          navigate('/super-admin/auth/login');
-          return;
-        }
+      setTimeout(() => {
+        void (async () => {
+          if (event === 'SIGNED_OUT' || !session) {
+            dispatch(logout());
+            navigate('/super-admin/auth/login');
+            return;
+          }
 
-        const user: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.first_name && session.user.user_metadata?.last_name
-            ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name}`.trim()
-            : session.user.email || '',
-          role: role,
-          permissions: session.user.user_metadata?.permissions || [],
-        };
+          if (!sessionUser) return;
 
-        dispatch(setCredentials({ user, token: session.access_token }));
-      }
+          const role = await fetchUserRoleFromDB(
+            sessionUser.id,
+            sessionUser.email || '',
+            sessionUser.user_metadata
+          );
+
+          if (role !== 'super_admin') {
+            dispatch(logout());
+            await authService.logout();
+            navigate('/super-admin/auth/login');
+            return;
+          }
+
+          const user: User = {
+            id: sessionUser.id,
+            email: sessionUser.email || '',
+            name: sessionUser.user_metadata?.first_name && sessionUser.user_metadata?.last_name
+              ? `${sessionUser.user_metadata.first_name} ${sessionUser.user_metadata.last_name}`.trim()
+              : sessionUser.email || '',
+            role: role,
+            permissions: sessionUser.user_metadata?.permissions || [],
+          };
+
+          dispatch(setCredentials({ user, token: accessToken || '' }));
+        })();
+      }, 0);
     });
 
     return () => {

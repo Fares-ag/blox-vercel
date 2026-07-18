@@ -13,6 +13,7 @@ import type {
   PaymentDeferral
 } from '../models';
 import type { ApiResponse } from '../models/api.model';
+import { assertApplicationStatusTransition, type TransitionActor } from '../utils/application-status-transitions';
 
 class SupabaseApiService {
   // Helper to detect and format DNS errors
@@ -369,17 +370,22 @@ class SupabaseApiService {
     try {
       const useSignupRpc = Boolean(options?.signupAuthUserId);
 
-      // Refresh JWT for direct insert (RLS). Skip when using signup RPC (no session yet).
+      // Prefer getSession (local) over refreshSession — refresh can deadlock with
+      // onAuthStateChange handlers that touch the Supabase client.
+      let authUser = null as Awaited<ReturnType<typeof supabase.auth.getUser>>['data']['user'];
       if (!useSignupRpc) {
-        await supabase.auth.refreshSession();
+        const { data: sessionData } = await supabase.auth.getSession();
+        authUser = sessionData.session?.user ?? null;
+        if (!authUser) {
+          const { data: authData } = await supabase.auth.getUser();
+          authUser = authData?.user ?? null;
+        }
       }
-
-      const { data: authData } = await supabase.auth.getUser();
-      const authUser = authData?.user;
 
       let companyIdFromProfile: string | undefined;
       let profileEmail: string | undefined;
-      if (authUser?.id) {
+      // Signup RPC has no session — skip profile lookup (and avoid stale JWT email).
+      if (!useSignupRpc && authUser?.id) {
         const { data: profile } = await supabase
           .from('users')
           .select('company_id, email')
@@ -393,7 +399,16 @@ class SupabaseApiService {
       const sessionEmail = authUser?.email?.trim().toLowerCase() || '';
       let customerEmail: string;
 
-      if (sessionEmail) {
+      if (useSignupRpc) {
+        customerEmail = (application.customerEmail || '').trim().toLowerCase();
+        if (!customerEmail) {
+          return {
+            status: 'ERROR',
+            message: 'Email is required to create an application after signup.',
+            data: {} as Application,
+          };
+        }
+      } else if (sessionEmail) {
         customerEmail = sessionEmail;
       } else if (profileEmail) {
         // Session missing email (rare); profile row still used by some RLS paths
@@ -468,9 +483,17 @@ class SupabaseApiService {
           p_payload: appData,
         });
         if (rpcError) {
+          const raw = rpcError.message || '';
+          const message = /user_not_found/i.test(raw)
+            ? 'Account could not be verified. If you already have an account, please log in. Otherwise try a different email or confirm your signup email and try again.'
+            : /email_mismatch/i.test(raw)
+              ? 'The email on your account does not match this application. Please use the same email you signed up with.'
+              : /applications_vehicle_id_fkey|foreign key constraint.*vehicle_id/i.test(raw)
+                ? 'This vehicle is not available. Please choose another vehicle from the catalog.'
+                : raw || 'Failed to create application';
           return {
             status: 'ERROR',
-            message: rpcError.message || 'Failed to create application',
+            message,
             data: {} as Application,
           };
         }
@@ -495,34 +518,38 @@ class SupabaseApiService {
       // Invalidate applications cache
       supabaseCache.invalidate('applications:all');
       
-      // Log activity
-      try {
-        const { activityTrackingService } = await import('./activity-tracking.service');
-        await activityTrackingService.logActivity('create', 'application', {
-          resourceId: createdApp.id,
-          resourceName: `Application #${createdApp.id.slice(0, 8)}`,
-          description: `Created application for ${application.customerName} (${customerEmail})`,
-          metadata: {
-            status: application.status,
-            loanAmount: application.loanAmount,
-            origin: application.origin || 'manual',
-            vehicleId: application.vehicleId,
-          },
+      // Activity logging must not block create (or hang submit on RPC/network issues)
+      void import('./activity-tracking.service')
+        .then(({ activityTrackingService }) =>
+          activityTrackingService.logActivity('create', 'application', {
+            resourceId: createdApp.id,
+            resourceName: `Application #${createdApp.id.slice(0, 8)}`,
+            description: `Created application for ${application.customerName} (${customerEmail})`,
+            metadata: {
+              status: application.status,
+              loanAmount: application.loanAmount,
+              origin: application.origin || 'manual',
+              vehicleId: application.vehicleId,
+            },
+          })
+        )
+        .catch((error) => {
+          console.error('Failed to log activity:', error);
         });
-      } catch (error) {
-        // Activity logging should not break the app
-        console.error('Failed to log activity:', error);
-      }
-      
+
       return {
         status: 'SUCCESS',
         data: createdApp,
         message: 'Application created successfully'
       };
     } catch (error: any) {
+      const raw = error?.message || '';
+      const message = /applications_vehicle_id_fkey|foreign key constraint.*vehicle_id/i.test(raw)
+        ? 'This vehicle is not available. Please choose another vehicle from the catalog.'
+        : raw || 'Failed to create application';
       return {
         status: 'ERROR',
-        message: error.message || 'Failed to create application',
+        message,
         data: {} as Application
       };
     }
@@ -530,6 +557,43 @@ class SupabaseApiService {
 
   async updateApplication(id: string, application: Partial<Application>): Promise<ApiResponse<Application>> {
     try {
+      // Status transition gate (fail closed) — see application-status-transitions.ts
+      if (application.status !== undefined) {
+        const { data: { user } } = await supabase.auth.getUser();
+        let actor: TransitionActor = 'customer';
+        if (user?.id) {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle();
+          const role = (profile?.role || user.user_metadata?.role) as string | undefined;
+          if (role === 'admin' || role === 'super_admin') {
+            actor = role as TransitionActor;
+          } else if (role === 'customer') {
+            actor = 'customer';
+          } else {
+            throw new Error('Unauthorized: unknown role cannot update application status');
+          }
+        } else {
+          throw new Error('Unauthorized: must be signed in to update application status');
+        }
+
+        const { data: currentRow, error: currentErr } = await supabase
+          .from('applications')
+          .select('status')
+          .eq('id', id)
+          .single();
+        if (currentErr || !currentRow?.status) {
+          throw new Error(currentErr?.message || 'Application not found for status transition');
+        }
+        assertApplicationStatusTransition(
+          currentRow.status as any,
+          application.status as any,
+          actor
+        );
+      }
+
       const updateData: any = {
         updated_at: new Date().toISOString()
       };
@@ -852,6 +916,25 @@ class SupabaseApiService {
     receiptUrl?: string
   ): Promise<ApiResponse<Application>> {
     try {
+      // Admin/super_admin only — customers must use SkipCash webhook / credits RPC / bank pending flow
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        return { status: 'ERROR', message: 'Unauthorized', data: {} as Application };
+      }
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      const role = (profile?.role || user.user_metadata?.role) as string | undefined;
+      if (role !== 'admin' && role !== 'super_admin') {
+        return {
+          status: 'ERROR',
+          message: 'Only admins can mark installments as paid',
+          data: {} as Application,
+        };
+      }
+
       const paidAt = new Date().toISOString();
 
       // 1) Get the application to find the payment schedule
@@ -985,6 +1068,110 @@ class SupabaseApiService {
         status: 'ERROR',
         message: error.message || 'Failed to mark installment as paid',
         data: {} as Application,
+      };
+    }
+  }
+
+
+  /**
+   * Admin: confirm a pending bank_transfer payment_transactions row.
+   * Dual-writes schedules via markInstallmentAsPaid (or settlement loop), then completes the txn.
+   */
+  async confirmPendingBankTransfer(transactionId: string): Promise<ApiResponse<{ applicationId: string }>> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        return { status: 'ERROR', message: 'Unauthorized', data: { applicationId: '' } };
+      }
+      const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).maybeSingle();
+      const role = (profile?.role || user.user_metadata?.role) as string | undefined;
+      if (role !== 'admin' && role !== 'super_admin') {
+        return { status: 'ERROR', message: 'Only admins can confirm bank transfers', data: { applicationId: '' } };
+      }
+
+      const { data: txn, error: txnErr } = await supabase
+        .from('payment_transactions')
+        .select('*')
+        .eq('transaction_id', transactionId)
+        .maybeSingle();
+
+      if (txnErr || !txn) {
+        return { status: 'ERROR', message: txnErr?.message || 'Transaction not found', data: { applicationId: '' } };
+      }
+      if (txn.method !== 'bank_transfer') {
+        return { status: 'ERROR', message: 'Not a bank transfer transaction', data: { applicationId: '' } };
+      }
+      if (txn.status === 'completed') {
+        return { status: 'SUCCESS', message: 'Already confirmed', data: { applicationId: txn.application_id || '' } };
+      }
+      if (txn.status !== 'pending') {
+        return { status: 'ERROR', message: `Cannot confirm transaction in status ${txn.status}`, data: { applicationId: '' } };
+      }
+      if (!txn.application_id) {
+        return { status: 'ERROR', message: 'Transaction missing application_id', data: { applicationId: '' } };
+      }
+
+      let meta: any = {};
+      try {
+        meta = txn.failure_reason ? JSON.parse(txn.failure_reason) : {};
+      } catch {
+        // Legacy plain-text failure_reason: parse "due YYYY-MM-DD"
+        const m = String(txn.failure_reason || '').match(/due\s+(\d{4}-\d{2}-\d{2}|settlement)/i);
+        if (m) meta = { dueDate: m[1], isSettlement: m[1] === 'settlement' };
+      }
+
+      const isSettlement = !!meta.isSettlement || meta.dueDate === 'settlement';
+      const amount = Number(txn.amount) || 0;
+
+      if (isSettlement) {
+        const appRes = await this.getApplicationById(txn.application_id);
+        if (appRes.status !== 'SUCCESS' || !appRes.data?.installmentPlan?.schedule) {
+          return { status: 'ERROR', message: 'Application schedule not found', data: { applicationId: '' } };
+        }
+        const unpaid = appRes.data.installmentPlan.schedule.filter((p: any) => p.status !== 'paid');
+        const total = unpaid.reduce((s: number, p: any) => s + (Number(p.remainingAmount ?? p.amount) || 0), 0) || 1;
+        for (const payment of unpaid) {
+          const portion = ((Number(payment.remainingAmount ?? payment.amount) || 0) / total) * amount;
+          const mark = await this.markInstallmentAsPaid(txn.application_id, payment.dueDate, portion);
+          if (mark.status !== 'SUCCESS') {
+            return { status: 'ERROR', message: mark.message || 'Failed to mark installment', data: { applicationId: '' } };
+          }
+        }
+      } else {
+        const dueDate = meta.dueDate || null;
+        if (!dueDate || dueDate === 'settlement') {
+          return { status: 'ERROR', message: 'Bank transfer missing dueDate metadata', data: { applicationId: '' } };
+        }
+        const mark = await this.markInstallmentAsPaid(txn.application_id, dueDate, amount);
+        if (mark.status !== 'SUCCESS') {
+          return { status: 'ERROR', message: mark.message || 'Failed to mark installment', data: { applicationId: '' } };
+        }
+      }
+
+      const { error: updErr } = await supabase
+        .from('payment_transactions')
+        .update({
+          status: 'completed',
+          completed_at: new Date().toISOString(),
+          failure_reason: null,
+        })
+        .eq('transaction_id', transactionId)
+        .eq('status', 'pending');
+
+      if (updErr) {
+        return { status: 'ERROR', message: updErr.message, data: { applicationId: txn.application_id } };
+      }
+
+      return {
+        status: 'SUCCESS',
+        message: 'Bank transfer confirmed',
+        data: { applicationId: txn.application_id },
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to confirm bank transfer',
+        data: { applicationId: '' },
       };
     }
   }

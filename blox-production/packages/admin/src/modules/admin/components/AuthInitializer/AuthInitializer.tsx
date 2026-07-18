@@ -47,7 +47,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
       if (is406Error) {
         // Silently use metadata - this is expected if RLS blocks access
         devLogger.debug('Users table not accessible (406), using user_metadata (this is expected if RLS policies are not set up)');
-        return roleFromMetadata || 'customer';
+        return roleFromMetadata || 'unknown';
       }
 
       if (!error && data?.role) {
@@ -74,12 +74,12 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
 
         if (isEmail406Error) {
           devLogger.debug('Users table not accessible (406), using user_metadata');
-          return roleFromMetadata || 'customer';
+          return roleFromMetadata || 'unknown';
         }
       }
 
-      // Default to metadata if available, otherwise customer
-      return roleFromMetadata || 'customer';
+      // Fail closed — never invent "customer" in the admin portal
+      return roleFromMetadata || 'unknown';
     } catch (error: any) {
       // If it's a 406 or table access error, use metadata immediately
       const is406Error = (error as any)?.status === 406 || 
@@ -89,9 +89,9 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
 
       if (is406Error) {
         devLogger.debug('Users table not accessible (406), using user_metadata');
-        return roleFromMetadata || 'customer';
+        return roleFromMetadata || 'unknown';
       }
-      return roleFromMetadata || 'customer';
+      return roleFromMetadata || 'unknown';
     }
   })();
 
@@ -106,11 +106,20 @@ const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?:
   // If timeout, use metadata immediately
   if (result === 'timeout') {
     devLogger.debug('Users table query timed out, using user_metadata (this is expected if users table is not accessible)');
-    return roleFromMetadata || 'customer';
+    return roleFromMetadata || 'unknown';
   }
 
   return result as string;
 };
+
+function resolveMetadataRole(userMetadata?: UserMetadata): string {
+  const raw =
+    userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
+  if (raw === 'admin' || raw === 'super_admin' || raw === 'customer') {
+    return raw;
+  }
+  return 'unknown';
+}
 
 /**
  * AuthInitializer component that listens to Supabase auth state changes
@@ -128,58 +137,66 @@ export const AuthInitializer: React.FC = () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (mounted && session?.user) {
-          // Use metadata immediately for faster initialization, then update from DB if available
-          const metadataRole = session.user.user_metadata?.role || 
-                              session.user.user_metadata?.user_role || 
-                              session.user.user_metadata?.userRole || 
-                              'customer';
-          
-          const user: User = {
+          const metadataRole = resolveMetadataRole(session.user.user_metadata);
+
+          const buildUser = (role: string): User => ({
             id: session.user.id,
             email: session.user.email || '',
-            name: session.user.user_metadata?.name || session.user.user_metadata?.first_name 
+            name: session.user.user_metadata?.name || session.user.user_metadata?.first_name
               ? `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim()
               : session.user.email || '',
-            role: metadataRole, // Use metadata first for instant initialization
+            role,
             permissions: session.user.user_metadata?.permissions || [],
-          };
-          
-          // CRITICAL: Only set credentials if user is admin
-          // Non-admin users should not be authenticated in admin app
-          if (metadataRole === 'admin') {
-            // Set credentials immediately so app can load
+          });
+
+          // CRITICAL: Only set credentials if user is admin / super_admin
+          if (metadataRole === 'admin' || metadataRole === 'super_admin') {
+            const user = buildUser(metadataRole);
             dispatch(setCredentials({ user, token: session.access_token }));
-            // Mark as initialized immediately (setInitialized is called separately to avoid double render)
             dispatch(setInitialized());
-            
-            // Set user context in Sentry
             loggingService.setUser(user);
-            
-            // Then try to fetch from DB in background (non-blocking)
+
             fetchUserRoleFromDB(
-              session.user.id, 
-              session.user.email || '', 
+              session.user.id,
+              session.user.email || '',
               session.user.user_metadata
             ).then((dbRole) => {
-              // If DB role is different and still admin, update it
-              if (mounted && dbRole === 'admin' && dbRole !== metadataRole) {
-                dispatch(setCredentials({ 
-                  user: { ...user, role: dbRole }, 
-                  token: session.access_token 
+              if (mounted && (dbRole === 'admin' || dbRole === 'super_admin') && dbRole !== metadataRole) {
+                dispatch(setCredentials({
+                  user: { ...user, role: dbRole },
+                  token: session.access_token,
                 }));
-              } else if (mounted && dbRole !== 'admin') {
-                // If DB says user is not admin, sign them out
+              } else if (
+                mounted &&
+                dbRole !== 'admin' &&
+                dbRole !== 'super_admin'
+              ) {
                 dispatch(logout());
-                supabase.auth.signOut();
+                void supabase.auth.signOut();
               }
             }).catch((err) => {
-              // Silently fail - we already have metadata role
               devLogger.debug('Background role fetch failed:', err);
             });
-          } else {
-            // Non-admin user detected - sign them out immediately
+          } else if (metadataRole === 'customer') {
             dispatch(logout());
-            supabase.auth.signOut();
+            void supabase.auth.signOut();
+            dispatch(setInitialized());
+          } else {
+            // Metadata missing/unknown — await DB before denying (admins with empty JWT metadata)
+            const dbRole = await fetchUserRoleFromDB(
+              session.user.id,
+              session.user.email || '',
+              session.user.user_metadata
+            );
+            if (!mounted) return;
+            if (dbRole === 'admin' || dbRole === 'super_admin') {
+              const user = buildUser(dbRole);
+              dispatch(setCredentials({ user, token: session.access_token }));
+              loggingService.setUser(user);
+            } else {
+              dispatch(logout());
+              void supabase.auth.signOut();
+            }
             dispatch(setInitialized());
           }
         } else {
@@ -195,63 +212,81 @@ export const AuthInitializer: React.FC = () => {
 
       // Listen to auth state changes
       if (mounted) {
-        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        // Defer supabase.* calls — awaiting them inside onAuthStateChange deadlocks the auth lock.
+        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((_event, session) => {
           if (!mounted) return;
-          
-          if (session?.user) {
-            // Use metadata immediately for faster updates
-            const metadataRole = session.user.user_metadata?.role || 
-                                session.user.user_metadata?.user_role || 
-                                session.user.user_metadata?.userRole || 
-                                'customer';
-            
-            const user: User = {
-              id: session.user.id,
-              email: session.user.email || '',
-              name: session.user.user_metadata?.name || session.user.user_metadata?.first_name 
-                ? `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim()
-                : session.user.email || '',
-              role: metadataRole, // Use metadata first
-              permissions: session.user.user_metadata?.permissions || [],
-            };
-            
-            // CRITICAL: Only set credentials if user is admin
-            // Non-admin users should not be authenticated in admin app
-            if (metadataRole === 'admin') {
-              dispatch(setCredentials({ user, token: session.access_token }));
-              // Set user context in Sentry
-              loggingService.setUser(user);
-              
-              // Try to fetch from DB in background (non-blocking)
-              fetchUserRoleFromDB(
-                session.user.id, 
-                session.user.email || '', 
-                session.user.user_metadata
-              ).then((dbRole) => {
-                // If DB role is different and still admin, update it
-                if (mounted && dbRole === 'admin' && dbRole !== metadataRole) {
-                  dispatch(setCredentials({ 
-                    user: { ...user, role: dbRole }, 
-                    token: session.access_token 
-                  }));
-                } else if (mounted && dbRole !== 'admin') {
-                  // If DB says user is not admin, sign them out
+
+          const accessToken = session?.access_token;
+          const sessionUser = session?.user;
+
+          setTimeout(() => {
+            void (async () => {
+              if (!mounted) return;
+
+              if (sessionUser) {
+                const metadataRole = resolveMetadataRole(sessionUser.user_metadata);
+
+                const buildUser = (role: string): User => ({
+                  id: sessionUser.id,
+                  email: sessionUser.email || '',
+                  name: sessionUser.user_metadata?.name || sessionUser.user_metadata?.first_name
+                    ? `${sessionUser.user_metadata.first_name || ''} ${sessionUser.user_metadata.last_name || ''}`.trim()
+                    : sessionUser.email || '',
+                  role,
+                  permissions: sessionUser.user_metadata?.permissions || [],
+                });
+
+                if (metadataRole === 'admin' || metadataRole === 'super_admin') {
+                  const user = buildUser(metadataRole);
+                  dispatch(setCredentials({ user, token: accessToken || '' }));
+                  loggingService.setUser(user);
+
+                  fetchUserRoleFromDB(
+                    sessionUser.id,
+                    sessionUser.email || '',
+                    sessionUser.user_metadata
+                  ).then((dbRole) => {
+                    if (mounted && (dbRole === 'admin' || dbRole === 'super_admin') && dbRole !== metadataRole) {
+                      dispatch(setCredentials({
+                        user: { ...user, role: dbRole },
+                        token: accessToken || '',
+                      }));
+                    } else if (
+                      mounted &&
+                      dbRole !== 'admin' &&
+                      dbRole !== 'super_admin'
+                    ) {
+                      dispatch(logout());
+                      void supabase.auth.signOut();
+                    }
+                  }).catch(() => {
+                    // Silently fail - we already have metadata role
+                  });
+                } else if (metadataRole === 'customer') {
                   dispatch(logout());
-                  supabase.auth.signOut();
+                  void supabase.auth.signOut();
+                } else {
+                  const dbRole = await fetchUserRoleFromDB(
+                    sessionUser.id,
+                    sessionUser.email || '',
+                    sessionUser.user_metadata
+                  );
+                  if (!mounted) return;
+                  if (dbRole === 'admin' || dbRole === 'super_admin') {
+                    const user = buildUser(dbRole);
+                    dispatch(setCredentials({ user, token: accessToken || '' }));
+                    loggingService.setUser(user);
+                  } else {
+                    dispatch(logout());
+                    void supabase.auth.signOut();
+                  }
                 }
-              }).catch(() => {
-                // Silently fail - we already have metadata role
-              });
-            } else {
-              // Non-admin user detected - sign them out immediately
-              dispatch(logout());
-              supabase.auth.signOut();
-            }
-          } else {
-            dispatch(logout()); // This already sets initialized to true
-            // Clear user context in Sentry
-            loggingService.setUser(null);
-          }
+              } else {
+                dispatch(logout());
+                loggingService.setUser(null);
+              }
+            })();
+          }, 0);
         });
         subscription = authSubscription;
       }

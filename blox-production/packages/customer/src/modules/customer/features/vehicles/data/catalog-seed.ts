@@ -520,9 +520,11 @@ export const CATALOG_SEED_VEHICLES: Product[] = [
   }),
 ];
 
+/**
+ * Overlay seed fields onto products that already exist in Supabase.
+ * Never invents product ids — applications.vehicle_id FK references products(id).
+ */
 export function mergeCatalogWithSeed(remote: Product[]): Product[] {
-  const byId = new Map<string, Product>();
-  for (const v of remote) byId.set(v.id, v);
-  for (const v of CATALOG_SEED_VEHICLES) byId.set(v.id, v);
-  return Array.from(byId.values());
+  const seedById = new Map(CATALOG_SEED_VEHICLES.map((v) => [v.id, v]));
+  return remote.map((p) => seedById.get(p.id) ?? p);
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -100,6 +100,7 @@ export const PaymentPage: React.FC = () => {
   const [canPay, setCanPay] = useState(true);
   const [checkingCanPay, setCheckingCanPay] = useState(true);
   const { creditsBalance, refreshCredits } = useCredits();
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     if (id) {
@@ -323,9 +324,40 @@ export const PaymentPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const submitBankTransferForReview = async (
+    appId: string,
+    payAmount: number,
+    txnId: string,
+    dueDate?: string
+  ) => {
+    const meta = {
+      type: 'bank_transfer_pending',
+      dueDate: dueDate || null,
+      isSettlement: dueDate === 'settlement',
+      reference: bankTransferDetails.reference,
+      bankName: bankTransferDetails.bankName,
+    };
+    const { error } = await supabase.from('payment_transactions').insert({
+      application_id: appId,
+      amount: payAmount,
+      method: 'bank_transfer',
+      status: 'pending',
+      transaction_id: txnId,
+      // Stored as JSON for Admin confirmPendingBankTransfer (legacy plain-text still parsed)
+      failure_reason: JSON.stringify(meta),
+    });
+    if (error) {
+      throw new Error(error.message || 'Failed to submit bank transfer for review');
+    }
+  };
+
   const handleSubmit = async () => {
     if (!application || !amount) {
       toast.error('Invalid payment information');
+      return;
+    }
+
+    if (submittingRef.current || processing) {
       return;
     }
 
@@ -356,6 +388,7 @@ export const PaymentPage: React.FC = () => {
     if (!isValid) return;
 
     try {
+      submittingRef.current = true;
       setProcessing(true);
 
       // Handle card payments through SkipCash (credit card or debit card / QPay)
@@ -408,6 +441,7 @@ export const PaymentPage: React.FC = () => {
           custom1: JSON.stringify({
             applicationId: application.id,
             paymentScheduleId: paymentSchedule?.id,
+            dueDate: paymentSchedule?.dueDate,
             isSettlement: isSettlement,
             paymentId: paymentId,
             transactionId: transactionId,
@@ -442,6 +476,7 @@ export const PaymentPage: React.FC = () => {
           
           toast.error(userFriendlyMessage);
           setProcessing(false);
+          submittingRef.current = false;
           return;
         }
       }
@@ -499,33 +534,43 @@ export const PaymentPage: React.FC = () => {
               },
             });
             setProcessing(false);
+            submittingRef.current = false;
             return;
           }
+          // Partial/failed credit settlement already toasted — do not fall through.
+          setProcessing(false);
+          submittingRef.current = false;
+          return;
+        } else if (selectedMethod === 'bank_transfer') {
+          // Bank transfer: pending admin verification — never self-mark paid
+          const transactionId = `TXN-${crypto.randomUUID().replace(/-/g, '')}`;
+          await submitBankTransferForReview(
+            application.id,
+            finalSettlementAmount,
+            transactionId,
+            'settlement'
+          );
+          toast.success(
+            'Bank transfer submitted for verification. Installments will be marked paid after admin confirmation.'
+          );
+          navigate(`/customer/my-applications/${id}/payment-confirmation`, {
+            state: {
+              transactionId,
+              amount: finalSettlementAmount,
+              method: selectedMethod,
+              isSettlement,
+              paymentsSettled: remainingPayments.length,
+              pendingReview: true,
+            },
+          });
+          setProcessing(false);
+          submittingRef.current = false;
+          return;
         } else {
-          // Bank transfer: mark all as paid via API
-          for (const payment of remainingPayments) {
-            const paymentProportion = payment.amount / totalOriginalAmount;
-            const discountedPaymentAmount = finalSettlementAmount * paymentProportion;
-            const result = await supabaseApiService.markInstallmentAsPaid(
-              application.id,
-              payment.dueDate,
-              discountedPaymentAmount
-            );
-            if (result.status !== 'SUCCESS') {
-              console.error(`❌ Failed to mark installment as paid for ${payment.dueDate}:`, result.message);
-              allSucceeded = false;
-            } else if (result.data) {
-              setApplication(result.data);
-            }
-          }
-          if (!allSucceeded) {
-            toast.warning('Payment processed, but some installments may not have been updated. Please contact support if this persists.');
-          } else {
-            const discountMessage = discountCalculation && discountCalculation.totalDiscount > 0
-              ? ` with ${formatCurrency(discountCalculation.totalDiscount)} early settlement discount`
-              : '';
-            toast.success(`Successfully settled all ${remainingPayments.length} remaining payments${discountMessage}!`);
-          }
+          toast.error('Please select Credit Card, Debit Card, Blox Credit, or Bank Transfer for settlement.');
+          setProcessing(false);
+          submittingRef.current = false;
+          return;
         }
       } else if (!isDailyPayment && paymentSchedule) {
         // Determine the amount to pay (custom amount or full amount)
@@ -537,17 +582,20 @@ export const PaymentPage: React.FC = () => {
         const maxAmount = paymentSchedule.remainingAmount ?? paymentSchedule.amount;
         if (paidAmount > maxAmount) {
           toast.error(`Payment amount cannot exceed ${formatCurrency(maxAmount)}`);
+          setProcessing(false);
+          submittingRef.current = false;
           return;
         }
         if (paidAmount <= 0) {
           toast.error('Payment amount must be greater than 0');
+          setProcessing(false);
+          submittingRef.current = false;
           return;
         }
 
         // Generate unique transaction ID using UUID (prevents collisions)
         const transactionId = `TXN-${crypto.randomUUID().replace(/-/g, '')}`;
 
-        let result: { status: string; data?: Application; message?: string };
         if (selectedMethod === 'blox_credit') {
           const payResult = await creditsService.payInstallmentWithCredits(
             application.id,
@@ -557,78 +605,61 @@ export const PaymentPage: React.FC = () => {
           if (payResult.status !== 'SUCCESS' || !payResult.data?.success) {
             toast.error(payResult.message || 'Failed to pay with Blox Credits.');
             setProcessing(false);
+            submittingRef.current = false;
             return;
           }
           refreshCredits();
           const appResponse = await supabaseApiService.getApplicationById(application.id);
-          result = appResponse.status === 'SUCCESS' && appResponse.data
-            ? { status: 'SUCCESS', data: appResponse.data }
-            : { status: 'ERROR', message: 'Failed to load updated application' };
-        } else {
-          result = await supabaseApiService.markInstallmentAsPaid(
-            application.id,
-            paymentSchedule.dueDate,
-            paidAmount
-          );
-        }
-
-        if (result.status !== 'SUCCESS') {
-          console.error('❌ Failed to mark installment as paid:', result.message);
-          toast.error(result.message || 'Payment recorded, but failed to update installment status. Please contact support if this persists.');
-        } else {
-          if (!result.data) {
-            toast.error('Payment recorded, but no updated application data was returned.');
+          if (appResponse.status !== 'SUCCESS' || !appResponse.data) {
+            toast.error('Payment recorded, but failed to reload application.');
             setProcessing(false);
+            submittingRef.current = false;
             return;
           }
-          setApplication(result.data);
-          
-          // Generate and store receipt
+          setApplication(appResponse.data);
+
+          // Generate and store receipt (blox credit only — paid confirmed)
           try {
-            const updatedPayment = result.data.installmentPlan?.schedule?.find(
+            const updatedPayment = appResponse.data.installmentPlan?.schedule?.find(
               (p: PaymentSchedule) => p.dueDate === paymentSchedule.dueDate
             );
-            
             if (updatedPayment) {
               const receiptBlob = await receiptService.generateAsBlob({
-                application: result.data,
+                application: appResponse.data,
                 payment: updatedPayment,
                 paidAmount,
                 transactionId,
                 paymentMethod: selectedMethod,
                 paidDate: new Date().toISOString(),
               });
-
               const receiptFileName = `receipt-${transactionId}.pdf`;
               const receiptPath = `receipts/${application.id}/${receiptFileName}`;
-              
               const { data: uploadData, error: uploadError } = await supabase.storage
                 .from('documents')
                 .upload(receiptPath, receiptBlob, {
                   cacheControl: '3600',
                   upsert: false,
                 });
-
               if (!uploadError && uploadData) {
                 const { data: urlData } = supabase.storage
                   .from('documents')
                   .getPublicUrl(receiptPath);
-
-                const updatedSchedule = result.data.installmentPlan?.schedule?.map((p: PaymentSchedule) => {
-                  if (p.dueDate === paymentSchedule.dueDate) {
-                    return {
-                      ...p,
-                      receiptUrl: urlData.publicUrl,
-                      receiptGeneratedAt: new Date().toISOString(),
-                    };
+                const updatedSchedule = appResponse.data.installmentPlan?.schedule?.map(
+                  (p: PaymentSchedule) => {
+                    if (p.dueDate === paymentSchedule.dueDate) {
+                      return {
+                        ...p,
+                        receiptUrl: urlData.publicUrl,
+                        receiptGeneratedAt: new Date().toISOString(),
+                      };
+                    }
+                    return p;
                   }
-                  return p;
-                });
-
-                if (updatedSchedule && result.data.installmentPlan) {
+                );
+                if (updatedSchedule && appResponse.data.installmentPlan) {
                   await supabaseApiService.updateApplication(application.id, {
                     installmentPlan: {
-                      ...result.data.installmentPlan,
+                      ...appResponse.data.installmentPlan,
                       schedule: updatedSchedule,
                     } as any,
                   });
@@ -638,24 +669,56 @@ export const PaymentPage: React.FC = () => {
           } catch (receiptError) {
             console.error('❌ Failed to generate receipt:', receiptError);
           }
+
+          toast.success('Payment processed successfully!');
+          navigate(`/customer/my-applications/${id}/payment-confirmation`, {
+            state: {
+              transactionId,
+              amount: paidAmount,
+              method: selectedMethod,
+              isSettlement,
+              paymentsSettled: 1,
+              dueDate: paymentSchedule?.dueDate,
+            },
+          });
+          setProcessing(false);
+          submittingRef.current = false;
+          return;
+        }
+
+        if (selectedMethod === 'bank_transfer') {
+          await submitBankTransferForReview(
+            application.id,
+            paidAmount,
+            transactionId,
+            paymentSchedule.dueDate
+          );
+          toast.success(
+            'Bank transfer submitted for verification. Your installment will be marked paid after admin confirmation.'
+          );
+          navigate(`/customer/my-applications/${id}/payment-confirmation`, {
+            state: {
+              transactionId,
+              amount: paidAmount,
+              method: selectedMethod,
+              isSettlement: false,
+              paymentsSettled: 1,
+              dueDate: paymentSchedule.dueDate,
+              pendingReview: true,
+            },
+          });
+          setProcessing(false);
+          submittingRef.current = false;
+          return;
         }
       }
 
-      toast.success('Payment processed successfully!');
-      navigate(`/customer/my-applications/${id}/payment-confirmation`, {
-        state: { 
-          transactionId: `TXN-${Date.now()}`, 
-          amount, 
-          method: selectedMethod,
-          isSettlement,
-          paymentsSettled: isSettlement ? remainingPaymentsCount : 1,
-          dueDate: paymentSchedule?.dueDate,
-        },
-      });
+      toast.error('Unsupported payment method for this flow.');
     } catch (error: any) {
       toast.error(error.message || 'Payment failed. Please try again.');
     } finally {
       setProcessing(false);
+      submittingRef.current = false;
     }
   };
 

@@ -31,8 +31,8 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
 
   const getMilestoneIcon = (milestone: OwnershipMilestone) => {
     if (milestone.milestone === 'full_owner') return <EmojiEvents sx={{ color: '#FF6B35' }} />;
-    if (milestone.milestone === 'almost_there') return <EmojiEvents sx={{ color: '#9C27B0' }} />;
-    if (milestone.milestone === 'halfway') return <EmojiEvents sx={{ color: '#2196F3' }} />;
+    if (milestone.milestone === 'almost_there') return <EmojiEvents sx={{ color: '#5C5346' }} />;
+    if (milestone.milestone === 'halfway') return <EmojiEvents sx={{ color: '#2A2A2A' }} />;
     if (milestone.paymentStatus === 'paid') return <CheckCircle sx={{ color: '#4CAF50' }} />;
     if (milestone.paymentStatus === 'missed') return <Schedule sx={{ color: '#F44336' }} />;
     return <Schedule sx={{ color: '#9E9E9E' }} />;

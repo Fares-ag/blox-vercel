@@ -211,6 +211,8 @@ export interface Document {
   type: string;
   category: string;
   url: string;
+  /** Storage object path in the private `documents` bucket (prefer for signed reads). */
+  path?: string;
   uploadedAt: string;
 }
 

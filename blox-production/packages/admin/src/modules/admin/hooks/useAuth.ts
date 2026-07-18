@@ -18,16 +18,16 @@ export const useAuth = () => {
         
         const response: AuthResponse = await authService.login(credentials);
         
-        // CRITICAL: Check if user is admin before allowing login
-        if (response.user.role !== 'admin') {
-          // Sign out immediately - they shouldn't be logged in
+        // Admin portal: admin or super_admin (fail closed on missing/other roles)
+        const role = response.user.role;
+        if (role !== 'admin' && role !== 'super_admin') {
           await authService.logout();
-          const errorMessage = 'Access denied: Administrator privileges required. Only admin users can access this portal.';
+          const errorMessage =
+            'Access denied: Administrator privileges required. Only admin or super_admin users can access this portal.';
           dispatch(setError(errorMessage));
           return { success: false, error: errorMessage };
         }
-        
-        // Only set credentials if user is admin
+
         dispatch(setCredentials({ user: response.user, token: response.token }));
         navigate('/admin/dashboard');
         
