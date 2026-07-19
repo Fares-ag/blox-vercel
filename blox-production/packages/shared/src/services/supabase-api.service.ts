@@ -14,6 +14,7 @@ import type {
 } from '../models';
 import type { ApiResponse } from '../models/api.model';
 import { assertApplicationStatusTransition, type TransitionActor } from '../utils/application-status-transitions';
+import { mapInsuranceRateRow, mapPromotionRow } from '../utils/catalog-row-mappers';
 
 class SupabaseApiService {
   // Helper to detect and format DNS errors
@@ -384,19 +385,26 @@ class SupabaseApiService {
 
       let companyIdFromProfile: string | undefined;
       let profileEmail: string | undefined;
+      let profileRole: string | undefined;
       // Signup RPC has no session — skip profile lookup (and avoid stale JWT email).
       if (!useSignupRpc && authUser?.id) {
         const { data: profile } = await supabase
           .from('users')
-          .select('company_id, email')
+          .select('company_id, email, role')
           .eq('id', authUser.id)
           .maybeSingle();
-        const p = profile as { company_id?: string; email?: string } | null;
+        const p = profile as { company_id?: string; email?: string; role?: string } | null;
         companyIdFromProfile = p?.company_id ?? undefined;
         profileEmail = p?.email?.trim().toLowerCase() || undefined;
+        profileRole = (p?.role || '').trim().toLowerCase() || undefined;
       }
 
       const sessionEmail = authUser?.email?.trim().toLowerCase() || '';
+      const metadataRole = String(authUser?.user_metadata?.role || '')
+        .trim()
+        .toLowerCase();
+      const actorRole = profileRole || metadataRole;
+      const isAdminActor = actorRole === 'admin' || actorRole === 'super_admin';
       let customerEmail: string;
 
       if (useSignupRpc) {
@@ -408,7 +416,11 @@ class SupabaseApiService {
             data: {} as Application,
           };
         }
+      } else if (isAdminActor) {
+        // Admin create-for-customer: keep payload ownership (draft may omit email).
+        customerEmail = (application.customerEmail || '').trim().toLowerCase();
       } else if (sessionEmail) {
+        // Customer self-serve: bind to session so ownership cannot be spoofed.
         customerEmail = sessionEmail;
       } else if (profileEmail) {
         // Session missing email (rare); profile row still used by some RLS paths
@@ -457,7 +469,8 @@ class SupabaseApiService {
         appData.company_id = companyIdFromProfile;
       }
 
-      if (appData.customer_info && typeof appData.customer_info === 'object') {
+      // Keep customer_info.email aligned with ownership email when we have one.
+      if (customerEmail && appData.customer_info && typeof appData.customer_info === 'object') {
         appData.customer_info = { ...appData.customer_info, email: customerEmail };
       }
 
@@ -669,26 +682,29 @@ class SupabaseApiService {
         supabaseCache.invalidate('applications:all');
         supabaseCache.invalidate(`applications:${id}`);
         
-        // Log activity
-        try {
-          const { activityTrackingService } = await import('./activity-tracking.service');
-          const changes: Record<string, any> = {};
-          if (application.status !== undefined) changes.status = application.status;
-          if (application.contractSigned !== undefined) changes.contractSigned = application.contractSigned;
-          if (application.contractReviewComments !== undefined) changes.contractReviewComments = application.contractReviewComments;
-          
-          await activityTrackingService.logActivity('update', 'application', {
-            resourceId: id,
-            resourceName: `Application #${id.slice(0, 8)}`,
-            description: `Updated application${application.status ? ` - status changed to ${application.status}` : ''}`,
-            metadata: {
-              changes,
-              customerEmail: updatedApp.customerEmail,
-            },
-          });
-        } catch (error) {
-          console.error('Failed to log activity:', error);
-        }
+        // Best-effort activity — never block the write success path
+        void (async () => {
+          try {
+            const { activityTrackingService } = await import('./activity-tracking.service');
+            const changes: Record<string, any> = {};
+            if (application.status !== undefined) changes.status = application.status;
+            if (application.contractSigned !== undefined) changes.contractSigned = application.contractSigned;
+            if (application.contractReviewComments !== undefined) {
+              changes.contractReviewComments = application.contractReviewComments;
+            }
+            await activityTrackingService.logActivity('update', 'application', {
+              resourceId: id,
+              resourceName: `Application #${id.slice(0, 8)}`,
+              description: `Updated application${application.status ? ` - status changed to ${application.status}` : ''}`,
+              metadata: {
+                changes,
+                customerEmail: updatedApp.customerEmail,
+              },
+            });
+          } catch (error) {
+            console.error('Failed to log activity:', error);
+          }
+        })();
         
         return {
           status: 'SUCCESS',
@@ -703,26 +719,29 @@ class SupabaseApiService {
       supabaseCache.invalidate('applications:all');
       supabaseCache.invalidate(`applications:${id}`);
       
-      // Log activity
-      try {
-        const { activityTrackingService } = await import('./activity-tracking.service');
-        const changes: Record<string, any> = {};
-        if (application.status !== undefined) changes.status = application.status;
-        if (application.contractSigned !== undefined) changes.contractSigned = application.contractSigned;
-        if (application.contractReviewComments !== undefined) changes.contractReviewComments = application.contractReviewComments;
-        
-        await activityTrackingService.logActivity('update', 'application', {
-          resourceId: id,
-          resourceName: `Application #${id.slice(0, 8)}`,
-          description: `Updated application${application.status ? ` - status changed to ${application.status}` : ''}`,
-          metadata: {
-            changes,
-            customerEmail: updatedApp.customerEmail,
-          },
-        });
-      } catch (error) {
-        console.error('Failed to log activity:', error);
-      }
+      // Best-effort activity — never block the write success path
+      void (async () => {
+        try {
+          const { activityTrackingService } = await import('./activity-tracking.service');
+          const changes: Record<string, any> = {};
+          if (application.status !== undefined) changes.status = application.status;
+          if (application.contractSigned !== undefined) changes.contractSigned = application.contractSigned;
+          if (application.contractReviewComments !== undefined) {
+            changes.contractReviewComments = application.contractReviewComments;
+          }
+          await activityTrackingService.logActivity('update', 'application', {
+            resourceId: id,
+            resourceName: `Application #${id.slice(0, 8)}`,
+            description: `Updated application${application.status ? ` - status changed to ${application.status}` : ''}`,
+            metadata: {
+              changes,
+              customerEmail: updatedApp.customerEmail,
+            },
+          });
+        } catch (error) {
+          console.error('Failed to log activity:', error);
+        }
+      })();
       
       return {
         status: 'SUCCESS',
@@ -987,61 +1006,73 @@ class SupabaseApiService {
         newStatus = payment.status || 'due';
       }
 
-      // 2) Update payment_schedules table
-      try {
-        const { data: existingRows, error: selectError } = await supabase
-          .from('payment_schedules')
-          .select('id, paid_amount, paid_date')
-          .eq('application_id', applicationId)
-          .eq('due_date', paymentDueDate)
-          .limit(1);
+      // 2) Update payment_schedules first — fail closed (do not touch JSON on schedule failure)
+      const { data: existingRows, error: selectError } = await supabase
+        .from('payment_schedules')
+        .select('id, paid_amount, paid_date')
+        .eq('application_id', applicationId)
+        .eq('due_date', paymentDueDate)
+        .limit(1);
 
-        if (selectError) {
-          console.error('❌ markInstallmentAsPaid: select from payment_schedules failed', selectError);
-        } else if (existingRows && existingRows.length > 0) {
-          const existingId = existingRows[0].id;
-          const existingPaidAmount = Number(existingRows[0].paid_amount) || 0;
-          const updatedPaidAmount = existingPaidAmount + paidAmount;
-          const updatedRemainingAmount = originalAmount - updatedPaidAmount;
-
-          const { error: updateError } = await supabase
-            .from('payment_schedules')
-            .update({
-              status: updatedRemainingAmount <= 0 ? 'paid' : 'partially_paid',
-              paid_date: updatedRemainingAmount <= 0 ? paidAt : (existingRows[0].paid_date || paidAt),
-              paid_amount: updatedPaidAmount,
-              remaining_amount: Math.max(0, updatedRemainingAmount),
-              updated_at: paidAt,
-            })
-            .eq('id', existingId);
-
-          if (updateError) {
-            console.error('❌ markInstallmentAsPaid: update payment_schedules failed', updateError);
-          }
-        } else {
-          const { error: insertError } = await supabase
-            .from('payment_schedules')
-            .insert({
-              application_id: applicationId,
-              due_date: paymentDueDate,
-              amount: originalAmount,
-              paid_amount: paidAmount,
-              remaining_amount: Math.max(0, remainingAmount),
-              status: remainingAmount <= 0 ? 'paid' : 'partially_paid',
-              paid_date: remainingAmount <= 0 ? paidAt : undefined,
-              created_at: paidAt,
-              updated_at: paidAt,
-            });
-
-          if (insertError) {
-            console.error('❌ markInstallmentAsPaid: insert into payment_schedules failed', insertError);
-          }
-        }
-      } catch (scheduleError) {
-        console.error('❌ markInstallmentAsPaid: unexpected error updating payment_schedules', scheduleError);
+      if (selectError) {
+        console.error('❌ markInstallmentAsPaid: select from payment_schedules failed', selectError);
+        return {
+          status: 'ERROR',
+          message: selectError.message || 'Failed to read payment schedule row',
+          data: {} as Application,
+        };
       }
 
-      // 3) Update the application installmentPlan JSON
+      // Idempotent schedule write: set absolute target from JSON intent (newPaidAmount),
+      // never += onto existing schedule paid_amount (safe if JSON update previously failed).
+      if (existingRows && existingRows.length > 0) {
+        const existingId = existingRows[0].id;
+
+        const { error: updateError } = await supabase
+          .from('payment_schedules')
+          .update({
+            status: remainingAmount <= 0 ? 'paid' : 'partially_paid',
+            paid_date: remainingAmount <= 0 ? paidAt : (existingRows[0].paid_date || paidAt),
+            paid_amount: newPaidAmount,
+            remaining_amount: Math.max(0, remainingAmount),
+            updated_at: paidAt,
+          })
+          .eq('id', existingId);
+
+        if (updateError) {
+          console.error('❌ markInstallmentAsPaid: update payment_schedules failed', updateError);
+          return {
+            status: 'ERROR',
+            message: updateError.message || 'Failed to update payment schedule row',
+            data: {} as Application,
+          };
+        }
+      } else {
+        const { error: insertError } = await supabase
+          .from('payment_schedules')
+          .insert({
+            application_id: applicationId,
+            due_date: paymentDueDate,
+            amount: originalAmount,
+            paid_amount: newPaidAmount,
+            remaining_amount: Math.max(0, remainingAmount),
+            status: remainingAmount <= 0 ? 'paid' : 'partially_paid',
+            paid_date: remainingAmount <= 0 ? paidAt : undefined,
+            created_at: paidAt,
+            updated_at: paidAt,
+          });
+
+        if (insertError) {
+          console.error('❌ markInstallmentAsPaid: insert into payment_schedules failed', insertError);
+          return {
+            status: 'ERROR',
+            message: insertError.message || 'Failed to insert payment schedule row',
+            data: {} as Application,
+          };
+        }
+      }
+
+      // 3) Update the application installmentPlan JSON (only after schedule write succeeds)
       const updatedSchedule = [...installmentPlan.schedule];
       updatedSchedule[paymentIndex] = {
         ...payment,
@@ -1060,7 +1091,16 @@ class SupabaseApiService {
         } as any,
       });
 
-      // updateApplication already invalidates caches and returns the fresh Application
+      if (updateResult.status !== 'SUCCESS') {
+        return {
+          status: 'ERROR',
+          message:
+            updateResult.message ||
+            'Payment schedule updated but application installment plan failed — safe to retry',
+          data: {} as Application,
+        };
+      }
+
       return updateResult;
     } catch (error: any) {
       console.error('❌ markInstallmentAsPaid: unexpected error', error);
@@ -1072,10 +1112,119 @@ class SupabaseApiService {
     }
   }
 
+  /**
+   * Admin: replace payment_schedules rows from application.installment_plan.schedule.
+   * Used after convert/edit schedule so dashboard rows match JSON.
+   * Full replace (delete + insert) — call only after intentional schedule rewrite.
+   */
+  async replacePaymentSchedulesFromInstallmentPlan(
+    applicationId: string
+  ): Promise<ApiResponse<{ rows: number }>> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        return { status: 'ERROR', message: 'Unauthorized', data: { rows: 0 } };
+      }
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      const role = (profile?.role || user.user_metadata?.role) as string | undefined;
+      if (role !== 'admin' && role !== 'super_admin') {
+        return {
+          status: 'ERROR',
+          message: 'Only admins can rebuild payment schedules',
+          data: { rows: 0 },
+        };
+      }
+
+      const appRes = await this.getApplicationById(applicationId);
+      if (appRes.status !== 'SUCCESS' || !appRes.data?.installmentPlan?.schedule) {
+        return {
+          status: 'ERROR',
+          message: appRes.message || 'Application schedule not found',
+          data: { rows: 0 },
+        };
+      }
+
+      const schedule = appRes.data.installmentPlan.schedule;
+      if (!Array.isArray(schedule) || schedule.length === 0) {
+        return { status: 'ERROR', message: 'Installment schedule is empty', data: { rows: 0 } };
+      }
+
+      const { error: delErr } = await supabase
+        .from('payment_schedules')
+        .delete()
+        .eq('application_id', applicationId);
+
+      if (delErr) {
+        return {
+          status: 'ERROR',
+          message: delErr.message || 'Failed to clear existing payment schedules',
+          data: { rows: 0 },
+        };
+      }
+
+      const now = new Date().toISOString();
+      const rows = schedule
+        .map((payment: any) => {
+          const dueDate = payment?.dueDate || payment?.due_date;
+          if (!dueDate) return null;
+          const amount = Number(payment.amount) || 0;
+          const paidAmount = Number(payment.paidAmount ?? payment.paid_amount) || 0;
+          let status = String(payment.status || 'upcoming').toLowerCase();
+          if (status === 'completed') status = 'paid';
+          if (status === 'partial' || status === 'partially paid') status = 'partially_paid';
+          if (paidAmount >= amount && amount > 0) status = 'paid';
+          else if (paidAmount > 0 && status !== 'paid') status = 'partially_paid';
+
+          return {
+            application_id: applicationId,
+            due_date: dueDate,
+            amount,
+            paid_amount: paidAmount,
+            remaining_amount: Math.max(0, amount - paidAmount),
+            status,
+            paid_date: status === 'paid' ? payment.paidDate || payment.paid_date || now : null,
+            created_at: now,
+            updated_at: now,
+          };
+        })
+        .filter(Boolean) as Record<string, unknown>[];
+
+      if (rows.length === 0) {
+        return { status: 'ERROR', message: 'No valid schedule rows to insert', data: { rows: 0 } };
+      }
+
+      const { error: insErr } = await supabase.from('payment_schedules').insert(rows);
+      if (insErr) {
+        return {
+          status: 'ERROR',
+          message: insErr.message || 'Failed to insert rebuilt payment schedules',
+          data: { rows: 0 },
+        };
+      }
+
+      return {
+        status: 'SUCCESS',
+        message: 'Payment schedules rebuilt from installment plan',
+        data: { rows: rows.length },
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to rebuild payment schedules',
+        data: { rows: 0 },
+      };
+    }
+  }
+
 
   /**
    * Admin: confirm a pending bank_transfer payment_transactions row.
-   * Dual-writes schedules via markInstallmentAsPaid (or settlement loop), then completes the txn.
+   * Claim pending→processing first, mark schedules, then complete.
+   * Retries on processing skip already-applied marks to avoid double-pay.
    */
   async confirmPendingBankTransfer(transactionId: string): Promise<ApiResponse<{ applicationId: string }>> {
     try {
@@ -1104,11 +1253,31 @@ class SupabaseApiService {
       if (txn.status === 'completed') {
         return { status: 'SUCCESS', message: 'Already confirmed', data: { applicationId: txn.application_id || '' } };
       }
-      if (txn.status !== 'pending') {
+      if (txn.status !== 'pending' && txn.status !== 'processing') {
         return { status: 'ERROR', message: `Cannot confirm transaction in status ${txn.status}`, data: { applicationId: '' } };
       }
       if (!txn.application_id) {
         return { status: 'ERROR', message: 'Transaction missing application_id', data: { applicationId: '' } };
+      }
+
+      let claimedFromPending = false;
+      if (txn.status === 'pending') {
+        const { data: claimed, error: claimErr } = await supabase
+          .from('payment_transactions')
+          .update({ status: 'processing' })
+          .eq('transaction_id', transactionId)
+          .eq('status', 'pending')
+          .select('transaction_id')
+          .maybeSingle();
+
+        if (claimErr || !claimed) {
+          return {
+            status: 'ERROR',
+            message: claimErr?.message || 'Could not claim bank transfer (already claimed?)',
+            data: { applicationId: txn.application_id },
+          };
+        }
+        claimedFromPending = true;
       }
 
       let meta: any = {};
@@ -1123,32 +1292,96 @@ class SupabaseApiService {
       const isSettlement = !!meta.isSettlement || meta.dueDate === 'settlement';
       const amount = Number(txn.amount) || 0;
 
-      if (isSettlement) {
-        const appRes = await this.getApplicationById(txn.application_id);
-        if (appRes.status !== 'SUCCESS' || !appRes.data?.installmentPlan?.schedule) {
-          return { status: 'ERROR', message: 'Application schedule not found', data: { applicationId: '' } };
-        }
-        const unpaid = appRes.data.installmentPlan.schedule.filter((p: any) => p.status !== 'paid');
-        const total = unpaid.reduce((s: number, p: any) => s + (Number(p.remainingAmount ?? p.amount) || 0), 0) || 1;
-        for (const payment of unpaid) {
-          const portion = ((Number(payment.remainingAmount ?? payment.amount) || 0) / total) * amount;
-          const mark = await this.markInstallmentAsPaid(txn.application_id, payment.dueDate, portion);
-          if (mark.status !== 'SUCCESS') {
-            return { status: 'ERROR', message: mark.message || 'Failed to mark installment', data: { applicationId: '' } };
+      const revertClaim = async () => {
+        if (!claimedFromPending) return;
+        await supabase
+          .from('payment_transactions')
+          .update({ status: 'pending' })
+          .eq('transaction_id', transactionId)
+          .eq('status', 'processing');
+      };
+
+      const installmentFullyPaid = (schedule: any[] | undefined, dueDate: string): boolean => {
+        const row = (schedule || []).find((p: any) => p.dueDate === dueDate);
+        if (!row) return false;
+        if (row.status === 'paid') return true;
+        const remaining = Number(row.remainingAmount);
+        if (Number.isFinite(remaining)) return remaining <= 0;
+        const total = Number(row.amount) || 0;
+        const paid = Number(row.paidAmount) || 0;
+        return total > 0 && paid >= total;
+      };
+
+      try {
+        if (isSettlement) {
+          const appRes = await this.getApplicationById(txn.application_id);
+          if (appRes.status !== 'SUCCESS' || !appRes.data?.installmentPlan?.schedule) {
+            await revertClaim();
+            return { status: 'ERROR', message: 'Application schedule not found', data: { applicationId: '' } };
+          }
+          const unpaid = appRes.data.installmentPlan.schedule.filter((p: any) => p.status !== 'paid');
+          if (unpaid.length > 0) {
+            const totalRemaining = unpaid.reduce(
+              (s: number, p: any) => s + (Number(p.remainingAmount ?? p.amount) || 0),
+              0
+            );
+            // Cap to remaining unpaid so a retry after partial marks cannot over-allocate.
+            const toApply = Math.min(amount, totalRemaining);
+            if (toApply > 0 && totalRemaining > 0) {
+              for (const payment of unpaid) {
+                const rem = Number(payment.remainingAmount ?? payment.amount) || 0;
+                const portion = (rem / totalRemaining) * toApply;
+                if (portion <= 0) continue;
+                const mark = await this.markInstallmentAsPaid(
+                  txn.application_id,
+                  payment.dueDate,
+                  portion
+                );
+                if (mark.status !== 'SUCCESS') {
+                  await revertClaim();
+                  return {
+                    status: 'ERROR',
+                    message: mark.message || 'Failed to mark installment',
+                    data: { applicationId: '' },
+                  };
+                }
+              }
+            }
+          }
+        } else {
+          const dueDate = meta.dueDate || null;
+          if (!dueDate || dueDate === 'settlement') {
+            await revertClaim();
+            return { status: 'ERROR', message: 'Bank transfer missing dueDate metadata', data: { applicationId: '' } };
+          }
+
+          const appRes = await this.getApplicationById(txn.application_id);
+          const alreadyPaid =
+            appRes.status === 'SUCCESS' &&
+            installmentFullyPaid(appRes.data?.installmentPlan?.schedule, dueDate);
+
+          if (!alreadyPaid) {
+            const mark = await this.markInstallmentAsPaid(txn.application_id, dueDate, amount);
+            if (mark.status !== 'SUCCESS') {
+              await revertClaim();
+              return {
+                status: 'ERROR',
+                message: mark.message || 'Failed to mark installment',
+                data: { applicationId: '' },
+              };
+            }
           }
         }
-      } else {
-        const dueDate = meta.dueDate || null;
-        if (!dueDate || dueDate === 'settlement') {
-          return { status: 'ERROR', message: 'Bank transfer missing dueDate metadata', data: { applicationId: '' } };
-        }
-        const mark = await this.markInstallmentAsPaid(txn.application_id, dueDate, amount);
-        if (mark.status !== 'SUCCESS') {
-          return { status: 'ERROR', message: mark.message || 'Failed to mark installment', data: { applicationId: '' } };
-        }
+      } catch (markErr: any) {
+        await revertClaim();
+        return {
+          status: 'ERROR',
+          message: markErr?.message || 'Failed to mark installment',
+          data: { applicationId: txn.application_id },
+        };
       }
 
-      const { error: updErr } = await supabase
+      const { data: completed, error: updErr } = await supabase
         .from('payment_transactions')
         .update({
           status: 'completed',
@@ -1156,10 +1389,18 @@ class SupabaseApiService {
           failure_reason: null,
         })
         .eq('transaction_id', transactionId)
-        .eq('status', 'pending');
+        .eq('status', 'processing')
+        .select('transaction_id')
+        .maybeSingle();
 
-      if (updErr) {
-        return { status: 'ERROR', message: updErr.message, data: { applicationId: txn.application_id } };
+      if (updErr || !completed) {
+        return {
+          status: 'ERROR',
+          message:
+            updErr?.message ||
+            'Installments updated but transaction still processing — retry confirm (safe)',
+          data: { applicationId: txn.application_id },
+        };
       }
 
       return {
@@ -1200,7 +1441,7 @@ class SupabaseApiService {
       const offers = handleSupabaseResponse<any[]>(response).map((offer: any) => {
         const mapped = mapSupabaseRow<Offer>(offer);
         if (offer.insurance_rate) {
-          mapped.insuranceRate = mapSupabaseRow<InsuranceRate>(offer.insurance_rate);
+          mapped.insuranceRate = mapInsuranceRateRow(offer.insurance_rate);
         }
         return mapped;
       });
@@ -1236,7 +1477,7 @@ class SupabaseApiService {
       const offer = handleSupabaseResponse<any>(response);
       const mapped = mapSupabaseRow<Offer>(offer);
       if (offer.insurance_rate) {
-        mapped.insuranceRate = mapSupabaseRow<InsuranceRate>(offer.insurance_rate);
+        mapped.insuranceRate = mapInsuranceRateRow(offer.insurance_rate);
       }
       
       return {
@@ -1286,6 +1527,7 @@ class SupabaseApiService {
       }
       
       const createdOffer = mapSupabaseRow<Offer>(response.data);
+      supabaseCache.invalidate('offers:all');
       
       // Log activity
       try {
@@ -1344,6 +1586,7 @@ class SupabaseApiService {
         .single();
       
       const updatedOffer = mapSupabaseRow<Offer>(handleSupabaseResponse<any>(response));
+      supabaseCache.invalidate('offers:all');
       
       // Log activity
       try {
@@ -1475,7 +1718,7 @@ class SupabaseApiService {
         .select('*')
         .order('created_at', { ascending: false });
       
-      const promotions = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<Promotion>);
+      const promotions = handleSupabaseResponse<any[]>(response).map(mapPromotionRow);
       
       return {
         status: 'SUCCESS',
@@ -1509,7 +1752,7 @@ class SupabaseApiService {
         .select()
         .single();
       
-      const createdPromo = mapSupabaseRow<Promotion>(handleSupabaseResponse<any>(response));
+      const createdPromo = mapPromotionRow(handleSupabaseResponse<any>(response));
       
       // Log activity
       try {
@@ -1573,7 +1816,7 @@ class SupabaseApiService {
         .select()
         .single();
       
-      const updatedPromo = mapSupabaseRow<Promotion>(handleSupabaseResponse<any>(response));
+      const updatedPromo = mapPromotionRow(handleSupabaseResponse<any>(response));
       
       // Log activity
       try {
@@ -1634,6 +1877,7 @@ class SupabaseApiService {
         .eq('id', id);
       
       handleSupabaseResponse(response);
+      supabaseCache.invalidate('offers:all');
       
       return {
         status: 'SUCCESS',
@@ -1700,7 +1944,7 @@ class SupabaseApiService {
         .eq('id', id)
         .single();
       
-      const promo = mapSupabaseRow<Promotion>(handleSupabaseResponse<any>(response));
+      const promo = mapPromotionRow(handleSupabaseResponse<any>(response));
       
       return {
         status: 'SUCCESS',
@@ -1724,7 +1968,7 @@ class SupabaseApiService {
         .select('*')
         .order('created_at', { ascending: false });
       
-      const rates = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<InsuranceRate>);
+      const rates = handleSupabaseResponse<any[]>(response).map(mapInsuranceRateRow);
       
       return {
         status: 'SUCCESS',
@@ -1748,7 +1992,7 @@ class SupabaseApiService {
         .eq('id', id)
         .single();
       
-      const rate = mapSupabaseRow<InsuranceRate>(handleSupabaseResponse<any>(response));
+      const rate = mapInsuranceRateRow(handleSupabaseResponse<any>(response));
       
       return {
         status: 'SUCCESS',
@@ -1786,7 +2030,7 @@ class SupabaseApiService {
         .select()
         .single();
       
-      const createdRate = mapSupabaseRow<InsuranceRate>(handleSupabaseResponse<any>(response));
+      const createdRate = mapInsuranceRateRow(handleSupabaseResponse<any>(response));
       
       return {
         status: 'SUCCESS',
@@ -1827,7 +2071,7 @@ class SupabaseApiService {
         .select()
         .single();
       
-      const updatedRate = mapSupabaseRow<InsuranceRate>(handleSupabaseResponse<any>(response));
+      const updatedRate = mapInsuranceRateRow(handleSupabaseResponse<any>(response));
       
       return {
         status: 'SUCCESS',

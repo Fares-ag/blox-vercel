@@ -113,6 +113,17 @@ export const AppRoutes: React.FC = () => {
         }
       />
 
+      {/* Guest + authenticated apply — CreateApplicationPage handles signup/RPC for guests.
+          Must stay outside AuthGuard so vehicle Apply is reachable without a prior login. */}
+      <Route
+        path="/customer/applications/new"
+        element={
+          <CustomerNavWrapper>
+            <CreateApplicationPage />
+          </CustomerNavWrapper>
+        }
+      />
+
       {/* Protected Routes - Requires Auth */}
       <Route
         path="/customer"
@@ -126,7 +137,6 @@ export const AppRoutes: React.FC = () => {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="my-applications" element={<ApplicationsListPage />} />
         <Route path="my-applications/:id" element={<ApplicationDetailPage />} />
-        <Route path="applications/new" element={<CreateApplicationPage />} />
         <Route path="applications/:id/payment" element={<PaymentPage />} />
         <Route path="applications/:id/payment/:paymentId" element={<PaymentPage />} />
         <Route path="applications/:id/payment-callback" element={<PaymentCallbackPage />} />

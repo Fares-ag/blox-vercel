@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
-import { extractDocumentsStoragePath } from '../../utils/documents-storage.utils';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  extractDocumentsStoragePath,
+  resolveDocumentsSignedUrl,
+} from '../../utils/documents-storage.utils';
 
 describe('extractDocumentsStoragePath', () => {
   it('returns relative path as-is', () => {
@@ -30,5 +33,28 @@ describe('extractDocumentsStoragePath', () => {
         'https://xxx.supabase.co/storage/v1/object/sign/documents/signed-contracts/application-1/c.pdf?token=abc'
       )
     ).toBe('signed-contracts/application-1/c.pdf');
+  });
+});
+
+describe('resolveDocumentsSignedUrl', () => {
+  it('does not fall back to private public URLs when signing fails', async () => {
+    const publicUrl =
+      'https://xxx.supabase.co/storage/v1/object/public/documents/application-documents/a/file.pdf';
+    const supabase = {
+      storage: {
+        from: () => ({
+          createSignedUrl: vi.fn().mockResolvedValue({
+            data: null,
+            error: { message: 'denied' },
+          }),
+        }),
+      },
+    };
+
+    const url = await resolveDocumentsSignedUrl(supabase, {
+      path: 'application-documents/a/file.pdf',
+      url: publicUrl,
+    });
+    expect(url).toBeNull();
   });
 });

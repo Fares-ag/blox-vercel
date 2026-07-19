@@ -9,6 +9,7 @@ import { supabaseApiService } from '@shared/services';
 import type { Product, ProductAttribute } from '@shared/models/product.model';
 import { Button, Input, Select, type SelectOption } from '@shared/components';
 import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
+import { resolveDocumentsSignedUrl } from '@shared/utils';
 import { toast } from 'react-toastify';
 import { useForm, useFieldArray } from 'react-hook-form';
 import './EditProductPage.scss';
@@ -21,6 +22,7 @@ export const EditProductPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const conditionOptions: SelectOption[] = [
     { value: 'new', label: 'New' },
@@ -71,6 +73,24 @@ export const EditProductPage: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, selected?.id]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (uploadedImages.length === 0) {
+        setImagePreviews([]);
+        return;
+      }
+      const { supabase } = await import('@shared/services');
+      const urls = await Promise.all(
+        uploadedImages.map(async (ref) => (await resolveDocumentsSignedUrl(supabase, ref)) || ref)
+      );
+      if (!cancelled) setImagePreviews(urls);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [uploadedImages]);
 
   const loadProduct = async () => {
     if (!id) return;
@@ -129,29 +149,30 @@ export const EditProductPage: React.FC = () => {
         if (uploadError) {
           throw new Error(uploadError.message || `Failed to upload ${file.name}`);
         }
-        const { data: urlData } = supabase.storage.from('documents').getPublicUrl(filePath);
-        if (!urlData?.publicUrl) {
-          throw new Error(`Failed to resolve URL for ${file.name}`);
-        }
-        return urlData.publicUrl;
+        // Private bucket — persist path; preview via signed URL.
+        return filePath;
       });
 
-      const urls = await Promise.all(uploadPromises);
-      const newImages = [...uploadedImages, ...urls];
-      setUploadedImages(newImages);
-      setValue('images', newImages as any);
+      const paths = await Promise.all(uploadPromises);
+      setUploadedImages((prev) => {
+        const newImages = [...prev, ...paths];
+        setValue('images', newImages as any);
+        return newImages;
+      });
       toast.success(`${validFiles.length} image(s) uploaded to storage`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to upload images');
     } finally {
       setUploadingImages(false);
     }
-  }, [uploadedImages, setValue]);
+  }, [setValue]);
 
   const handleRemoveImage = (index: number) => {
-    const newImages = uploadedImages.filter((_, i) => i !== index);
-    setUploadedImages(newImages);
-    setValue('images', newImages as any);
+    setUploadedImages((prev) => {
+      const newImages = prev.filter((_, i) => i !== index);
+      setValue('images', newImages as any);
+      return newImages;
+    });
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -433,9 +454,12 @@ export const EditProductPage: React.FC = () => {
 
               {uploadedImages.length > 0 && (
                 <Box className="images-grid">
-                  {uploadedImages.map((url, index) => (
-                    <Box key={index} className="image-preview">
-                      <img src={url} alt={`Vehicle ${index + 1}`} />
+                  {uploadedImages.map((path, index) => (
+                    <Box key={path} className="image-preview">
+                      <img
+                        src={imagePreviews[index] || path}
+                        alt={`Vehicle ${index + 1}`}
+                      />
                       <IconButton
                         className="remove-image-button"
                         onClick={() => handleRemoveImage(index)}

@@ -12,23 +12,23 @@ You need to add 5 secrets to your Supabase Edge Functions. There are two ways to
 
 ### Secret 1: SKIPCASH_CLIENT_ID
 - **Name**: `SKIPCASH_CLIENT_ID`
-- **Value**: `1333b59f-f3ef-4d76-92b6-8cd2c24f528b`
+- **Value**: `<REDACTED_CLIENT_ID>`
 - Click **"Add another"**
 
 ### Secret 2: SKIPCASH_KEY_ID
 - **Name**: `SKIPCASH_KEY_ID`
-- **Value**: `eaddac8b-b46b-4996-9c1e-8ab5bf618566`
+- **Value**: `<REDACTED_KEY_ID>`
 - Click **"Add another"**
 
 ### Secret 3: SKIPCASH_SECRET_KEY
 - **Name**: `SKIPCASH_SECRET_KEY`
-- **Value**: `+ZzRLkgRSz+QV9qH17J6HyQ5W77mlaZkX5JIAS9oNoVqkPGFLucBcF75uTU+8DAzh6cj14Bei+MBulM1IFyoEd2rdxeOAVB7kH+ZNKRJlNxj+mNquTKIrjJJx4+Q+o2OQjUGZ8iPf4HuK8nXjD2sHcU6UBjJRS0S0DCEELt/HfWQJlycRkejbpFlAQkXRzixzRwfwF7hERlyt4moQyabxIeuAgDu7XYe48sqnKBMjoOEcc8Z/RjV9zg8z4uwHIPec8rVVrFXoF8IYZFdNlAExEs1Z0qxONAbvJOw110X/AQeeYQAxYV6lLOMk4kDtJR6EqLmEIy9DuAA6rb8M+Cijdvf7ZX1FeGDaevW+RznhKnTbJAfa+JMJyab+NKJlg6nWUwsWnMzajT38e+hv10J3vuDs1f/apNAtMxFqL8JLsE+DIsBb36/dGo9f7lcU4f5b6tqaS/rkFQ8CKihUrKy6CcioA5fds73mAnbKqygVMV0cBrLDZznazis1tz1uYLrSfF4cCiv4noFDDNh4Wg==`
+- **Value**: `<REDACTED_SKIPCASH_SECRET_KEY>`
 - ⚠️ **Important**: Copy the entire value, it's very long!
 - Click **"Add another"**
 
 ### Secret 4: SKIPCASH_WEBHOOK_KEY
 - **Name**: `SKIPCASH_WEBHOOK_KEY`
-- **Value**: `7a189879-5091-4f43-a2cf-a542cf218827`
+- **Value**: `<REDACTED_WEBHOOK_KEY>`
 - Click **"Add another"**
 
 ### Secret 5: SKIPCASH_USE_SANDBOX
@@ -43,10 +43,10 @@ You need to add 5 secrets to your Supabase Edge Functions. There are two ways to
 3. Paste this entire block:
 
 ```
-SKIPCASH_CLIENT_ID=1333b59f-f3ef-4d76-92b6-8cd2c24f528b
-SKIPCASH_KEY_ID=eaddac8b-b46b-4996-9c1e-8ab5bf618566
-SKIPCASH_SECRET_KEY=+ZzRLkgRSz+QV9qH17J6HyQ5W77mlaZkX5JIAS9oNoVqkPGFLucBcF75uTU+8DAzh6cj14Bei+MBulM1IFyoEd2rdxeOAVB7kH+ZNKRJlNxj+mNquTKIrjJJx4+Q+o2OQjUGZ8iPf4HuK8nXjD2sHcU6UBjJRS0S0DCEELt/HfWQJlycRkejbpFlAQkXRzixzRwfwF7hERlyt4moQyabxIeuAgDu7XYe48sqnKBMjoOEcc8Z/RjV9zg8z4uwHIPec8rVVrFXoF8IYZFdNlAExEs1Z0qxONAbvJOw110X/AQeeYQAxYV6lLOMk4kDtJR6EqLmEIy9DuAA6rb8M+Cijdvf7ZX1FeGDaevW+RznhKnTbJAfa+JMJyab+NKJlg6nWUwsWnMzajT38e+hv10J3vuDs1f/apNAtMxFqL8JLsE+DIsBb36/dGo9f7lcU4f5b6tqaS/rkFQ8CKihUrKy6CcioA5fds73mAnbKqygVMV0cBrLDZznazis1tz1uYLrSfF4cCiv4noFDDNh4Wg==
-SKIPCASH_WEBHOOK_KEY=7a189879-5091-4f43-a2cf-a542cf218827
+SKIPCASH_CLIENT_ID=<REDACTED_CLIENT_ID>
+SKIPCASH_KEY_ID=<REDACTED_KEY_ID>
+SKIPCASH_SECRET_KEY=<REDACTED_SKIPCASH_SECRET_KEY>
+SKIPCASH_WEBHOOK_KEY=<REDACTED_WEBHOOK_KEY>
 SKIPCASH_USE_SANDBOX=true
 ```
 

@@ -2,11 +2,11 @@
 
 ## ✅ Your SkipCash Dashboard Shows:
 
-- **Client ID**: `1333b59f-f3ef-4d76-92b6-8cd2c24f528b` ✅
-- **Webhook Key**: `7a189879-5091-4f43-a2cf-a542cf218827` ✅
+- **Client ID**: `<REDACTED_CLIENT_ID>` ✅
+- **Webhook Key**: `<REDACTED_WEBHOOK_KEY>` ✅
 - **Webhook URL**: `https://zqwsxewuppexvjyakuqf.supabase.co/functions/v1/skipcash-webhook` ✅ (Already configured!)
-- **Key Id**: `536f4a14-3f0a-42d6-b584-dfe2b8bdc3ed` ✅
-- **Key Secret**: `BJZAz2n0CduW8O2+27u6XLLiZlqsdh...` (truncated in dashboard)
+- **Key Id**: `<REDACTED_KEY_ID>` ✅
+- **Key Secret**: `<REDACTED_SKIPCASH_SECRET_KEY>` (verify length ~600+ chars in dashboard)
 
 ## ⚠️ Critical: Verify Full Key Secret
 
@@ -14,7 +14,7 @@ The Key Secret is **truncated** in the SkipCash dashboard. You need to make sure
 
 ### Full Key Secret (should be in Supabase):
 ```
-BJZAz2n0CduW8O2+27u6XLLiZlqsdhia99coxTuVe6ZMlv9b7etZ0KNn0106y89RI279OBmC0TzI0Q+B6SQe0Bx8nQ1Vz7alzpqlHRlDcDrQG4DrizrTN2kY33UYX8d/63AAJbM8w5iSmYSvsile6kR5eZ9Z4bTSA0uxGu7+VIrK9AXdfHV7hLdi0iruVUC8BAcJYqrGvrA9mkClrXy9tsN7GQqxNMvBa3BvQnuKJBwU/ebq0cE1s+ugGqUyF5PPNG3OG3yjCb0NbZ6hTRcrXAqvhUcevK1lMiNfQtjLbTMLvv42fMiLgDbuabqNs11kErYeiuEXpkkazfnRysDAC0aS3bOxm6XBjgHucvfUMAehMNycfDi6eUSroPgfh3ZfPE/gcLZPgj2ptCmGYPHUyPnzXJG+MDcNDR9ZjOKGJ1EnN3pEgljMQcCmerDtux+yGx1QJBVe+SJW9w/UyzFEWxMuPyvzBmvWk4+NbErxiBVWEZQFiFJElHAh8hSDTBN6j76Bvt+7qwsMHeA86wH2kQ==
+<REDACTED_SKIPCASH_SECRET_KEY>
 ```
 
 **Important**: 
@@ -30,7 +30,7 @@ BJZAz2n0CduW8O2+27u6XLLiZlqsdhia99coxTuVe6ZMlv9b7etZ0KNn0106y89RI279OBmC0TzI0Q+B
 2. Find `SKIPCASH_SECRET_KEY`
 3. Click on it to view/edit
 4. Verify:
-   - ✅ Starts with: `BJZAz2n0CduW8O2+27u6XLLiZlqsdhia99coxTuVe6ZMlv9b7etZ0KNn0106y89RI279OBmC0TzI0Q+B6SQe0Bx8nQ1Vz7alzpqlHRlDcDrQG4DrizrTN2kY33UYX8d/63AAJbM8w5iSmYSvsile6kR5eZ9Z4bTSA0uxGu7+VIrK9AXdfHV7hLdi0iruVUC8BAcJYqrGvrA9mkClrXy9tsN7GQqxNMvBa3BvQnuKJBwU/ebq0cE1s+ugGqUyF5PPNG3OG3yjCb0NbZ6hTRcrXAqvhUcevK1lMiNfQtjLbTMLvv42fMiLgDbuabqNs11kErYeiuEXpkkazfnRysDAC0aS3bOxm6XBjgHucvfUMAehMNycfDi6eUSroPgfh3ZfPE/gcLZPgj2ptCmGYPHUyPnzXJG+MDcNDR9ZjOKGJ1EnN3pEgljMQcCmerDtux+yGx1QJBVe+SJW9w/UyzFEWxMuPyvzBmvWk4+NbErxiBVWEZQFiFJElHAh8hSDTBN6j76Bvt+7qwsMHeA86wH2kQ==`
+   - ✅ Starts with: `<REDACTED_SKIPCASH_SECRET_KEY>`
    - ✅ Ends with: `==`
    - ✅ No spaces at the beginning or end
    - ✅ Length is approximately 600+ characters
@@ -38,7 +38,7 @@ BJZAz2n0CduW8O2+27u6XLLiZlqsdhia99coxTuVe6ZMlv9b7etZ0KNn0106y89RI279OBmC0TzI0Q+B
 ### Step 2: Verify Key ID
 
 1. In Supabase Secrets, find `SKIPCASH_KEY_ID`
-2. Verify it's exactly: `536f4a14-3f0a-42d6-b584-dfe2b8bdc3ed`
+2. Verify it's exactly: `<REDACTED_KEY_ID>`
 3. No extra spaces or characters
 
 ### Step 3: Test Payment Again
@@ -48,7 +48,7 @@ After verifying secrets:
 2. Check Supabase function logs
 3. Look for:
    - "Secret key length:" - Should show ~600+
-   - "Using KeyId:" - Should match `536f4a14-3f0a-42d6-b584-dfe2b8bdc3ed`
+   - "Using KeyId:" - Should match `<REDACTED_KEY_ID>`
    - Any signature errors
 
 ## If Secret is Incomplete

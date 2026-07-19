@@ -132,10 +132,20 @@ export const AuthInitializer: React.FC = () => {
     let mounted = true;
     let subscription: { unsubscribe: () => void } | null = null;
 
-    // Check initial session
+    // Check initial session (timeout so AuthGuard cannot spin forever)
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('getSession timeout')), 8000);
+          }),
+        ]).finally(() => {
+          if (timeoutId) clearTimeout(timeoutId);
+        });
+
+        const session = sessionResult.data?.session ?? null;
         if (mounted && session?.user) {
           const metadataRole = resolveMetadataRole(session.user.user_metadata);
 
@@ -149,34 +159,24 @@ export const AuthInitializer: React.FC = () => {
             permissions: session.user.user_metadata?.permissions || [],
           });
 
-          // CRITICAL: Only set credentials if user is admin / super_admin
+          // Await DB before granting — avoid privileged window for spoofed JWT metadata.
+          // On DB timeout, fetchUserRoleFromDB falls back to metadata (availability).
           if (metadataRole === 'admin' || metadataRole === 'super_admin') {
-            const user = buildUser(metadataRole);
-            dispatch(setCredentials({ user, token: session.access_token }));
-            dispatch(setInitialized());
-            loggingService.setUser(user);
-
-            fetchUserRoleFromDB(
+            const dbRole = await fetchUserRoleFromDB(
               session.user.id,
               session.user.email || '',
               session.user.user_metadata
-            ).then((dbRole) => {
-              if (mounted && (dbRole === 'admin' || dbRole === 'super_admin') && dbRole !== metadataRole) {
-                dispatch(setCredentials({
-                  user: { ...user, role: dbRole },
-                  token: session.access_token,
-                }));
-              } else if (
-                mounted &&
-                dbRole !== 'admin' &&
-                dbRole !== 'super_admin'
-              ) {
-                dispatch(logout());
-                void supabase.auth.signOut();
-              }
-            }).catch((err) => {
-              devLogger.debug('Background role fetch failed:', err);
-            });
+            );
+            if (!mounted) return;
+            if (dbRole === 'admin' || dbRole === 'super_admin') {
+              const user = buildUser(dbRole);
+              dispatch(setCredentials({ user, token: session.access_token }));
+              loggingService.setUser(user);
+            } else {
+              dispatch(logout());
+              void supabase.auth.signOut();
+            }
+            dispatch(setInitialized());
           } else if (metadataRole === 'customer') {
             dispatch(logout());
             void supabase.auth.signOut();
@@ -237,31 +237,21 @@ export const AuthInitializer: React.FC = () => {
                 });
 
                 if (metadataRole === 'admin' || metadataRole === 'super_admin') {
-                  const user = buildUser(metadataRole);
-                  dispatch(setCredentials({ user, token: accessToken || '' }));
-                  loggingService.setUser(user);
-
-                  fetchUserRoleFromDB(
+                  // Runs inside setTimeout(0) — safe to await without auth-lock deadlock.
+                  const dbRole = await fetchUserRoleFromDB(
                     sessionUser.id,
                     sessionUser.email || '',
                     sessionUser.user_metadata
-                  ).then((dbRole) => {
-                    if (mounted && (dbRole === 'admin' || dbRole === 'super_admin') && dbRole !== metadataRole) {
-                      dispatch(setCredentials({
-                        user: { ...user, role: dbRole },
-                        token: accessToken || '',
-                      }));
-                    } else if (
-                      mounted &&
-                      dbRole !== 'admin' &&
-                      dbRole !== 'super_admin'
-                    ) {
-                      dispatch(logout());
-                      void supabase.auth.signOut();
-                    }
-                  }).catch(() => {
-                    // Silently fail - we already have metadata role
-                  });
+                  );
+                  if (!mounted) return;
+                  if (dbRole === 'admin' || dbRole === 'super_admin') {
+                    const user = buildUser(dbRole);
+                    dispatch(setCredentials({ user, token: accessToken || '' }));
+                    loggingService.setUser(user);
+                  } else {
+                    dispatch(logout());
+                    void supabase.auth.signOut();
+                  }
                 } else if (metadataRole === 'customer') {
                   dispatch(logout());
                   void supabase.auth.signOut();

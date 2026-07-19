@@ -78,9 +78,18 @@ export const AuthInitializer: React.FC = () => {
 
     const initializeAuth = async () => {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+        // Timeout so AuthGuard / GuestGuard cannot spin forever on a hung getSession.
+        let timeoutId: ReturnType<typeof setTimeout> | null = null;
+        const sessionResult = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<never>((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('getSession timeout')), 8000);
+          }),
+        ]).finally(() => {
+          if (timeoutId) clearTimeout(timeoutId);
+        });
+
+        const session = sessionResult.data?.session ?? null;
         if (mounted && session?.user) {
           const user = await buildUser(session.user);
           dispatch(setCredentials({ user, token: session.access_token }));

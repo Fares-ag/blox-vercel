@@ -157,13 +157,11 @@ export const DocumentUploadPage: React.FC = () => {
         uploadedAt: new Date().toISOString(),
       };
 
-      // Update local state
+      // Local staging only — application row is updated on Submit Documents.
       setDocuments((prev) => ({
         ...prev,
         [category]: newDoc,
       }));
-
-      toast.success('Document uploaded successfully');
     } catch (error: unknown) {
       devLogger.error('Failed to upload document:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to upload document';
@@ -295,47 +293,49 @@ export const DocumentUploadPage: React.FC = () => {
         updatedStatus: updateResponse.data?.status 
       });
       
-      if (updateResponse.status === 'SUCCESS' && updateResponse.data) {
-        console.log('✅ Application updated successfully. New status:', updateResponse.data.status);
+      if (updateResponse.status !== 'SUCCESS' || !updateResponse.data) {
+        console.error('❌ Update failed:', updateResponse);
+        throw new Error(updateResponse.message || 'Failed to update application');
       }
-      
-      if (updateResponse.status === 'SUCCESS' && updateResponse.data) {
-        console.log('✅ Update response data:', updateResponse.data);
-        console.log('✅ Status in response:', updateResponse.data.status);
-        
-        dispatch(setSelected(updateResponse.data));
-        
-        // Reload the application to ensure we have the latest status from database
-        const reloadResponse = await supabaseApiService.getApplicationById(id);
-        if (reloadResponse.status === 'SUCCESS' && reloadResponse.data) {
-          console.log('🔄 Reloaded application status:', reloadResponse.data.status);
-          dispatch(setSelected(reloadResponse.data));
-          
-          // Verify status was actually updated
-          if (reloadResponse.data.status !== 'under_review') {
-            console.warn('⚠️ Status was not updated! Still showing:', reloadResponse.data.status);
-            toast.warning('Documents uploaded, but status update may have failed. Please refresh the page.');
-          }
-        }
-        
-        // Create notification for admin about document resubmission (non-blocking)
-        supabaseApiService.createNotification({
+
+      dispatch(setSelected(updateResponse.data));
+
+      // Fail closed: only claim success when status is actually under_review.
+      const reloadResponse = await supabaseApiService.getApplicationById(id);
+      const confirmedStatus =
+        reloadResponse.status === 'SUCCESS' && reloadResponse.data
+          ? reloadResponse.data.status
+          : updateResponse.data.status;
+
+      if (reloadResponse.status === 'SUCCESS' && reloadResponse.data) {
+        dispatch(setSelected(reloadResponse.data));
+      }
+
+      if (confirmedStatus !== 'under_review') {
+        console.warn('⚠️ Status was not updated! Still showing:', confirmedStatus);
+        toast.error(
+          'Documents may have been saved, but the application was not moved back under review. Please refresh and try again, or contact support.'
+        );
+        return;
+      }
+
+      // Create notification for admin about document resubmission (non-blocking)
+      void supabaseApiService
+        .createNotification({
           userEmail: selected.customerEmail,
           type: 'info',
           title: 'Documents Resubmitted',
           message: `Customer has resubmitted ${documentsArray.length} document(s) for application #${id.slice(0, 8)}. Please review.`,
           link: `/admin/applications/${id}`,
-        }).catch((notificationError) => {
+        })
+        .catch((notificationError) => {
           console.error('⚠️ Failed to create notification (non-critical):', notificationError);
-          // Don't show error to user - notification failure is not critical
         });
 
-        toast.success(`Successfully uploaded ${documentsArray.length} document(s)! Application is back under review.`);
-        navigate(`/customer/my-applications/${id}`);
-      } else {
-        console.error('❌ Update failed:', updateResponse);
-        throw new Error(updateResponse.message || 'Failed to update application');
-      }
+      toast.success(
+        `Successfully submitted ${documentsArray.length} document(s)! Application is back under review.`
+      );
+      navigate(`/customer/my-applications/${id}`);
     } catch (error: any) {
       console.error('Error submitting documents:', error);
       toast.error(error.message || 'Failed to submit documents');

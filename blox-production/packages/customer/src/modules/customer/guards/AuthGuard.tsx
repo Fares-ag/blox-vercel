@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { useAppSelector } from '../store/hooks';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { logout } from '../store/slices/auth.slice';
 import { Config } from '@shared/config/app.config';
 import { customerAuthService } from '../services/customerAuth.service';
 import { Box, Typography, Alert, Button } from '@mui/material';
@@ -12,6 +13,7 @@ interface AuthGuardProps {
 
 export const AuthGuard = ({ children }: AuthGuardProps) => {
   const { isAuthenticated, user, initialized } = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
   const location = useLocation();
   const navigate = useNavigate();
   const [checkingEmail, setCheckingEmail] = useState(true);
@@ -42,6 +44,19 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     checkEmailVerification();
   }, [isAuthenticated]);
 
+  // Clear non-customer sessions so GuestGuard / public apply cannot reuse them.
+  useEffect(() => {
+    if (!initialized || !isAuthenticated || user?.role === 'customer') {
+      return;
+    }
+    void customerAuthService
+      .logout()
+      .catch(() => undefined)
+      .finally(() => {
+        dispatch(logout());
+      });
+  }, [initialized, isAuthenticated, user?.role, dispatch]);
+
   if (Config.bypassGuards) {
     return <>{children}</>;
   }
@@ -54,7 +69,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
     return <Navigate to="/customer/auth/login" state={{ from: location }} replace />;
   }
 
-  // Customer app: exact role required (missing/unknown → deny)
+  // Customer app: exact role required (missing/unknown → deny + signOut above)
   if (user?.role !== 'customer') {
     return <Navigate to="/customer/auth/login?reason=not_customer" replace />;
   }

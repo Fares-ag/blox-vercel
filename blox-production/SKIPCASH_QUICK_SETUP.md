@@ -2,10 +2,10 @@
 
 ## ✅ Your Credentials (Ready to Use)
 
-- **Client ID**: `1333b59f-f3ef-4d76-92b6-8cd2c24f528b` ✅
-- **Webhook Key**: `7a189879-5091-4f43-a2cf-a542cf218827` ✅
-- **Key Id**: `eaddac8b-b46b-4996-9c1e-8ab5bf618566` ✅
-- **Key Secret**: `+ZzRLkgRSz+QV9qH17J6HyQ5W77mlaZkX5JIAS9oNoVqkPGFLucBcF75uTU+8DAzh6cj14Bei+MBulM1IFyoEd2rdxeOAVB7kH+ZNKRJlNxj+mNquTKIrjJJx4+Q+o2OQjUGZ8iPf4HuK8nXjD2sHcU6UBjJRS0S0DCEELt/HfWQJlycRkejbpFlAQkXRzixzRwfwF7hERlyt4moQyabxIeuAgDu7XYe48sqnKBMjoOEcc8Z/RjV9zg8z4uwHIPec8rVVrFXoF8IYZFdNlAExEs1Z0qxONAbvJOw110X/AQeeYQAxYV6lLOMk4kDtJR6EqLmEIy9DuAA6rb8M+Cijdvf7ZX1FeGDaevW+RznhKnTbJAfa+JMJyab+NKJlg6nWUwsWnMzajT38e+hv10J3vuDs1f/apNAtMxFqL8JLsE+DIsBb36/dGo9f7lcU4f5b6tqaS/rkFQ8CKihUrKy6CcioA5fds73mAnbKqygVMV0cBrLDZznazis1tz1uYLrSfF4cCiv4noFDDNh4Wg==` ✅
+- **Client ID**: `<REDACTED_CLIENT_ID>` ✅
+- **Webhook Key**: `<REDACTED_WEBHOOK_KEY>` ✅
+- **Key Id**: `<REDACTED_KEY_ID>` ✅
+- **Key Secret**: `<REDACTED_SKIPCASH_SECRET_KEY>` ✅
 
 ## 🚀 Quick Setup Steps
 
@@ -23,10 +23,10 @@ All credentials have been provided:
 2. Add these secrets:
 
 ```
-SKIPCASH_CLIENT_ID = 1333b59f-f3ef-4d76-92b6-8cd2c24f528b
-SKIPCASH_KEY_ID = 536f4a14-3f0a-42d6-b584-dfe2b8bdc3ed
-SKIPCASH_SECRET_KEY = BJZAz2n0CduW8O2+27u6XLLiZlqsdhia99coxTuVe6ZMlv9b7etZ0KNn0106y89RI279OBmC0TzI0Q+B6SQe0Bx8nQ1Vz7alzpqlHRlDcDrQG4DrizrTN2kY33UYX8d/63AAJbM8w5iSmYSvsile6kR5eZ9Z4bTSA0uxGu7+VIrK9AXdfHV7hLdi0iruVUC8BAcJYqrGvrA9mkClrXy9tsN7GQqxNMvBa3BvQnuKJBwU/ebq0cE1s+ugGqUyF5PPNG3OG3yjCb0NbZ6hTRcrXAqvhUcevK1lMiNfQtjLbTMLvv42fMiLgDbuabqNs11kErYeiuEXpkkazfnRysDAC0aS3bOxm6XBjgHucvfUMAehMNycfDi6eUSroPgfh3ZfPE/gcLZPgj2ptCmGYPHUyPnzXJG+MDcNDR9ZjOKGJ1EnN3pEgljMQcCmerDtux+yGx1QJBVe+SJW9w/UyzFEWxMuPyvzBmvWk4+NbErxiBVWEZQFiFJElHAh8hSDTBN6j76Bvt+7qwsMHeA86wH2kQ==
-SKIPCASH_WEBHOOK_KEY = 7a189879-5091-4f43-a2cf-a542cf218827
+SKIPCASH_CLIENT_ID = <REDACTED_CLIENT_ID>
+SKIPCASH_KEY_ID = <REDACTED_KEY_ID>
+SKIPCASH_SECRET_KEY = <REDACTED_SKIPCASH_SECRET_KEY>
+SKIPCASH_WEBHOOK_KEY = <REDACTED_WEBHOOK_KEY>
 SKIPCASH_USE_SANDBOX = true
 ```
 
@@ -55,7 +55,7 @@ supabase functions deploy skipcash-webhook
    ```
    https://[your-project-ref].supabase.co/functions/v1/skipcash-webhook
    ```
-3. Set Webhook Key: `7a189879-5091-4f43-a2cf-a542cf218827`
+3. Set Webhook Key: `<REDACTED_WEBHOOK_KEY>`
 4. Enable events: Payment Completed, Payment Failed, Payment Cancelled
 5. Save
 

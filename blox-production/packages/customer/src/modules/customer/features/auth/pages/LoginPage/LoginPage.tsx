@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Box, Typography, Checkbox, FormControlLabel, Link, Stack, Alert } from '@mui/material';
-import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
+import { useNavigate, Link as RouterLink, useLocation, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { useAuth } from '../../../../hooks/useAuth';
 import { getSafePostLoginRedirect } from '../../../../utils/authRedirect.util';
@@ -38,7 +38,9 @@ export const LoginPage: React.FC = () => {
   const { login, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const message = location.state?.message;
+  const showAccessDenied = searchParams.get('reason') === 'not_customer';
   const postLoginRedirect = getSafePostLoginRedirect(
     (location.state as { from?: unknown } | null)?.from
   );
@@ -120,6 +122,14 @@ export const LoginPage: React.FC = () => {
           <Typography variant="body2" color="text.secondary" className="form-subtitle">
             Login to your existing account
           </Typography>
+
+          {showAccessDenied ? (
+            <Alert severity="error" sx={{ mt: 2, mb: 2 }} role="alert">
+              <Typography variant="body2">
+                <strong>Access denied.</strong> A customer account is required for this portal.
+              </Typography>
+            </Alert>
+          ) : null}
 
           {message && (
             <Alert severity="info" sx={{ mt: 2, mb: 2 }}>

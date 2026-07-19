@@ -59,9 +59,14 @@ type SignedUrlClient = {
   };
 };
 
+function isPrivatePublicUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  return url.includes(`/storage/v1/object/public/${DOCUMENTS_BUCKET}/`);
+}
+
 /**
  * Resolve a short-lived signed URL for a documents-bucket object.
- * Falls back to the original URL when path cannot be derived or signing fails.
+ * When a storage path is known, does not fall back to private public URLs (403).
  */
 export async function resolveDocumentsSignedUrl(
   supabase: SignedUrlClient,
@@ -77,21 +82,33 @@ export async function resolveDocumentsSignedUrl(
   const fallback =
     typeof ref === 'string' ? ref : ref.url ?? ref.path ?? null;
 
-  if (!path) return fallback;
-
-  try {
-    const { data, error } = await supabase.storage
-      .from(DOCUMENTS_BUCKET)
-      .createSignedUrl(path, expiresInSeconds);
-    if (error || !data?.signedUrl) {
-      console.error('createSignedUrl failed for documents path', path, error);
-      return fallback;
+  if (path) {
+    try {
+      const { data, error } = await supabase.storage
+        .from(DOCUMENTS_BUCKET)
+        .createSignedUrl(path, expiresInSeconds);
+      if (error || !data?.signedUrl) {
+        console.error('createSignedUrl failed for documents path', path, error);
+        // Never return a known-broken private public URL
+        if (fallback && !isPrivatePublicUrl(fallback) && fallback.includes('://')) {
+          return fallback;
+        }
+        return null;
+      }
+      return data.signedUrl;
+    } catch (error) {
+      console.error('createSignedUrl threw for documents path', path, error);
+      if (fallback && !isPrivatePublicUrl(fallback) && fallback.includes('://')) {
+        return fallback;
+      }
+      return null;
     }
-    return data.signedUrl;
-  } catch (error) {
-    console.error('createSignedUrl threw for documents path', path, error);
-    return fallback;
   }
+
+  if (fallback && isPrivatePublicUrl(fallback)) {
+    return null;
+  }
+  return fallback;
 }
 
 /** Open a documents object in a new tab using a signed URL when possible. */
@@ -101,7 +118,8 @@ export async function openDocumentsStorageRef(
   expiresInSeconds = 3600
 ): Promise<void> {
   const url = await resolveDocumentsSignedUrl(supabase, ref, expiresInSeconds);
-  if (url) {
-    window.open(url, '_blank', 'noopener,noreferrer');
+  if (!url) {
+    throw new Error('Unable to open document — signed URL unavailable');
   }
+  window.open(url, '_blank', 'noopener,noreferrer');
 }

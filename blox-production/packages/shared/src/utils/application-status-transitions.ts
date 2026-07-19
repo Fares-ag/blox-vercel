@@ -86,3 +86,8 @@ export function assertApplicationStatusTransition(
     throw new Error(`Illegal status transition for ${actor}: ${from} → ${to}`);
   }
 }
+
+/** True when the customer UI may offer cancel for this status (matches CUSTOMER_ALLOWED). */
+export function customerCanCancelApplication(status: ApplicationStatus): boolean {
+  return canTransitionApplicationStatus(status, 'submission_cancelled', 'customer');
+}

@@ -2,7 +2,7 @@
 
 ## Current Status
 - ✅ Credentials look correct (Key Secret: 536 chars, ends with `==`)
-- ✅ KeyId matches: `536f4a14-3f0a-42d6-b584-dfe2b8bdc3ed`
+- ✅ KeyId matches: `<REDACTED_KEY_ID>`
 - ✅ Request format matches original example (PascalCase)
 - ✅ Signature calculation uses HMAC SHA256 + Base64
 - ❌ Still getting "Signature does not match!" error
@@ -52,7 +52,7 @@ Uid={uuid},KeyId={keyId},Amount={amount},FirstName={name},LastName={name},Phone=
 Contact SkipCash support with:
 
 1. **Your credentials**:
-   - KeyId: `536f4a14-3f0a-42d6-b584-dfe2b8bdc3ed`
+   - KeyId: `<REDACTED_KEY_ID>`
    - Ask them to verify this KeyId is active
 
 2. **Sample request**:

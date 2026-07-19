@@ -40,11 +40,13 @@ import {
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading, setError } from '../../../../store/slices/application.slice';
 import { supabaseApiService, paymentPermissionsService, ContractPdfService } from '@shared/services';
+import { supabase } from '@shared/services/supabase.service';
 import type { PaymentSchedule } from '@shared/models/application.model';
 import { StatusBadge, Loading, EmptyState, ConfirmDialog } from '@shared/components';
 import { formatDate, formatDateTable, formatCurrency } from '@shared/utils/formatters';
 import { parseTenureToMonths } from '@shared/utils/tenure.utils';
 import { calculateOwnership } from '@shared/utils/ownership.utils';
+import { customerCanCancelApplication, openDocumentsStorageRef } from '@shared/utils';
 import { devLogger } from '@shared/utils/logger.util';
 import { toast } from 'react-toastify';
 import { ApplicationTimeline } from '../../components/ApplicationTimeline/ApplicationTimeline';
@@ -157,40 +159,44 @@ export const ApplicationDetailPage: React.FC = () => {
     }
   }, []);
 
+  const handleSignContract = useCallback(() => {
+    navigate(`/customer/applications/${id}/contract/sign`);
+  }, [navigate, id]);
+
   const handleSubmitSignedContract = useCallback(async () => {
-    if (!uploadedFile || !id) {
+    if (!uploadedFile || !id || !selected) {
       toast.error('Please upload the signed contract');
+      return;
+    }
+
+    if (selected.status !== 'contract_signing_required') {
+      toast.error('Contract signing is only available when a contract is ready for signature.');
       return;
     }
 
     try {
       setUploading(true);
 
-      if (!id) {
-        throw new Error('Application ID is required');
-      }
+      // Persist storage path via contractSignature (updateApplication ignores base64 file fields).
+      const fileExt = uploadedFile.name.split('.').pop() || 'pdf';
+      const fileName = `signed-contract-${id}-${Date.now()}.${fileExt}`;
+      const filePath = `signed-contracts/${id}/${fileName}`;
 
-      // Await FileReader — do not clear uploading in an outer finally before onloadend.
-      const base64File = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (typeof reader.result === 'string') {
-            resolve(reader.result);
-          } else {
-            reject(new Error('Failed to read file'));
-          }
-        };
-        reader.onerror = () => reject(new Error('Failed to read file'));
-        reader.readAsDataURL(uploadedFile);
-      });
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(filePath, uploadedFile, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message || 'Failed to upload signed contract');
+      }
 
       const updateResponse = await supabaseApiService.updateApplication(id, {
         contractSigned: true,
-        signedContractFile: base64File,
-        signedContractFileName: uploadedFile.name,
-        signedContractUploadedAt: new Date().toISOString(),
+        contractSignature: filePath,
         status: 'contracts_submitted',
-        updatedAt: new Date().toISOString(),
       });
 
       if (updateResponse.status !== 'SUCCESS') {
@@ -207,11 +213,7 @@ export const ApplicationDetailPage: React.FC = () => {
     } finally {
       setUploading(false);
     }
-  }, [id, uploadedFile, loadApplicationDetails]);
-
-  // const handleSignContract = useCallback(() => {
-  //   navigate(`/customer/applications/${id}/contract/sign`);
-  // }, [navigate, id]); // Currently unused
+  }, [id, uploadedFile, selected, loadApplicationDetails]);
 
   const handleUploadDocument = useCallback(() => {
     navigate(`/customer/applications/${id}/documents/upload`);
@@ -339,9 +341,8 @@ export const ApplicationDetailPage: React.FC = () => {
   // Use selected application from Redux (loaded from Supabase)
   const application = selected;
 
-  // Check if application can be cancelled (not active, rejected, or already cancelled)
-  const canCancel = application && 
-    !['active', 'rejected', 'submission_cancelled', 'completed'].includes(application.status);
+  // Match CUSTOMER_ALLOWED → submission_cancelled (fail closed with updateApplication assert)
+  const canCancel = !!application && customerCanCancelApplication(application.status);
 
   if (!application) {
     return (
@@ -425,10 +426,9 @@ export const ApplicationDetailPage: React.FC = () => {
         </Alert>
       )}
 
-      {/* Contract Signing Section */}
-      {application.contractGenerated && 
-       application.status !== 'contracts_submitted' && 
-       application.status !== 'active' && (
+      {/* Contract Signing Section — only when admin has requested signature */}
+      {application.contractGenerated &&
+       application.status === 'contract_signing_required' && (
         <Card sx={{ mb: 3, backgroundColor: 'rgba(255, 255, 255, 0.95)', backdropFilter: 'blur(10px)' }}>
           <CardContent>
             <Typography variant="h6" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
@@ -436,7 +436,27 @@ export const ApplicationDetailPage: React.FC = () => {
             </Typography>
             <Alert severity="info" sx={{ mb: 3 }}>
               Please download your contract, print it, sign it physically, and then upload the signed copy.
+              You can also use the guided signing page.
             </Alert>
+            <Box sx={{ mb: 3 }}>
+              <Button
+                variant="outlined"
+                startIcon={<Description />}
+                onClick={handleSignContract}
+                sx={{
+                  borderColor: '#DAFF01',
+                  color: '#DAFF01',
+                  fontWeight: 600,
+                  textTransform: 'none',
+                  '&:hover': {
+                    borderColor: '#B8E001',
+                    backgroundColor: 'rgba(218, 255, 1, 0.1)',
+                  },
+                }}
+              >
+                Open guided contract signing
+              </Button>
+            </Box>
 
             <Box>
               {/* Download Section */}
@@ -935,7 +955,15 @@ export const ApplicationDetailPage: React.FC = () => {
                         size="small"
                         className="document-download-btn"
                         startIcon={<FileDownload />}
-                        onClick={() => toast.info('Download will be implemented')}
+                        onClick={() => {
+                          void openDocumentsStorageRef(supabase, {
+                            path: doc.path,
+                            url: doc.url,
+                          }).catch((error) => {
+                            console.error('Failed to open document', error);
+                            toast.error('Unable to open document');
+                          });
+                        }}
                       >
                         Download
                       </Button>

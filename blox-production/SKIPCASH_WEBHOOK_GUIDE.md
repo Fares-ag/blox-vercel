@@ -241,7 +241,7 @@ WHERE id = 'your-application-id';
 ### Required Environment Variables
 
 ```
-SKIPCASH_WEBHOOK_KEY=7a189879-5091-4f43-a2cf-a542cf218827
+SKIPCASH_WEBHOOK_KEY=<REDACTED_WEBHOOK_KEY>
 SUPABASE_URL=your-supabase-url
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```

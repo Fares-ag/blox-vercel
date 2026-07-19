@@ -32,7 +32,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { Input, Select, type SelectOption } from '@shared/components';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
-import { setCredentials } from '../../../../store/slices/auth.slice';
+import { setCredentials, logout as logoutAction } from '../../../../store/slices/auth.slice';
 import type { User } from '@shared/models/user.model';
 import type { Product } from '@shared/models/product.model';
 import type { Application, ApplicationStatus } from '@shared/models/application.model';
@@ -122,7 +122,10 @@ export const CreateApplicationPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [searchParams] = useSearchParams();
-  const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { user, isAuthenticated, initialized } = useAppSelector((state) => state.auth);
+  // Only treat true customer sessions as logged-in apply; non-customer sessions must not
+  // skip password/signup (and are redirected away below).
+  const isCustomerSession = isAuthenticated && user?.role === 'customer';
   const [vehicle, setVehicle] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -159,11 +162,11 @@ export const CreateApplicationPage: React.FC = () => {
     reset,
     setValue,
   } = useForm<ApplicationFormData>({
-    resolver: yupResolver(createApplicationSchema(isAuthenticated)),
+    resolver: yupResolver(createApplicationSchema(isCustomerSession)),
     defaultValues: {
-      firstName: user?.name?.split(' ')[0] || '',
-      lastName: user?.name?.split(' ').slice(1).join(' ') || '',
-      email: user?.email || '',
+      firstName: isCustomerSession ? user?.name?.split(' ')[0] || '' : '',
+      lastName: isCustomerSession ? user?.name?.split(' ').slice(1).join(' ') || '' : '',
+      email: isCustomerSession ? user?.email || '' : '',
       nationalId: '',
       phone: '',
       nationality: '',
@@ -174,6 +177,20 @@ export const CreateApplicationPage: React.FC = () => {
       acceptTerms: false,
     },
   });
+
+  // Public route: kick non-customer sessions so admin JWTs cannot submit as "logged in".
+  useEffect(() => {
+    if (!initialized) return;
+    if (isAuthenticated && user?.role !== 'customer') {
+      void customerAuthService
+        .logout()
+        .catch(() => undefined)
+        .finally(() => {
+          dispatch(logoutAction());
+          navigate('/customer/auth/login?reason=not_customer', { replace: true });
+        });
+    }
+  }, [initialized, isAuthenticated, user?.role, navigate, dispatch]);
 
   // Get all nationality options from the country code map
   const nationalityOptions: SelectOption[] = React.useMemo(() => {
@@ -212,7 +229,7 @@ export const CreateApplicationPage: React.FC = () => {
   // Fetch and pre-fill user metadata when authenticated
   useEffect(() => {
     const fetchUserMetadata = async () => {
-      if (isAuthenticated && user?.id) {
+      if (isCustomerSession && user?.id) {
         try {
           const { data: { user: supabaseUser } } = await supabase.auth.getUser();
           if (supabaseUser?.user_metadata) {
@@ -238,7 +255,7 @@ export const CreateApplicationPage: React.FC = () => {
       }
     };
     fetchUserMetadata();
-  }, [isAuthenticated, user?.id, user?.name, user?.email, reset]);
+  }, [isCustomerSession, user?.id, user?.name, user?.email, reset]);
 
   const authorizeCreditCheck = watch('authorizeCreditCheck');
   const acceptTerms = watch('acceptTerms');
@@ -268,9 +285,9 @@ export const CreateApplicationPage: React.FC = () => {
           (app) => app.customerEmail.toLowerCase() === customerEmail.toLowerCase()
         );
 
-        // Find applications that are NOT "active" or "rejected" (blocking statuses)
-        // Note: 'submission_cancelled' is NOT a blocking status - users can create new applications after cancelling
+        // Keep in sync with public.has_blocking_application (active financing blocks; completed does not).
         const blockingStatuses: ApplicationStatus[] = [
+          'active',
           'under_review',
           'contract_signing_required',
           'resubmission_required',
@@ -278,11 +295,10 @@ export const CreateApplicationPage: React.FC = () => {
           'contract_under_review',
           'down_payment_required',
           'down_payment_submitted',
-          'completed', // Completed applications might also block new ones
         ];
 
-        const blockingApplication = customerApplications.find(
-          (app) => !['active', 'rejected'].includes(app.status) && blockingStatuses.includes(app.status)
+        const blockingApplication = customerApplications.find((app) =>
+          blockingStatuses.includes(app.status)
         );
 
         if (blockingApplication) {
@@ -469,7 +485,7 @@ export const CreateApplicationPage: React.FC = () => {
 
     // Match DB / RLS: when logged in, use session email (same as JWT), not a differently cased form value.
     const resolvedCustomerEmail =
-      isAuthenticated && user?.email
+      isCustomerSession && user?.email
         ? user.email.trim().toLowerCase()
         : data.email.trim().toLowerCase();
 
@@ -506,7 +522,7 @@ export const CreateApplicationPage: React.FC = () => {
         toast.error(
           'You already have an application in progress. Please wait until it is approved or rejected before applying again.'
         );
-        if (isAuthenticated) {
+        if (isCustomerSession) {
           navigate(`/customer/my-applications/${blockingAppId}`);
         } else {
           navigate('/customer/auth/login');
@@ -518,7 +534,7 @@ export const CreateApplicationPage: React.FC = () => {
       let signupAuthUserId: string | undefined;
 
       // If user is not authenticated, create account first, then submit application (session or RPC).
-      if (!isAuthenticated && data.password) {
+      if (!isCustomerSession && data.password) {
         try {
           console.log('Creating user account...');
           const { user: newUser, session: newSession } = await customerAuthService.signup({
@@ -648,31 +664,19 @@ export const CreateApplicationPage: React.FC = () => {
       const startDate = moment().startOf('month').add(1, 'month'); // Start next month
       const principalPaymentPerMonth = loanAmount / termMonths;
       const rentPerPeriodRate = annualRentRateDecimal / 12;
-      
-      const now = moment().startOf('day');
+
+      // New applications must never invent paid history — schedules start unpaid.
       for (let i = 0; i < termMonths; i++) {
         const dueDate = moment(startDate).add(i, 'months');
         const customerOwnership = downPayment + (principalPaymentPerMonth * i);
         const bloxOwnership = vehicle.price - customerOwnership;
         const monthlyRentForThisMonth = bloxOwnership * rentPerPeriodRate;
         const paymentAmount = principalPaymentPerMonth + monthlyRentForThisMonth;
-        
-        // Determine status: past month = paid, current month = active, future = upcoming
-        // Use month-level comparison for consistency with InstallmentPlanStep
-        const isPast = dueDate.isBefore(now, 'month');
-        const isCurrentMonth = dueDate.isSame(now, 'month');
-
-        const status: import('@shared/models/application.model').PaymentStatus = isPast
-          ? 'paid'
-          : isCurrentMonth
-            ? 'active'
-            : 'upcoming';
 
         schedule.push({
           dueDate: dueDate.format('YYYY-MM-DD'),
           amount: paymentAmount,
-          status,
-          paidDate: isPast ? dueDate.format('YYYY-MM-DD') : undefined,
+          status: i === 0 ? 'active' : 'upcoming',
         });
       }
 
@@ -782,7 +786,7 @@ export const CreateApplicationPage: React.FC = () => {
                 'Please check your email to verify your account. Once verified, you can login to view your applications.',
             },
           });
-        } else if (!isAuthenticated) {
+        } else if (!isCustomerSession) {
           const { data: { user } } = await supabase.auth.getUser();
           if (user && !user.email_confirmed_at) {
             toast.success('Application submitted! Please verify your email to view your applications.');
@@ -912,7 +916,7 @@ export const CreateApplicationPage: React.FC = () => {
               Personal Details
             </Typography>
             <Typography variant="body2" color="text.secondary" className="section-subtitle">
-              {isAuthenticated 
+              {isCustomerSession 
                 ? "Your personal details are pre-filled from your profile. To update them, please visit your profile page."
                 : "Please enter your details to submit your application"}
             </Typography>
@@ -932,7 +936,7 @@ export const CreateApplicationPage: React.FC = () => {
                   {...register('firstName')}
                   error={!!errors.firstName}
                   helperText={errors.firstName?.message}
-                  disabled={isAuthenticated}
+                  disabled={isCustomerSession}
                 />
               </Box>
               <Box className="form-field">
@@ -948,7 +952,7 @@ export const CreateApplicationPage: React.FC = () => {
                   {...register('lastName')}
                   error={!!errors.lastName}
                   helperText={errors.lastName?.message}
-                  disabled={isAuthenticated}
+                  disabled={isCustomerSession}
                 />
               </Box>
               <Box className="form-field">
@@ -965,7 +969,7 @@ export const CreateApplicationPage: React.FC = () => {
                   {...register('email')}
                   error={!!errors.email}
                   helperText={errors.email?.message}
-                  disabled={isAuthenticated}
+                  disabled={isCustomerSession}
                 />
               </Box>
               <Box className="form-field">
@@ -981,7 +985,7 @@ export const CreateApplicationPage: React.FC = () => {
                   {...register('nationalId')}
                   error={!!errors.nationalId}
                   helperText={errors.nationalId?.message}
-                  disabled={isAuthenticated}
+                  disabled={isCustomerSession}
                 />
               </Box>
               <Box className="form-field phone-field">
@@ -1006,7 +1010,7 @@ export const CreateApplicationPage: React.FC = () => {
                     error={!!errors.phone}
                     helperText={errors.phone?.message}
                     className="phone-input"
-                    disabled={isAuthenticated}
+                    disabled={isCustomerSession}
                   />
                 </Box>
               </Box>
@@ -1021,7 +1025,7 @@ export const CreateApplicationPage: React.FC = () => {
                       options={nationalityOptions}
                       error={!!errors.nationality}
                       helperText={errors.nationality?.message || (nationalityOptions.length === 0 ? 'Loading nationalities...' : '')}
-                      disabled={isAuthenticated}
+                      disabled={isCustomerSession}
                       placeholder={nationalityOptions.length === 0 ? 'Loading nationalities...' : 'Select your nationality'}
                     />
                   )}
@@ -1038,7 +1042,7 @@ export const CreateApplicationPage: React.FC = () => {
                       options={genderOptions}
                       error={!!errors.gender}
                       helperText={errors.gender?.message}
-                      disabled={isAuthenticated}
+                      disabled={isCustomerSession}
                     />
                   )}
                 />
@@ -1048,7 +1052,7 @@ export const CreateApplicationPage: React.FC = () => {
         </Card>
 
         {/* Set Password Section */}
-        {!isAuthenticated && (
+        {!isCustomerSession && (
           <Card className="form-section">
             <CardContent>
               <Typography variant="h5" className="section-title">

@@ -34,7 +34,7 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 const ADMIN_EMAIL = 'mafifi@q-auto.com';
-const ADMIN_PASSWORD = 'afifi9845';
+const ADMIN_PASSWORD = '<REDACTED_PASSWORD>';
 
 async function createAdmin() {
   try {

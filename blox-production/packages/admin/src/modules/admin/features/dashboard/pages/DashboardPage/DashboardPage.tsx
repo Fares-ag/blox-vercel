@@ -634,7 +634,9 @@ export const DashboardPage: React.FC = () => {
                   Average Payment Size
                 </Typography>
                 <Typography variant="h4" className="financial-value average-payment-size">
-                  QAR {(stats.monthlyReceivable / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {stats.paidInstallments > 0
+                    ? `QAR ${(stats.realRevenue / stats.paidInstallments / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    : '—'}
                 </Typography>
               </Box>
             </Box>

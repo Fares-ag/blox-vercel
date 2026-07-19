@@ -4,10 +4,10 @@
 
 All credentials have been provided:
 
-- **Client ID**: `1333b59f-f3ef-4d76-92b6-8cd2c24f528b` ✅
-- **Webhook Key**: `7a189879-5091-4f43-a2cf-a542cf218827` ✅
-- **Key Id**: `eaddac8b-b46b-4996-9c1e-8ab5bf618566` ✅
-- **Key Secret**: `+ZzRLkgRSz+QV9qH17J6HyQ5W77mlaZkX5JIAS9oNoVqkPGFLucBcF75uTU+8DAzh6cj14Bei+MBulM1IFyoEd2rdxeOAVB7kH+ZNKRJlNxj+mNquTKIrjJJx4+Q+o2OQjUGZ8iPf4HuK8nXjD2sHcU6UBjJRS0S0DCEELt/HfWQJlycRkejbpFlAQkXRzixzRwfwF7hERlyt4moQyabxIeuAgDu7XYe48sqnKBMjoOEcc8Z/RjV9zg8z4uwHIPec8rVVrFXoF8IYZFdNlAExEs1Z0qxONAbvJOw110X/AQeeYQAxYV6lLOMk4kDtJR6EqLmEIy9DuAA6rb8M+Cijdvf7ZX1FeGDaevW+RznhKnTbJAfa+JMJyab+NKJlg6nWUwsWnMzajT38e+hv10J3vuDs1f/apNAtMxFqL8JLsE+DIsBb36/dGo9f7lcU4f5b6tqaS/rkFQ8CKihUrKy6CcioA5fds73mAnbKqygVMV0cBrLDZznazis1tz1uYLrSfF4cCiv4noFDDNh4Wg==` ✅
+- **Client ID**: `<REDACTED_CLIENT_ID>` ✅
+- **Webhook Key**: `<REDACTED_WEBHOOK_KEY>` ✅
+- **Key Id**: `<REDACTED_KEY_ID>` ✅
+- **Key Secret**: `<REDACTED_SKIPCASH_SECRET_KEY>` ✅
 
 ## ✅ All Credentials Ready
 
@@ -26,10 +26,10 @@ All required credentials have been provided. You can proceed directly to setting
 Add the following environment variables:
 
 ```
-SKIPCASH_CLIENT_ID=1333b59f-f3ef-4d76-92b6-8cd2c24f528b
-SKIPCASH_KEY_ID=eaddac8b-b46b-4996-9c1e-8ab5bf618566
-SKIPCASH_SECRET_KEY=+ZzRLkgRSz+QV9qH17J6HyQ5W77mlaZkX5JIAS9oNoVqkPGFLucBcF75uTU+8DAzh6cj14Bei+MBulM1IFyoEd2rdxeOAVB7kH+ZNKRJlNxj+mNquTKIrjJJx4+Q+o2OQjUGZ8iPf4HuK8nXjD2sHcU6UBjJRS0S0DCEELt/HfWQJlycRkejbpFlAQkXRzixzRwfwF7hERlyt4moQyabxIeuAgDu7XYe48sqnKBMjoOEcc8Z/RjV9zg8z4uwHIPec8rVVrFXoF8IYZFdNlAExEs1Z0qxONAbvJOw110X/AQeeYQAxYV6lLOMk4kDtJR6EqLmEIy9DuAA6rb8M+Cijdvf7ZX1FeGDaevW+RznhKnTbJAfa+JMJyab+NKJlg6nWUwsWnMzajT38e+hv10J3vuDs1f/apNAtMxFqL8JLsE+DIsBb36/dGo9f7lcU4f5b6tqaS/rkFQ8CKihUrKy6CcioA5fds73mAnbKqygVMV0cBrLDZznazis1tz1uYLrSfF4cCiv4noFDDNh4Wg==
-SKIPCASH_WEBHOOK_KEY=7a189879-5091-4f43-a2cf-a542cf218827
+SKIPCASH_CLIENT_ID=<REDACTED_CLIENT_ID>
+SKIPCASH_KEY_ID=<REDACTED_KEY_ID>
+SKIPCASH_SECRET_KEY=<REDACTED_SKIPCASH_SECRET_KEY>
+SKIPCASH_WEBHOOK_KEY=<REDACTED_WEBHOOK_KEY>
 SKIPCASH_USE_SANDBOX=true
 ```
 

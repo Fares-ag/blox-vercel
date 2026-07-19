@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Box, Typography, Paper, IconButton, Chip, Divider } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
@@ -9,6 +9,7 @@ import { addProduct } from '../../../../store/slices/products.slice';
 import { supabaseApiService } from '@shared/services';
 import type { Product, ProductAttribute } from '@shared/models/product.model';
 import { Button, Input, Select, type SelectOption } from '@shared/components';
+import { resolveDocumentsSignedUrl } from '@shared/utils';
 import { toast } from 'react-toastify';
 import { useForm, useFieldArray } from 'react-hook-form';
 import './AddVehiclePage.scss';
@@ -18,7 +19,10 @@ export const AddVehiclePage: React.FC = () => {
   const dispatch = useAppDispatch();
   const [saving, setSaving] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  /** Storage paths persisted on the product */
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  /** Signed URLs for private-bucket previews */
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
 
   const conditionOptions: SelectOption[] = [
     { value: 'new', label: 'New' },
@@ -55,6 +59,24 @@ export const AddVehiclePage: React.FC = () => {
 
   const condition = watch('condition');
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (uploadedImages.length === 0) {
+        setImagePreviews([]);
+        return;
+      }
+      const { supabase } = await import('@shared/services');
+      const urls = await Promise.all(
+        uploadedImages.map(async (ref) => (await resolveDocumentsSignedUrl(supabase, ref)) || ref)
+      );
+      if (!cancelled) setImagePreviews(urls);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [uploadedImages]);
+
   const handleImageUpload = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
 
@@ -89,29 +111,31 @@ export const AddVehiclePage: React.FC = () => {
         if (uploadError) {
           throw new Error(uploadError.message || `Failed to upload ${file.name}`);
         }
-        const { data: urlData } = supabase.storage.from('documents').getPublicUrl(filePath);
-        if (!urlData?.publicUrl) {
-          throw new Error(`Failed to resolve URL for ${file.name}`);
-        }
-        return urlData.publicUrl;
+        // Private bucket — persist path; preview via signed URL.
+        return filePath;
       });
 
-      const urls = await Promise.all(uploadPromises);
-      setUploadedImages((prev) => [...prev, ...urls]);
-      setValue('images', [...uploadedImages, ...urls] as any);
+      const paths = await Promise.all(uploadPromises);
+      setUploadedImages((prev) => {
+        const next = [...prev, ...paths];
+        setValue('images', next as any);
+        return next;
+      });
       toast.success(`${validFiles.length} image(s) uploaded to storage`);
     } catch (error: any) {
       toast.error(error.message || 'Failed to upload images');
     } finally {
       setUploadingImages(false);
     }
-  }, [uploadedImages, setValue]);
+  }, [setValue]);
 
   const handleRemoveImage = useCallback((index: number) => {
-    const newImages = uploadedImages.filter((_, i) => i !== index);
-    setUploadedImages(newImages);
-    setValue('images', newImages as any);
-  }, [uploadedImages, setValue]);
+    setUploadedImages((prev) => {
+      const newImages = prev.filter((_, i) => i !== index);
+      setValue('images', newImages as any);
+      return newImages;
+    });
+  }, [setValue]);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -405,9 +429,12 @@ export const AddVehiclePage: React.FC = () => {
 
               {uploadedImages.length > 0 && (
                 <Box className="images-grid">
-                  {uploadedImages.map((url, index) => (
-                    <Box key={index} className="image-preview">
-                      <img src={url} alt={`Vehicle ${index + 1}`} />
+                  {uploadedImages.map((path, index) => (
+                    <Box key={path} className="image-preview">
+                      <img
+                        src={imagePreviews[index] || path}
+                        alt={`Vehicle ${index + 1}`}
+                      />
                       <IconButton
                         className="remove-image-button"
                         onClick={() => handleRemoveImage(index)}

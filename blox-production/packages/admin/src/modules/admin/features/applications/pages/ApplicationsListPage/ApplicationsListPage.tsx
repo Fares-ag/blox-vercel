@@ -316,15 +316,16 @@ export const ApplicationsListPage: React.FC = () => {
     dispatch(setPage(1));
   }, [dispatch]);
 
-  // Demo portfolio metrics (QAR) — coherent book: 76 apps × ~QAR 311k avg loan.
+  // Demo portfolio financials (intentional fiction for stakeholder demos).
+  // Application count always reflects the filtered view (live).
   const metrics = useMemo(
     () => ({
       totalLoanValue: 23_640_000,
       totalReceivable: 18_975_000,
       averagePaymentSize: 9_875,
-      applicationCount: 76,
+      applicationCount: fullFilteredList.length,
     }),
-    []
+    [fullFilteredList.length]
   );
 
   // Calculate asset distribution percentage based on real ownership:
@@ -548,21 +549,21 @@ export const ApplicationsListPage: React.FC = () => {
 
       <Box className="metrics-grid">
         <Card
-          title="Total loan value"
+          title="Total loan value (demo)"
           value={metrics.totalLoanValue}
           moduleType="currency"
           icon={<AttachMoney sx={{ color: 'var(--blox-black)' }} />}
           className="metric-card payable"
         />
         <Card
-          title="Total receivable"
+          title="Total receivable (demo)"
           value={metrics.totalReceivable}
           moduleType="currency"
           icon={<AccountBalance sx={{ color: 'var(--blox-black)' }} />}
           className="metric-card receivable"
         />
         <Card
-          title="Average payment size"
+          title="Average payment size (demo)"
           value={metrics.averagePaymentSize}
           moduleType="currency"
           icon={<TrendingUp sx={{ color: 'var(--blox-black)' }} />}

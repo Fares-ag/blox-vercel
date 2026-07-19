@@ -18,3 +18,4 @@ export * from './settlement-discount.utils';
 export * from './logger.util';
 export * from './application-status-transitions';
 export * from './documents-storage.utils';
+export * from './catalog-row-mappers';

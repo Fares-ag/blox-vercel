@@ -93,6 +93,7 @@ export const ApplicationDetailPage: React.FC = () => {
   const [savingCompany, setSavingCompany] = useState(false);
   const [contractFormOpen, setContractFormOpen] = useState(false);
   const [approving, setApproving] = useState(false);
+  const [rejecting, setRejecting] = useState(false);
   const [contractReviewOpen, setContractReviewOpen] = useState(false);
   const [reviewing, setReviewing] = useState(false);
   const [resubmissionDialogOpen, setResubmissionDialogOpen] = useState(false);
@@ -203,6 +204,19 @@ export const ApplicationDetailPage: React.FC = () => {
     }
   };
 
+  /** Keep payment_schedules aligned after writing installmentPlan.schedule */
+  const syncPaymentSchedulesFromPlan = async (applicationId: string) => {
+    const rebuild = await supabaseApiService.replacePaymentSchedulesFromInstallmentPlan(
+      applicationId
+    );
+    if (rebuild.status !== 'SUCCESS') {
+      throw new Error(
+        rebuild.message ||
+          'Application updated but payment_schedules sync failed — retry carefully'
+      );
+    }
+  };
+
   const handlePaymentConfirmation = async (paymentMethod: PaymentMethod, proofFile: File | null) => {
     if (!id || selectedPaymentIndex === null || !selected) {
       throw new Error('Missing required information');
@@ -279,41 +293,50 @@ export const ApplicationDetailPage: React.FC = () => {
               }
             : p
         );
-        await supabaseApiService.updateApplication(id, {
+        const methodUpdate = await supabaseApiService.updateApplication(id, {
           installmentPlan: { ...refreshedPlan, schedule: withMethod } as any,
         });
+        if (methodUpdate.status !== 'SUCCESS') {
+          throw new Error(
+            methodUpdate.message ||
+              'Installment marked paid but payment method/proof failed to save'
+          );
+        }
       }
 
-      toast.success(`Installment #${selectedPaymentIndex + 1} marked as paid`);
+      const paidIndex = selectedPaymentIndex;
+      toast.success(`Installment #${paidIndex + 1} marked as paid`);
+      setPaymentDialogOpen(false);
+      setSelectedPaymentIndex(null);
 
-      try {
-        const { activityTrackingService } = await import('@shared/services');
-        await activityTrackingService.logActivity('payment', 'payment', {
-          resourceId: id,
-          resourceName: `Payment #${selectedPaymentIndex + 1} for Application #${id.slice(0, 8)}`,
-          description: `Payment confirmed: ${formatCurrency(paymentAmount)} via ${paymentMethod}`,
-          metadata: {
-            applicationId: id,
-            paymentIndex: selectedPaymentIndex,
-            amount: paymentAmount,
-            paymentMethod: paymentMethod,
-            hasProof: !!proofDocumentUrl,
-          },
-        });
-      } catch (error) {
-        console.error('Failed to log payment activity:', error);
-      }
+      void (async () => {
+        try {
+          const { activityTrackingService } = await import('@shared/services');
+          await activityTrackingService.logActivity('payment', 'payment', {
+            resourceId: id,
+            resourceName: `Payment #${paidIndex + 1} for Application #${id.slice(0, 8)}`,
+            description: `Payment confirmed: ${formatCurrency(paymentAmount)} via ${paymentMethod}`,
+            metadata: {
+              applicationId: id,
+              paymentIndex: paidIndex,
+              amount: paymentAmount,
+              paymentMethod: paymentMethod,
+              hasProof: !!proofDocumentUrl,
+            },
+          });
+        } catch (error) {
+          console.error('Failed to log payment activity:', error);
+        }
+      })();
 
-      await createNotificationForCustomer(
+      void createNotificationForCustomer(
         'success',
         'Payment Confirmed',
-        `Your payment of ${formatCurrency(paymentAmount)} for installment #${selectedPaymentIndex + 1} has been confirmed.`,
+        `Your payment of ${formatCurrency(paymentAmount)} for installment #${paidIndex + 1} has been confirmed.`,
         `/customer/my-applications/${id}`
       );
 
       await loadApplicationDetails(id);
-      setPaymentDialogOpen(false);
-      setSelectedPaymentIndex(null);
     } catch (error: unknown) {
       console.error('❌ Failed to confirm payment:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to confirm payment';
@@ -483,6 +506,14 @@ export const ApplicationDetailPage: React.FC = () => {
         throw new Error(updateResponse.message || 'Failed to update application schedule');
       }
 
+      const rebuild = await supabaseApiService.replacePaymentSchedulesFromInstallmentPlan(id);
+      if (rebuild.status !== 'SUCCESS') {
+        throw new Error(
+          rebuild.message ||
+            'Schedule JSON updated but payment_schedules rebuild failed — retry convert carefully'
+        );
+      }
+
       toast.success('Installment schedule converted to Monthly');
       setConvertScheduleDialogOpen(false);
       await loadApplicationDetails(id);
@@ -503,6 +534,11 @@ export const ApplicationDetailPage: React.FC = () => {
     'submission_cancelled': 'Submission Cancelled',
     'rejected': 'Rejected',
     'contract_signing_required': 'Contract Signing Required',
+    'contracts_submitted': 'Contracts Submitted',
+    'contract_under_review': 'Contract Under Review',
+    'resubmission_required': 'Resubmission Required',
+    'down_payment_required': 'Down Payment Required',
+    'down_payment_submitted': 'Down Payment Submitted',
   };
 
   // Calculate asset distribution percentages based on real installment data
@@ -555,36 +591,36 @@ export const ApplicationDetailPage: React.FC = () => {
       });
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
+        await syncPaymentSchedulesFromPlan(id);
         dispatch(updateApplication(supabaseResponse.data));
         dispatch(setSelected(supabaseResponse.data));
         toast.success('Application approved and contract generated successfully!');
-        
-        // Log contract generation activity
-        try {
-          const { activityTrackingService } = await import('@shared/services');
-          await activityTrackingService.logActivity('create', 'contract', {
-            resourceId: id,
-            resourceName: `Contract for Application #${id?.slice(0, 8)}`,
-            description: `Contract generated and approved for application`,
-            metadata: {
-              applicationId: id,
-              status: 'contract_signing_required',
-              contractGenerated: true,
-            },
-          });
-        } catch (error: unknown) {
-          console.error('Failed to log contract activity:', error);
-        }
-        
-        // Create notification for customer
-        await createNotificationForCustomer(
+        setContractFormOpen(false);
+
+        void (async () => {
+          try {
+            const { activityTrackingService } = await import('@shared/services');
+            await activityTrackingService.logActivity('create', 'contract', {
+              resourceId: id,
+              resourceName: `Contract for Application #${id?.slice(0, 8)}`,
+              description: `Contract generated and approved for application`,
+              metadata: {
+                applicationId: id,
+                status: 'contract_signing_required',
+                contractGenerated: true,
+              },
+            });
+          } catch (error: unknown) {
+            console.error('Failed to log contract activity:', error);
+          }
+        })();
+
+        void createNotificationForCustomer(
           'success',
           'Contract Ready for Signing',
           `Your application #${id?.slice(0, 8)} has been approved! Please review and sign the contract to proceed.`,
           `/customer/my-applications/${id}/contract`
         );
-        
-        setContractFormOpen(false);
       } else {
         throw new Error(supabaseResponse.message || 'Failed to update application');
       }
@@ -653,35 +689,36 @@ export const ApplicationDetailPage: React.FC = () => {
       });
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
+        if (action === 'approve') {
+          await syncPaymentSchedulesFromPlan(id);
+        }
         dispatch(updateApplication(supabaseResponse.data));
         dispatch(setSelected(supabaseResponse.data));
-        
-        // Create appropriate notification based on action
+        toast.success(`Contract ${action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'sent for resubmission'} successfully!`);
+        setContractReviewOpen(false);
+
         if (action === 'approve') {
-          await createNotificationForCustomer(
+          void createNotificationForCustomer(
             'success',
             'Application Activated',
             `Your application #${id?.slice(0, 8)} has been activated! Your financing is now active.`,
             `/customer/my-applications/${id}`
           );
         } else if (action === 'reject') {
-          await createNotificationForCustomer(
+          void createNotificationForCustomer(
             'error',
             'Application Rejected',
             `Your application #${id?.slice(0, 8)} has been rejected.${comments ? ` Reason: ${comments}` : ''}`,
             `/customer/my-applications/${id}`
           );
         } else if (action === 'resubmit') {
-          await createNotificationForCustomer(
+          void createNotificationForCustomer(
             'warning',
             'Contract Resubmission Required',
             `Your contract for application #${id?.slice(0, 8)} requires resubmission.${comments ? ` ${comments}` : ''}`,
             `/customer/my-applications/${id}/contract`
           );
         }
-        
-        toast.success(`Contract ${action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'sent for resubmission'} successfully!`);
-        setContractReviewOpen(false);
       } else {
         throw new Error(supabaseResponse.message || 'Failed to update application');
       }
@@ -710,23 +747,14 @@ export const ApplicationDetailPage: React.FC = () => {
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         dispatch(updateApplication(supabaseResponse.data));
         dispatch(setSelected(supabaseResponse.data));
-        
-        // Create notification for customer
-        const notificationResponse = await supabaseApiService.createNotification({
-          userEmail: displayData.customerEmail,
-          type: 'warning',
-          title: 'Resubmission Required',
-          message: `Your application #${id.slice(0, 8)} requires resubmission. ${comments}`,
-          link: `/customer/my-applications/${id}/documents`,
-        });
-        
-        if (notificationResponse.status === 'SUCCESS') {
-          toast.success('Resubmission requested successfully! Customer has been notified.');
-        } else {
-          toast.success('Resubmission requested successfully!');
-        }
-        
+        toast.success('Resubmission requested successfully!');
         setResubmissionDialogOpen(false);
+        void createNotificationForCustomer(
+          'warning',
+          'Resubmission Required',
+          `Your application #${id.slice(0, 8)} requires resubmission. ${comments}`,
+          `/customer/my-applications/${id}/documents`
+        );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to request resubmission');
       }
@@ -740,12 +768,13 @@ export const ApplicationDetailPage: React.FC = () => {
   };
 
   const handleDirectApprove = async () => {
-    if (!id || !displayData) return;
+    if (!id || !displayData || approving || rejecting) return;
 
     const confirmed = window.confirm('Are you sure you want to approve and activate this application? This will make it active immediately.');
     if (!confirmed) return;
 
     try {
+      setApproving(true);
       if (!displayData.installmentPlan) {
         throw new Error('Installment plan is missing for this application');
       }
@@ -764,18 +793,16 @@ export const ApplicationDetailPage: React.FC = () => {
       });
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
+        await syncPaymentSchedulesFromPlan(id);
         dispatch(updateApplication(supabaseResponse.data));
         dispatch(setSelected(supabaseResponse.data));
-        
-        // Create notification for customer
-        await createNotificationForCustomer(
+        toast.success('Application approved and activated successfully!');
+        void createNotificationForCustomer(
           'success',
           'Application Approved',
           `Your application #${id?.slice(0, 8)} has been approved and activated! Your financing is now active.`,
           `/customer/my-applications/${id}`
         );
-        
-        toast.success('Application approved and activated successfully!');
       } else {
         throw new Error(supabaseResponse.message || 'Failed to approve application');
       }
@@ -783,11 +810,13 @@ export const ApplicationDetailPage: React.FC = () => {
       console.error('❌ Failed to approve application:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to approve application';
       toast.error(errorMessage);
+    } finally {
+      setApproving(false);
     }
   };
 
   const handleActivateDraft = async () => {
-    if (!id || !displayData) return;
+    if (!id || !displayData || approving || rejecting) return;
 
     const confirmed = window.confirm(
       'Activate this draft application now? This will set the status to Active and start the installment schedule.'
@@ -795,6 +824,7 @@ export const ApplicationDetailPage: React.FC = () => {
     if (!confirmed) return;
 
     try {
+      setApproving(true);
       if (!displayData.installmentPlan) {
         throw new Error('Installment plan is missing for this application');
       }
@@ -812,17 +842,16 @@ export const ApplicationDetailPage: React.FC = () => {
       });
 
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
+        await syncPaymentSchedulesFromPlan(id);
         dispatch(updateApplication(supabaseResponse.data));
         dispatch(setSelected(supabaseResponse.data));
-
-        await createNotificationForCustomer(
+        toast.success('Draft application activated successfully!');
+        void createNotificationForCustomer(
           'success',
           'Application Activated',
           `Your application #${id?.slice(0, 8)} has been activated! Your financing is now active.`,
           `/customer/my-applications/${id}`
         );
-
-        toast.success('Draft application activated successfully!');
       } else {
         throw new Error(supabaseResponse.message || 'Failed to activate application');
       }
@@ -830,6 +859,8 @@ export const ApplicationDetailPage: React.FC = () => {
       console.error('❌ Failed to activate draft application:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to activate application';
       toast.error(errorMessage);
+    } finally {
+      setApproving(false);
     }
   };
 
@@ -915,6 +946,17 @@ export const ApplicationDetailPage: React.FC = () => {
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         dispatch(updateApplication(supabaseResponse.data));
         dispatch(setSelected(supabaseResponse.data));
+
+        if (updates.installmentPlan?.schedule) {
+          const rebuild = await supabaseApiService.replacePaymentSchedulesFromInstallmentPlan(id);
+          if (rebuild.status !== 'SUCCESS') {
+            throw new Error(
+              rebuild.message ||
+                'Application updated but payment_schedules rebuild failed — retry edit carefully'
+            );
+          }
+        }
+
         toast.success('Application updated successfully!');
         setEditDialogOpen(false);
         
@@ -934,13 +976,15 @@ export const ApplicationDetailPage: React.FC = () => {
   };
 
   const handleReject = async () => {
-    if (!id || !displayData) return;
+    if (!id || !displayData || approving || rejecting) return;
 
-    const confirmed = window.confirm('Are you sure you want to reject this application? This action cannot be undone.');
+    const confirmed = window.confirm(
+      'Are you sure you want to reject this application? It can be reopened to Under Review later if needed.'
+    );
     if (!confirmed) return;
 
     try {
-      // Update in Supabase only
+      setRejecting(true);
       const supabaseResponse = await supabaseApiService.updateApplication(id, {
         status: 'rejected',
       });
@@ -948,16 +992,13 @@ export const ApplicationDetailPage: React.FC = () => {
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         dispatch(updateApplication(supabaseResponse.data));
         dispatch(setSelected(supabaseResponse.data));
-        
-        // Create notification for customer
-        await createNotificationForCustomer(
+        toast.success('Application rejected successfully!');
+        void createNotificationForCustomer(
           'error',
           'Application Rejected',
           `Unfortunately, your application #${id?.slice(0, 8)} has been rejected. Please contact support for more information.`,
           `/customer/my-applications/${id}`
         );
-        
-        toast.success('Application rejected successfully!');
       } else {
         throw new Error(supabaseResponse.message || 'Failed to reject application');
       }
@@ -965,6 +1006,33 @@ export const ApplicationDetailPage: React.FC = () => {
       console.error('❌ Failed to reject application:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to reject application in Supabase';
       toast.error(errorMessage);
+    } finally {
+      setRejecting(false);
+    }
+  };
+
+  const handleReopenUnderReview = async () => {
+    if (!id || !displayData || approving || rejecting) return;
+    const confirmed = window.confirm('Reopen this application to Under Review?');
+    if (!confirmed) return;
+
+    try {
+      setApproving(true);
+      const supabaseResponse = await supabaseApiService.updateApplication(id, {
+        status: 'under_review',
+      });
+      if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
+        dispatch(updateApplication(supabaseResponse.data));
+        dispatch(setSelected(supabaseResponse.data));
+        toast.success('Application reopened to Under Review');
+      } else {
+        throw new Error(supabaseResponse.message || 'Failed to reopen application');
+      }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reopen application';
+      toast.error(errorMessage);
+    } finally {
+      setApproving(false);
     }
   };
 
@@ -1003,20 +1071,44 @@ export const ApplicationDetailPage: React.FC = () => {
               ))}
             </Select>
           </FormControl>
-          <Button variant="secondary" startIcon={<Edit />} onClick={() => setEditDialogOpen(true)}>
+          <Button
+            variant="secondary"
+            startIcon={<Edit />}
+            onClick={() => setEditDialogOpen(true)}
+            disabled={approving || rejecting || reviewing || convertingSchedule || savingEdit}
+          >
             Edit Installments
           </Button>
           {displayData.status === 'draft' && (
-            <Button variant="primary" startIcon={<CheckCircle />} onClick={handleActivateDraft}>
+            <Button
+              variant="primary"
+              startIcon={<CheckCircle />}
+              onClick={handleActivateDraft}
+              loading={approving}
+              disabled={rejecting}
+            >
               Activate
             </Button>
           )}
           {(displayData.status === 'under_review') && (
             <>
-              <Button variant="primary" startIcon={<Description />} className="approve-button" onClick={handleApprove}>
+              <Button
+                variant="primary"
+                startIcon={<Description />}
+                className="approve-button"
+                onClick={handleApprove}
+                disabled={approving || rejecting}
+              >
                 Generate Contract & Send to Client
               </Button>
-              <Button variant="primary" startIcon={<CheckCircle />} className="approve-button" onClick={handleDirectApprove}>
+              <Button
+                variant="primary"
+                startIcon={<CheckCircle />}
+                className="approve-button"
+                onClick={handleDirectApprove}
+                loading={approving}
+                disabled={rejecting}
+              >
                 Approve & Activate
               </Button>
               <Button 
@@ -1024,17 +1116,69 @@ export const ApplicationDetailPage: React.FC = () => {
                 startIcon={<Edit />} 
                 className="resubmission-button" 
                 onClick={() => setResubmissionDialogOpen(true)}
+                disabled={approving || rejecting || requestingResubmission}
               >
                 Request Resubmission
               </Button>
-              <Button variant="secondary" startIcon={<Cancel />} className="reject-button" onClick={handleReject}>
+              <Button
+                variant="secondary"
+                startIcon={<Cancel />}
+                className="reject-button"
+                onClick={handleReject}
+                loading={rejecting}
+                disabled={approving}
+              >
                 Reject
               </Button>
             </>
           )}
-          {displayData.status === 'contracts_submitted' && (
-            <Button variant="primary" startIcon={<Visibility />} onClick={handleReviewContract}>
+          {(displayData.status === 'resubmission_required' ||
+            displayData.status === 'contract_signing_required') && (
+            <>
+              <Button
+                variant="secondary"
+                startIcon={<Edit />}
+                className="resubmission-button"
+                onClick={() => setResubmissionDialogOpen(true)}
+                disabled={approving || rejecting || requestingResubmission}
+              >
+                {displayData.status === 'resubmission_required'
+                  ? 'Update Resubmission Notes'
+                  : 'Request Doc Resubmission'}
+              </Button>
+              <Button
+                variant="secondary"
+                startIcon={<Cancel />}
+                className="reject-button"
+                onClick={handleReject}
+                loading={rejecting}
+                disabled={approving}
+              >
+                Reject
+              </Button>
+            </>
+          )}
+          {(displayData.status === 'contracts_submitted' ||
+            displayData.status === 'contract_under_review') && (
+            <Button
+              variant="primary"
+              startIcon={<Visibility />}
+              onClick={handleReviewContract}
+              disabled={reviewing || approving || rejecting}
+            >
               Review Contract
+            </Button>
+          )}
+          {(displayData.status === 'rejected' ||
+            displayData.status === 'submission_cancelled') && (
+            <Button
+              variant="primary"
+              startIcon={<CheckCircle />}
+              onClick={handleReopenUnderReview}
+              loading={approving}
+              disabled={rejecting}
+            >
+              Reopen Under Review
             </Button>
           )}
           {displayData.contractGenerated && (
@@ -1042,7 +1186,12 @@ export const ApplicationDetailPage: React.FC = () => {
               Download Contract
             </Button>
           )}
-          <Button variant="secondary" startIcon={<Delete />} onClick={handleDeleteApplication}>
+          <Button
+            variant="secondary"
+            startIcon={<Delete />}
+            onClick={handleDeleteApplication}
+            disabled={approving || rejecting || reviewing}
+          >
             Delete
           </Button>
         </Box>

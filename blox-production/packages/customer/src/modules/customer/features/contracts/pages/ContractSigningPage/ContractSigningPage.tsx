@@ -199,23 +199,24 @@ export const ContractSigningPage: React.FC = () => {
             }
           }
 
-          // Log contract signing activity
-          try {
-            const { activityTrackingService } = await import('@shared/services');
-            await activityTrackingService.logActivity('sign_contract', 'contract', {
-              resourceId: id,
-              resourceName: `Signed Contract for Application #${id?.slice(0, 8)}`,
-              description: `Customer signed and submitted contract`,
-              metadata: {
-                applicationId: id,
-                status: 'contracts_submitted',
-                contractSigned: true,
-                contractUrl: contractUrl,
-              },
+          // Log contract signing activity (non-blocking — never delay success UX)
+          void import('@shared/services')
+            .then(({ activityTrackingService }) =>
+              activityTrackingService.logActivity('sign_contract', 'contract', {
+                resourceId: id,
+                resourceName: `Signed Contract for Application #${id?.slice(0, 8)}`,
+                description: `Customer signed and submitted contract`,
+                metadata: {
+                  applicationId: id,
+                  status: 'contracts_submitted',
+                  contractSigned: true,
+                  contractUrl: contractUrl,
+                },
+              })
+            )
+            .catch((error) => {
+              console.error('Failed to log contract signing activity:', error);
             });
-          } catch (error) {
-            console.error('Failed to log contract signing activity:', error);
-          }
 
           // Create notification for customer (non-blocking)
           supabaseApiService.createNotification({

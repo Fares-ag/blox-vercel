@@ -9,6 +9,7 @@ import { supabaseApiService } from '@shared/services';
 import { Button, StatusBadge, ConfirmDialog } from '@shared/components';
 import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { formatCurrency, formatDate } from '@shared/utils/formatters';
+import { resolveDocumentsSignedUrl } from '@shared/utils';
 import { toast } from 'react-toastify';
 import './ProductDetailPage.scss';
 
@@ -24,6 +25,7 @@ export const ProductDetailPage: React.FC = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [signedImages, setSignedImages] = useState<string[]>([]);
 
   const loadProductDetails = useCallback(async (productId: string) => {
     try {
@@ -59,6 +61,25 @@ export const ProductDetailPage: React.FC = () => {
       setIsActive(selected.status === 'active');
     }
   }, [selected?.status]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const images = selected?.images || [];
+    (async () => {
+      if (images.length === 0) {
+        setSignedImages([]);
+        return;
+      }
+      const { supabase } = await import('@shared/services');
+      const urls = await Promise.all(
+        images.map(async (ref) => (await resolveDocumentsSignedUrl(supabase, ref)) || ref)
+      );
+      if (!cancelled) setSignedImages(urls);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selected?.images]);
 
   const handleStatusToggle = useCallback(async () => {
     if (!id || !selected) return;
@@ -173,14 +194,14 @@ export const ProductDetailPage: React.FC = () => {
               </Typography>
               <Grid container spacing={2}>
                 {displayData.images.map((image, index) => (
-                  <Grid item xs={12} sm={6} md={4} key={index}>
+                  <Grid item xs={12} sm={6} md={4} key={image || index}>
                     <Box
                       className="product-image-wrapper"
-                      onClick={() => handleImageClick(image)}
+                      onClick={() => handleImageClick(signedImages[index] || image)}
                       sx={{ position: 'relative' }}
                     >
                       <img 
-                        src={image} 
+                        src={signedImages[index] || image} 
                         alt={`Vehicle image ${index + 1}`}
                         className="product-image"
                         loading="lazy"
