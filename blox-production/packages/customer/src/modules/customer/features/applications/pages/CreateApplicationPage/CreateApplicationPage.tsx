@@ -143,7 +143,7 @@ export const CreateApplicationPage: React.FC = () => {
   // const monthlyLiabilities = searchParams.get('monthlyLiabilities') || ''; // Currently unused
   const employmentType = searchParams.get('employmentType') || '';
   const hasBloxMembership = searchParams.get('hasBloxMembership') === 'true';
-  const membershipType = (searchParams.get('membershipType') as 'monthly' | 'yearly') || 'monthly';
+  // New memberships are monthly-only; ignore legacy ?membershipType=yearly from old links.
   const loanAmount = parseFloat(searchParams.get('loanAmount') || '0');
   const monthlyPayment = parseFloat(searchParams.get('monthlyPayment') || '0');
   const totalRent = parseFloat(searchParams.get('totalRent') || '0');
@@ -652,15 +652,10 @@ export const CreateApplicationPage: React.FC = () => {
           documents: [], // Uploaded after create with real applicationId
           bloxMembership: hasBloxMembership ? {
             isActive: true,
-            membershipType: membershipType,
+            membershipType: 'monthly',
             purchasedDate: new Date().toISOString(),
-            cost: membershipType === 'yearly' ? MembershipConfig.costPerYear : MembershipConfig.costPerMonth,
-            ...(membershipType === 'monthly' && {
-              nextBillingDate: moment().add(1, 'month').toISOString(),
-            }),
-            ...(membershipType === 'yearly' && {
-              renewalDate: moment().add(1, 'year').toISOString(),
-            }),
+            cost: MembershipConfig.costPerMonth,
+            nextBillingDate: moment().add(1, 'month').toISOString(),
           } : undefined,
         },
         signupAuthUserId ? { signupAuthUserId } : undefined

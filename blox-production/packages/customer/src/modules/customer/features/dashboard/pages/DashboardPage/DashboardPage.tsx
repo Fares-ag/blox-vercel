@@ -932,14 +932,14 @@ export const DashboardPage: React.FC = () => {
       <PurchaseMembershipDialog
         open={purchaseDialogOpen}
         onClose={() => setPurchaseDialogOpen(false)}
-        onPurchase={async (type) => {
+        onPurchase={async () => {
           try {
             const firstApp = applications[0];
             if (!firstApp) {
               toast.error('You need at least one application to purchase membership.');
               return;
             }
-            const result = await membershipService.purchaseMembership(firstApp.id, type);
+            const result = await membershipService.purchaseMembership(firstApp.id, 'monthly');
             setMembership(result);
             toast.success('Blox Membership activated!');
             setPurchaseDialogOpen(false);

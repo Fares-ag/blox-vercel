@@ -9,22 +9,19 @@ class MembershipService {
     applicationId: string,
     membershipType: 'monthly' | 'yearly'
   ): Promise<BloxMembership> {
-    // For now we treat membership as a customer-level flag stored on the application.
-    // We no longer call a legacy HTTP API; instead we:
-    // 1) Create a membership object locally
-    // 2) Persist it into the application's bloxMembership column in Supabase
+    // New purchases: monthly only. Legacy yearly rows still load via getMembershipStatus.
+    if (!MembershipConfig.allowYearlyPurchase && membershipType !== 'monthly') {
+      throw new Error(
+        'Yearly membership is no longer available. Please purchase the monthly plan (50 QAR/month).'
+      );
+    }
 
     const membership: BloxMembership = {
       isActive: true,
-      membershipType,
+      membershipType: 'monthly',
       purchasedDate: new Date().toISOString(),
-      cost: membershipType === 'yearly' ? MembershipConfig.costPerYear : MembershipConfig.costPerMonth,
-      ...(membershipType === 'monthly' && {
-        nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      }),
-      ...(membershipType === 'yearly' && {
-        renewalDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-      }),
+      cost: MembershipConfig.costPerMonth,
+      nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     };
 
     try {

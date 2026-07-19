@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -6,11 +6,6 @@ import {
   DialogActions,
   Box,
   Typography,
-  RadioGroup,
-  FormControlLabel,
-  Radio,
-  FormControl,
-  FormLabel,
   Divider,
 } from '@mui/material';
 import { Button } from '@shared/components';
@@ -20,7 +15,8 @@ import { MembershipConfig } from '@shared/config/app.config';
 interface PurchaseMembershipDialogProps {
   open: boolean;
   onClose: () => void;
-  onPurchase: (type: 'monthly' | 'yearly') => void;
+  /** New purchases are monthly-only (50 QAR/month). */
+  onPurchase: (type: 'monthly') => void;
   termMonths?: number;
 }
 
@@ -30,18 +26,8 @@ export const PurchaseMembershipDialog: React.FC<PurchaseMembershipDialogProps> =
   onPurchase,
   termMonths = 36,
 }) => {
-  const [membershipType, setMembershipType] = useState<'monthly' | 'yearly'>('monthly');
-  
   const membershipCostPerMonth = MembershipConfig.costPerMonth;
-  const membershipCostPerYear = MembershipConfig.costPerYear;
-  
-  const totalCost = membershipType === 'yearly'
-    ? membershipCostPerYear * Math.ceil(termMonths / 12)
-    : membershipCostPerMonth * termMonths;
-  
-  const savings = membershipType === 'yearly'
-    ? (membershipCostPerMonth * 12) - membershipCostPerYear
-    : 0;
+  const totalCost = membershipCostPerMonth * termMonths;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -62,98 +48,23 @@ export const PurchaseMembershipDialog: React.FC<PurchaseMembershipDialogProps> =
 
         <Divider sx={{ my: 2 }} />
 
-        <FormControl component="fieldset" fullWidth>
-          <FormLabel component="legend" sx={{ mb: 2, fontSize: '1rem', fontWeight: 600 }}>
-            Select Membership Plan
-          </FormLabel>
-          <RadioGroup
-            value={membershipType}
-            onChange={(e) => setMembershipType(e.target.value as 'monthly' | 'yearly')}
-          >
-            <Box
-              sx={{
-                p: 2,
-                mb: 2,
-                border: membershipType === 'monthly' ? '2px solid #DAFF01' : '1px solid #e0e0e0',
-                borderRadius: 2,
-                cursor: 'pointer',
-                '&:hover': {
-                  backgroundColor: '#f5f5f5',
-                },
-              }}
-              onClick={() => setMembershipType('monthly')}
-            >
-              <FormControlLabel
-                value="monthly"
-                control={<Radio />}
-                label={
-                  <Box>
-                    <Typography variant="body1" fontWeight={600}>
-                      Monthly Plan
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {formatCurrency(membershipCostPerMonth)} per month
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Total: {formatCurrency(membershipCostPerMonth * termMonths)} for {termMonths} months
-                    </Typography>
-                  </Box>
-                }
-                sx={{ m: 0 }}
-              />
-            </Box>
-
-            <Box
-              sx={{
-                p: 2,
-                border: membershipType === 'yearly' ? '2px solid #DAFF01' : '1px solid #e0e0e0',
-                borderRadius: 2,
-                cursor: 'pointer',
-                backgroundColor: membershipType === 'yearly' ? '#f0fdf4' : 'transparent',
-                '&:hover': {
-                  backgroundColor: '#f5f5f5',
-                },
-              }}
-              onClick={() => setMembershipType('yearly')}
-            >
-              <FormControlLabel
-                value="yearly"
-                control={<Radio />}
-                label={
-                  <Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                      <Typography variant="body1" fontWeight={600}>
-                        Yearly Plan
-                      </Typography>
-                      {savings > 0 && (
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            px: 1,
-                            py: 0.5,
-                            backgroundColor: '#DAFF01',
-                            color: 'white',
-                            borderRadius: 1,
-                            fontWeight: 600,
-                          }}
-                        >
-                          Save {formatCurrency(savings)}/year
-                        </Typography>
-                      )}
-                    </Box>
-                    <Typography variant="body2" color="text.secondary">
-                      {formatCurrency(membershipCostPerYear)} per year
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      Total: {formatCurrency(totalCost)} for {termMonths} months
-                    </Typography>
-                  </Box>
-                }
-                sx={{ m: 0 }}
-              />
-            </Box>
-          </RadioGroup>
-        </FormControl>
+        <Box
+          sx={{
+            p: 2,
+            border: '2px solid #DAFF01',
+            borderRadius: 2,
+          }}
+        >
+          <Typography variant="body1" fontWeight={600}>
+            Monthly Plan
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {formatCurrency(membershipCostPerMonth)} per month
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            Total: {formatCurrency(totalCost)} for {termMonths} months
+          </Typography>
+        </Box>
 
         <Box sx={{ mt: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -170,11 +81,10 @@ export const PurchaseMembershipDialog: React.FC<PurchaseMembershipDialogProps> =
         <Button variant="secondary" onClick={onClose}>
           Cancel
         </Button>
-        <Button variant="primary" onClick={() => onPurchase(membershipType)}>
+        <Button variant="primary" onClick={() => onPurchase('monthly')}>
           Purchase Membership
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
-

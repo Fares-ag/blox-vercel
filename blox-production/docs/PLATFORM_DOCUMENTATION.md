@@ -312,7 +312,7 @@ Complements §7 (payment rails).
 
 ### Blox Membership (product)
 
-- **Reference pricing** shown in product config: **50 QAR / month**, **500 QAR / year** (confirm against live commercial terms).
+- **Reference pricing** shown in product config: **50 QAR / month** only for new purchases (legacy **500 QAR / year** may exist on historical records; not offered in UI).
 - **Persistence:** Membership is stored as **`bloxMembership`** JSON on an **application** record when the customer purchases; “do I have membership?” in the UI is derived from the **most recently updated** application that still carries that payload for the logged-in email.
 - **Deferrals (marketing):** Copy often mentions **up to three deferrals per year** — the UI may show remaining deferrals; **full enforcement** depends on deferral rows in the database and payment schedule updates, not on marketing text alone.
 

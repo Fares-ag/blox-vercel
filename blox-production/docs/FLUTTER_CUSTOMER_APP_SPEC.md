@@ -375,7 +375,7 @@ See `packages/shared/src/models/user.model.ts` — align with Supabase Auth `use
 
 - `Config.applicationStatuses`, `applicationScreenStatuses`, `paymentStatuses`, `statusConfig` — used for chips, colours, labels.
 - `Config.tenure`, `Config.Interval` — dropdowns / filters.
-- `MembershipConfig`: `costPerMonth` 50 QAR, `costPerYear` 500 QAR (reference values in `app.config.ts` — confirm product).
+- `MembershipConfig`: `costPerMonth` 50 QAR only for new purchases (`costPerYear` 500 is legacy/historical; not offered in UI).
 
 ### 12.8 SkipCash / payment payload (client contract)
 

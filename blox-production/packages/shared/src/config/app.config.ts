@@ -114,6 +114,12 @@ export const ToastConfig = {
 };
 
 export const MembershipConfig = {
+  /** Only purchasable plan for new memberships. */
   costPerMonth: 50, // QAR per month
-  costPerYear: 500, // QAR per year
+  /**
+   * Legacy yearly price — kept for reading historical yearly membership records.
+   * New purchases must not use yearly (see allowYearlyPurchase).
+   */
+  costPerYear: 500,
+  allowYearlyPurchase: false as const,
 };

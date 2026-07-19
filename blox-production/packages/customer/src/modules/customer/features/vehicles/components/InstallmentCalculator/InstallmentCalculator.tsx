@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Box, Typography, FormControlLabel, Divider, Switch, RadioGroup, Radio, FormControl, FormLabel } from '@mui/material';
+import { Box, Typography, FormControlLabel, Divider, Switch } from '@mui/material';
 import { Input } from '@shared/components';
 import { Select, type SelectOption } from '@shared/components';
 import { formatCurrency } from '@shared/utils/formatters';
@@ -20,7 +20,8 @@ export interface InstallmentCalculatorData {
   monthlyLiabilities: string;
   employmentType: string;
   hasBloxMembership: boolean;
-  membershipType: 'monthly' | 'yearly';
+  /** New purchases are monthly-only; type kept for URL/create payload compat. */
+  membershipType: 'monthly';
   loanAmount: number;
   monthlyPayment: number;
   totalRent: number;
@@ -59,9 +60,9 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
   const [monthlyLiabilities, setMonthlyLiabilities] = useState<string>('');
   const [employmentType, setEmploymentType] = useState<string>('');
 
-  // Additional Options
+  // Additional Options — monthly plan only (50 QAR/month)
   const [hasBloxMembership, setHasBloxMembership] = useState<boolean>(false);
-  const [membershipType, setMembershipType] = useState<'monthly' | 'yearly'>('monthly');
+  const membershipType = 'monthly' as const;
 
   // Options
   const residenceOptions: SelectOption[] = [
@@ -204,14 +205,9 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
     return monthlySchedule.reduce((sum, item) => sum + item.totalPayment, 0);
   }, [monthlySchedule]);
 
-  // Blox Membership cost calculation
+  // Blox Membership cost calculation (monthly only)
   const membershipCostPerMonth = MembershipConfig.costPerMonth;
-  const membershipCostPerYear = MembershipConfig.costPerYear;
-  const totalMembership = hasBloxMembership 
-    ? (membershipType === 'yearly' 
-        ? membershipCostPerYear * Math.ceil(termMonths / 12) 
-        : membershipCostPerMonth * termMonths)
-    : 0;
+  const totalMembership = hasBloxMembership ? membershipCostPerMonth * termMonths : 0;
 
   // Calculate yearly summary based on total monthly payments (principal + interest)
   const paymentSchedule = useMemo(() => {
@@ -422,45 +418,12 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
         
         {hasBloxMembership && (
           <Box sx={{ mt: 2, ml: 4, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-            <FormControl component="fieldset" fullWidth>
-              <FormLabel component="legend" sx={{ mb: 1, fontSize: '0.875rem', fontWeight: 600 }}>
-                Membership Plan
-              </FormLabel>
-              <RadioGroup
-                value={membershipType}
-                onChange={(e) => setMembershipType(e.target.value as 'monthly' | 'yearly')}
-                row
-              >
-                <FormControlLabel
-                  value="monthly"
-                  control={<Radio size="small" />}
-                  label={
-                    <Box>
-                      <Typography variant="body2" fontWeight={600}>
-                        Monthly: {formatCurrency(membershipCostPerMonth)}/month
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Total: {formatCurrency(membershipCostPerMonth * termMonths)} for {termMonths} months
-                      </Typography>
-                    </Box>
-                  }
-                />
-                <FormControlLabel
-                  value="yearly"
-                  control={<Radio size="small" />}
-                  label={
-                    <Box>
-                      <Typography variant="body2" fontWeight={600}>
-                        Yearly: {formatCurrency(membershipCostPerYear)}/year
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Save {formatCurrency((membershipCostPerMonth * 12) - membershipCostPerYear)} per year
-                      </Typography>
-                    </Box>
-                  }
-                />
-              </RadioGroup>
-            </FormControl>
+            <Typography variant="body2" fontWeight={600}>
+              Monthly: {formatCurrency(membershipCostPerMonth)}/month
+            </Typography>
+            <Typography variant="caption" color="text.secondary" display="block">
+              Total: {formatCurrency(membershipCostPerMonth * termMonths)} for {termMonths} months
+            </Typography>
           </Box>
         )}
       </Box>
@@ -523,7 +486,7 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
                 </Typography>
                 {hasBloxMembership && (
                   <Typography variant="caption" color="text.secondary">
-                    {membershipType === 'yearly' ? 'Yearly plan' : 'Monthly plan'} - Includes 3 deferrals/year
+                    Monthly plan — includes 3 deferrals/year
                   </Typography>
                 )}
               </Box>
