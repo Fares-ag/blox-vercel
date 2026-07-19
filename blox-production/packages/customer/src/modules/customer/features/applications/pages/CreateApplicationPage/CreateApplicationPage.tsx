@@ -13,7 +13,6 @@ import {
   Tab,
   IconButton,
   InputAdornment,
-  Alert,
 } from '@mui/material';
 import { Button } from '@shared/components';
 import {
@@ -35,7 +34,6 @@ import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setCredentials, logout as logoutAction } from '../../../../store/slices/auth.slice';
 import type { User } from '@shared/models/user.model';
 import type { Product } from '@shared/models/product.model';
-import type { Application, ApplicationStatus } from '@shared/models/application.model';
 import type { Offer } from '@shared/models/offer.model';
 import { Loading, EmptyState } from '@shared/components';
 import { supabaseApiService } from '@shared/services';
@@ -135,8 +133,6 @@ export const CreateApplicationPage: React.FC = () => {
   const [documents, setDocuments] = useState<Record<string, DocumentFile>>({});
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
-  const [existingApplication, setExistingApplication] = useState<Application | null>(null);
-  const [checkingApplications, setCheckingApplications] = useState(true);
 
   // Get data from URL params
   const vehicleId = searchParams.get('vehicleId');
@@ -259,60 +255,6 @@ export const CreateApplicationPage: React.FC = () => {
 
   const authorizeCreditCheck = watch('authorizeCreditCheck');
   const acceptTerms = watch('acceptTerms');
-
-  // Check for existing applications that would block new application
-  useEffect(() => {
-    const checkExistingApplications = async () => {
-      try {
-        setCheckingApplications(true);
-        
-        // Get customer email (from form default or user)
-        const customerEmail = user?.email || '';
-        if (!customerEmail) {
-          // Can't check without email, allow form to proceed
-          setCheckingApplications(false);
-          return;
-        }
-
-        // Check applications from Supabase
-        const supabaseResponse = await supabaseApiService.getApplications();
-        const allApplications: Application[] = supabaseResponse.status === 'SUCCESS' && supabaseResponse.data 
-          ? supabaseResponse.data 
-          : [];
-
-        // Find applications for this customer (by email)
-        const customerApplications = allApplications.filter(
-          (app) => app.customerEmail.toLowerCase() === customerEmail.toLowerCase()
-        );
-
-        // Keep in sync with public.has_blocking_application (active financing blocks; completed does not).
-        const blockingStatuses: ApplicationStatus[] = [
-          'active',
-          'under_review',
-          'contract_signing_required',
-          'resubmission_required',
-          'contracts_submitted',
-          'contract_under_review',
-          'down_payment_required',
-          'down_payment_submitted',
-        ];
-
-        const blockingApplication = customerApplications.find((app) =>
-          blockingStatuses.includes(app.status)
-        );
-
-        if (blockingApplication) {
-          setExistingApplication(blockingApplication);
-        }
-      } catch (error) {
-        console.error('Error checking existing applications:', error);
-      } finally {
-        setCheckingApplications(false);
-      }
-    };
-
-    checkExistingApplications();
-  }, [user?.email]);
 
   useEffect(() => {
     if (vehicleId) {
@@ -500,35 +442,22 @@ export const CreateApplicationPage: React.FC = () => {
       return;
     }
 
+    const missingRequiredDocs = documentCategories
+      .filter((c) => c.required)
+      .filter((c) => !documents[c.id]?.file);
+    if (missingRequiredDocs.length > 0) {
+      toast.error(
+        `Please upload required documents: ${missingRequiredDocs.map((d) => d.label).join(', ')}`
+      );
+      return;
+    }
+
     try {
       setSubmitting(true);
       console.log('Starting application submission...');
 
-      // Blocking check via SECURITY DEFINER RPC (works for anon/guest; RLS SELECT does not).
+      // Product rule: customers may create multiple applications (pending/active/etc. do not block).
       const customerEmail = resolvedCustomerEmail;
-      const { data: blockingAppId, error: blockingRpcError } = await supabase.rpc(
-        'has_blocking_application',
-        { p_email: customerEmail }
-      );
-      // Fail closed — never allow submit when we cannot verify blocking status.
-      if (blockingRpcError) {
-        console.error('has_blocking_application RPC failed:', blockingRpcError.message);
-        toast.error(
-          'We could not verify whether you already have an application. Please try again.'
-        );
-        return;
-      }
-      if (typeof blockingAppId === 'string' && blockingAppId.length > 0) {
-        toast.error(
-          'You already have an application in progress. Please wait until it is approved or rejected before applying again.'
-        );
-        if (isCustomerSession) {
-          navigate(`/customer/my-applications/${blockingAppId}`);
-        } else {
-          navigate('/customer/auth/login');
-        }
-        return;
-      }
 
       /** When email confirmation is on, signUp returns session null — DB insert uses RPC instead of RLS. */
       let signupAuthUserId: string | undefined;
@@ -826,7 +755,7 @@ export const CreateApplicationPage: React.FC = () => {
     handleSubmit(onSubmit)();
   };
 
-  if (loading || checkingApplications) {
+  if (loading) {
     return (
       <Box className="create-application-page">
         <Loading />
@@ -841,55 +770,6 @@ export const CreateApplicationPage: React.FC = () => {
         <Button variant="secondary" onClick={() => navigate('/customer/vehicles')} sx={{ mt: 2 }}>
           Back to Vehicles
         </Button>
-      </Box>
-    );
-  }
-
-  // Show blocking message if existing application found
-  if (existingApplication) {
-    const statusLabels: Record<string, string> = {
-      under_review: 'Under Review',
-      contract_signing_required: 'Contract Signing Required',
-      resubmission_required: 'Resubmission Required',
-      contracts_submitted: 'Contracts Submitted',
-      contract_under_review: 'Contract Under Review',
-      down_payment_required: 'Down Payment Required',
-      down_payment_submitted: 'Down Payment Submitted',
-      submission_cancelled: 'Cancelled',
-      completed: 'Completed',
-    };
-
-    return (
-      <Box className="create-application-page">
-        <Button
-          variant="secondary"
-          startIcon={<ArrowBack />}
-          onClick={() => navigate('/customer/vehicles')}
-          className="back-button"
-        >
-          Back to Vehicles
-        </Button>
-
-        <Box sx={{ maxWidth: 800, margin: '0 auto', mt: 3 }}>
-          <Alert severity="warning" sx={{ mb: 3 }}>
-            <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-              Cannot Create New Application
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              You already have an application with status: <strong>{statusLabels[existingApplication.status] || existingApplication.status}</strong>
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              Please wait until your current application is <strong>approved (active)</strong> or <strong>rejected</strong> before applying for a new one.
-            </Typography>
-            <Button
-              variant="contained"
-              onClick={() => navigate(`/customer/my-applications/${existingApplication.id}`)}
-              sx={{ mt: 2 }}
-            >
-              View Current Application
-            </Button>
-          </Alert>
-        </Box>
       </Box>
     );
   }

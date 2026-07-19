@@ -39,8 +39,15 @@ export const AddApplicationPage: React.FC = () => {
         `${firstName} ${lastName}`.trim() ||
         'Draft Customer';
 
-      const customerEmail = (customerInfo.email || '').toString().trim(); // can be empty for draft
+      const customerEmail = (customerInfo.email || '').toString().trim().toLowerCase();
       const customerPhone = (customerInfo.phone || '').toString().trim(); // can be empty for draft
+
+      if (!customerEmail) {
+        toast.error(
+          'Customer email is required. The application is only visible to that user’s account.'
+        );
+        return;
+      }
 
       const vehicle = data.vehicle || null;
       const offer = data.offer || null;
@@ -72,8 +79,10 @@ export const AddApplicationPage: React.FC = () => {
       const res = await supabaseApiService.createApplication(payload);
       if (res.status === 'SUCCESS' && res.data) {
         dispatch(addApplication(res.data));
-        toast.success('Draft application created successfully!');
-        navigate('/admin/applications');
+        toast.success(
+          `Application ${res.data.id} created for ${customerEmail}. It will show under that customer’s My Applications.`
+        );
+        navigate(`/admin/applications/view/${res.data.id}`);
         return;
       }
 

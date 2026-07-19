@@ -6,11 +6,6 @@ import { supabase } from '@shared/services/supabase.service';
 import { loggingService } from '@shared/services/logging.service';
 import { devLogger } from '@shared/utils/logger.util';
 
-/**
- * Helper function to fetch user role from the users table
- * Falls back to user_metadata if table is not accessible
- * Optimized with timeout to prevent long loading times
- */
 interface UserMetadata {
   role?: string;
   user_role?: string;
@@ -18,112 +13,52 @@ interface UserMetadata {
   [key: string]: unknown;
 }
 
-const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?: UserMetadata): Promise<string> => {
-  // First, check user_metadata immediately (fast path)
-  const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
-  
-  // Create a timeout promise (2 seconds max) with cleanup support
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  const timeoutPromise = new Promise<string>((resolve) => {
-    timeoutId = setTimeout(() => resolve('timeout'), 2000);
-  });
+/**
+ * Resolve role from public.users / is_admin() only.
+ * Never grant admin from JWT user_metadata (client-settable).
+ */
+const fetchUserRoleFromDB = async (userId: string, email: string): Promise<string> => {
+  try {
+    const { data: adminFlag, error: adminErr } = await supabase.rpc('is_admin');
+    if (!adminErr && adminFlag === true) {
+      const { data } = await supabase.from('users').select('role').eq('id', userId).maybeSingle();
+      const role = (data?.role || '').trim().toLowerCase();
+      if (role === 'super_admin' || role === 'admin') return role;
+      return 'admin';
+    }
 
-  // Try to fetch from users table with timeout
-  const fetchPromise = (async () => {
-    try {
-      const { data, error } = await supabase
+    const { data, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!error && data?.role) {
+      const role = String(data.role).trim().toLowerCase();
+      if (role === 'admin' || role === 'super_admin' || role === 'customer') return role;
+    }
+
+    if (email) {
+      const { data: emailData, error: emailError } = await supabase
         .from('users')
         .select('role')
-        .eq('id', userId)
-        .single();
-
-      // If we get a 406 error immediately, skip the email fallback
-      // Check for 406 in status, code, or message
-      const is406Error = (error as any)?.status === 406 || 
-                        error?.code === 'PGRST116' || 
-                        error?.message?.includes('406') ||
-                        error?.message?.includes('Not Acceptable');
-
-      if (is406Error) {
-        // Silently use metadata - this is expected if RLS blocks access
-        devLogger.debug('Users table not accessible (406), using user_metadata (this is expected if RLS policies are not set up)');
-        return roleFromMetadata || 'unknown';
+        .eq('email', email)
+        .maybeSingle();
+      if (!emailError && emailData?.role) {
+        const role = String(emailData.role).trim().toLowerCase();
+        if (role === 'admin' || role === 'super_admin' || role === 'customer') return role;
       }
-
-      if (!error && data?.role) {
-        return data.role;
-      }
-
-      // Only try email fallback if ID lookup didn't return 406
-      if (error && !is406Error) {
-        const { data: emailData, error: emailError } = await supabase
-          .from('users')
-          .select('role')
-          .eq('email', email)
-          .single();
-
-        if (!emailError && emailData?.role) {
-          return emailData.role;
-        }
-
-        // If email lookup also returns 406, use metadata
-        const isEmail406Error = (emailError as any)?.status === 406 || 
-                               emailError?.code === 'PGRST116' || 
-                               emailError?.message?.includes('406') ||
-                               emailError?.message?.includes('Not Acceptable');
-
-        if (isEmail406Error) {
-          devLogger.debug('Users table not accessible (406), using user_metadata');
-          return roleFromMetadata || 'unknown';
-        }
-      }
-
-      // Fail closed — never invent "customer" in the admin portal
-      return roleFromMetadata || 'unknown';
-    } catch (error: any) {
-      // If it's a 406 or table access error, use metadata immediately
-      const is406Error = (error as any)?.status === 406 || 
-                        error?.code === 'PGRST116' || 
-                        error?.message?.includes('406') ||
-                        error?.message?.includes('Not Acceptable');
-
-      if (is406Error) {
-        devLogger.debug('Users table not accessible (406), using user_metadata');
-        return roleFromMetadata || 'unknown';
-      }
-      return roleFromMetadata || 'unknown';
     }
-  })();
 
-  // Race between fetch and timeout
-  const result = await Promise.race([fetchPromise, timeoutPromise]);
-  
-  // Clean up timeout if it's still pending (if fetchPromise won the race)
-  if (timeoutId) {
-    clearTimeout(timeoutId);
+    return 'unknown';
+  } catch (error) {
+    devLogger.debug('Failed to resolve admin role from DB', error);
+    return 'unknown';
   }
-  
-  // If timeout, use metadata immediately
-  if (result === 'timeout') {
-    devLogger.debug('Users table query timed out, using user_metadata (this is expected if users table is not accessible)');
-    return roleFromMetadata || 'unknown';
-  }
-
-  return result as string;
 };
 
-function resolveMetadataRole(userMetadata?: UserMetadata): string {
-  const raw =
-    userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
-  if (raw === 'admin' || raw === 'super_admin' || raw === 'customer') {
-    return raw;
-  }
-  return 'unknown';
-}
-
 /**
- * AuthInitializer component that listens to Supabase auth state changes
- * and updates the Redux store accordingly for the admin app.
+ * AuthInitializer — Admin portal. Privilege only from public.users / is_admin().
  */
 export const AuthInitializer: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -132,7 +67,32 @@ export const AuthInitializer: React.FC = () => {
     let mounted = true;
     let subscription: { unsubscribe: () => void } | null = null;
 
-    // Check initial session (timeout so AuthGuard cannot spin forever)
+    const applySession = async (session: {
+      access_token: string;
+      user: { id: string; email?: string | null; user_metadata?: UserMetadata };
+    }) => {
+      const dbRole = await fetchUserRoleFromDB(session.user.id, session.user.email || '');
+      if (!mounted) return;
+
+      if (dbRole === 'admin' || dbRole === 'super_admin') {
+        const meta = session.user.user_metadata || {};
+        const user: User = {
+          id: session.user.id,
+          email: session.user.email || '',
+          name: meta.name || meta.first_name
+            ? `${meta.first_name || ''} ${meta.last_name || ''}`.trim()
+            : session.user.email || '',
+          role: dbRole,
+          permissions: (meta.permissions as string[]) || [],
+        };
+        dispatch(setCredentials({ user, token: session.access_token }));
+        loggingService.setUser(user);
+      } else {
+        dispatch(logout());
+        void supabase.auth.signOut();
+      }
+    };
+
     const initializeAuth = async () => {
       try {
         let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -147,133 +107,36 @@ export const AuthInitializer: React.FC = () => {
 
         const session = sessionResult.data?.session ?? null;
         if (mounted && session?.user) {
-          const metadataRole = resolveMetadataRole(session.user.user_metadata);
-
-          const buildUser = (role: string): User => ({
-            id: session.user.id,
-            email: session.user.email || '',
-            name: session.user.user_metadata?.name || session.user.user_metadata?.first_name
-              ? `${session.user.user_metadata.first_name || ''} ${session.user.user_metadata.last_name || ''}`.trim()
-              : session.user.email || '',
-            role,
-            permissions: session.user.user_metadata?.permissions || [],
-          });
-
-          // Await DB before granting — avoid privileged window for spoofed JWT metadata.
-          // On DB timeout, fetchUserRoleFromDB falls back to metadata (availability).
-          if (metadataRole === 'admin' || metadataRole === 'super_admin') {
-            const dbRole = await fetchUserRoleFromDB(
-              session.user.id,
-              session.user.email || '',
-              session.user.user_metadata
-            );
-            if (!mounted) return;
-            if (dbRole === 'admin' || dbRole === 'super_admin') {
-              const user = buildUser(dbRole);
-              dispatch(setCredentials({ user, token: session.access_token }));
-              loggingService.setUser(user);
-            } else {
-              dispatch(logout());
-              void supabase.auth.signOut();
-            }
-            dispatch(setInitialized());
-          } else if (metadataRole === 'customer') {
-            dispatch(logout());
-            void supabase.auth.signOut();
-            dispatch(setInitialized());
-          } else {
-            // Metadata missing/unknown — await DB before denying (admins with empty JWT metadata)
-            const dbRole = await fetchUserRoleFromDB(
-              session.user.id,
-              session.user.email || '',
-              session.user.user_metadata
-            );
-            if (!mounted) return;
-            if (dbRole === 'admin' || dbRole === 'super_admin') {
-              const user = buildUser(dbRole);
-              dispatch(setCredentials({ user, token: session.access_token }));
-              loggingService.setUser(user);
-            } else {
-              dispatch(logout());
-              void supabase.auth.signOut();
-            }
-            dispatch(setInitialized());
-          }
-        } else {
-          // No session found, mark as initialized immediately
-          dispatch(setInitialized());
+          await applySession(session);
         }
+        if (mounted) dispatch(setInitialized());
       } catch (error) {
         console.error('Error initializing auth:', error);
         loggingService.captureException(error as Error, { context: 'auth_initialization' });
-        // Mark as initialized even on error to prevent infinite loading
-        dispatch(setInitialized());
+        if (mounted) {
+          dispatch(logout());
+          dispatch(setInitialized());
+        }
       }
 
-      // Listen to auth state changes
       if (mounted) {
-        // Defer supabase.* calls — awaiting them inside onAuthStateChange deadlocks the auth lock.
-        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const {
+          data: { subscription: authSubscription },
+        } = supabase.auth.onAuthStateChange((_event, session) => {
           if (!mounted) return;
-
           const accessToken = session?.access_token;
           const sessionUser = session?.user;
 
           setTimeout(() => {
             void (async () => {
               if (!mounted) return;
-
-              if (sessionUser) {
-                const metadataRole = resolveMetadataRole(sessionUser.user_metadata);
-
-                const buildUser = (role: string): User => ({
-                  id: sessionUser.id,
-                  email: sessionUser.email || '',
-                  name: sessionUser.user_metadata?.name || sessionUser.user_metadata?.first_name
-                    ? `${sessionUser.user_metadata.first_name || ''} ${sessionUser.user_metadata.last_name || ''}`.trim()
-                    : sessionUser.email || '',
-                  role,
-                  permissions: sessionUser.user_metadata?.permissions || [],
+              if (sessionUser && accessToken) {
+                await applySession({
+                  access_token: accessToken,
+                  user: sessionUser,
                 });
-
-                if (metadataRole === 'admin' || metadataRole === 'super_admin') {
-                  // Runs inside setTimeout(0) — safe to await without auth-lock deadlock.
-                  const dbRole = await fetchUserRoleFromDB(
-                    sessionUser.id,
-                    sessionUser.email || '',
-                    sessionUser.user_metadata
-                  );
-                  if (!mounted) return;
-                  if (dbRole === 'admin' || dbRole === 'super_admin') {
-                    const user = buildUser(dbRole);
-                    dispatch(setCredentials({ user, token: accessToken || '' }));
-                    loggingService.setUser(user);
-                  } else {
-                    dispatch(logout());
-                    void supabase.auth.signOut();
-                  }
-                } else if (metadataRole === 'customer') {
-                  dispatch(logout());
-                  void supabase.auth.signOut();
-                } else {
-                  const dbRole = await fetchUserRoleFromDB(
-                    sessionUser.id,
-                    sessionUser.email || '',
-                    sessionUser.user_metadata
-                  );
-                  if (!mounted) return;
-                  if (dbRole === 'admin' || dbRole === 'super_admin') {
-                    const user = buildUser(dbRole);
-                    dispatch(setCredentials({ user, token: accessToken || '' }));
-                    loggingService.setUser(user);
-                  } else {
-                    dispatch(logout());
-                    void supabase.auth.signOut();
-                  }
-                }
               } else {
                 dispatch(logout());
-                loggingService.setUser(null);
               }
             })();
           }, 0);
@@ -282,17 +145,13 @@ export const AuthInitializer: React.FC = () => {
       }
     };
 
-    // Initialize immediately (no delay needed)
-    initializeAuth();
+    void initializeAuth();
 
     return () => {
       mounted = false;
-      if (subscription) {
-        subscription.unsubscribe();
-      }
+      subscription?.unsubscribe();
     };
   }, [dispatch]);
 
   return null;
 };
-

@@ -15,16 +15,17 @@ import './ApplicationsListPage.scss';
 export const ApplicationsListPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { list, loading } = useAppSelector((state) => state.application);
+  const { list, loading, error: listError } = useAppSelector((state) => state.application);
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
 
   const loadApplications = useCallback(async () => {
     if (!user?.email) return;
     try {
       dispatch(setLoading(true));
+      dispatch(setError(null));
       
-      // Load from Supabase only
-      const supabaseResponse = await supabaseApiService.getApplications();
+      // Skip cache so newly created apps show immediately after submit/login
+      const supabaseResponse = await supabaseApiService.getApplications({ skipCache: true });
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         // Filter to current user's applications by email
@@ -42,7 +43,7 @@ export const ApplicationsListPage: React.FC = () => {
       const errorMessage = error instanceof Error ? error.message : 'Failed to load applications';
       dispatch(setError(errorMessage));
       toast.error(errorMessage);
-      dispatch(setApplications([]));
+      // Do not clear list on error — empty state must not mean "no applications"
     } finally {
       dispatch(setLoading(false));
     }
@@ -75,7 +76,14 @@ export const ApplicationsListPage: React.FC = () => {
         View and manage your vehicle financing applications
       </Typography>
 
-      {list.length === 0 ? (
+      {listError ? (
+        <EmptyState
+          title="Failed to load applications"
+          message={listError}
+          onAction={() => loadApplications()}
+          actionLabel="Retry"
+        />
+      ) : list.length === 0 ? (
         <EmptyState
           title="No applications found"
           message="You haven't submitted any applications yet. Browse vehicles to get started."

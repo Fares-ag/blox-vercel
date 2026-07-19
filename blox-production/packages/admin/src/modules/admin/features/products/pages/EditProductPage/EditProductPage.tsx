@@ -344,7 +344,18 @@ export const EditProductPage: React.FC = () => {
               <Input
                 label="Price (QAR)"
                 type="number"
-                {...register('price', { required: 'Price is required', valueAsNumber: true })}
+                {...register('price', {
+                  required: 'Price is required',
+                  valueAsNumber: true,
+                  validate: (v) => {
+                    if (!Number.isFinite(v) || v <= 0) return 'Enter a valid price';
+                    const status = watch('status') || 'active';
+                    if (status === 'active' && v > 70_000) {
+                      return 'Active vehicles cannot exceed 70,000 QAR (Customer catalog cap).';
+                    }
+                    return true;
+                  },
+                })}
                 error={!!errors.price}
                 helperText={errors.price?.message}
                 placeholder="0.00"

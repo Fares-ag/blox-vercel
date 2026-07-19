@@ -97,9 +97,26 @@ class VehicleService {
       };
     }
     const seeded = CATALOG_SEED_VEHICLES.find((v) => v.id === id);
+    if (!seeded) {
+      return {
+        status: 'SUCCESS',
+        data: response.data,
+        message: response.message,
+      };
+    }
+    // Remote SoT for price/status; seed only fills missing images
+    const remoteImages = Array.isArray(response.data.images)
+      ? response.data.images.filter(Boolean)
+      : [];
+    const seedImages = Array.isArray(seeded.images) ? seeded.images.filter(Boolean) : [];
     return {
       status: 'SUCCESS',
-      data: seeded ? { ...response.data, ...seeded, id: response.data.id } : response.data,
+      data: {
+        ...seeded,
+        ...response.data,
+        id: response.data.id,
+        images: remoteImages.length > 0 ? remoteImages : seedImages,
+      },
       message: response.message,
     };
   }

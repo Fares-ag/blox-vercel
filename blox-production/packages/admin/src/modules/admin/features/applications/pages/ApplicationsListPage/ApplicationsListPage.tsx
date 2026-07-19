@@ -149,8 +149,10 @@ export const ApplicationsListPage: React.FC = () => {
         console.log('🔄 Force refreshing applications list');
       }
       
-      // Load from Supabase only
-      const supabaseResponse = await supabaseApiService.getApplications();
+      // Load from Supabase only (skip cache after create / force refresh)
+      const supabaseResponse = await supabaseApiService.getApplications({
+        skipCache: forceRefresh,
+      });
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         let applications = supabaseResponse.data;
@@ -278,7 +280,8 @@ export const ApplicationsListPage: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    loadApplications();
+    // Always refetch on mount so apps created just before navigating here appear
+    loadApplications(true);
   }, [loadApplications]);
 
   // Listen for navigation events to force refresh when coming from delete
@@ -316,17 +319,40 @@ export const ApplicationsListPage: React.FC = () => {
     dispatch(setPage(1));
   }, [dispatch]);
 
-  // Demo portfolio financials (intentional fiction for stakeholder demos).
-  // Application count always reflects the filtered view (live).
-  const metrics = useMemo(
-    () => ({
-      totalLoanValue: 23_640_000,
-      totalReceivable: 18_975_000,
-      averagePaymentSize: 9_875,
+  // Live portfolio metrics from the loaded catalog (not the paginated page slice).
+  const metrics = useMemo(() => {
+    const source = catalogApps.length > 0 ? catalogApps : fullFilteredList;
+    let totalLoanValue = 0;
+    let totalReceivable = 0;
+    let installmentSum = 0;
+    let installmentCount = 0;
+
+    source.forEach((app) => {
+      const loan = Number(app.loanAmount) || 0;
+      totalLoanValue += loan;
+
+      const schedule = app.installmentPlan?.schedule || [];
+      let remaining = 0;
+      schedule.forEach((p) => {
+        if (p.status === 'paid') return;
+        const amt = Number(p.remainingAmount ?? p.amount) || 0;
+        remaining += amt;
+        if (p.status === 'due' || p.status === 'active' || p.status === 'upcoming' || p.status === 'partially_paid') {
+          installmentSum += Number(p.amount) || 0;
+          installmentCount += 1;
+        }
+      });
+      // Fallback when schedule missing: treat unpaid loan as receivable
+      totalReceivable += schedule.length > 0 ? remaining : loan;
+    });
+
+    return {
+      totalLoanValue,
+      totalReceivable,
+      averagePaymentSize: installmentCount > 0 ? installmentSum / installmentCount : 0,
       applicationCount: fullFilteredList.length,
-    }),
-    [fullFilteredList.length]
-  );
+    };
+  }, [catalogApps, fullFilteredList]);
 
   // Calculate asset distribution percentage based on real ownership:
   // (down payment + sum of paid installments) / vehicle price
@@ -549,21 +575,21 @@ export const ApplicationsListPage: React.FC = () => {
 
       <Box className="metrics-grid">
         <Card
-          title="Total loan value (demo)"
+          title="Total loan value"
           value={metrics.totalLoanValue}
           moduleType="currency"
           icon={<AttachMoney sx={{ color: 'var(--blox-black)' }} />}
           className="metric-card payable"
         />
         <Card
-          title="Total receivable (demo)"
+          title="Total receivable"
           value={metrics.totalReceivable}
           moduleType="currency"
           icon={<AccountBalance sx={{ color: 'var(--blox-black)' }} />}
           className="metric-card receivable"
         />
         <Card
-          title="Average payment size (demo)"
+          title="Average payment size"
           value={metrics.averagePaymentSize}
           moduleType="currency"
           icon={<TrendingUp sx={{ color: 'var(--blox-black)' }} />}

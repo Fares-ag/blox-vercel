@@ -83,8 +83,8 @@ export const PaymentHistoryPage: React.FC = () => {
           const vehicleName = `${app.vehicle?.make || ''} ${app.vehicle?.model || ''}`.trim() || 'N/A';
           
           app.installmentPlan.schedule.forEach((payment: PaymentSchedule, index: number) => {
-            // Only include paid transactions in payment history
-            if (payment.status !== 'paid' && !payment.paidDate) return;
+            // Only include fully paid schedule rows (do not treat paidDate alone as paid)
+            if (payment.status !== 'paid') return;
 
             allTransactions.push({
               id: `${app.id}-${payment.dueDate}-${index}`,

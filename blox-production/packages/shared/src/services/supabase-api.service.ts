@@ -280,15 +280,24 @@ class SupabaseApiService {
   }
 
   // ==================== APPLICATIONS ====================
-  async getApplications(): Promise<ApiResponse<Application[]>> {
-    const cacheKey = 'applications:all';
-    const cached = supabaseCache.get<Application[]>(cacheKey);
-    if (cached) {
-      return {
-        status: 'SUCCESS',
-        data: cached,
-        message: 'Applications fetched successfully (cached)'
-      };
+  /** Cache key must be session-scoped — RLS results differ by user. */
+  private async applicationsCacheKey(): Promise<string> {
+    const { data } = await supabase.auth.getSession();
+    const uid = data.session?.user?.id || 'anon';
+    return `applications:${uid}`;
+  }
+
+  async getApplications(options?: { skipCache?: boolean }): Promise<ApiResponse<Application[]>> {
+    const cacheKey = await this.applicationsCacheKey();
+    if (!options?.skipCache) {
+      const cached = supabaseCache.get<Application[]>(cacheKey);
+      if (cached) {
+        return {
+          status: 'SUCCESS',
+          data: cached,
+          message: 'Applications fetched successfully (cached)'
+        };
+      }
     }
 
     try {
@@ -400,11 +409,17 @@ class SupabaseApiService {
       }
 
       const sessionEmail = authUser?.email?.trim().toLowerCase() || '';
-      const metadataRole = String(authUser?.user_metadata?.role || '')
-        .trim()
-        .toLowerCase();
-      const actorRole = profileRole || metadataRole;
-      const isAdminActor = actorRole === 'admin' || actorRole === 'super_admin';
+      // Prefer DB is_admin() (same gate as RLS) over JWT metadata — metadata is not authoritative.
+      let isAdminActor =
+        profileRole === 'admin' || profileRole === 'super_admin';
+      if (!useSignupRpc && authUser && !isAdminActor) {
+        try {
+          const { data: adminFlag } = await supabase.rpc('is_admin');
+          if (adminFlag === true) isAdminActor = true;
+        } catch {
+          // ignore — fall back to profileRole
+        }
+      }
       let customerEmail: string;
 
       if (useSignupRpc) {
@@ -419,6 +434,14 @@ class SupabaseApiService {
       } else if (isAdminActor) {
         // Admin create-for-customer: keep payload ownership (draft may omit email).
         customerEmail = (application.customerEmail || '').trim().toLowerCase();
+        if (!customerEmail) {
+          return {
+            status: 'ERROR',
+            message:
+              'Customer email is required so the application shows under that user’s My Applications.',
+            data: {} as Application,
+          };
+        }
       } else if (sessionEmail) {
         // Customer self-serve: bind to session so ownership cannot be spoofed.
         customerEmail = sessionEmail;
@@ -528,8 +551,8 @@ class SupabaseApiService {
         createdApp = mapSupabaseRow<Application>(handleSupabaseResponse<any>(response));
       }
       
-      // Invalidate applications cache
-      supabaseCache.invalidate('applications:all');
+      // Invalidate all session-scoped application list caches
+      supabaseCache.invalidatePattern('^applications:');
       
       // Activity logging must not block create (or hang submit on RPC/network issues)
       void import('./activity-tracking.service')
@@ -580,9 +603,10 @@ class SupabaseApiService {
             .select('role')
             .eq('id', user.id)
             .maybeSingle();
-          const role = (profile?.role || user.user_metadata?.role) as string | undefined;
-          if (role === 'admin' || role === 'super_admin') {
-            actor = role as TransitionActor;
+          const { data: isAdminFlag } = await supabase.rpc('is_admin');
+          const role = (profile?.role || '').trim().toLowerCase();
+          if (isAdminFlag === true) {
+            actor = role === 'super_admin' ? 'super_admin' : 'admin';
           } else if (role === 'customer') {
             actor = 'customer';
           } else {
@@ -940,13 +964,8 @@ class SupabaseApiService {
       if (!user?.id) {
         return { status: 'ERROR', message: 'Unauthorized', data: {} as Application };
       }
-      const { data: profile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
-      const role = (profile?.role || user.user_metadata?.role) as string | undefined;
-      if (role !== 'admin' && role !== 'super_admin') {
+      const { data: isAdminFlag, error: adminCheckErr } = await supabase.rpc('is_admin');
+      if (adminCheckErr || isAdminFlag !== true) {
         return {
           status: 'ERROR',
           message: 'Only admins can mark installments as paid',
@@ -1125,13 +1144,8 @@ class SupabaseApiService {
       if (!user?.id) {
         return { status: 'ERROR', message: 'Unauthorized', data: { rows: 0 } };
       }
-      const { data: profile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user.id)
-        .maybeSingle();
-      const role = (profile?.role || user.user_metadata?.role) as string | undefined;
-      if (role !== 'admin' && role !== 'super_admin') {
+      const { data: isAdminFlag, error: adminCheckErr } = await supabase.rpc('is_admin');
+      if (adminCheckErr || isAdminFlag !== true) {
         return {
           status: 'ERROR',
           message: 'Only admins can rebuild payment schedules',
@@ -1232,9 +1246,8 @@ class SupabaseApiService {
       if (!user?.id) {
         return { status: 'ERROR', message: 'Unauthorized', data: { applicationId: '' } };
       }
-      const { data: profile } = await supabase.from('users').select('role').eq('id', user.id).maybeSingle();
-      const role = (profile?.role || user.user_metadata?.role) as string | undefined;
-      if (role !== 'admin' && role !== 'super_admin') {
+      const { data: isAdminFlag, error: adminCheckErr } = await supabase.rpc('is_admin');
+      if (adminCheckErr || isAdminFlag !== true) {
         return { status: 'ERROR', message: 'Only admins can confirm bank transfers', data: { applicationId: '' } };
       }
 

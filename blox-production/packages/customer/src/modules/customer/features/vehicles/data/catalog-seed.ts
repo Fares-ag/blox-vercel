@@ -521,10 +521,21 @@ export const CATALOG_SEED_VEHICLES: Product[] = [
 ];
 
 /**
- * Overlay seed fields onto products that already exist in Supabase.
+ * Merge seed onto remote products that already exist in Supabase.
+ * Remote price/status/make/model always win — seed may only fill missing images.
  * Never invents product ids — applications.vehicle_id FK references products(id).
  */
 export function mergeCatalogWithSeed(remote: Product[]): Product[] {
   const seedById = new Map(CATALOG_SEED_VEHICLES.map((v) => [v.id, v]));
-  return remote.map((p) => seedById.get(p.id) ?? p);
+  return remote.map((p) => {
+    const seed = seedById.get(p.id);
+    if (!seed) return p;
+    const remoteImages = Array.isArray(p.images) ? p.images.filter(Boolean) : [];
+    const seedImages = Array.isArray(seed.images) ? seed.images.filter(Boolean) : [];
+    return {
+      ...seed,
+      ...p,
+      images: remoteImages.length > 0 ? remoteImages : seedImages,
+    };
+  });
 }

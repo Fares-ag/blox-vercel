@@ -52,7 +52,7 @@ export const PendingBankTransfersPage: React.FC = () => {
         .from('payment_transactions')
         .select('id, transaction_id, application_id, amount, status, method, failure_reason, created_at')
         .eq('method', 'bank_transfer')
-        .eq('status', 'pending')
+        .in('status', ['pending', 'processing'])
         .order('created_at', { ascending: false });
 
       if (qErr) {
