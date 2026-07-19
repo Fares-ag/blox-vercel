@@ -17,6 +17,7 @@ import {
 } from '@mui/material';
 import { Send, Close, SmartToy, Person, AttachFile, Image as ImageIcon, PictureAsPdf, InsertDriveFile, Cancel, Mic, Stop, CheckCircle, Description } from '@mui/icons-material';
 import { Button } from '@shared/components';
+import { OfferConfig } from '@shared/config/app.config';
 import { bloxAIClient, supabaseApiService, BloxAIClient, type AIApplicationInput, type AIDocumentInput } from '@shared/services';
 import { toast } from 'react-toastify';
 import './ChatModal.scss';
@@ -1036,6 +1037,32 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
       // Format using helper method
       const formattedData = BloxAIClient.createApplicationFromAIData(appInput);
 
+      // Resolve platform default 7% offer when AI path omits offerId
+      let resolvedOfferId = formattedData.offerId || '';
+      if (!resolvedOfferId) {
+        try {
+          const offersResponse = await supabaseApiService.getOffers();
+          if (offersResponse.status === 'SUCCESS' && offersResponse.data) {
+            const active = offersResponse.data.filter((o) => o.status === 'active');
+            const def =
+              active.find((o) => o.isDefault) ||
+              active.find(
+                (o) =>
+                  o.name === OfferConfig.defaultOfferName ||
+                  Number(o.annualRentRate) === OfferConfig.flatProfitRatePercent
+              ) ||
+              active[0];
+            resolvedOfferId = def?.id || '';
+          }
+        } catch (e) {
+          console.error('Failed to resolve default offer for AI apply:', e);
+        }
+      }
+      if (!resolvedOfferId) {
+        toast.error('No active financing offer is available. Please contact support.');
+        return;
+      }
+
       // Convert to Application format (add required fields with defaults)
       const customerInfo = formattedData.customerInfo;
       const applicationPayload: any = {
@@ -1043,7 +1070,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
         customerEmail: formattedData.customerEmail,
         customerPhone: formattedData.customerPhone,
         vehicleId: formattedData.vehicleId,
-        offerId: formattedData.offerId || '', // Ensure offerId is a string
+        offerId: resolvedOfferId,
         status: formattedData.status,
         loanAmount: formattedData.loanAmount,
         downPayment: formattedData.downPayment,
@@ -1051,6 +1078,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
           ...formattedData.installmentPlan,
           tenure: formattedData.installmentPlan.tenure || '',
           interval: formattedData.installmentPlan.interval || 'Monthly',
+          annualRentalRate:
+            formattedData.installmentPlan.annualRentalRate ??
+            OfferConfig.flatProfitRateDecimal,
         } : undefined,
         documents: formattedData.documents,
         origin: formattedData.origin,

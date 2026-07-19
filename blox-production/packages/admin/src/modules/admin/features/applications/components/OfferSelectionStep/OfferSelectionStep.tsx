@@ -16,6 +16,7 @@ import Grid from '@mui/material/GridLegacy';
 import { type StepProps, Loading, Button, Input, Select, type SelectOption } from '@shared/components';
 import { supabaseApiService } from '@shared/services';
 import type { Offer } from '@shared/models/offer.model';
+import { OfferConfig } from '@shared/config/app.config';
 import { toast } from 'react-toastify';
 import './OfferSelectionStep.scss';
 
@@ -49,7 +50,16 @@ export const OfferSelectionStep: React.FC<StepProps> = ({ data, updateData }) =>
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         setOffers(supabaseResponse.data);
         if (!selectedOfferId && supabaseResponse.data.length > 0) {
-          const defaultOffer = supabaseResponse.data.find((o) => o.isDefault) || supabaseResponse.data[0];
+          const active = supabaseResponse.data.filter((o) => o.status === 'active');
+          const pool = active.length > 0 ? active : supabaseResponse.data;
+          const defaultOffer =
+            pool.find((o) => o.isDefault) ||
+            pool.find(
+              (o) =>
+                o.name === OfferConfig.defaultOfferName ||
+                Number(o.annualRentRate) === OfferConfig.flatProfitRatePercent
+            ) ||
+            pool[0];
           setSelectedOfferId(defaultOffer.id);
           updateData({ offerId: defaultOffer.id, offer: defaultOffer });
         }

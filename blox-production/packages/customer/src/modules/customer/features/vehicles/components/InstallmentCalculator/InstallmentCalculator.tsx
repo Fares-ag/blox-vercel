@@ -3,7 +3,7 @@ import { Box, Typography, FormControlLabel, Divider, Switch } from '@mui/materia
 import { Input } from '@shared/components';
 import { Select, type SelectOption } from '@shared/components';
 import { formatCurrency } from '@shared/utils/formatters';
-import { MembershipConfig } from '@shared/config/app.config';
+import { MembershipConfig, OfferConfig } from '@shared/config/app.config';
 import moment from 'moment';
 import './InstallmentCalculator.scss';
 
@@ -91,39 +91,8 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
   const totalAmount = vehiclePrice;
   const carValue = vehiclePrice;
 
-  // Calculate annual rental rate based on application info (simplified logic) - memoized
-  const annualRentalRate = useMemo(() => {
-    let rate = 0.12; // Base 12% annual rental rate
-
-    // Adjust based on employment type
-    if (employmentType === 'gov-or-semi-gov') {
-      rate -= 0.02; // Lower rate for government
-    } else if (employmentType === 'private-international') {
-      rate += 0.01; // Slightly higher
-    } else if (employmentType === 'self-employed') {
-      rate += 0.03; // Higher for self-employed
-    }
-
-    // Adjust based on residence duration
-    if (durationOfResidence === 'more-than-12-months') {
-      rate -= 0.01;
-    } else if (durationOfResidence === 'less-than-6-months') {
-      rate += 0.02;
-    }
-
-    // Adjust based on salary to liabilities ratio
-    if (salary > 0 && monthlyLiabilities) {
-      const liabilities = parseFloat(monthlyLiabilities.split('to')[0].trim());
-      const ratio = salary / (liabilities || 1);
-      if (ratio > 3) {
-        rate -= 0.02;
-      } else if (ratio < 1.5) {
-        rate += 0.03;
-      }
-    }
-
-    return Math.max(0.08, Math.min(0.20, rate)); // Clamp between 8% and 20%
-  }, [employmentType, durationOfResidence, salary, monthlyLiabilities]);
+  // Platform SoT: 7% flat profit for all Customer apply math (employment fields are KYC only).
+  const annualRentalRate = OfferConfig.flatProfitRateDecimal;
 
   // Simple principal-per-month (for display only, not used for the real schedule)
   const principalPaymentPerMonth = useMemo(() => {
@@ -379,6 +348,14 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
             </Typography>
             <Typography variant="h6">{formatCurrency(loanAmount)}</Typography>
           </Box>
+          <Box className="summary-item">
+            <Typography variant="body2" color="text.secondary">
+              Profit rate
+            </Typography>
+            <Typography variant="h6">
+              {OfferConfig.flatProfitRatePercent}% flat profit
+            </Typography>
+          </Box>
         </Box>
       )}
 
@@ -390,9 +367,6 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
               checked={hasBloxMembership}
               onChange={(e) => {
                 setHasBloxMembership(e.target.checked);
-                if (!e.target.checked) {
-                  setMembershipType('monthly'); // Reset to default
-                }
               }}
               sx={{
                 '& .MuiSwitch-switchBase.Mui-checked': {
@@ -459,6 +433,14 @@ export const InstallmentCalculator: React.FC<InstallmentCalculatorProps> = ({ ve
                 </Typography>
                 <Typography variant="body1" fontWeight={600}>
                   {termMonths}
+                </Typography>
+              </Box>
+              <Box className="plan-item">
+                <Typography variant="body2" color="text.secondary">
+                  Flat profit rate
+                </Typography>
+                <Typography variant="body1" fontWeight={600}>
+                  {OfferConfig.flatProfitRatePercent}%
                 </Typography>
               </Box>
               <Box className="plan-item">

@@ -1,6 +1,7 @@
 import moment from 'moment';
 import type { PaymentSchedule, Application } from '../models/application.model';
 import type { SettlementDiscountSettings, TieredDiscount, SettlementDiscountCalculation } from '../models/settlement-discount.model';
+import { toAnnualRentRateDecimal } from '../config/app.config';
 import { calculateOwnership } from './ownership.utils';
 import { parseTenureToMonths } from './tenure.utils';
 
@@ -102,8 +103,8 @@ export function calculatePrincipalAndInterest(
   const loanAmount = vehiclePrice - downPayment;
   const principalPerMonth = tenureMonths > 0 ? loanAmount / tenureMonths : 0;
   
-  // Get annual rental rate from offer or default
-  const annualRentalRate = application.offer?.annualRentRate || 0.12; // Default 12%
+  // Prefer stored offer rate; normalize percent vs decimal; fallback = platform 7% flat profit
+  const annualRentalRate = toAnnualRentRateDecimal(application.offer?.annualRentRate);
   const rentPerPeriodRate = annualRentalRate / 12;
 
   let totalPrincipal = 0;

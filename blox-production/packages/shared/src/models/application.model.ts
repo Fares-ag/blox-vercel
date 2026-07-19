@@ -134,7 +134,7 @@ export interface InstallmentPlan {
   totalAmount: number;
   downPayment?: number;
   schedule: PaymentSchedule[];
-  annualRentalRate?: number; // Store the rate used for calculation (as decimal, e.g., 0.12)
+  annualRentalRate?: number; // Store the rate used for calculation (as decimal, e.g., 0.07 for 7%)
   /**
    * How the installment schedule was calculated.
    * - dynamic_rent: current Blox model (principal + decreasing rent)

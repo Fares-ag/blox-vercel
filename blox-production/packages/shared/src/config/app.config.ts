@@ -123,3 +123,27 @@ export const MembershipConfig = {
   costPerYear: 500,
   allowYearlyPurchase: false as const,
 };
+
+/**
+ * Platform financing offer SoT for Customer browse/apply and new Admin defaults.
+ * DB `offers.annual_rent_rate` is stored as percent (7 = 7%).
+ * Customer calculator / installmentPlan.annualRentalRate use decimal (0.07).
+ */
+export const OfferConfig = {
+  flatProfitRatePercent: 7,
+  flatProfitRateDecimal: 0.07,
+  defaultOfferName: 'Standard 7% Flat Profit',
+};
+
+/**
+ * Normalize offer/stored rates to decimal for math.
+ * Admin/DB use percent (7 or 9.5); some JSON paths already store decimal (0.07).
+ */
+export function toAnnualRentRateDecimal(
+  rate: number | null | undefined,
+  fallbackDecimal: number = OfferConfig.flatProfitRateDecimal
+): number {
+  if (rate == null || !Number.isFinite(Number(rate))) return fallbackDecimal;
+  const n = Number(rate);
+  return n > 1 ? n / 100 : n;
+}

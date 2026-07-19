@@ -42,7 +42,7 @@ import { devLogger } from '@shared/utils/logger.util';
 import { customerAuthService } from '../../../../services/customerAuth.service';
 import { vehicleService, CUSTOMER_MAX_VEHICLE_PRICE_QAR } from '../../../../services/vehicle.service';
 import { toast } from 'react-toastify';
-import { MembershipConfig } from '@shared/config/app.config';
+import { MembershipConfig, OfferConfig } from '@shared/config/app.config';
 import { formatMonthsToTenure } from '@shared/utils/tenure.utils';
 import { getNationalityFromQID, getAllNationalityOptions } from '@shared/utils/nationality.utils';
 import moment from 'moment';
@@ -147,7 +147,6 @@ export const CreateApplicationPage: React.FC = () => {
   const loanAmount = parseFloat(searchParams.get('loanAmount') || '0');
   const monthlyPayment = parseFloat(searchParams.get('monthlyPayment') || '0');
   const totalRent = parseFloat(searchParams.get('totalRent') || '0');
-  const annualRentalRate = parseFloat(searchParams.get('annualRentalRate') || '0');
 
   const {
     register,
@@ -564,8 +563,15 @@ export const CreateApplicationPage: React.FC = () => {
           const activeOffers = offersResponse.data.filter((o: Offer) => o.status === 'active');
           
           if (activeOffers.length > 0) {
-            // Use default offer if exists, otherwise use first active offer
-            selectedOffer = activeOffers.find((o: Offer) => o.isDefault) || activeOffers[0];
+            // Prefer platform default (7% flat profit), else offer named/rate-matched, else first active
+            selectedOffer =
+              activeOffers.find((o: Offer) => o.isDefault) ||
+              activeOffers.find(
+                (o: Offer) =>
+                  o.name === OfferConfig.defaultOfferName ||
+                  Number(o.annualRentRate) === OfferConfig.flatProfitRatePercent
+              ) ||
+              activeOffers[0];
           }
         }
       } catch (error) {
@@ -582,12 +588,9 @@ export const CreateApplicationPage: React.FC = () => {
       // For full years: "X Years", for partial: "X Months"
       const tenureString = formatMonthsToTenure(termMonths);
       
-      // Generate payment schedule
-      // Use calculator's annual rental rate if available, otherwise use default offer rate
-      // Calculator passes rate as decimal (e.g., 0.12), default offer is percentage (e.g., 12.0)
-      const annualRentRateDecimal = annualRentalRate > 0 
-        ? annualRentalRate 
-        : defaultOffer.annualRentRate / 100;
+      // Generate payment schedule — all new Customer applies use 7% flat profit SoT.
+      // Ignore stale URL rates (e.g. old 12% links); offer row still attached for Admin visibility.
+      const annualRentRateDecimal = OfferConfig.flatProfitRateDecimal;
       
       const schedule: import('@shared/models/application.model').PaymentSchedule[] = [];
       const startDate = moment().startOf('month').add(1, 'month'); // Start next month
@@ -784,6 +787,26 @@ export const CreateApplicationPage: React.FC = () => {
       </Button>
 
       <Box component="form" onSubmit={handleFormSubmit} className="application-form">
+        <Card className="form-section">
+          <CardContent>
+            <Typography variant="h5" className="section-title">
+              Financing offer
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+              This application uses the platform flat profit rate.
+            </Typography>
+            <Typography variant="h6" fontWeight={700}>
+              {OfferConfig.flatProfitRatePercent}% flat profit
+            </Typography>
+            {(monthlyPayment > 0 || loanAmount > 0) && (
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                Estimated monthly installment: {monthlyPayment > 0 ? monthlyPayment.toFixed(2) : '—'} QAR
+                {loanAmount > 0 ? ` · Loan ${loanAmount.toFixed(2)} QAR` : ''}
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Personal Details Section */}
         <Card className="form-section">
           <CardContent>
