@@ -34,6 +34,34 @@ class SupabaseApiService {
     return null;
   }
 
+  /** Write an admin audit log entry to public.audit_logs.
+   *  Fire-and-forget: never throws so it never breaks the calling operation. */
+  private async insertAuditLog(
+    action: string,
+    tableName: string,
+    resourceId: string,
+    description: string,
+  ): Promise<void> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role, email')
+        .eq('id', user.id)
+        .maybeSingle();
+      await supabase.from('audit_logs').insert({
+        table_name: tableName,
+        operation: action,
+        user_email: profile?.email ?? user.email ?? '',
+        user_role: profile?.role ?? 'unknown',
+        error_message: null,
+      });
+    } catch {
+      // Never surface audit failures to the caller
+    }
+  }
+
   // ==================== PRODUCTS ====================
   async getProducts(): Promise<ApiResponse<Product[]>> {
     const cacheKey = 'products:all';
@@ -729,6 +757,16 @@ class SupabaseApiService {
             console.error('Failed to log activity:', error);
           }
         })();
+
+        // Audit log status changes for admin compliance trail
+        if (application.status !== undefined) {
+          void this.insertAuditLog(
+            'STATUS_CHANGE',
+            'applications',
+            id,
+            `Application ${id} status changed to ${application.status}`,
+          );
+        }
         
         return {
           status: 'SUCCESS',
@@ -1119,6 +1157,14 @@ class SupabaseApiService {
           data: {} as Application,
         };
       }
+
+      // Audit trail: log the admin mark-paid action
+      void this.insertAuditLog(
+        'MARK_PAID',
+        'payment_schedules',
+        applicationId,
+        `Admin marked installment for ${applicationId} due ${paymentDueDate} as paid (amount: ${paidAmount})`,
+      );
 
       return updateResult;
     } catch (error: any) {

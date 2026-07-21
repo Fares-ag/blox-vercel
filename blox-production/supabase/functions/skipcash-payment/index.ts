@@ -412,6 +412,36 @@ serve(async (req) => {
       }
     }
 
+    // ── PAYMENT INTENT: record initiation for abandoned-payment tracking ──────
+    let paymentIntentId: string | null = null;
+    if (applicationId) {
+      try {
+        const { data: intentRow, error: intentErr } = await supabaseClient
+          .from('payment_intents')
+          .insert({
+            application_id: applicationId,
+            user_email: (authedUser.email ?? '').toLowerCase(),
+            amount: paymentDetails.amount,
+            payment_type: (() => {
+              try {
+                const c = paymentDetails.custom1 ? JSON.parse(paymentDetails.custom1) : {};
+                if (c.isSettlement) return 'settlement';
+                if (c.type === 'credit_topup') return 'credit_topup';
+              } catch { /* ignore */ }
+              return 'installment';
+            })(),
+            status: 'initiated',
+            currency: 'QAR',
+            metadata: { transaction_id: paymentDetails.transactionId },
+          })
+          .select('id')
+          .single();
+        if (!intentErr && intentRow) paymentIntentId = intentRow.id;
+      } catch (intentEx) {
+        console.warn('Failed to create payment_intent record:', intentEx);
+      }
+    }
+
     // Generate UUID
     const uid = crypto.randomUUID();
 
@@ -605,6 +635,17 @@ serve(async (req) => {
         }
       }
     );
+
+    // Advance payment_intent to 'redirected' now that SkipCash URL is ready
+    if (paymentIntentId) {
+      void supabaseClient
+        .from('payment_intents')
+        .update({ status: 'redirected', updated_at: new Date().toISOString() })
+        .eq('id', paymentIntentId)
+        .then(({ error }) => {
+          if (error) console.warn('Failed to update payment_intent to redirected:', error);
+        });
+    }
 
     // Extract application ID from custom1 if available (reuse already declared applicationId)
     // applicationId is already declared at the top of the function
