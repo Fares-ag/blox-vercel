@@ -3,14 +3,19 @@ import { Box, Fab, Tooltip } from '@mui/material';
 import { Chat } from '@mui/icons-material';
 import { CustomerNav } from '../CustomerNav/CustomerNav';
 import { ChatModal } from '../../features/help/components/ChatModal';
+import { Config } from '@shared/config/app.config';
 import './CustomerNavWrapper.scss';
 
 interface CustomerNavWrapperProps {
   children: React.ReactNode;
 }
 
-// Feature flag to enable/disable chatbot
-const CHATBOT_ENABLED = true;
+// Only enable when flag is on and a non-localhost AI URL is configured.
+const bloxAiUrl = (import.meta.env.VITE_BLOX_AI_URL || '').trim();
+const CHATBOT_ENABLED =
+  Config.chatbotEnabled &&
+  !!bloxAiUrl &&
+  !/localhost|127\.0\.0\.1/i.test(bloxAiUrl);
 
 export const CustomerNavWrapper: React.FC<CustomerNavWrapperProps> = ({ children }) => {
   const [chatOpen, setChatOpen] = useState(false);

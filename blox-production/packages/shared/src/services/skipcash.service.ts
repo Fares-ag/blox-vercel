@@ -1,4 +1,5 @@
 import type { ApiResponse } from '../models/api.model';
+import { Config } from '../config/app.config';
 import { supabase } from './supabase.service';
 
 export interface SkipCashPaymentRequest {
@@ -85,6 +86,13 @@ class SkipCashService {
   async processPayment(
     paymentDetails: SkipCashPaymentRequest
   ): Promise<ApiResponse<SkipCashPaymentResponse>> {
+    if (!Config.paymentsEnabled) {
+      return {
+        status: 'ERROR',
+        message: 'Online payments are temporarily disabled. Please try again later or contact support.',
+        data: null as any,
+      };
+    }
     try {
       const { data, error } = await supabase.functions.invoke('skipcash-payment', {
         body: paymentDetails,

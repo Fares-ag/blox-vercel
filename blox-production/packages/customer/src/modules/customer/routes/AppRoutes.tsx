@@ -36,6 +36,8 @@ const ChangePasswordPage = React.lazy(() => import('../features/profile/pages/Ch
 // Help Routes
 const FAQPage = React.lazy(() => import('../features/help/pages/FAQPage/FAQPage').then(m => ({ default: m.FAQPage })));
 const ContactSupportPage = React.lazy(() => import('../features/help/pages/ContactSupportPage/ContactSupportPage').then(m => ({ default: m.ContactSupportPage })));
+const TermsPage = React.lazy(() => import('../features/help/pages/TermsPage/TermsPage').then(m => ({ default: m.TermsPage })));
+const PrivacyPage = React.lazy(() => import('../features/help/pages/PrivacyPage/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
 
 // Contract Routes
 const ContractSigningPage = React.lazy(() => import('../features/contracts/pages/ContractSigningPage/ContractSigningPage').then(m => ({ default: m.ContractSigningPage })));
@@ -164,6 +166,22 @@ export const AppRoutes: React.FC = () => {
         element={
           <CustomerNavWrapper>
             <ContactSupportPage />
+          </CustomerNavWrapper>
+        }
+      />
+      <Route
+        path="/customer/legal/terms"
+        element={
+          <CustomerNavWrapper>
+            <TermsPage />
+          </CustomerNavWrapper>
+        }
+      />
+      <Route
+        path="/customer/legal/privacy"
+        element={
+          <CustomerNavWrapper>
+            <PrivacyPage />
           </CustomerNavWrapper>
         }
       />

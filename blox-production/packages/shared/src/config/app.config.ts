@@ -12,6 +12,18 @@ export const Config = {
   // Safety: never allow bypassing guards in production builds.
   bypassGuards: isProduction ? false : import.meta.env.VITE_BYPASS_GUARDS === 'true',
 
+  /**
+   * Kill switch for customer card/credit checkout UI + SkipCash client invokes.
+   * Set VITE_PAYMENTS_ENABLED=false to disable without redeploying Edge Functions
+   * (DB can_pay RPCs remain the hard stop for initiates).
+   */
+  paymentsEnabled: import.meta.env.VITE_PAYMENTS_ENABLED !== 'false',
+
+  /**
+   * Chatbot UI — also requires a non-localhost VITE_BLOX_AI_URL at the call site.
+   */
+  chatbotEnabled: import.meta.env.VITE_CHATBOT_ENABLED === 'true',
+
   defaultPlaceholder: '/assets/images/im_default_placeholder.png',
   defaultUserPlaceholder: '/assets/icons/ic_user_placeholder.svg',
 

@@ -98,13 +98,21 @@ export const featureFlags = new FeatureFlagService();
 export function initFeatureFlags() {
   const flags: FeatureFlag[] = [];
 
-  // Example: Load from environment variables
-  // In production, load from API or feature flag service
+  // Env-driven kill switches / rollouts (also mirrored on Config for hot paths)
+  flags.push({
+    name: 'payments',
+    enabled: import.meta.env.VITE_PAYMENTS_ENABLED !== 'false',
+  });
+  flags.push({
+    name: 'chatbot',
+    enabled: import.meta.env.VITE_CHATBOT_ENABLED === 'true',
+  });
+
   if (import.meta.env.VITE_FEATURE_NEW_DASHBOARD === 'true') {
     flags.push({
       name: 'new_dashboard',
       enabled: true,
-      rolloutPercentage: parseInt(import.meta.env.VITE_FEATURE_NEW_DASHBOARD_ROLLOUT || '0'),
+      rolloutPercentage: parseInt(import.meta.env.VITE_FEATURE_NEW_DASHBOARD_ROLLOUT || '0', 10),
     });
   }
 

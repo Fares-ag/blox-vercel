@@ -116,10 +116,29 @@ class ActivityTrackingService {
         return;
       }
 
+      let resolvedRole = 'unknown';
+      if (options.user?.role) {
+        resolvedRole = options.user.role;
+      } else if (authUser?.id) {
+        try {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', authUser.id)
+            .maybeSingle();
+          const r = (profile?.role || '').trim().toLowerCase();
+          if (r === 'customer' || r === 'admin' || r === 'super_admin') {
+            resolvedRole = r;
+          }
+        } catch {
+          resolvedRole = 'unknown';
+        }
+      }
+
       const user = options.user || {
         id: authUser?.id || '',
         email: authUser?.email || 'unknown',
-        role: authUser?.user_metadata?.role || authUser?.user_metadata?.user_role || 'unknown',
+        role: resolvedRole,
       };
 
       const clientInfo = this.getClientInfo();
@@ -189,13 +208,21 @@ class ActivityTrackingService {
     try {
       console.log('[ActivityTracking] Starting getActivityLogs with options:', options);
       
-      // Get current user info for debugging
+      // Get current user info for debugging (role from public.users, not metadata)
       const { data: { user: authUser } } = await supabase.auth.getUser();
+      let debugRole = 'unknown';
+      if (authUser?.id) {
+        const { data: profile } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', authUser.id)
+          .maybeSingle();
+        debugRole = (profile?.role || 'unknown').toString();
+      }
       console.log('[ActivityTracking] Current auth user:', {
         id: authUser?.id,
         email: authUser?.email,
-        role: authUser?.user_metadata?.role || authUser?.user_metadata?.user_role,
-        metadata: authUser?.user_metadata,
+        role: debugRole,
       });
       
       // Build the main query directly (skip test query to avoid double query)
@@ -268,7 +295,15 @@ class ActivityTrackingService {
         // Provide more helpful error messages
         if (error.code === 'PGRST301' || error.message?.includes('permission') || error.message?.includes('policy')) {
           const { data: { user: authUser } } = await supabase.auth.getUser();
-          const currentRole = authUser?.user_metadata?.role || authUser?.user_metadata?.user_role || 'unknown';
+          let currentRole = 'unknown';
+          if (authUser?.id) {
+            const { data: profile } = await supabase
+              .from('users')
+              .select('role')
+              .eq('id', authUser.id)
+              .maybeSingle();
+            currentRole = (profile?.role || 'unknown').toString();
+          }
           throw new Error(
             `Access denied: You must be logged in as super_admin to view activity logs. ` +
             `Current role: ${currentRole || 'unknown'}.`

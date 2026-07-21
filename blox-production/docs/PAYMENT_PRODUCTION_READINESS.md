@@ -1,6 +1,8 @@
 # Payment Structure – Production Readiness
 
-**Summary:** The payment flows (installment card, installment Blox Credit, credit top-up) and edge functions are **implemented and hardened**. You can go to production after completing the checklist below.
+**Summary:** Payment flows use atomic RPC `complete_skipcash_payment` (verify + webhook). Follow **`docs/OPS_CUTOVER.md`** before production. Do not treat this doc alone as a go-live green light.
+
+**Updated Jul 2026:** Webhook/verify no longer dual-write in Deno JS; credits use `grant_payment_credits_internal` (service-role safe). Refunds map to status `refunded` (schedule not advanced). Customer pay RPCs restored via `20260720120000_restore_customer_payment_permissions.sql`.
 
 ---
 
@@ -12,8 +14,8 @@
 | **Installment (Blox Credit)** | RPC deducts credits, updates schedule + `paymentMethod`/`transactionId`, inserts `payment_transactions`; confirmation + receipt (incl. settlement description). |
 | **Credit top-up** | Callback + webhook; idempotent claim (no double-add); toast when already added. |
 | **skipcash-payment** | Auth, permission RPCs, rate limit, body read once, amount validation, no secret/PII in logs, credit top-up price check. |
-| **skipcash-webhook** | Signature verification, idempotency, transactionId from Custom1, amount/credits sanitized, card_type preserved. |
-| **skipcash-verify** | Empty body check, status from string/number, Deno env, no full response in logs. |
+| **skipcash-webhook** | HMAC signature, requires transactionId (fail closed), amount bind, calls `complete_skipcash_payment`, refunds ≠ completed. |
+| **skipcash-verify** | Bearer + ownership required; calls `complete_skipcash_payment` for ledger apply. |
 | **Settlement** | Blox Credit partial-failure message; receipt description “Settlement of N installments”. |
 | **Tests** | credits.service (payInstallmentWithCredits), PaymentConfirmationPage (receipt + settlement), card_type contract. |
 

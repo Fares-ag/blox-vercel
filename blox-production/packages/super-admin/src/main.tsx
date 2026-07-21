@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { loggingService } from '@shared/services/logging.service'
 import { initWebVitals } from '@shared/utils/web-vitals'
+import { initFeatureFlags } from '@shared/utils/feature-flags'
 import App from './App.tsx'
 
 // Initialize error tracking
@@ -12,6 +13,8 @@ const release = import.meta.env.VITE_APP_VERSION || undefined;
 if (sentryDsn) {
   loggingService.init(sentryDsn, environment, release);
 }
+
+initFeatureFlags();
 
 // Initialize Web Vitals tracking
 initWebVitals();

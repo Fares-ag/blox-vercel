@@ -5,84 +5,61 @@ import { setCredentials, logout, setInitialized } from '../../store/slices/auth.
 import type { User } from '@shared/models/user.model';
 import { supabase } from '@shared/services/supabase.service';
 import { authService } from '@shared/services/auth.service';
+import { devLogger } from '@shared/utils/logger.util';
 
-const fetchUserRoleFromDB = async (userId: string, email: string, userMetadata?: { role?: string; user_role?: string; userRole?: string; [key: string]: unknown }): Promise<string> => {
-  const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
-  
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  const timeoutPromise = new Promise<string>((resolve) => {
-    timeoutId = setTimeout(() => resolve('timeout'), 2000);
-  });
+interface UserMetadata {
+  role?: string;
+  user_role?: string;
+  userRole?: string;
+  first_name?: string;
+  last_name?: string;
+  permissions?: string[];
+  [key: string]: unknown;
+}
 
-  const fetchPromise = (async () => {
-    try {
-      const { data, error } = await supabase
+/**
+ * Resolve role from public.users / is_admin() only.
+ * Never grant super_admin from JWT user_metadata (client-settable).
+ */
+const fetchUserRoleFromDB = async (userId: string, email: string): Promise<string> => {
+  try {
+    const { data: adminFlag, error: adminErr } = await supabase.rpc('is_admin');
+    if (!adminErr && adminFlag === true) {
+      const { data } = await supabase.from('users').select('role').eq('id', userId).maybeSingle();
+      const role = (data?.role || '').trim().toLowerCase();
+      if (role === 'super_admin') return 'super_admin';
+      if (role === 'admin') return 'admin';
+      return 'admin';
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (!error && data?.role) {
+      const role = String(data.role).trim().toLowerCase();
+      if (role === 'admin' || role === 'super_admin' || role === 'customer') return role;
+    }
+
+    if (email) {
+      const { data: emailData, error: emailError } = await supabase
         .from('users')
         .select('role')
-        .eq('id', userId)
-        .single();
-
-      const is406Error = (error as any)?.status === 406 || 
-                        error?.code === 'PGRST116' || 
-                        error?.message?.includes('406') ||
-                        error?.message?.includes('Not Acceptable');
-
-      if (is406Error) {
-        return roleFromMetadata || 'unknown';
+        .eq('email', email)
+        .maybeSingle();
+      if (!emailError && emailData?.role) {
+        const role = String(emailData.role).trim().toLowerCase();
+        if (role === 'admin' || role === 'super_admin' || role === 'customer') return role;
       }
-
-      if (!error && data?.role) {
-        return data.role;
-      }
-
-      if (error && !is406Error) {
-        const { data: emailData, error: emailError } = await supabase
-          .from('users')
-          .select('role')
-          .eq('email', email)
-          .single();
-
-        if (!emailError && emailData?.role) {
-          return emailData.role;
-        }
-
-        const isEmail406Error = (emailError as any)?.status === 406 || 
-                               emailError?.code === 'PGRST116' || 
-                               emailError?.message?.includes('406') ||
-                               emailError?.message?.includes('Not Acceptable');
-
-        if (isEmail406Error) {
-          return roleFromMetadata || 'unknown';
-        }
-      }
-
-      return roleFromMetadata || 'unknown';
-    } catch (error: unknown) {
-      const err = error as any;
-      const is406Error =
-        err?.status === 406 ||
-        err?.code === 'PGRST116' ||
-        String(err?.message || '').includes('406') ||
-        String(err?.message || '').includes('Not Acceptable');
-
-      if (is406Error) {
-        return roleFromMetadata || 'unknown';
-      }
-      return roleFromMetadata || 'unknown';
     }
-  })();
 
-  const result = await Promise.race([fetchPromise, timeoutPromise]);
-  
-  if (timeoutId) {
-    clearTimeout(timeoutId);
+    return 'unknown';
+  } catch (error) {
+    devLogger.debug('Failed to resolve super-admin role from DB', error);
+    return 'unknown';
   }
-  
-  if (result === 'timeout') {
-    return roleFromMetadata || 'unknown';
-  }
-
-  return result as string;
 };
 
 export const AuthInitializer: React.FC = () => {
@@ -90,49 +67,54 @@ export const AuthInitializer: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    let mounted = true;
+
+    const applySession = async (session: {
+      access_token: string;
+      user: { id: string; email?: string | null; user_metadata?: UserMetadata };
+    }) => {
+      const dbRole = await fetchUserRoleFromDB(session.user.id, session.user.email || '');
+      if (!mounted) return;
+
+      if (dbRole !== 'super_admin') {
+        dispatch(logout());
+        await authService.logout();
+        navigate('/super-admin/auth/login');
+        return;
+      }
+
+      const meta = session.user.user_metadata || {};
+      const user: User = {
+        id: session.user.id,
+        email: session.user.email || '',
+        name: meta.first_name && meta.last_name
+          ? `${meta.first_name} ${meta.last_name}`.trim()
+          : session.user.email || '',
+        role: dbRole,
+        permissions: meta.permissions || [],
+      };
+
+      dispatch(setCredentials({ user, token: session.access_token }));
+    };
+
     const initializeAuth = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.user && session?.access_token) {
-          const role = await fetchUserRoleFromDB(
-            session.user.id,
-            session.user.email || '',
-            session.user.user_metadata
-          );
 
-          // Only allow super_admin to access this app
-          if (role !== 'super_admin') {
-            dispatch(logout());
-            await authService.logout();
-            navigate('/super-admin/auth/login');
-            dispatch(setInitialized());
-            return;
-          }
-
-          const user: User = {
-            id: session.user.id,
-            email: session.user.email || '',
-            name: session.user.user_metadata?.first_name && session.user.user_metadata?.last_name
-              ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name}`.trim()
-              : session.user.email || '',
-            role: role,
-            permissions: session.user.user_metadata?.permissions || [],
-          };
-
-          dispatch(setCredentials({ user, token: session.access_token }));
-        } else {
+        if (mounted && session?.user && session?.access_token) {
+          await applySession(session);
+        } else if (mounted) {
           dispatch(logout());
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
-        dispatch(logout());
+        if (mounted) dispatch(logout());
       } finally {
-        dispatch(setInitialized());
+        if (mounted) dispatch(setInitialized());
       }
     };
 
-    initializeAuth();
+    void initializeAuth();
 
     // Defer supabase.* calls — awaiting them inside onAuthStateChange deadlocks the auth lock.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -141,43 +123,23 @@ export const AuthInitializer: React.FC = () => {
 
       setTimeout(() => {
         void (async () => {
-          if (event === 'SIGNED_OUT' || !session) {
+          if (!mounted) return;
+          if (event === 'SIGNED_OUT' || !session || !sessionUser || !accessToken) {
             dispatch(logout());
             navigate('/super-admin/auth/login');
             return;
           }
 
-          if (!sessionUser) return;
-
-          const role = await fetchUserRoleFromDB(
-            sessionUser.id,
-            sessionUser.email || '',
-            sessionUser.user_metadata
-          );
-
-          if (role !== 'super_admin') {
-            dispatch(logout());
-            await authService.logout();
-            navigate('/super-admin/auth/login');
-            return;
-          }
-
-          const user: User = {
-            id: sessionUser.id,
-            email: sessionUser.email || '',
-            name: sessionUser.user_metadata?.first_name && sessionUser.user_metadata?.last_name
-              ? `${sessionUser.user_metadata.first_name} ${sessionUser.user_metadata.last_name}`.trim()
-              : sessionUser.email || '',
-            role: role,
-            permissions: sessionUser.user_metadata?.permissions || [],
-          };
-
-          dispatch(setCredentials({ user, token: accessToken || '' }));
+          await applySession({
+            access_token: accessToken,
+            user: sessionUser,
+          });
         })();
       }, 0);
     });
 
     return () => {
+      mounted = false;
       subscription.unsubscribe();
     };
   }, [dispatch, navigate]);

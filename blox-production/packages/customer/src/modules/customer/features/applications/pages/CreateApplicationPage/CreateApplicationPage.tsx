@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -486,7 +486,7 @@ export const CreateApplicationPage: React.FC = () => {
                 u.user_metadata?.first_name && u.user_metadata?.last_name
                   ? `${u.user_metadata.first_name} ${u.user_metadata.last_name}`.trim()
                   : u.email || '',
-              role: u.user_metadata?.role || 'customer',
+              role: 'customer',
               permissions: u.user_metadata?.permissions || [],
             };
             dispatch(setCredentials({ user: mappedUser, token: newSession.access_token }));
@@ -1088,8 +1088,24 @@ export const CreateApplicationPage: React.FC = () => {
             label={
               <span>
                 Accept the{' '}
-                <Link href="#" onClick={(e) => e.preventDefault()} className="terms-link">
+                <Link
+                  component={RouterLink}
+                  to="/customer/legal/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="terms-link"
+                >
                   terms & conditions
+                </Link>
+                {' '}and{' '}
+                <Link
+                  component={RouterLink}
+                  to="/customer/legal/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="terms-link"
+                >
+                  privacy policy
                 </Link>
               </span>
             }

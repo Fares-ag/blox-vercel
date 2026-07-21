@@ -1,9 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import {
-  applyCompletedPaymentDualWrite,
-  resolveUseSandbox,
-} from "../_shared/payment-schedule.ts";
+import { resolveUseSandbox } from "../_shared/payment-schedule.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -226,72 +223,68 @@ serve(async (req) => {
 
     const dbStatus = mapSkipCashStatus(json);
 
-    // Update only the owned, bound transaction row
-    const updatePayload: Record<string, unknown> = {
-      status: dbStatus,
-      skipcash_payment_id: paymentId,
-      completed_at: dbStatus === 'completed' ? new Date().toISOString() : null,
-      failure_reason: dbStatus === 'failed' ? String(json?.message ?? 'Payment failed') : null,
-    };
-    if (!localTxn?.payer_email) {
-      updatePayload.payer_email = userEmail;
-    }
-
-    const { error: updateError } = await serviceClient
-      .from('payment_transactions')
-      .update(updatePayload)
-      .eq('transaction_id', verifyRequest.transactionId)
-      .eq('id', localTxn.id);
-
-    if (updateError) {
-      console.error('Failed to update payment transaction:', updateError);
-      throw new Error('Failed to update payment transaction');
-    }
-
-    // Schedule dual-write when installment payment completed (credit top-ups have no application)
-    let scheduleApplied = false;
-    if (dbStatus === 'completed' && localTxn.application_id) {
+    const customRaw = json?.resultObj?.custom1 ?? json?.custom1;
+    let paymentScheduleId: string | null = localTxn.payment_schedule_id || null;
+    let dueDate: string | null = null;
+    let isSettlement = false;
+    let isCreditTopup = String(verifyRequest.transactionId || '').startsWith('CREDIT-');
+    let creditsAmount = 0;
+    if (typeof customRaw === 'string' && customRaw.trim()) {
       try {
-        // Recover dueDate / schedule id from SkipCash custom fields when present
-        const customRaw = json?.resultObj?.custom1 ?? json?.custom1;
-        let paymentScheduleId: string | null = localTxn.payment_schedule_id || null;
-        let dueDate: string | null = null;
-        let isSettlement = false;
-        if (typeof customRaw === 'string' && customRaw.trim()) {
-          try {
-            const customObj = JSON.parse(customRaw);
-            paymentScheduleId = customObj.paymentScheduleId || paymentScheduleId;
-            dueDate = customObj.dueDate || null;
-            isSettlement = !!customObj.isSettlement;
-          } catch {
-            /* ignore */
-          }
-        }
-
-        await applyCompletedPaymentDualWrite(serviceClient, localTxn.application_id, {
-          amount: Number(localTxn.amount) || 0,
-          isSettlement,
-          paymentScheduleId,
-          dueDate,
-        });
-        scheduleApplied = true;
-      } catch (scheduleErr) {
-        console.error('Verify dual-write failed (webhook may retry):', scheduleErr);
-        // Return success for SkipCash status but signal schedule pending
-        return new Response(
-          JSON.stringify({
-            success: true,
-            data: {
-              ...(json.resultObj || json),
-              dbStatus,
-              dbConfirmed: true,
-              scheduleApplied: false,
-              scheduleError: 'Schedule dual-write pending; webhook may complete it',
-            },
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },
-        );
+        const customObj = JSON.parse(customRaw);
+        paymentScheduleId = customObj.paymentScheduleId || paymentScheduleId;
+        dueDate = customObj.dueDate || null;
+        isSettlement = !!customObj.isSettlement;
+        isCreditTopup = isCreditTopup || customObj.type === 'credit_topup';
+        creditsAmount = Number(customObj.credits) || 0;
+      } catch {
+        /* ignore */
       }
+    }
+
+    const { data: rpcResult, error: rpcError } = await serviceClient.rpc(
+      'complete_skipcash_payment',
+      {
+        p_transaction_id: verifyRequest.transactionId,
+        p_skipcash_payment_id: paymentId,
+        p_amount: Number(localTxn.amount) || null,
+        p_status: dbStatus,
+        p_application_id: localTxn.application_id || null,
+        p_payment_schedule_id: paymentScheduleId,
+        p_due_date: dueDate,
+        p_is_settlement: isSettlement,
+        p_is_credit_topup: isCreditTopup,
+        p_credits_amount: creditsAmount > 0 ? creditsAmount : Number(localTxn.amount) || null,
+        p_customer_email: userEmail,
+        p_failure_reason:
+          dbStatus === 'failed' ? String(json?.message ?? 'Payment failed') : null,
+        p_amount_tolerance: 0.05,
+      }
+    );
+
+    if (rpcError) {
+      console.error('complete_skipcash_payment failed on verify:', rpcError);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: rpcError.message || 'Failed to complete payment in database',
+          dbStatus,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 },
+      );
+    }
+
+    const result = rpcResult as {
+      success?: boolean;
+      ledger_applied?: boolean;
+      error?: string;
+    } | null;
+
+    if (result && result.success === false) {
+      return new Response(JSON.stringify({ success: false, ...result, dbStatus }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
     }
 
     return new Response(
@@ -300,9 +293,10 @@ serve(async (req) => {
         data: {
           ...(json.resultObj || json),
           dbStatus,
-          dbConfirmed: dbStatus === 'completed',
-          scheduleApplied,
+          dbConfirmed: dbStatus === 'completed' || dbStatus === 'refunded',
+          scheduleApplied: !!result?.ledger_applied,
           transactionId: verifyRequest.transactionId,
+          completion: rpcResult,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 },

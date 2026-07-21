@@ -5,10 +5,10 @@ import type { User } from '@shared/models/user.model';
 import { supabase } from '@shared/services/supabase.service';
 import { loggingService } from '@shared/services/logging.service';
 
+/** Resolve role from public.users only — never from client-settable JWT metadata. */
 async function resolveUserRole(
   userId: string,
-  email: string | undefined,
-  metadataRole: string | undefined
+  email: string | undefined
 ): Promise<User['role']> {
   try {
     const { data } = await supabase
@@ -17,8 +17,9 @@ async function resolveUserRole(
       .eq('id', userId)
       .maybeSingle();
 
-    if (data?.role) {
-      return data.role as User['role'];
+    const role = (data?.role || '').trim().toLowerCase();
+    if (role === 'customer' || role === 'admin' || role === 'super_admin') {
+      return role as User['role'];
     }
 
     if (email) {
@@ -27,18 +28,15 @@ async function resolveUserRole(
         .select('role')
         .eq('email', email.toLowerCase())
         .maybeSingle();
-      if (byEmail?.role) {
-        return byEmail.role as User['role'];
+      const byEmailRole = (byEmail?.role || '').trim().toLowerCase();
+      if (byEmailRole === 'customer' || byEmailRole === 'admin' || byEmailRole === 'super_admin') {
+        return byEmailRole as User['role'];
       }
     }
   } catch (error) {
     console.error('Failed to resolve user role from users table:', error);
   }
 
-  // Fail closed: never invent "customer" when DB/metadata role is missing
-  if (metadataRole === 'customer' || metadataRole === 'admin' || metadataRole === 'super_admin') {
-    return metadataRole as User['role'];
-  }
   return 'unknown' as User['role'];
 }
 
@@ -60,8 +58,7 @@ export const AuthInitializer: React.FC = () => {
     }): Promise<User> => {
       const role = await resolveUserRole(
         sessionUser.id,
-        sessionUser.email || undefined,
-        sessionUser.user_metadata?.role as string | undefined
+        sessionUser.email || undefined
       );
 
       return {

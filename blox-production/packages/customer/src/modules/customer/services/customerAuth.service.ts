@@ -113,21 +113,29 @@ class CustomerAuthService {
       throw new Error('Login failed: No user or session returned');
     }
 
-    // Prefer role from users table (authoritative) over user_metadata defaulting to customer
-    let role: User['role'] = (data.user.user_metadata?.role as User['role']) || ('unknown' as User['role']);
+    // Role from public.users only — never JWT user_metadata (client-settable)
+    let role: User['role'] = 'unknown' as User['role'];
     try {
       const { data: profile } = await supabase
         .from('users')
         .select('role')
         .eq('id', data.user.id)
         .maybeSingle();
-      if (profile?.role) {
-        role = profile.role as User['role'];
+      const r = (profile?.role || '').trim().toLowerCase();
+      if (r === 'customer' || r === 'admin' || r === 'super_admin') {
+        role = r as User['role'];
+      } else if (data.user.email) {
+        const { data: byEmail } = await supabase
+          .from('users')
+          .select('role')
+          .eq('email', data.user.email.toLowerCase())
+          .maybeSingle();
+        const er = (byEmail?.role || '').trim().toLowerCase();
+        if (er === 'customer' || er === 'admin' || er === 'super_admin') {
+          role = er as User['role'];
+        }
       }
     } catch {
-      // keep metadata role; never invent customer
-    }
-    if (role !== 'customer' && role !== 'admin' && role !== 'super_admin') {
       role = 'unknown' as User['role'];
     }
 
@@ -172,6 +180,7 @@ class CustomerAuthService {
       email: data.email,
       password: data.password,
       options: {
+        emailRedirectTo: `${window.location.origin}/customer/auth/login`,
         data: {
           first_name: data.first_name,
           last_name: data.last_name,
@@ -322,13 +331,28 @@ class CustomerAuthService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
+    let role: User['role'] = 'unknown' as User['role'];
+    try {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      const r = (profile?.role || '').trim().toLowerCase();
+      if (r === 'customer' || r === 'admin' || r === 'super_admin') {
+        role = r as User['role'];
+      }
+    } catch {
+      role = 'unknown' as User['role'];
+    }
+
     return {
       id: user.id,
       email: user.email || '',
       name: user.user_metadata?.first_name && user.user_metadata?.last_name
         ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim()
         : user.email || '',
-      role: (user.user_metadata?.role as User['role']) || ('unknown' as User['role']),
+      role,
       permissions: user.user_metadata?.permissions || [],
     };
   }
@@ -349,21 +373,14 @@ class CustomerAuthService {
     const user = session?.user;
     if (!user) return null;
 
-    const roleRaw =
-      user.user_metadata?.role ??
-      user.user_metadata?.user_role ??
-      user.user_metadata?.userRole;
-
-        return {
-          id: user.id,
-          email: user.email || '',
-          name: user.user_metadata?.first_name && user.user_metadata?.last_name
-            ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim()
-            : user.email || '',
-      role:
-        roleRaw === 'customer' || roleRaw === 'admin' || roleRaw === 'super_admin'
-          ? roleRaw
-          : ('unknown' as User['role']),
+    // Sync path cannot query DB — unknown until AuthInitializer resolves.
+    return {
+      id: user.id,
+      email: user.email || '',
+      name: user.user_metadata?.first_name && user.user_metadata?.last_name
+        ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim()
+        : user.email || '',
+      role: 'unknown' as User['role'],
       permissions: user.user_metadata?.permissions || [],
     };
   }
@@ -390,26 +407,18 @@ class CustomerAuthService {
 
   // Listen to auth state changes
   onAuthStateChange(callback: (user: User | null, session: any) => void) {
-    return supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        const user: User = {
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.first_name && session.user.user_metadata?.last_name
-            ? `${session.user.user_metadata.first_name} ${session.user.user_metadata.last_name}`.trim()
-            : session.user.email || '',
-          role:
-            session.user.user_metadata?.role === 'customer' ||
-            session.user.user_metadata?.role === 'admin' ||
-            session.user.user_metadata?.role === 'super_admin'
-              ? session.user.user_metadata.role
-              : ('unknown' as User['role']),
-          permissions: session.user.user_metadata?.permissions || [],
-        };
-        callback(user, session);
-      } else {
-        callback(null, null);
-      }
+    return supabase.auth.onAuthStateChange((_event, session) => {
+      // Defer DB role lookup — never await supabase inside the lock callback.
+      setTimeout(() => {
+        void (async () => {
+          if (session?.user) {
+            const user = await this.getUser();
+            callback(user, session);
+          } else {
+            callback(null, null);
+          }
+        })();
+      }, 0);
     });
   }
 }

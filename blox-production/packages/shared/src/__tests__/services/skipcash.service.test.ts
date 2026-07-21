@@ -11,6 +11,14 @@ vi.mock('../../services/supabase.service', () => ({
   },
 }));
 
+const { configState } = vi.hoisted(() => ({
+  configState: { paymentsEnabled: true },
+}));
+
+vi.mock('../../config/app.config', () => ({
+  Config: configState,
+}));
+
 describe('SkipCashService', () => {
   const validPaymentRequest: SkipCashPaymentRequest = {
     amount: 1000,
@@ -26,9 +34,18 @@ describe('SkipCashService', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    configState.paymentsEnabled = true;
   });
 
   describe('processPayment', () => {
+    it('should block initiate when payments kill switch is off', async () => {
+      configState.paymentsEnabled = false;
+      const result = await skipCashService.processPayment(validPaymentRequest);
+      expect(result.status).toBe('ERROR');
+      expect(result.message).toMatch(/temporarily disabled/i);
+      expect(supabase.functions.invoke).not.toHaveBeenCalled();
+    });
+
     it('should return SUCCESS and paymentUrl when edge function returns payment URL', async () => {
       const paymentUrl = 'https://pay.skipcash.com/checkout/xyz';
       vi.mocked(supabase.functions.invoke).mockResolvedValue({

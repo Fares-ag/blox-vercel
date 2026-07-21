@@ -18,6 +18,7 @@ import {
   IconButton,
   Chip,
   Tooltip,
+  Alert,
 } from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
 import {
@@ -55,6 +56,7 @@ export const PaymentHistoryPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
   const [filteredTransactions, setFilteredTransactions] = useState<PaymentTransaction[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   
   // Filters (page only shows paid transactions)
   const [applicationFilter, setApplicationFilter] = useState<string>('all');
@@ -65,6 +67,7 @@ export const PaymentHistoryPage: React.FC = () => {
     if (!user?.email) return;
     try {
       setLoading(true);
+      setLoadError(null);
 
       // Load applications from Supabase only
       const supabaseResponse = await supabaseApiService.getApplications();
@@ -112,6 +115,10 @@ export const PaymentHistoryPage: React.FC = () => {
     } catch (error: any) {
       console.error('Failed to load payment history:', error);
       setTransactions([]);
+      setLoadError(
+        error?.message ||
+          'Failed to load payment history. Please try again — this is not an empty history.'
+      );
     } finally {
       setLoading(false);
     }
@@ -444,6 +451,20 @@ export const PaymentHistoryPage: React.FC = () => {
           </Typography>
         </Box>
       </Box>
+
+      {loadError && (
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          action={
+            <Button color="inherit" size="small" onClick={() => void loadPaymentHistory()}>
+              Retry
+            </Button>
+          }
+        >
+          {loadError}
+        </Alert>
+      )}
 
       {/* Filters */}
       <Paper className="filters-card" sx={{ mb: 3 }}>

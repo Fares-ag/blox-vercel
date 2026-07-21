@@ -372,23 +372,29 @@ serve(async (req) => {
         paymentDetails.custom1 = JSON.stringify(customObj);
       }
 
-      // Soft idempotency: reject duplicate pending sessions for same schedule within 2 minutes
-      if (!customObj.isSettlement && resolvedPaymentScheduleId) {
+      // Soft idempotency: reject duplicate pending sessions for same schedule within 30 minutes
+      if (!customObj.isSettlement && (resolvedPaymentScheduleId || resolvedDueDate)) {
         try {
-          const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString();
-          const { data: pendingRows } = await serviceClient
+          const windowStart = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+          let pendingQuery = serviceClient
             .from('payment_transactions')
             .select('id, transaction_id, status, created_at')
             .eq('application_id', applicationId)
             .eq('status', 'pending')
-            .eq('payment_schedule_id', resolvedPaymentScheduleId)
-            .gte('created_at', twoMinutesAgo)
+            .gte('created_at', windowStart)
             .limit(5);
+
+          if (resolvedPaymentScheduleId) {
+            pendingQuery = pendingQuery.eq('payment_schedule_id', resolvedPaymentScheduleId);
+          }
+
+          const { data: pendingRows } = await pendingQuery;
 
           if (pendingRows && pendingRows.length > 0) {
             console.warn('Duplicate pending payment session detected', {
               applicationId,
               resolvedPaymentScheduleId,
+              resolvedDueDate,
               pendingCount: pendingRows.length,
             });
             return new Response(

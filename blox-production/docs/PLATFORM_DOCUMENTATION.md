@@ -581,7 +581,7 @@ Each package’s `vite.config` sets **port**, **aliases** (e.g. `@shared` → `p
 
 **Hosting:** Customer and admin SPAs are deployed as **separate Vercel projects**; super-admin may follow the same pattern if wired in CI (confirm in your org).
 
-**Edge Functions & DB migrations:** Deploy **Supabase Edge Functions** and apply **SQL migrations** to the target project via **Supabase CLI / dashboard** as part of your release process — not automated in the snippets above unless extended.
+**Edge Functions & DB migrations:** Use **`.github/workflows/release-gate.yml`** + **`docs/OPS_CUTOVER.md`**. Production frontend deploy requires secret `BACKEND_GATE_CONFIRMED=true` after migrations and `skipcash-*` functions are live. Smoke checks assert `/health` body contains `ok` (static file, not SPA rewrite).
 
 ---
 

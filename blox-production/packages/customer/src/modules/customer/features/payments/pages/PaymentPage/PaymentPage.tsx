@@ -28,6 +28,7 @@ import { supabaseApiService, receiptService, supabase, skipCashService, paymentP
 import type { PaymentMethod } from '@shared/models/payment.model';
 import type { Application, PaymentSchedule } from '@shared/models/application.model';
 import { Button as CustomButton, Loading } from '@shared/components';
+import { Config } from '@shared/config/app.config';
 import { formatCurrency } from '@shared/utils/formatters';
 import { calculateSettlementDiscount } from '@shared/utils/settlement-discount.utils';
 import { devLogger } from '@shared/utils/logger.util';
@@ -67,6 +68,10 @@ const PAYMENT_METHODS: PaymentMethod[] = [
     enabled: true,
   },
 ];
+
+function isCardMethod(type: PaymentMethod['type']): boolean {
+  return type === 'credit_card' || type === 'debit_card';
+}
 
 export const PaymentPage: React.FC = () => {
   const { id, paymentId } = useParams<{ id: string; paymentId?: string }>();
@@ -797,6 +802,12 @@ export const PaymentPage: React.FC = () => {
         Make Payment
       </Typography>
 
+      {!Config.paymentsEnabled && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          Online payments are temporarily disabled. Bank transfer may still be available, or contact support.
+        </Alert>
+      )}
+
       {!checkingCanPay && !canPay && (
         <Alert severity="warning" sx={{ mb: 3 }}>
           Payments are currently disabled for your company. Please contact support if you believe this is a mistake.
@@ -840,7 +851,11 @@ export const PaymentPage: React.FC = () => {
                 setErrors({});
               }}
             >
-              {PAYMENT_METHODS.filter((m) => m.enabled).map((method) => (
+              {PAYMENT_METHODS.filter((m) => {
+                if (!m.enabled) return false;
+                if (!Config.paymentsEnabled && isCardMethod(m.type)) return false;
+                return true;
+              }).map((method) => (
                 <FormControlLabel
                   key={method.id}
                   value={method.type}

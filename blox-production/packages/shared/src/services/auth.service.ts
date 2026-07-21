@@ -5,94 +5,60 @@ import { devLogger } from '../utils/logger.util';
 class AuthService {
   private readonly storageKey = 'blox-supabase-auth';
 
-  private async fetchUserRoleFromDB(userId: string, email: string, userMetadata?: { role?: string; user_role?: string; userRole?: string; [key: string]: unknown }): Promise<string> {
-    // First, check user_metadata immediately (fast path)
-    const roleFromMetadata = userMetadata?.role || userMetadata?.user_role || userMetadata?.userRole;
-    
-    // Create a timeout promise (2 seconds max) with cleanup support
+  /**
+   * Resolve role from public.users only.
+   * Never grant elevated roles from JWT user_metadata (client-settable).
+   */
+  private async fetchUserRoleFromDB(userId: string, email: string): Promise<string> {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    // Try to fetch from users table with timeout
     const fetchPromise = (async () => {
       try {
         const { data, error } = await supabase
           .from('users')
           .select('role')
           .eq('id', userId)
-          .single();
-
-        // If we get a 406 error immediately, skip the email fallback
-        // Check for 406 in status, code, or message
-        const is406Error = (error as any)?.status === 406 || 
-                          error?.code === 'PGRST116' || 
-                          error?.message?.includes('406') ||
-                          error?.message?.includes('Not Acceptable');
-
-        if (is406Error) {
-          // Silently use metadata - this is expected if RLS blocks access
-          return roleFromMetadata || 'unknown';
-        }
+          .maybeSingle();
 
         if (!error && data?.role) {
-          return data.role;
+          const role = String(data.role).trim().toLowerCase();
+          if (role === 'admin' || role === 'super_admin' || role === 'customer') return role;
         }
 
-        // Only try email fallback if ID lookup didn't return 406
-        if (error && !is406Error) {
+        if (email) {
           const { data: emailData, error: emailError } = await supabase
             .from('users')
             .select('role')
             .eq('email', email)
-            .single();
+            .maybeSingle();
 
           if (!emailError && emailData?.role) {
-            return emailData.role;
-          }
-
-          // If email lookup also returns 406, use metadata
-          const isEmail406Error = (emailError as any)?.status === 406 || 
-                                 emailError?.code === 'PGRST116' || 
-                                 emailError?.message?.includes('406') ||
-                                 emailError?.message?.includes('Not Acceptable');
-
-          if (isEmail406Error) {
-            return roleFromMetadata || 'unknown';
+            const role = String(emailData.role).trim().toLowerCase();
+            if (role === 'admin' || role === 'super_admin' || role === 'customer') return role;
           }
         }
 
-        // Default to metadata if available, otherwise unknown
-        return roleFromMetadata || 'unknown';
-      } catch (error: any) {
-        // If it's a 406 or table access error, use metadata immediately
-        const is406Error = (error as any)?.status === 406 || 
-                          error?.code === 'PGRST116' || 
-                          error?.message?.includes('406') ||
-                          error?.message?.includes('Not Acceptable');
-
-        if (is406Error) {
-          return roleFromMetadata || 'unknown';
-        }
-        return roleFromMetadata || 'unknown';
+        return 'unknown';
+      } catch (error: unknown) {
+        devLogger.debug('Failed to resolve role from DB', error);
+        return 'unknown';
       }
     })();
 
-    // Create timeout promise
     const timeoutPromise = new Promise<string>((resolve) => {
       timeoutId = setTimeout(() => resolve('timeout'), 2000);
     });
 
-    // Race between fetch and timeout
     const result = await Promise.race([fetchPromise, timeoutPromise]);
-    
-    // Clean up timeout if it's still pending
+
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
-    
-    // If timeout, use metadata immediately
+
+    // Fail closed on timeout — never elevate from metadata.
     if (result === 'timeout') {
-      devLogger.debug('Users table query timed out, using user_metadata (this is expected if users table is not accessible)');
-      return roleFromMetadata || 'unknown';
+      devLogger.debug('Users table query timed out; failing closed with unknown role');
+      return 'unknown';
     }
 
     return result as string;
@@ -132,12 +98,9 @@ class AuthService {
       throw new Error('Login failed: No user or session returned');
     }
 
-    // Try to fetch from DB with timeout (2 seconds max)
-    // This will use metadata as fallback if DB is not accessible
     const role = await this.fetchUserRoleFromDB(
-      data.user.id, 
-      data.user.email || '', 
-      data.user.user_metadata
+      data.user.id,
+      data.user.email || ''
     );
 
     const user: User = {
@@ -231,8 +194,7 @@ class AuthService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
-    // Fetch role from users table, fallback to user_metadata if table not accessible
-    const role = await this.fetchUserRoleFromDB(user.id, user.email || '', user.user_metadata);
+    const role = await this.fetchUserRoleFromDB(user.id, user.email || '');
 
     return {
       id: user.id,
@@ -261,20 +223,15 @@ class AuthService {
     const user = session?.user;
     if (!user) return null;
 
-    // For sync method, we can't fetch from DB, so use user_metadata as fallback
-    // The async AuthInitializer will update the role from DB after mount
-    const roleRaw =
-      user.user_metadata?.role ??
-      user.user_metadata?.user_role ??
-      user.user_metadata?.userRole;
-
+    // Sync path cannot query DB — use unknown until AuthInitializer resolves from DB.
+    // Never elevate from client-settable user_metadata.
         return {
           id: user.id,
           email: user.email || '',
           name: user.user_metadata?.first_name && user.user_metadata?.last_name
             ? `${user.user_metadata.first_name} ${user.user_metadata.last_name}`.trim()
             : user.email || '',
-      role: roleRaw || 'unknown',
+      role: 'unknown',
           permissions: user.user_metadata?.permissions || [],
         };
   }
