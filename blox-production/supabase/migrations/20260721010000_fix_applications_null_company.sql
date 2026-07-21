@@ -10,9 +10,15 @@
 --         can_pay=false kill-switch for companies that explicitly disable payments.
 
 -- ── PART 1: Backfill company_id ──────────────────────────────────────────────
+-- The trg_enforce_customer_application_field_guard trigger blocks company_id
+-- changes for non-admin sessions. Disable it for this admin backfill, then
+-- re-enable immediately after.
+ALTER TABLE public.applications DISABLE TRIGGER trg_enforce_customer_application_field_guard;
+
 DO $$
 DECLARE
   v_company_id uuid;
+  v_count      int;
 BEGIN
   SELECT id INTO v_company_id
   FROM public.companies
@@ -30,10 +36,12 @@ BEGIN
                     'contract_signing_required', 'contracts_submitted',
                     'down_payment_required', 'down_payment_submitted');
 
-  RAISE NOTICE 'Backfilled company_id = % on % applications',
-    v_company_id, ROW_COUNT;
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RAISE NOTICE 'Backfilled company_id = % on % applications', v_company_id, v_count;
 END;
 $$;
+
+ALTER TABLE public.applications ENABLE TRIGGER trg_enforce_customer_application_field_guard;
 
 -- ── PART 2: Harden payment gate — fail-open on NULL company ──────────────────
 -- When an application has no company_id we allow payment rather than silently

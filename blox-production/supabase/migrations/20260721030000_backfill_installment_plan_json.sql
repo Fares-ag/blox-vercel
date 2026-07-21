@@ -7,6 +7,10 @@
 -- Only touches active applications where monthlyPayment is missing.
 -- Idempotent: re-running will re-compute from current schedule data.
 
+-- The trg_enforce_customer_application_field_guard trigger blocks installment_plan
+-- changes for non-admin sessions. Disable it for this admin backfill.
+ALTER TABLE public.applications DISABLE TRIGGER trg_enforce_customer_application_field_guard;
+
 UPDATE public.applications a
 SET    installment_plan = COALESCE(a.installment_plan, '{}'::jsonb)
     || jsonb_build_object(
@@ -33,6 +37,8 @@ WHERE  a.id           = sched.application_id
     OR (a.installment_plan->>'monthlyPayment') IS NULL
     OR (a.installment_plan->>'termMonths')     IS NULL
   );
+
+ALTER TABLE public.applications ENABLE TRIGGER trg_enforce_customer_application_field_guard;
 
 DO $$
 DECLARE
