@@ -6,8 +6,9 @@ import type {
   CustomerLifetimeValue,
   DashboardStats,
 } from '../models/dashboard.model';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+// jsPDF and autoTable are dynamically imported inside PDF methods to keep them
+// out of the initial bundle (they add ~200 KB gzip to any importing page).
+type JsPDFConstructor = typeof import('jspdf').default;
 
 /**
  * Export service for generating PDF and Excel reports
@@ -333,7 +334,7 @@ class ReportExportService {
   /**
    * Add header with logo and title to PDF
    */
-  private addPDFHeader(doc: jsPDF, title: string, subtitle?: string, logoBase64?: string | null): void {
+  private addPDFHeader(doc: InstanceType<JsPDFConstructor>, title: string, subtitle?: string, logoBase64?: string | null): void {
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 20;
     
@@ -391,7 +392,7 @@ class ReportExportService {
   /**
    * Add text-based logo
    */
-  private addTextLogo(doc: jsPDF, x: number, y: number): void {
+  private addTextLogo(doc: InstanceType<JsPDFConstructor>, x: number, y: number): void {
     doc.setFontSize(18);
     doc.setTextColor(0, 207, 162); // Primary color
     doc.setFont('helvetica', 'bold');
@@ -401,7 +402,7 @@ class ReportExportService {
   /**
    * Add footer to PDF
    */
-  private addPDFFooter(doc: jsPDF, pageNumber: number, totalPages: number): void {
+  private addPDFFooter(doc: InstanceType<JsPDFConstructor>, pageNumber: number, totalPages: number): void {
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 20;
@@ -426,7 +427,11 @@ class ReportExportService {
     topCustomers: CustomerLifetimeValue[],
     dateRange: { startDate: string; endDate: string }
   ): Promise<void> {
-    const doc = new jsPDF('portrait', 'mm', 'a4');
+    const [{ default: JsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
+    const doc = new JsPDF('portrait', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
     const margin = 20;
     let yPosition = 60;
@@ -588,7 +593,11 @@ class ReportExportService {
     topCustomers: CustomerLifetimeValue[],
     dateRange: { startDate: string; endDate: string }
   ): Promise<void> {
-    const doc = new jsPDF('portrait', 'mm', 'a4');
+    const [{ default: JsPDF }, { default: autoTable }] = await Promise.all([
+      import('jspdf'),
+      import('jspdf-autotable'),
+    ]);
+    const doc = new JsPDF('portrait', 'mm', 'a4');
     const margin = 20;
     let yPosition = 60;
 

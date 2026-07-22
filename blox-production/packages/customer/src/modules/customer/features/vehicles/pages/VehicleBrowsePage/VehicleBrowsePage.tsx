@@ -38,45 +38,24 @@ export const VehicleBrowsePage: React.FC = () => {
         search: searchTerm || undefined,
       };
 
-      // Fetch vehicles from Supabase via shared API service
-      const response = await supabaseApiService.getProducts();
+      // Fetch vehicles from Supabase — limit to 120 rows for initial load.
+      // Active filtering + price cap further reduce the visible set client-side.
+      const response = await supabaseApiService.getProducts({ limit: 120 });
       if (response.status === 'SUCCESS' && response.data) {
         // Merge local Qatar catalog seed; keep only active vehicles ≤ price cap
         let filteredVehicles = mergeCatalogWithSeed(response.data).filter(
           (v) => v.status === 'active' && v.price <= CUSTOMER_MAX_VEHICLE_PRICE_QAR
         );
 
-        // Exclude vehicles that are already tied to other customers' active applications
+        // Exclude vehicles reserved by other customers — use the narrow query
+        // (vehicle_id only, server-side status + email filter) instead of
+        // fetching the full applications table.
         try {
-          const applicationsResponse = await supabaseApiService.getApplications();
-          if (applicationsResponse.status === 'SUCCESS' && applicationsResponse.data) {
-            const currentEmail = user?.email?.toLowerCase() || null;
-            const reservedStatuses = new Set([
-              'active',
-              'under_review',
-              'contract_signing_required',
-              'contracts_submitted',
-              'contract_under_review',
-              'down_payment_required',
-            ]);
-
-            const reservedVehicleIds = new Set(
-              applicationsResponse.data
-                .filter((app) => {
-                  const statusMatch = reservedStatuses.has(app.status);
-                  const isOtherCustomer =
-                    currentEmail && app.customerEmail
-                      ? app.customerEmail.toLowerCase() !== currentEmail
-                      : true;
-                  return statusMatch && isOtherCustomer && app.vehicleId;
-                })
-                .map((app) => app.vehicleId as string)
-            );
-
-            filteredVehicles = filteredVehicles.filter((v) => !reservedVehicleIds.has(v.id));
-          }
+          const reservedVehicleIds = await supabaseApiService.getReservedVehicleIds(
+            user?.email ?? undefined
+          );
+          filteredVehicles = filteredVehicles.filter((v) => !reservedVehicleIds.has(v.id));
         } catch (e) {
-          // If applications lookup fails, we just don't filter by reservations
           console.error('Failed to filter reserved vehicles', e);
         }
 

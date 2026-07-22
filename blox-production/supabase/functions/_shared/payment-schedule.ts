@@ -84,14 +84,18 @@ export async function resolveApplicationPayable(
   targetRow: ScheduleRow | null;
   targetDueDate: string | null;
 }> {
-  const rows = await loadScheduleRows(supabase, applicationId);
+  // payment_schedules and applications reads are independent — run in parallel.
+  const [rows, applicationResult] = await Promise.all([
+    loadScheduleRows(supabase, applicationId),
+    supabase
+      .from('applications')
+      .select('installment_plan')
+      .eq('id', applicationId)
+      .maybeSingle() as Promise<{ data: { installment_plan: unknown } | null }>,
+  ]);
   const unpaid = unpaidRows(rows);
 
-  const { data: application } = await supabase
-    .from('applications')
-    .select('installment_plan')
-    .eq('id', applicationId)
-    .maybeSingle();
+  const application = applicationResult.data;
 
   const jsonSchedule: any[] = (application?.installment_plan as any)?.schedule || [];
 

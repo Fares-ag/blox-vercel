@@ -42,15 +42,28 @@ serve(async (req) => {
 
   const results: Record<string, unknown> = { checkedAt: new Date().toISOString() };
 
-  // ── CHECK 1: Stuck pending transactions (> 2 hours) ────────────────────────
-  try {
-    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-    const { data: stuckTxns, error } = await db
+  const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+
+  // CHECK 1 and CHECK 2 are completely independent — run them in parallel to
+  // halve the edge function latency.
+  const [check1Result, check2Result] = await Promise.allSettled([
+    // ── CHECK 1: Stuck pending transactions (> 2 hours) ──────────────────────
+    db
       .from('payment_transactions')
       .select('id, application_id, amount, created_at, payer_email')
       .eq('status', 'pending')
-      .lt('created_at', twoHoursAgo);
+      .lt('created_at', twoHoursAgo),
 
+    // ── CHECK 2: Reconciliation gap via RPC ───────────────────────────────────
+    db.rpc('payment_reconcile_gaps_7d' as any, {} as any),
+  ]);
+
+  // Process CHECK 1
+  if (check1Result.status === 'rejected') {
+    console.error('[payment-monitor] CHECK 1 exception:', check1Result.reason);
+    results.stuckTransactions = { error: String(check1Result.reason) };
+  } else {
+    const { data: stuckTxns, error } = check1Result.value;
     if (error) {
       console.error('[payment-monitor] CHECK 1 query failed:', error.message);
       results.stuckTransactions = { error: error.message };
@@ -66,39 +79,22 @@ serve(async (req) => {
       }
       results.stuckTransactions = { count, items: stuckTxns ?? [] };
     }
-  } catch (e: any) {
-    console.error('[payment-monitor] CHECK 1 exception:', e?.message);
-    results.stuckTransactions = { error: e?.message };
   }
 
-  // ── CHECK 2: Reconciliation gap — paid schedules without completed txn ─────
-  try {
-    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-    const { data: orphaned, error } = await db
-      .from('payment_schedules')
-      .select('id, application_id, amount, paid_date')
-      .eq('status', 'paid')
-      .gte('paid_date', sevenDaysAgo)
-      .is('id', null); // placeholder — real check below via raw query
-
-    // Use raw SQL for the NOT EXISTS join (Supabase JS SDK cannot express it)
-    const { data: reconcileRows, error: reconcileErr } = await db.rpc(
-      'payment_reconcile_gaps_7d' as any,
-      {} as any
-    );
-
-    // Fallback: if RPC doesn't exist yet, use a simpler count approach
+  // Process CHECK 2
+  if (check2Result.status === 'rejected') {
+    console.warn('[payment-monitor] CHECK 2 skipped (RPC not yet available):', check2Result.reason);
+    results.reconciliationGaps = { skipped: true, reason: String(check2Result.reason) };
+  } else {
+    const { data: reconcileRows, error: reconcileErr } = check2Result.value;
     let orphanCount = 0;
     let orphanIds: string[] = [];
-
     if (!reconcileErr && reconcileRows) {
       orphanCount = Array.isArray(reconcileRows) ? reconcileRows.length : 0;
       orphanIds = Array.isArray(reconcileRows)
         ? (reconcileRows as any[]).map((r) => r.id)
         : [];
     }
-
     if (orphanCount > 0) {
       console.warn('[payment-monitor] WARNING: paid schedules with no completed transaction', {
         count: orphanCount,
@@ -108,9 +104,6 @@ serve(async (req) => {
       console.log('[payment-monitor] CHECK 2 OK: no reconciliation gaps in last 7 days');
     }
     results.reconciliationGaps = { count: orphanCount, ids: orphanIds };
-  } catch (e: any) {
-    console.warn('[payment-monitor] CHECK 2 skipped (RPC not yet available):', e?.message);
-    results.reconciliationGaps = { skipped: true, reason: e?.message };
   }
 
   // ── Summary ────────────────────────────────────────────────────────────────

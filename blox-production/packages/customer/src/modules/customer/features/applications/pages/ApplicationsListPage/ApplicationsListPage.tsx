@@ -24,17 +24,15 @@ export const ApplicationsListPage: React.FC = () => {
       dispatch(setLoading(true));
       dispatch(setError(null));
       
-      // Skip cache so newly created apps show immediately after submit/login
-      const supabaseResponse = await supabaseApiService.getApplications({ skipCache: true });
+      // Pass customerEmail so the query is filtered server-side; avoids
+      // fetching the full applications table and doing a client-side filter.
+      const supabaseResponse = await supabaseApiService.getApplications({
+        skipCache: true,
+        customerEmail: user.email,
+      });
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
-        // Filter to current user's applications by email
-        const userEmail = user.email;
-        const userApplications = supabaseResponse.data.filter(
-          (app) => app.customerEmail?.toLowerCase() === userEmail.toLowerCase()
-        );
-        
-        dispatch(setApplications(userApplications));
+        dispatch(setApplications(supabaseResponse.data));
       } else {
         throw new Error(supabaseResponse.message || 'Failed to load applications');
       }

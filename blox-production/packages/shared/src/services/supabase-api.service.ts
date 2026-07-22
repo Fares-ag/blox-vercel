@@ -63,8 +63,9 @@ class SupabaseApiService {
   }
 
   // ==================== PRODUCTS ====================
-  async getProducts(): Promise<ApiResponse<Product[]>> {
-    const cacheKey = 'products:all';
+  async getProducts(options?: { limit?: number; offset?: number }): Promise<ApiResponse<Product[]>> {
+    const { limit, offset = 0 } = options ?? {};
+    const cacheKey = limit != null ? `products:p:${offset}:${limit}` : 'products:all';
     const cached = supabaseCache.get<Product[]>(cacheKey);
     if (cached) {
       return {
@@ -75,10 +76,16 @@ class SupabaseApiService {
     }
 
     try {
-      const response = await supabase
+      let query = supabase
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });
+
+      if (limit != null) {
+        query = query.range(offset, offset + limit - 1);
+      }
+
+      const response = await query;
       
       const products = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<Product>);
       
@@ -315,7 +322,7 @@ class SupabaseApiService {
     return `applications:${uid}`;
   }
 
-  async getApplications(options?: { skipCache?: boolean }): Promise<ApiResponse<Application[]>> {
+  async getApplications(options?: { skipCache?: boolean; customerEmail?: string }): Promise<ApiResponse<Application[]>> {
     const cacheKey = await this.applicationsCacheKey();
     if (!options?.skipCache) {
       const cached = supabaseCache.get<Application[]>(cacheKey);
@@ -329,14 +336,21 @@ class SupabaseApiService {
     }
 
     try {
-      const response = await supabase
+      let query = supabase
         .from('applications')
         .select(`
           *,
           vehicle:products!applications_vehicle_id_fkey(*),
           offer:offers!applications_offer_id_fkey(*)
-        `)
-        .order('created_at', { ascending: false });
+        `);
+
+      // Narrow to the calling customer's own rows server-side when an email is
+      // supplied; this avoids fetching the full table and client-side filtering.
+      if (options?.customerEmail) {
+        query = query.eq('customer_email', options.customerEmail.toLowerCase());
+      }
+
+      const response = await query.order('created_at', { ascending: false });
       
       const applications = handleSupabaseResponse<any[]>(response).map((app: any) => {
         const mapped = mapSupabaseRow<Application>(app);
@@ -363,6 +377,42 @@ class SupabaseApiService {
         message: error.message || 'Failed to fetch applications',
         data: []
       };
+    }
+  }
+
+  /**
+   * Returns only the vehicle_ids that are currently reserved by OTHER customers.
+   * Replaces full `getApplications()` + client-side filter on VehicleBrowsePage.
+   * Status list mirrors kReservedVehicleApplicationStatuses in Flutter.
+   */
+  async getReservedVehicleIds(currentUserEmail?: string): Promise<Set<string>> {
+    const reservedStatuses = [
+      'active',
+      'under_review',
+      'contract_signing_required',
+      'contracts_submitted',
+      'contract_under_review',
+      'down_payment_required',
+    ];
+    try {
+      let query = supabase
+        .from('applications')
+        .select('vehicle_id')
+        .in('status', reservedStatuses);
+
+      if (currentUserEmail) {
+        query = query.neq('customer_email', currentUserEmail.toLowerCase());
+      }
+
+      const { data, error } = await query;
+      if (error || !data) return new Set();
+      return new Set(
+        (data as { vehicle_id: string | null }[])
+          .map((r) => r.vehicle_id)
+          .filter((id): id is string => !!id)
+      );
+    } catch {
+      return new Set();
     }
   }
 
@@ -1387,23 +1437,24 @@ class SupabaseApiService {
             // Cap to remaining unpaid so a retry after partial marks cannot over-allocate.
             const toApply = Math.min(amount, totalRemaining);
             if (toApply > 0 && totalRemaining > 0) {
-              for (const payment of unpaid) {
-                const rem = Number(payment.remainingAmount ?? payment.amount) || 0;
-                const portion = (rem / totalRemaining) * toApply;
-                if (portion <= 0) continue;
-                const mark = await this.markInstallmentAsPaid(
-                  txn.application_id,
-                  payment.dueDate,
-                  portion
-                );
-                if (mark.status !== 'SUCCESS') {
-                  await revertClaim();
-                  return {
-                    status: 'ERROR',
-                    message: mark.message || 'Failed to mark installment',
-                    data: { applicationId: '' },
-                  };
-                }
+              // Each installment targets a distinct due_date row — run in parallel
+              // instead of sequential O(n) awaits to avoid N×RTT latency.
+              const markResults = await Promise.all(
+                unpaid.map((payment) => {
+                  const rem = Number(payment.remainingAmount ?? payment.amount) || 0;
+                  const portion = (rem / totalRemaining) * toApply;
+                  if (portion <= 0) return Promise.resolve({ status: 'SUCCESS' as const, message: '', data: { applicationId: '' } });
+                  return this.markInstallmentAsPaid(txn.application_id, payment.dueDate, portion);
+                })
+              );
+              const failedMark = markResults.find((r) => r.status !== 'SUCCESS');
+              if (failedMark) {
+                await revertClaim();
+                return {
+                  status: 'ERROR',
+                  message: failedMark.message || 'Failed to mark installment',
+                  data: { applicationId: '' },
+                };
               }
             }
           }
@@ -1461,6 +1512,30 @@ class SupabaseApiService {
           data: { applicationId: txn.application_id },
         };
       }
+
+      // Fire payment receipt email for confirmed bank transfer.
+      // customer_email may not be on payment_transactions; look it up from applications.
+      void (async () => {
+        try {
+          const { data: app } = await supabase
+            .from('applications')
+            .select('customer_email')
+            .eq('id', txn.application_id)
+            .maybeSingle();
+          const emailReceipt = app?.customer_email as string | null;
+          if (emailReceipt) {
+            await this.triggerTransactionalEmail({
+              to: emailReceipt.toLowerCase(),
+              templateId: 'payment_receipt',
+              data: { applicationId: txn.application_id, amount, method: 'Bank Transfer' },
+              userEmail: emailReceipt.toLowerCase(),
+              idempotencyKey: `receipt:bank:${transactionId}`,
+            });
+          }
+        } catch {
+          // Non-fatal — never block the confirm flow
+        }
+      })();
 
       return {
         status: 'SUCCESS',
@@ -2168,12 +2243,23 @@ class SupabaseApiService {
   }
 
   // ==================== LEDGERS ====================
-  async getLedgers(): Promise<ApiResponse<Ledger[]>> {
+  async getLedgers(options?: { applicationId?: string; limit?: number; offset?: number }): Promise<ApiResponse<Ledger[]>> {
     try {
-      const response = await supabase
+      const { applicationId, limit, offset = 0 } = options ?? {};
+      let query = supabase
         .from('ledgers')
         .select('*')
         .order('date', { ascending: false });
+
+      // Scope to a single application when provided — avoids full-table scan.
+      if (applicationId) {
+        query = query.eq('application_id', applicationId);
+      }
+      if (limit != null) {
+        query = query.range(offset, offset + limit - 1);
+      }
+
+      const response = await query;
       
       const ledgers = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<Ledger>);
       
@@ -2192,6 +2278,24 @@ class SupabaseApiService {
   }
 
   // ==================== NOTIFICATIONS ====================
+  /**
+   * Fire-and-forget BLOX-branded transactional email via the send-email edge function.
+   * Never throws — email failures must not break the calling action.
+   */
+  async triggerTransactionalEmail(args: {
+    to: string;
+    templateId: string;
+    data?: Record<string, unknown>;
+    userEmail?: string;
+    idempotencyKey?: string;
+  }): Promise<void> {
+    try {
+      await supabase.functions.invoke('send-email', { body: args });
+    } catch (err) {
+      console.error('triggerTransactionalEmail failed (non-fatal):', err);
+    }
+  }
+
   async createNotification(data: {
     userEmail: string;
     type: 'success' | 'info' | 'warning' | 'error';

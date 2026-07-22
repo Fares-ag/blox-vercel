@@ -1,15 +1,14 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
-import { Box, Typography, Link, MenuItem } from '@mui/material';
+import { Box, Typography, Link } from '@mui/material';
 import { useNavigate, Link as RouterLink, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { customerAuthService, type SignUpData } from '../../../../services/customerAuth.service';
 import { Input, Button, Select } from '@shared/components';
-import type { SelectOption } from '@shared/components';
 import * as yup from 'yup';
 import { emailSchema, passwordSchema, qidSchema, phoneSchema, requiredStringSchema } from '@shared/utils/validators';
-import { getNationalityFromQID, getAllNationalityOptions } from '@shared/utils/nationality.utils';
+import { getNationalityFromQID } from '@shared/utils/nationality.utils';
 import './SignUpPage.scss';
 
 const signUpSchema = yup.object().shape({
@@ -63,36 +62,12 @@ export const SignUpPage: React.FC = () => {
   });
 
   const qidValue = watch('qid');
-  const currentNationality = watch('nationality');
 
-  // Load all nationality options
-  const nationalityOptions: SelectOption[] = useMemo(() => {
-    try {
-      return getAllNationalityOptions();
-    } catch (error) {
-      console.error('Error loading nationality options:', error);
-      return [];
-    }
-  }, []);
-
-  // Auto-extract nationality from QID
+  // Auto-extract nationality from QID (read-only; not user-editable)
   useEffect(() => {
-    if (qidValue && qidValue.length >= 11) {
-      const detectedNationality = getNationalityFromQID(qidValue);
-      if (detectedNationality) {
-        // Find the matching option
-        const nationalityOption = nationalityOptions.find(
-          opt => opt.label.toLowerCase() === detectedNationality.toLowerCase()
-        );
-        if (nationalityOption) {
-          // Only auto-fill if nationality is empty or matches the detected one
-          if (!currentNationality || currentNationality === String(nationalityOption.value)) {
-            setValue('nationality', String(nationalityOption.value), { shouldValidate: true });
-          }
-        }
-      }
-    }
-  }, [qidValue, currentNationality, setValue, nationalityOptions]);
+    const detectedNationality = getNationalityFromQID(qidValue || '');
+    setValue('nationality', detectedNationality || '', { shouldValidate: Boolean(qidValue) });
+  }, [qidValue, setValue]);
 
   const onSubmit = async (data: SignUpFormData) => {
     setLoading(true);
@@ -173,13 +148,14 @@ export const SignUpPage: React.FC = () => {
             />
           </Box>
 
-          <Select
+          <Input
             label="Nationality"
             {...register('nationality')}
             error={!!errors.nationality}
-            helperText={errors.nationality?.message || 'Auto-filled from QID (can be changed)'}
-            options={nationalityOptions}
-            placeholder={nationalityOptions.length === 0 ? 'Loading nationalities...' : 'Select your nationality'}
+            helperText={errors.nationality?.message || 'Auto-filled from QID'}
+            placeholder="—"
+            InputProps={{ readOnly: true }}
+            variant="filled"
           />
 
           <Input

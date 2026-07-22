@@ -85,6 +85,17 @@ export const ContactSupportPage: React.FC = () => {
         });
       }
 
+      // Send BLOX-branded acknowledgement email to the customer
+      if (formData.email) {
+        void supabaseApiService.triggerTransactionalEmail({
+          to: formData.email,
+          templateId: 'support_ack',
+          data: { customerName: formData.email.split('@')[0], supportTopic: formData.subject },
+          userEmail: formData.email,
+          idempotencyKey: `support_ack:${formData.email}:${Date.now()}`,
+        });
+      }
+
       toast.success('Your message has been sent. We will get back to you soon!');
       setFormData({
         topic: '',

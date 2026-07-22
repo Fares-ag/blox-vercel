@@ -181,12 +181,13 @@ export const ApplicationDetailPage: React.FC = () => {
     }
   };
 
-  // Helper function to create notifications
+  // Helper function to create in-app notifications and (optionally) send a transactional email.
   const createNotificationForCustomer = async (
     type: 'success' | 'info' | 'warning' | 'error',
     title: string,
     message: string,
-    link?: string
+    link?: string,
+    emailOpts?: { templateId: string; data?: Record<string, unknown>; idempotencyKey?: string }
   ) => {
     if (!displayData?.customerEmail) return;
 
@@ -200,7 +201,20 @@ export const ApplicationDetailPage: React.FC = () => {
       });
     } catch (error) {
       console.error('Failed to create notification:', error);
-      // Don't throw - notification failure shouldn't break the main action
+    }
+
+    if (emailOpts) {
+      void supabaseApiService.triggerTransactionalEmail({
+        to: displayData.customerEmail,
+        templateId: emailOpts.templateId,
+        data: {
+          applicationId: id,
+          vehicleName: displayData.productName ?? displayData.vehicleName,
+          ...emailOpts.data,
+        },
+        userEmail: displayData.customerEmail,
+        idempotencyKey: emailOpts.idempotencyKey,
+      });
     }
   };
 
@@ -333,7 +347,12 @@ export const ApplicationDetailPage: React.FC = () => {
         'success',
         'Payment Confirmed',
         `Your payment of ${formatCurrency(paymentAmount)} for installment #${paidIndex + 1} has been confirmed.`,
-        `/customer/my-applications/${id}`
+        `/customer/my-applications/${id}`,
+        {
+          templateId: 'payment_receipt',
+          data: { amount: paymentAmount, method: 'Bank Transfer', dueDate: paymentToUpdate.dueDate },
+          idempotencyKey: `receipt:bank:${id}:${paidIndex}`,
+        }
       );
 
       await loadApplicationDetails(id);
@@ -619,7 +638,8 @@ export const ApplicationDetailPage: React.FC = () => {
           'success',
           'Contract Ready for Signing',
           `Your application #${id?.slice(0, 8)} has been approved! Please review and sign the contract to proceed.`,
-          `/customer/my-applications/${id}/contract`
+          `/customer/my-applications/${id}/contract`,
+          { templateId: 'contract_ready', idempotencyKey: `contract_ready:${id}` }
         );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to update application');
@@ -702,21 +722,24 @@ export const ApplicationDetailPage: React.FC = () => {
             'success',
             'Application Activated',
             `Your application #${id?.slice(0, 8)} has been activated! Your financing is now active.`,
-            `/customer/my-applications/${id}`
+            `/customer/my-applications/${id}`,
+            { templateId: 'application_approved', idempotencyKey: `approved:${id}` }
           );
         } else if (action === 'reject') {
           void createNotificationForCustomer(
             'error',
             'Application Rejected',
             `Your application #${id?.slice(0, 8)} has been rejected.${comments ? ` Reason: ${comments}` : ''}`,
-            `/customer/my-applications/${id}`
+            `/customer/my-applications/${id}`,
+            { templateId: 'application_rejected', data: { comments }, idempotencyKey: `rejected:${id}` }
           );
         } else if (action === 'resubmit') {
           void createNotificationForCustomer(
             'warning',
             'Contract Resubmission Required',
             `Your contract for application #${id?.slice(0, 8)} requires resubmission.${comments ? ` ${comments}` : ''}`,
-            `/customer/my-applications/${id}/contract`
+            `/customer/my-applications/${id}/contract`,
+            { templateId: 'application_resubmission', data: { comments }, idempotencyKey: `resubmit_contract:${id}` }
           );
         }
       } else {
@@ -753,7 +776,8 @@ export const ApplicationDetailPage: React.FC = () => {
           'warning',
           'Resubmission Required',
           `Your application #${id.slice(0, 8)} requires resubmission. ${comments}`,
-          `/customer/my-applications/${id}/documents`
+          `/customer/my-applications/${id}/documents`,
+          { templateId: 'documents_resubmit', data: { comments }, idempotencyKey: `resubmit_docs:${id}:${Date.now()}` }
         );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to request resubmission');
@@ -801,7 +825,8 @@ export const ApplicationDetailPage: React.FC = () => {
           'success',
           'Application Approved',
           `Your application #${id?.slice(0, 8)} has been approved and activated! Your financing is now active.`,
-          `/customer/my-applications/${id}`
+          `/customer/my-applications/${id}`,
+          { templateId: 'application_approved', idempotencyKey: `approved:${id}` }
         );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to approve application');
@@ -850,7 +875,8 @@ export const ApplicationDetailPage: React.FC = () => {
           'success',
           'Application Activated',
           `Your application #${id?.slice(0, 8)} has been activated! Your financing is now active.`,
-          `/customer/my-applications/${id}`
+          `/customer/my-applications/${id}`,
+          { templateId: 'application_approved', idempotencyKey: `approved:${id}` }
         );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to activate application');
@@ -997,7 +1023,8 @@ export const ApplicationDetailPage: React.FC = () => {
           'error',
           'Application Rejected',
           `Unfortunately, your application #${id?.slice(0, 8)} has been rejected. Please contact support for more information.`,
-          `/customer/my-applications/${id}`
+          `/customer/my-applications/${id}`,
+          { templateId: 'application_rejected', idempotencyKey: `rejected:${id}` }
         );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to reject application');

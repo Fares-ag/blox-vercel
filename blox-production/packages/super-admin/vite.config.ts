@@ -34,7 +34,8 @@ export default defineConfig(async () => {
         : null,
     ].filter(Boolean),
     build: {
-      sourcemap: true,
+      // 'hidden' keeps maps for Sentry upload but never serves them publicly
+      sourcemap: 'hidden',
       minify: 'esbuild',
       target: 'es2015',
       cssCodeSplit: true,
@@ -42,9 +43,10 @@ export default defineConfig(async () => {
         output: {
           manualChunks: {
             'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-            'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
+            // @mui/icons-material removed: named imports tree-shake fine via Rollup
+            'mui-vendor': ['@mui/material', '@emotion/react', '@emotion/styled'],
             'redux-vendor': ['@reduxjs/toolkit', 'react-redux'],
-            'chart-vendor': ['chart.js', 'react-chartjs-2'],
+            // chart-vendor removed from super-admin: not used on its routes
             'supabase-vendor': ['@supabase/supabase-js'],
           },
           chunkFileNames: 'assets/js/[name]-[hash].js',

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendEmail } from "../_shared/send-email.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -290,6 +291,22 @@ serve(async (req) => {
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status,
+      });
+    }
+
+    // Send payment receipt email on successful SkipCash payment.
+    if (dbStatus === 'completed' && customerEmail && applicationId && !isCreditTopup) {
+      void sendEmail({
+        to: customerEmail,
+        templateId: 'payment_receipt',
+        data: {
+          applicationId,
+          amount: amountNum,
+          dueDate: paymentDueDate ?? undefined,
+          method: 'SkipCash',
+        },
+        userEmail: customerEmail,
+        idempotencyKey: `receipt:skipcash:${transactionId}`,
       });
     }
 

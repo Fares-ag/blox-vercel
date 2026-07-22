@@ -190,6 +190,7 @@ export const COUNTRY_CODE_MAP: Record<string, string> = {
   '643': 'Russian Federation',
   '646': 'Rwanda',
   '647': 'Ryuku Is',
+  '654': 'Saint Helena',
   '660': 'Anguila',
   '658': 'Saint Kitts Nevis Anguilla Aru',
   '662': 'Saint Lucia',
@@ -250,6 +251,7 @@ export const COUNTRY_CODE_MAP: Record<string, string> = {
   '872': 'Wake Island',
   '876': 'Wallis and Futura Isl.',
   '882': 'Samoa',
+  '894': 'Zambia',
   '898': 'Unspecified',
   '918': 'European Union',
 };

@@ -29,7 +29,7 @@ import {
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { Input, Select, type SelectOption } from '@shared/components';
+import { Input, Select } from '@shared/components';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setCredentials, logout as logoutAction } from '../../../../store/slices/auth.slice';
 import type { User } from '@shared/models/user.model';
@@ -44,7 +44,7 @@ import { vehicleService, CUSTOMER_MAX_VEHICLE_PRICE_QAR } from '../../../../serv
 import { toast } from 'react-toastify';
 import { MembershipConfig, OfferConfig } from '@shared/config/app.config';
 import { formatMonthsToTenure } from '@shared/utils/tenure.utils';
-import { getNationalityFromQID, getAllNationalityOptions } from '@shared/utils/nationality.utils';
+import { getNationalityFromQID } from '@shared/utils/nationality.utils';
 import moment from 'moment';
 import './CreateApplicationPage.scss';
 
@@ -187,39 +187,16 @@ export const CreateApplicationPage: React.FC = () => {
     }
   }, [initialized, isAuthenticated, user?.role, navigate, dispatch]);
 
-  // Get all nationality options from the country code map
-  const nationalityOptions: SelectOption[] = React.useMemo(() => {
-    try {
-      const options = getAllNationalityOptions();
-      devLogger.debug('Nationality options loaded:', options.length);
-      return options;
-    } catch (error: unknown) {
-      devLogger.error('Error loading nationality options:', error);
-      return [];
-    }
-  }, []);
-
   const nationalIdValue = watch('nationalId');
-  const currentNationality = watch('nationality');
 
-  // Auto-fill nationality based on National ID (QID)
+  // Auto-fill nationality from QID (read-only; not user-editable)
   useEffect(() => {
-    if (nationalIdValue && nationalIdValue.length === 11) {
-      const detectedNationality = getNationalityFromQID(nationalIdValue);
-      if (detectedNationality) {
-        // Find matching option by label (exact match)
-        const nationalityOption = nationalityOptions.find(
-          opt => opt.label.toLowerCase() === detectedNationality.toLowerCase()
-        );
-        if (nationalityOption) {
-          // Only auto-fill if nationality is empty or matches the detected one
-          if (!currentNationality || currentNationality === String(nationalityOption.value)) {
-            setValue('nationality', String(nationalityOption.value), { shouldValidate: true });
-          }
-        }
-      }
-    }
-  }, [nationalIdValue, currentNationality, setValue, nationalityOptions]);
+    if (isCustomerSession) return;
+    const detectedNationality = getNationalityFromQID(nationalIdValue || '');
+    setValue('nationality', detectedNationality || '', {
+      shouldValidate: Boolean(nationalIdValue),
+    });
+  }, [nationalIdValue, isCustomerSession, setValue]);
 
   // Fetch and pre-fill user metadata when authenticated
   useEffect(() => {
@@ -689,7 +666,7 @@ export const CreateApplicationPage: React.FC = () => {
           }
         }
         
-        // Notification is best-effort — never block navigation on it
+        // Notification + email are best-effort — never block navigation on them
         void supabaseApiService
           .createNotification({
             userEmail: resolvedCustomerEmail,
@@ -701,6 +678,17 @@ export const CreateApplicationPage: React.FC = () => {
           .catch((notificationError) => {
             console.error('Failed to create notification:', notificationError);
           });
+
+        void supabaseApiService.triggerTransactionalEmail({
+          to: resolvedCustomerEmail,
+          templateId: 'application_submitted',
+          data: {
+            applicationId,
+            vehicleName: vehicle?.name,
+          },
+          userEmail: resolvedCustomerEmail,
+          idempotencyKey: `submitted:${applicationId}`,
+        });
         
         // If account was just created and email needs verification
         if (signupAuthUserId) {
@@ -917,14 +905,14 @@ export const CreateApplicationPage: React.FC = () => {
                   name="nationality"
                   control={control}
                   render={({ field }) => (
-                    <Select
+                    <Input
                       label="Nationality"
                       {...field}
-                      options={nationalityOptions}
                       error={!!errors.nationality}
-                      helperText={errors.nationality?.message || (nationalityOptions.length === 0 ? 'Loading nationalities...' : '')}
-                      disabled={isCustomerSession}
-                      placeholder={nationalityOptions.length === 0 ? 'Loading nationalities...' : 'Select your nationality'}
+                      helperText={errors.nationality?.message || 'Auto-filled from QID'}
+                      placeholder="—"
+                      InputProps={{ readOnly: true }}
+                      variant="filled"
                     />
                   )}
                 />
