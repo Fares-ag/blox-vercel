@@ -26,6 +26,7 @@ class AuthService {
           'customer',
           'dealer_agent',
           'credit_officer',
+          'finance_officer',
         ]);
 
         if (!error && data?.role) {
