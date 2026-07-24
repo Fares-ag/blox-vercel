@@ -23,6 +23,7 @@ import { useAppSelector } from '../../store/hooks';
 import { useAuth } from '../../hooks/useAuth';
 import { NotificationCenter } from '../../features/notifications/components/NotificationCenter/NotificationCenter';
 import { formatCurrency } from '@shared/utils/formatters';
+import { BLOX_CREDIT_QAR_VALUE, formatBloxCreditsCount } from '@shared/utils/blox-credits.utils';
 import { skipCashService, supabase } from '@shared/services';
 import { toast } from 'react-toastify';
 import { useCredits } from '../../hooks/useCredits';
@@ -39,8 +40,6 @@ export const CustomerNav: React.FC = () => {
   const [topUpDialogOpen, setTopUpDialogOpen] = useState(false);
   const [creditsToBuy, setCreditsToBuy] = useState<string>('1');
   const [processingTopUp, setProcessingTopUp] = useState(false);
-
-  const BLOX_CREDIT_PRICE_QAR = 1;
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -77,7 +76,7 @@ export const CustomerNav: React.FC = () => {
 
     try {
       setProcessingTopUp(true);
-      const totalCost = credits * BLOX_CREDIT_PRICE_QAR;
+      const totalCost = credits * BLOX_CREDIT_QAR_VALUE;
 
       // Fetch user metadata to get phone number if needed
       let userPhone = '';
@@ -354,7 +353,7 @@ export const CustomerNav: React.FC = () => {
                     Blox Credits
                   </Typography>
                   <Typography variant="h6" className="wallet-balance">
-                    {bloxCredits.toLocaleString('en-US')}
+                    {formatBloxCreditsCount(bloxCredits)}
                   </Typography>
                 </Box>
                 <IconButton 
@@ -456,7 +455,7 @@ export const CustomerNav: React.FC = () => {
         <DialogTitle>Top Up Blox Credits</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Each Blox Credit costs <strong>{formatCurrency(BLOX_CREDIT_PRICE_QAR)}</strong>.
+            Each Blox Credit costs <strong>{formatCurrency(BLOX_CREDIT_QAR_VALUE)}</strong>.
             All amounts are in QAR.
           </Typography>
           <TextField
@@ -469,7 +468,7 @@ export const CustomerNav: React.FC = () => {
             sx={{ mb: 2 }}
           />
           <Typography variant="body2">
-            Total: <strong>{formatCurrency((parseInt(creditsToBuy, 10) || 0) * BLOX_CREDIT_PRICE_QAR)}</strong>
+            Total: <strong>{formatCurrency((parseInt(creditsToBuy, 10) || 0) * BLOX_CREDIT_QAR_VALUE)}</strong>
           </Typography>
         </DialogContent>
         <DialogActions>

@@ -217,40 +217,8 @@ class SupabaseApiService {
 
   /** Backward-compatible wrapper — prefer queryProducts from list UIs. */
   async getProducts(options?: { limit?: number; offset?: number }): Promise<ApiResponse<Product[]>> {
-    const { limit, offset = 0 } = options ?? {};
-    // Unbounded callers (legacy) still get a full fetch; list UIs must pass limit.
-    if (limit == null) {
-      const cacheKey = 'products:all';
-      const cached = supabaseCache.get<Product[]>(cacheKey);
-      if (cached) {
-        return {
-          status: 'SUCCESS',
-          data: cached,
-          message: 'Products fetched successfully (cached)',
-        };
-      }
-      try {
-        const response = await supabase
-          .from('products')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .order('id', { ascending: false });
-        const products = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<Product>);
-        supabaseCache.set(cacheKey, products, 60 * 1000);
-        return {
-          status: 'SUCCESS',
-          data: products,
-          message: 'Products fetched successfully',
-        };
-      } catch (error: any) {
-        return {
-          status: 'ERROR',
-          message: error.message || 'Failed to fetch products',
-          data: [],
-        };
-      }
-    }
-
+    // Default cap prevents accidental full-catalog pulls as inventory grows.
+    const { limit = 2000, offset = 0 } = options ?? {};
     const result = await this.queryProducts({ limit, offset });
     return {
       status: result.status,
@@ -569,6 +537,8 @@ class SupabaseApiService {
     /** When lean: omit bulky installment_plan JSON (credit queue). */
     leanOmitInstallmentPlan?: boolean;
   }): Promise<ApiResponse<Application[]> & { count?: number | null }> {
+    /** Hard cap when callers omit limit — prevents full-table joins at 10k+ scale. */
+    const DEFAULT_APPLICATIONS_LIMIT = 500;
     const {
       skipCache,
       customerEmail,
@@ -579,11 +549,12 @@ class SupabaseApiService {
       search,
       createdFrom,
       createdTo,
-      limit,
+      limit: limitOpt,
       offset = 0,
       lean = false,
       leanOmitInstallmentPlan = false,
     } = options ?? {};
+    const limit = limitOpt ?? DEFAULT_APPLICATIONS_LIMIT;
 
     const filterKey = [
       customerEmail || '',
@@ -595,7 +566,7 @@ class SupabaseApiService {
       createdFrom || '',
       createdTo || '',
       lean ? (leanOmitInstallmentPlan ? 'lean-noplan' : 'lean') : 'full',
-      limit != null ? `${offset}:${limit}` : 'all',
+      `${offset}:${limit}`,
     ].join('|');
     const cacheKey = await this.applicationsCacheKey(`:${filterKey}`);
 
@@ -670,11 +641,9 @@ class SupabaseApiService {
         query = query.lte('created_at', createdTo);
       }
 
-      query = query.order('created_at', { ascending: false });
-
-      if (limit != null) {
-        query = query.range(offset, offset + Math.max(limit, 1) - 1);
-      }
+      query = query
+        .order('created_at', { ascending: false })
+        .range(offset, offset + Math.max(limit, 1) - 1);
 
       const response = await query;
       const rows = handleSupabaseResponse<any[]>(response).map((app: any) => {
@@ -723,12 +692,16 @@ class SupabaseApiService {
       'contracts_submitted',
       'contract_under_review',
       'down_payment_required',
+      'down_payment_submitted',
+      'pending_finance_activation',
     ];
     try {
       let query = supabase
         .from('applications')
         .select('vehicle_id')
-        .in('status', reservedStatuses);
+        .in('status', reservedStatuses)
+        // Cap scan under growth; reserved set is for browse UX, not exhaustive inventory lock.
+        .limit(5000);
 
       if (currentUserEmail) {
         query = query.neq('customer_email', currentUserEmail.toLowerCase());

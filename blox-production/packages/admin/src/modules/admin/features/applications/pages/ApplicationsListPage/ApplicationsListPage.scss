@@ -166,10 +166,17 @@
   .table-section {
     width: 100%;
 
-    :global(.MuiTableCell-head) {
-      background-color: var(--table-header);
-      color: var(--table-header-color);
+    :global(.MuiTableCell-head),
+    :global(.MuiTableCell-head.table-header) {
+      background-color: var(--table-header) !important;
+      color: var(--table-header-color) !important;
       font-weight: 600;
+
+      .MuiTableSortLabel-root,
+      .MuiTableSortLabel-icon {
+        color: var(--table-header-color) !important;
+        opacity: 1;
+      }
     }
   }
 

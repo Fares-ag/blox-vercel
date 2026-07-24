@@ -44,10 +44,13 @@ export const CreditQueuePage: React.FC = () => {
   const [queueTab, setQueueTab] = useState<QueueTab>('pipeline');
   const [truncated, setTruncated] = useState(false);
   const [noDealerAssignment, setNoDealerAssignment] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (nextOffset = 0, append = false) => {
     try {
-      setLoading(true);
+      if (append) setLoadingMore(true);
+      else setLoading(true);
       setLoadError(null);
       setNoDealerAssignment(false);
 
@@ -62,6 +65,7 @@ export const CreditQueuePage: React.FC = () => {
         setApps([]);
         setAgentNames({});
         setTruncated(false);
+        setOffset(0);
         return;
       }
 
@@ -71,7 +75,7 @@ export const CreditQueuePage: React.FC = () => {
         leanOmitInstallmentPlan: true,
         statusIn: [...CREDIT_QUEUE_STATUSES],
         limit: QUEUE_PAGE_SIZE,
-        offset: 0,
+        offset: nextOffset,
       });
       if (res.status !== 'SUCCESS' || !res.data) {
         throw new Error(res.message || 'Failed to load credit queue');
@@ -81,35 +85,38 @@ export const CreditQueuePage: React.FC = () => {
         const tb = new Date(b.submittedAt || b.updatedAt || b.createdAt).getTime();
         return tb - ta;
       });
-      setApps(pipeline);
-      const total = res.count ?? pipeline.length;
-      setTruncated(total > pipeline.length);
+      setApps((prev) => (append ? [...prev, ...pipeline] : pipeline));
+      const loaded = nextOffset + pipeline.length;
+      const total = res.count ?? loaded;
+      setTruncated(total > loaded);
+      setOffset(loaded);
 
       const agentIds = [...new Set(pipeline.map((a) => a.agentUserId).filter(Boolean))] as string[];
       if (agentIds.length > 0) {
         try {
           const namesRes = await supabaseApiService.getUserDisplayNamesByIds(agentIds);
           if (namesRes.status === 'SUCCESS' && namesRes.data) {
-            setAgentNames(namesRes.data);
+            setAgentNames((prev) => (append ? { ...prev, ...namesRes.data } : namesRes.data));
           }
         } catch {
           // optional
         }
-      } else {
+      } else if (!append) {
         setAgentNames({});
       }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to load credit queue';
       setLoadError(message);
-      setApps([]);
+      if (!append) setApps([]);
       toast.error(message);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    load(0, false);
   }, [load]);
 
   const tabApps = useMemo(() => {
@@ -240,7 +247,7 @@ export const CreditQueuePage: React.FC = () => {
           onChange={setSearchTerm}
           placeholder="Search customer, agent, application…"
         />
-        <Button variant="secondary" onClick={() => load()}>
+        <Button variant="secondary" onClick={() => load(0, false)}>
           Refresh
         </Button>
       </Card>
@@ -256,8 +263,7 @@ export const CreditQueuePage: React.FC = () => {
 
       {truncated && !loading && !loadError && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-          Showing the newest {QUEUE_PAGE_SIZE} applications. Narrow with search or refresh after
-          decisions.
+          Showing {apps.length} applications. Load more to page through the queue.
         </Typography>
       )}
 
@@ -268,7 +274,7 @@ export const CreditQueuePage: React.FC = () => {
           title="Failed to load queue"
           message={loadError}
           actionLabel="Retry"
-          onAction={() => load()}
+          onAction={() => load(0, false)}
         />
       ) : noDealerAssignment ? (
         <EmptyState
@@ -285,13 +291,26 @@ export const CreditQueuePage: React.FC = () => {
           }
         />
       ) : (
-        <Table
-          columns={columns}
-          rows={filtered}
-          onRowClick={(row) =>
-            navigate(withPortalBase(portalBase, `/applications/view/${row.id}`))
-          }
-        />
+        <>
+          <Table
+            columns={columns}
+            rows={filtered}
+            onRowClick={(row) =>
+              navigate(withPortalBase(portalBase, `/applications/view/${row.id}`))
+            }
+          />
+          {truncated && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Button
+                variant="secondary"
+                disabled={loadingMore}
+                onClick={() => load(offset, true)}
+              >
+                {loadingMore ? 'Loading…' : 'Load more'}
+              </Button>
+            </Box>
+          )}
+        </>
       )}
     </Box>
   );

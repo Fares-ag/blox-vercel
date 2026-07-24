@@ -254,7 +254,11 @@ serve(async (req) => {
         p_due_date: dueDate,
         p_is_settlement: isSettlement,
         p_is_credit_topup: isCreditTopup,
-        p_credits_amount: creditsAmount > 0 ? creditsAmount : Number(localTxn.amount) || null,
+        p_credits_amount: isCreditTopup
+          ? Number(localTxn.amount) || null
+          : creditsAmount > 0
+            ? creditsAmount
+            : Number(localTxn.amount) || null,
         p_customer_email: userEmail,
         p_failure_reason:
           dbStatus === 'failed' ? String(json?.message ?? 'Payment failed') : null,

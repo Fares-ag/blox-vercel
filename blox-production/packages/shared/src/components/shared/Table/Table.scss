@@ -33,6 +33,22 @@
     color: var(--primary-text);
     font-weight: 500;
     border-bottom: 1px solid rgba(224, 224, 224, 1);
+
+    // Header cells also match .MuiTableCell-root; keep titles white on dark header.
+    &.table-header,
+    &.MuiTableCell-head {
+      background-color: var(--table-header);
+      color: var(--table-header-color);
+      font-weight: 600;
+
+      .MuiTableSortLabel-root,
+      .MuiTableSortLabel-root:hover,
+      .MuiTableSortLabel-root.Mui-active,
+      .MuiTableSortLabel-icon {
+        color: var(--table-header-color);
+        opacity: 1;
+      }
+    }
   }
 
   // Make TableContainer scrollable horizontally on mobile

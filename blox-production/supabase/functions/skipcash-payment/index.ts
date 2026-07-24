@@ -5,6 +5,7 @@ import {
   validateClientAmount,
   resolveUseSandbox,
 } from "../_shared/payment-schedule.ts";
+import { BLOX_CREDIT_QAR_VALUE } from "../_shared/blox-credits.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -301,7 +302,7 @@ serve(async (req) => {
     }
 
     // SERVER-SIDE PRICE VALIDATION: Prevent price tampering for credit top-ups
-    const EXPECTED_CREDIT_PRICE_QAR = 1; // Must match frontend constant
+    const EXPECTED_CREDIT_PRICE_QAR = BLOX_CREDIT_QAR_VALUE;
     if (applicationId === null && parsedBody?.custom1) {
       try {
         const customObj = JSON.parse(parsedBody.custom1);

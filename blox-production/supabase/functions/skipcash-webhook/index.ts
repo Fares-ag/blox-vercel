@@ -259,7 +259,11 @@ serve(async (req) => {
         p_due_date: paymentDueDate,
         p_is_settlement: isSettlement,
         p_is_credit_topup: isCreditTopup,
-        p_credits_amount: creditsAmount > 0 ? creditsAmount : amountNum,
+        p_credits_amount: isCreditTopup
+          ? amountNum
+          : creditsAmount > 0
+            ? creditsAmount
+            : amountNum,
         p_customer_email: customerEmail,
         p_failure_reason:
           dbStatus === 'failed' || dbStatus === 'cancelled' || dbStatus === 'refunded'

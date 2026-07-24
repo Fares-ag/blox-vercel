@@ -33,6 +33,10 @@ Scripts: `dev:finance`, `build:finance`, `lint:finance`.
 
 Admin / super_admin retain an Activate override on the shared application detail page.
 
+Cross-portal scale / alignment QA (indexes, reserve statuses, queue paging, gaps): see `docs/QA_PORTAL_SCALE_ALIGNMENT_2026-07-24.md`.
+
+**Note:** Finance may still legally transition `contracts_submitted` / `contract_under_review` / `down_payment_submitted` → `active` directly (DB + client matrix). Prefer the credit→`pending_finance_activation`→finance path for ops clarity. Apply `20260724220000_scale_indexes_finance_storage.sql` for company/status indexes + finance document Storage read (MCP apply was read-only at QA time — use SQL editor or `supabase db push`).
+
 ## Nav
 
 | Route | Purpose |

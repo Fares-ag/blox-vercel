@@ -40,10 +40,13 @@ export const FinanceQueuePage: React.FC = () => {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [truncated, setTruncated] = useState(false);
   const [noDealerAssignment, setNoDealerAssignment] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (nextOffset = 0, append = false) => {
     try {
-      setLoading(true);
+      if (append) setLoadingMore(true);
+      else setLoading(true);
       setLoadError(null);
       setNoDealerAssignment(false);
 
@@ -57,6 +60,7 @@ export const FinanceQueuePage: React.FC = () => {
         setNoDealerAssignment(true);
         setApps([]);
         setTruncated(false);
+        setOffset(0);
         return;
       }
 
@@ -66,7 +70,7 @@ export const FinanceQueuePage: React.FC = () => {
         leanOmitInstallmentPlan: true,
         statusIn: [...FINANCE_ACTIVATION_QUEUE_STATUSES],
         limit: QUEUE_PAGE_SIZE,
-        offset: 0,
+        offset: nextOffset,
       });
       if (res.status !== 'SUCCESS' || !res.data) {
         throw new Error(res.message || 'Failed to load activation queue');
@@ -76,20 +80,24 @@ export const FinanceQueuePage: React.FC = () => {
         const tb = new Date(b.updatedAt || b.createdAt).getTime();
         return tb - ta;
       });
-      setApps(sorted);
-      setTruncated((res.count ?? sorted.length) > sorted.length);
+      setApps((prev) => (append ? [...prev, ...sorted] : sorted));
+      const loaded = nextOffset + sorted.length;
+      const total = res.count ?? loaded;
+      setTruncated(total > loaded);
+      setOffset(loaded);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : 'Failed to load activation queue';
       setLoadError(message);
-      setApps([]);
+      if (!append) setApps([]);
       toast.error(message);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    load(0, false);
   }, [load]);
 
   const filtered = apps.filter((app) => {
@@ -193,14 +201,14 @@ export const FinanceQueuePage: React.FC = () => {
           onChange={setSearchTerm}
           placeholder="Search customer, dealership, application…"
         />
-        <Button variant="secondary" onClick={() => load()}>
+        <Button variant="secondary" onClick={() => load(0, false)}>
           Refresh
         </Button>
       </Card>
 
       {truncated && !loading && !loadError && (
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-          Showing the newest {QUEUE_PAGE_SIZE} applications.
+          Showing {apps.length} applications. Load more to page through the queue.
         </Typography>
       )}
 
@@ -211,7 +219,7 @@ export const FinanceQueuePage: React.FC = () => {
           title="Failed to load queue"
           message={loadError}
           actionLabel="Retry"
-          onAction={() => load()}
+          onAction={() => load(0, false)}
         />
       ) : noDealerAssignment ? (
         <EmptyState
@@ -224,13 +232,26 @@ export const FinanceQueuePage: React.FC = () => {
           message="No applications are waiting for finance activation."
         />
       ) : (
-        <Table
-          columns={columns}
-          rows={filtered}
-          onRowClick={(row) =>
-            navigate(withPortalBase(portalBase, `/applications/view/${row.id}`))
-          }
-        />
+        <>
+          <Table
+            columns={columns}
+            rows={filtered}
+            onRowClick={(row) =>
+              navigate(withPortalBase(portalBase, `/applications/view/${row.id}`))
+            }
+          />
+          {truncated && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <Button
+                variant="secondary"
+                disabled={loadingMore}
+                onClick={() => load(offset, true)}
+              >
+                {loadingMore ? 'Loading…' : 'Load more'}
+              </Button>
+            </Box>
+          )}
+        </>
       )}
     </Box>
   );

@@ -30,6 +30,7 @@ import type { Application, PaymentSchedule } from '@shared/models/application.mo
 import { Button as CustomButton, Loading } from '@shared/components';
 import { Config } from '@shared/config/app.config';
 import { formatCurrency } from '@shared/utils/formatters';
+import { formatBloxCreditsCount } from '@shared/utils/blox-credits.utils';
 import { calculateSettlementDiscount } from '@shared/utils/settlement-discount.utils';
 import { devLogger } from '@shared/utils/logger.util';
 import type { SettlementDiscountSettings } from '@shared/models/settlement-discount.model';
@@ -386,7 +387,9 @@ export const PaymentPage: React.FC = () => {
         ? (discountCalculation && discountCalculation.totalDiscount > 0 ? discountCalculation.finalAmount : amount)
         : (useCustomAmount && customAmount ? parseFloat(customAmount) : amount);
       if (creditsBalance < payAmount) {
-        toast.error(`Insufficient Blox Credits. You have ${formatCurrency(creditsBalance)}; need ${formatCurrency(payAmount)}.`);
+        toast.error(
+          `Insufficient Blox Credits. You have ${formatBloxCreditsCount(creditsBalance)} credits (${formatCurrency(creditsBalance)}); need ${formatCurrency(payAmount)}.`
+        );
         return;
       }
     }
@@ -894,7 +897,7 @@ export const PaymentPage: React.FC = () => {
             {selectedMethod === 'blox_credit' && (
               <Box className="payment-form">
                 <Alert severity="info">
-                  Your Blox Credits balance: <strong>{formatCurrency(creditsBalance)}</strong>. The payment amount will be deducted from your balance.
+                  Your Blox Credits balance: <strong>{formatBloxCreditsCount(creditsBalance)}</strong> credits ({formatCurrency(creditsBalance)}). The payment amount will be deducted from your balance.
                 </Alert>
               </Box>
             )}

@@ -124,6 +124,7 @@ export const ApplicationsListPage: React.FC = () => {
         'contract_under_review',
         'down_payment_required',
         'down_payment_submitted',
+        'pending_finance_activation',
       ];
     }
     if (filter === 'active') return ['active'];
