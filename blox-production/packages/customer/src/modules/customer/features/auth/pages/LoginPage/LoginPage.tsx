@@ -81,32 +81,19 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const handleQuickLogin = async () => {
-    const quickLoginData: LoginFormData = {
-      email: 'customer@blox.market',
-      password: 'password123',
-      rememberMe: true,
-    };
-    const result = await login(quickLoginData, { redirectTo: postLoginRedirect });
-    if (result.success) {
-      toast.success('Quick login successful! (Using dummy credentials)');
-    } else {
-      toast.error(result.error || 'Quick login failed');
-    }
-  };
-
   return (
     <Box className="login-page">
       <Box className="login-shell">
         <Box className="banner">
+          <img src="/BloxLogoNav.png" alt="BLOX" className="banner-logo" />
           <Typography variant="subtitle1" className="banner-kicker">
-            Quick Application Process
+            Finance Unboxed
           </Typography>
           <Typography variant="body2" className="banner-body">
             With BLOX, your lease is more than just a payment. It's a transparent, flexible system that turns your vehicle's value into virtual assets for smarter financial management.
           </Typography>
           <Button
-            variant="primary"
+            variant="tertiary"
             onClick={() => navigate('/customer/vehicles')}
             className="banner-cta"
             size="small"
@@ -116,6 +103,7 @@ export const LoginPage: React.FC = () => {
         </Box>
 
         <Box component="form" className="login-form-card" onSubmit={handleSubmit(onSubmit)}>
+          <img src="/BloxLogo.png" alt="BLOX" className="form-logo" />
           <Typography variant="h4" className="form-title">
             Log In
           </Typography>
@@ -174,10 +162,9 @@ export const LoginPage: React.FC = () => {
             </Button>
             <Button
               type="button"
-              variant="secondary"
+              variant="secondary-soft"
               fullWidth
               onClick={() => navigate('/customer/vehicles')}
-              className="start-application-btn"
             >
               Start new application
             </Button>

@@ -254,7 +254,7 @@ export const CreditTopUpCallbackPage: React.FC = () => {
         {status === 'success' && (
           <>
             <Box className="success-icon status-icon">
-              <CheckCircle sx={{ fontSize: 80, color: '#4CAF50' }} />
+              <CheckCircle sx={{ fontSize: 80, color: '#00CFA2' }} />
             </Box>
             <Typography variant="h4" className="success-title" sx={{ color: 'var(--primary-text)', fontWeight: 700 }}>
               Top Up Successful!
@@ -320,7 +320,7 @@ export const CreditTopUpCallbackPage: React.FC = () => {
         {status === 'failed' && (
           <>
             <Box className="error-icon status-icon">
-              <ErrorIcon sx={{ fontSize: 80, color: '#F44336' }} />
+              <ErrorIcon sx={{ fontSize: 80, color: '#C62828' }} />
             </Box>
             <Typography variant="h4" className="error-title" sx={{ color: 'var(--primary-text)', fontWeight: 700 }}>
               Payment Failed

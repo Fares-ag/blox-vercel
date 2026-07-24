@@ -1,6 +1,9 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { visualizer } from 'rollup-plugin-visualizer'
+
+const analyze = process.env.npm_lifecycle_event === 'build:analyze';
 
 // Conditionally import Sentry plugin
 async function getSentryPlugin() {
@@ -29,12 +32,20 @@ export default defineConfig(async () => {
             authToken: process.env.SENTRY_AUTH_TOKEN,
           })
         : null,
+      analyze
+        ? visualizer({
+            filename: 'dist/stats.html',
+            gzipSize: true,
+            brotliSize: true,
+            open: false,
+          })
+        : null,
     ].filter(Boolean),
     build: {
       // 'hidden' keeps maps for Sentry upload but never serves them publicly
       sourcemap: 'hidden',
       minify: 'esbuild',
-      target: 'es2015',
+      target: 'es2020',
       cssCodeSplit: true,
       rollupOptions: {
         output: {

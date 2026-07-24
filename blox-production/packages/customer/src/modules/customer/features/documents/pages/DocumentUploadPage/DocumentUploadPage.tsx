@@ -389,7 +389,7 @@ export const DocumentUploadPage: React.FC = () => {
                   {document ? (
                     <Box className="document-preview">
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
-                        <CheckCircle sx={{ color: '#DAFF01', fontSize: 20 }} />
+                        <CheckCircle sx={{ color: '#DBFF00', fontSize: 20 }} />
                         <Typography variant="body2" className="document-file-name" noWrap>
                           {document.name}
                         </Typography>

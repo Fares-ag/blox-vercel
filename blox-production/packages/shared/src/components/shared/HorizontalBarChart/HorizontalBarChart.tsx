@@ -14,7 +14,7 @@ export const HorizontalBarChart: React.FC<HorizontalBarChartProps> = ({
   label,
   value,
   maxValue = 100,
-  color = '#787663',
+  color = '#708090',
   showValue = true,
 }) => {
   const percentage = Math.min((value / maxValue) * 100, 100);

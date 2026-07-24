@@ -3,6 +3,7 @@ import { supabaseCache } from './supabase-cache.service';
 import type { 
   Application, 
   Company,
+  PartnerHubSummary,
   Product, 
   Offer, 
   Package, 
@@ -15,6 +16,7 @@ import type {
 import type { ApiResponse } from '../models/api.model';
 import { assertApplicationStatusTransition, type TransitionActor } from '../utils/application-status-transitions';
 import { mapInsuranceRateRow, mapPromotionRow } from '../utils/catalog-row-mappers';
+import { getModelFamilyKey } from '../utils/product-display.utils';
 
 class SupabaseApiService {
   // Helper to detect and format DNS errors
@@ -39,8 +41,8 @@ class SupabaseApiService {
   private async insertAuditLog(
     action: string,
     tableName: string,
-    resourceId: string,
-    description: string,
+    _resourceId: string,
+    _description: string,
   ): Promise<void> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -63,45 +65,243 @@ class SupabaseApiService {
   }
 
   // ==================== PRODUCTS ====================
-  async getProducts(options?: { limit?: number; offset?: number }): Promise<ApiResponse<Product[]>> {
-    const { limit, offset = 0 } = options ?? {};
-    const cacheKey = limit != null ? `products:p:${offset}:${limit}` : 'products:all';
-    const cached = supabaseCache.get<Product[]>(cacheKey);
-    if (cached) {
-      return {
-        status: 'SUCCESS',
-        data: cached,
-        message: 'Products fetched successfully (cached)'
-      };
+
+  /** Clear all product list / query caches (paged + legacy keys). */
+  private invalidateProductsCache(): void {
+    supabaseCache.invalidatePattern('^(products:|queryProducts:)');
+  }
+
+  /**
+   * Server-paged product catalog query with filters + exact count.
+   * Reserved exclusion must be applied via excludeIds BEFORE range.
+   *
+   * excludeIds URL-length threshold: if reserved IDs ever exceed ~200, switch
+   * to a dedicated RPC that excludes reserved rows server-side.
+   */
+  async queryProducts(options: {
+    limit: number;
+    offset?: number;
+    skipCache?: boolean;
+    companyId?: string | null;
+    status?: ('active' | 'inactive')[];
+    condition?: ('new' | 'old')[];
+    make?: string[];
+    model?: string[];
+    priceMin?: number;
+    priceMax?: number;
+    modelYearMin?: number;
+    modelYearMax?: number;
+    search?: string;
+    excludeIds?: string[];
+  }): Promise<ApiResponse<Product[]> & { count?: number | null }> {
+    const {
+      limit,
+      offset = 0,
+      skipCache = false,
+      companyId,
+      status,
+      condition,
+      make,
+      model,
+      priceMin,
+      priceMax,
+      modelYearMin,
+      modelYearMax,
+      search,
+      excludeIds,
+    } = options;
+
+    const excludeSorted = (excludeIds ?? []).filter(Boolean).slice().sort();
+    const filterKey = [
+      companyId ?? '',
+      (status ?? []).join(','),
+      (condition ?? []).join(','),
+      (make ?? []).join(','),
+      (model ?? []).join(','),
+      priceMin ?? '',
+      priceMax ?? '',
+      modelYearMin ?? '',
+      modelYearMax ?? '',
+      search?.trim() ?? '',
+      excludeSorted.join(','),
+      `${offset}:${limit}`,
+    ].join('|');
+    const cacheKey = `queryProducts:${filterKey}`;
+
+    if (!skipCache) {
+      const cached = supabaseCache.get<{ rows: Product[]; count: number | null }>(cacheKey);
+      if (cached) {
+        return {
+          status: 'SUCCESS',
+          data: cached.rows,
+          count: cached.count,
+          message: 'Products fetched successfully (cached)',
+        };
+      }
     }
 
     try {
       let query = supabase
         .from('products')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('*', { count: 'exact' });
 
-      if (limit != null) {
-        query = query.range(offset, offset + limit - 1);
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+      if (status && status.length > 0) {
+        query = query.in('status', status);
+      }
+      if (condition && condition.length > 0) {
+        query = query.in('condition', condition);
+      }
+      if (make && make.length > 0) {
+        query = query.in('make', make);
+      }
+      if (model && model.length > 0) {
+        query = query.in('model', model);
+      }
+      if (priceMin != null) {
+        query = query.gte('price', priceMin);
+      }
+      if (priceMax != null) {
+        query = query.lte('price', priceMax);
+      }
+      if (modelYearMin != null) {
+        query = query.gte('model_year', modelYearMin);
+      }
+      if (modelYearMax != null) {
+        query = query.lte('model_year', modelYearMax);
+      }
+      if (search?.trim()) {
+        const q = search.trim().replace(/[%_,.()]/g, '');
+        if (q) {
+          query = query.or(
+            `make.ilike.%${q}%,model.ilike.%${q}%,trim.ilike.%${q}%,id.ilike.%${q}%`
+          );
+        }
+      }
+      if (excludeSorted.length > 0) {
+        // PostgREST in-list; quote text ids. Cap ~200 before URL length breaks.
+        const inList = `(${excludeSorted.map((id) => `"${id.replace(/"/g, '')}"`).join(',')})`;
+        query = query.not('id', 'in', inList);
       }
 
+      query = query
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .range(offset, offset + Math.max(limit, 1) - 1);
+
       const response = await query;
-      
-      const products = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<Product>);
-      
-      // Cache for 5 minutes
-      supabaseCache.set(cacheKey, products, 5 * 60 * 1000);
-      
+      const rows = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<Product>);
+      const count = response.count ?? rows.length;
+
+      if (!skipCache) {
+        supabaseCache.set(cacheKey, { rows, count }, 60 * 1000);
+      }
+
       return {
         status: 'SUCCESS',
-        data: products,
-        message: 'Products fetched successfully'
+        data: rows,
+        count,
+        message: 'Products fetched successfully',
       };
     } catch (error: any) {
       return {
         status: 'ERROR',
         message: error.message || 'Failed to fetch products',
-        data: []
+        data: [],
+        count: 0,
+      };
+    }
+  }
+
+  /** Backward-compatible wrapper — prefer queryProducts from list UIs. */
+  async getProducts(options?: { limit?: number; offset?: number }): Promise<ApiResponse<Product[]>> {
+    const { limit, offset = 0 } = options ?? {};
+    // Unbounded callers (legacy) still get a full fetch; list UIs must pass limit.
+    if (limit == null) {
+      const cacheKey = 'products:all';
+      const cached = supabaseCache.get<Product[]>(cacheKey);
+      if (cached) {
+        return {
+          status: 'SUCCESS',
+          data: cached,
+          message: 'Products fetched successfully (cached)',
+        };
+      }
+      try {
+        const response = await supabase
+          .from('products')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: false });
+        const products = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<Product>);
+        supabaseCache.set(cacheKey, products, 60 * 1000);
+        return {
+          status: 'SUCCESS',
+          data: products,
+          message: 'Products fetched successfully',
+        };
+      } catch (error: any) {
+        return {
+          status: 'ERROR',
+          message: error.message || 'Failed to fetch products',
+          data: [],
+        };
+      }
+    }
+
+    const result = await this.queryProducts({ limit, offset });
+    return {
+      status: result.status,
+      data: result.data ?? [],
+      message: result.message,
+    };
+  }
+
+  async getProductMakes(status: string = 'active'): Promise<ApiResponse<string[]>> {
+    try {
+      const { data, error } = await supabase.rpc('product_distinct_makes', {
+        p_status: status,
+      });
+      if (error) throw error;
+      const makes = (Array.isArray(data) ? data : [])
+        .map((v) => String(v))
+        .filter((v) => v.trim().length > 0);
+      return {
+        status: 'SUCCESS',
+        data: makes,
+        message: 'Product makes fetched successfully',
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch product makes',
+        data: [],
+      };
+    }
+  }
+
+  async getProductModels(make: string, status: string = 'active'): Promise<ApiResponse<string[]>> {
+    try {
+      const { data, error } = await supabase.rpc('product_distinct_models', {
+        p_make: make,
+        p_status: status,
+      });
+      if (error) throw error;
+      const models = (Array.isArray(data) ? data : [])
+        .map((v) => String(v))
+        .filter((v) => v.trim().length > 0);
+      return {
+        status: 'SUCCESS',
+        data: models,
+        message: 'Product models fetched successfully',
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch product models',
+        data: [],
       };
     }
   }
@@ -130,8 +330,36 @@ class SupabaseApiService {
     }
   }
 
+  /**
+   * Resolve the current caller's owning company from public.users.
+   * Dealer inventory RLS requires products.company_id = the dealer's company.
+   */
+  private async currentUserCompanyId(): Promise<string | undefined> {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData.session?.user?.id;
+      if (!uid) return undefined;
+      const { data } = await supabase
+        .from('users')
+        .select('company_id')
+        .eq('id', uid)
+        .maybeSingle();
+      const companyId = (data as { company_id?: string } | null)?.company_id;
+      return companyId || undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   async createProduct(product: Omit<Product, 'id' | 'createdAt' | 'updatedAt'>): Promise<ApiResponse<Product>> {
     try {
+      // Stamp ownership: explicit companyId wins, else inherit the caller's
+      // company (dealers). Admins with no company create platform stock (null).
+      const companyId =
+        product.companyId !== undefined
+          ? product.companyId
+          : (await this.currentUserCompanyId()) ?? null;
+
       const productData = {
         make: product.make,
         model: product.model,
@@ -148,7 +376,8 @@ class SupabaseApiService {
         attributes: product.attributes || [],
         description: product.description,
         chassis_number: product.chassisNumber,
-        engine_number: product.engineNumber
+        engine_number: product.engineNumber,
+        company_id: companyId,
       };
 
       const response = await supabase
@@ -159,8 +388,7 @@ class SupabaseApiService {
       
       const createdProduct = mapSupabaseRow<Product>(handleSupabaseResponse<any>(response));
 
-      // Invalidate products cache so newly created products appear immediately
-      supabaseCache.invalidate('products:all');
+      this.invalidateProductsCache();
       
       // Log activity
       try {
@@ -210,8 +438,7 @@ class SupabaseApiService {
 
       if (error) throw error;
 
-      // Clear cache after bulk update
-      supabaseCache.invalidate('products:all');
+      this.invalidateProductsCache();
 
       return {
         status: 'SUCCESS',
@@ -249,6 +476,7 @@ class SupabaseApiService {
       if (product.description !== undefined) updateData.description = product.description;
       if (product.chassisNumber !== undefined) updateData.chassis_number = product.chassisNumber;
       if (product.engineNumber !== undefined) updateData.engine_number = product.engineNumber;
+      if (product.companyId !== undefined) updateData.company_id = product.companyId;
 
       const response = await supabase
         .from('products')
@@ -259,9 +487,7 @@ class SupabaseApiService {
       
       const updatedProduct = mapSupabaseRow<Product>(handleSupabaseResponse<any>(response));
       
-      // Invalidate products cache
-      supabaseCache.invalidate('products:all');
-      supabaseCache.invalidate(`products:${id}`);
+      this.invalidateProductsCache();
       
       // Log activity
       try {
@@ -301,6 +527,7 @@ class SupabaseApiService {
         .eq('id', id);
       
       handleSupabaseResponse(response);
+      this.invalidateProductsCache();
       
       return {
         status: 'SUCCESS',
@@ -316,43 +543,141 @@ class SupabaseApiService {
 
   // ==================== APPLICATIONS ====================
   /** Cache key must be session-scoped — RLS results differ by user. */
-  private async applicationsCacheKey(): Promise<string> {
+  private async applicationsCacheKey(suffix = ''): Promise<string> {
     const { data } = await supabase.auth.getSession();
     const uid = data.session?.user?.id || 'anon';
-    return `applications:${uid}`;
+    return `applications:${uid}${suffix}`;
   }
 
-  async getApplications(options?: { skipCache?: boolean; customerEmail?: string }): Promise<ApiResponse<Application[]>> {
-    const cacheKey = await this.applicationsCacheKey();
-    if (!options?.skipCache) {
-      const cached = supabaseCache.get<Application[]>(cacheKey);
+  /**
+   * List applications with optional server-side filters / pagination.
+   * Use `lean: true` for ops list UIs (narrow vehicle/company columns).
+   */
+  async getApplications(options?: {
+    skipCache?: boolean;
+    customerEmail?: string;
+    status?: string;
+    statusIn?: string[];
+    companyId?: string;
+    agentUserId?: string;
+    search?: string;
+    createdFrom?: string;
+    createdTo?: string;
+    limit?: number;
+    offset?: number;
+    lean?: boolean;
+    /** When lean: omit bulky installment_plan JSON (credit queue). */
+    leanOmitInstallmentPlan?: boolean;
+  }): Promise<ApiResponse<Application[]> & { count?: number | null }> {
+    const {
+      skipCache,
+      customerEmail,
+      status,
+      statusIn,
+      companyId,
+      agentUserId,
+      search,
+      createdFrom,
+      createdTo,
+      limit,
+      offset = 0,
+      lean = false,
+      leanOmitInstallmentPlan = false,
+    } = options ?? {};
+
+    const filterKey = [
+      customerEmail || '',
+      status || '',
+      (statusIn || []).join(','),
+      companyId || '',
+      agentUserId || '',
+      search || '',
+      createdFrom || '',
+      createdTo || '',
+      lean ? (leanOmitInstallmentPlan ? 'lean-noplan' : 'lean') : 'full',
+      limit != null ? `${offset}:${limit}` : 'all',
+    ].join('|');
+    const cacheKey = await this.applicationsCacheKey(`:${filterKey}`);
+
+    if (!skipCache) {
+      const cached = supabaseCache.get<{ rows: Application[]; count: number | null }>(cacheKey);
       if (cached) {
         return {
           status: 'SUCCESS',
-          data: cached,
-          message: 'Applications fetched successfully (cached)'
+          data: cached.rows,
+          count: cached.count,
+          message: 'Applications fetched successfully (cached)',
         };
       }
     }
 
     try {
+      const vehicleSelect = lean
+        ? 'id, make, model, trim, price, model_year, color, status'
+        : '*';
+      const companySelect = lean ? 'id, name' : '*';
+      const offerSelect = lean ? '' : ',\n          offer:offers!applications_offer_id_fkey(*)';
+      const installmentCol =
+        lean && leanOmitInstallmentPlan ? '' : ',\n          installment_plan';
+      const appColumns = lean
+        ? `
+          id, status, customer_name, customer_email, customer_phone, customer_info,
+          created_at, updated_at, submitted_at, submission_date,
+          vehicle_id, company_id, agent_user_id, offer_id,
+          selling_price, hide_interest, internal_annual_rate,
+          loan_amount, down_payment,
+          blox_membership${installmentCol}
+        `
+        : '*';
+
+      const select = `
+          ${appColumns},
+          vehicle:products!applications_vehicle_id_fkey(${vehicleSelect})${offerSelect},
+          company:companies(${companySelect})
+        `;
+
       let query = supabase
         .from('applications')
-        .select(`
-          *,
-          vehicle:products!applications_vehicle_id_fkey(*),
-          offer:offers!applications_offer_id_fkey(*)
-        `);
+        .select(select, { count: 'exact' });
 
-      // Narrow to the calling customer's own rows server-side when an email is
-      // supplied; this avoids fetching the full table and client-side filtering.
-      if (options?.customerEmail) {
-        query = query.eq('customer_email', options.customerEmail.toLowerCase());
+      if (customerEmail) {
+        query = query.eq('customer_email', customerEmail.toLowerCase());
+      }
+      if (status) {
+        query = query.eq('status', status);
+      }
+      if (statusIn && statusIn.length > 0) {
+        query = query.in('status', statusIn);
+      }
+      if (companyId) {
+        query = query.eq('company_id', companyId);
+      }
+      if (agentUserId) {
+        query = query.eq('agent_user_id', agentUserId);
+      }
+      if (search?.trim()) {
+        const q = search.trim().replace(/[%_]/g, '');
+        if (q) {
+          query = query.or(
+            `customer_name.ilike.%${q}%,customer_email.ilike.%${q}%,id.ilike.%${q}%`
+          );
+        }
+      }
+      if (createdFrom) {
+        query = query.gte('created_at', createdFrom);
+      }
+      if (createdTo) {
+        query = query.lte('created_at', createdTo);
       }
 
-      const response = await query.order('created_at', { ascending: false });
-      
-      const applications = handleSupabaseResponse<any[]>(response).map((app: any) => {
+      query = query.order('created_at', { ascending: false });
+
+      if (limit != null) {
+        query = query.range(offset, offset + Math.max(limit, 1) - 1);
+      }
+
+      const response = await query;
+      const rows = handleSupabaseResponse<any[]>(response).map((app: any) => {
         const mapped = mapSupabaseRow<Application>(app);
         if (app.vehicle) {
           mapped.vehicle = mapSupabaseRow<Product>(app.vehicle);
@@ -360,22 +685,27 @@ class SupabaseApiService {
         if (app.offer) {
           mapped.offer = mapSupabaseRow<Offer>(app.offer);
         }
+        if (app.company) {
+          mapped.company = mapSupabaseRow(app.company) as Application['company'];
+        }
         return mapped;
       });
 
-      // Cache for 2 minutes (applications change more frequently)
-      supabaseCache.set(cacheKey, applications, 2 * 60 * 1000);
-      
+      const count = response.count ?? rows.length;
+      supabaseCache.set(cacheKey, { rows, count }, 2 * 60 * 1000);
+
       return {
         status: 'SUCCESS',
-        data: applications,
-        message: 'Applications fetched successfully'
+        data: rows,
+        count,
+        message: 'Applications fetched successfully',
       };
     } catch (error: any) {
       return {
         status: 'ERROR',
         message: error.message || 'Failed to fetch applications',
-        data: []
+        data: [],
+        count: 0,
       };
     }
   }
@@ -423,7 +753,8 @@ class SupabaseApiService {
         .select(`
           *,
           vehicle:products!applications_vehicle_id_fkey(*),
-          offer:offers!applications_offer_id_fkey(*)
+          offer:offers!applications_offer_id_fkey(*),
+          company:companies(*)
         `)
         .eq('id', id)
         .single();
@@ -435,6 +766,9 @@ class SupabaseApiService {
       }
       if (app.offer) {
         mapped.offer = mapSupabaseRow<Offer>(app.offer);
+      }
+      if (app.company) {
+        mapped.company = mapSupabaseRow(app.company) as Application['company'];
       }
       
       return {
@@ -486,10 +820,28 @@ class SupabaseApiService {
         profileRole = (p?.role || '').trim().toLowerCase() || undefined;
       }
 
+      // The vehicle's owning partner is authoritative for routing: an application
+      // for an Audi car must belong to Audi so their dealer/credit staff see it,
+      // regardless of who submits it (customer self-serve, dealer, or admin).
+      let vehicleCompanyId: string | undefined;
+      if (application.vehicleId) {
+        try {
+          const { data: veh } = await supabase
+            .from('products')
+            .select('company_id')
+            .eq('id', application.vehicleId)
+            .maybeSingle();
+          vehicleCompanyId = (veh as { company_id?: string } | null)?.company_id ?? undefined;
+        } catch {
+          // Non-fatal — fall back to explicit/profile company below.
+        }
+      }
+
       const sessionEmail = authUser?.email?.trim().toLowerCase() || '';
       // Prefer DB is_admin() (same gate as RLS) over JWT metadata — metadata is not authoritative.
       let isAdminActor =
         profileRole === 'admin' || profileRole === 'super_admin';
+      const isDealerActor = profileRole === 'dealer_agent';
       if (!useSignupRpc && authUser && !isAdminActor) {
         try {
           const { data: adminFlag } = await supabase.rpc('is_admin');
@@ -498,6 +850,7 @@ class SupabaseApiService {
           // ignore — fall back to profileRole
         }
       }
+      const isStaffCreateActor = isAdminActor || isDealerActor;
       let customerEmail: string;
 
       if (useSignupRpc) {
@@ -509,8 +862,8 @@ class SupabaseApiService {
             data: {} as Application,
           };
         }
-      } else if (isAdminActor) {
-        // Admin create-for-customer: keep payload ownership (draft may omit email).
+      } else if (isStaffCreateActor) {
+        // Admin/dealer create-for-customer: keep payload ownership (draft may omit email).
         customerEmail = (application.customerEmail || '').trim().toLowerCase();
         if (!customerEmail) {
           return {
@@ -561,13 +914,45 @@ class SupabaseApiService {
         resubmission_date: application.resubmissionDate || null,
         cancelled_by_customer: application.cancelledByCustomer || false,
         cancelled_at: application.cancelledAt || null,
-        blox_membership: application.bloxMembership || null
+        blox_membership: application.bloxMembership || null,
       };
 
-      if (application.companyId) {
+      if (application.agentUserId) appData.agent_user_id = application.agentUserId;
+      else if (isDealerActor && authUser?.id) appData.agent_user_id = authUser.id;
+      if (application.listPrice != null) appData.list_price = application.listPrice;
+      if (application.sellingPrice != null) appData.selling_price = application.sellingPrice;
+      if (application.internalAnnualRate != null) {
+        appData.internal_annual_rate = application.internalAnnualRate;
+      }
+      if (application.hideInterest != null) appData.hide_interest = application.hideInterest;
+      if (application.customerDisplayPrice != null) {
+        appData.customer_display_price = application.customerDisplayPrice;
+      }
+      if (application.customerDisplayRate != null) {
+        appData.customer_display_rate = application.customerDisplayRate;
+      }
+      if (application.pricingSnapshot) appData.pricing_snapshot = application.pricingSnapshot;
+      if (application.submittedAt) appData.submitted_at = application.submittedAt;
+      if (application.submittedBy) appData.submitted_by = application.submittedBy;
+
+      // Ownership precedence: the vehicle's partner wins so cars route to the
+      // right dealer/credit team; explicit payload and dealer profile are fallbacks.
+      if (vehicleCompanyId) {
+        appData.company_id = vehicleCompanyId;
+      } else if (application.companyId) {
         appData.company_id = application.companyId;
       } else if (companyIdFromProfile) {
         appData.company_id = companyIdFromProfile;
+      }
+
+      // Dealer RLS requires company_id; fail early with a clear message instead of a raw policy error.
+      if (isDealerActor && !appData.company_id) {
+        return {
+          status: 'ERROR',
+          message:
+            'Your dealer account is not assigned to a company. Ask an admin to set your company before creating applications.',
+          data: {} as Application,
+        };
       }
 
       // Keep customer_info.email aligned with ownership email when we have one.
@@ -685,6 +1070,12 @@ class SupabaseApiService {
           const role = (profile?.role || '').trim().toLowerCase();
           if (isAdminFlag === true) {
             actor = role === 'super_admin' ? 'super_admin' : 'admin';
+          } else if (role === 'dealer_agent') {
+            actor = 'dealer_agent';
+          } else if (role === 'credit_officer') {
+            actor = 'credit_officer';
+          } else if (role === 'finance_officer') {
+            actor = 'finance_officer';
           } else if (role === 'customer') {
             actor = 'customer';
           } else {
@@ -723,6 +1114,24 @@ class SupabaseApiService {
       if (application.status !== undefined) updateData.status = application.status;
       if (application.loanAmount !== undefined) updateData.loan_amount = application.loanAmount;
       if (application.downPayment !== undefined) updateData.down_payment = application.downPayment;
+      if (application.agentUserId !== undefined) updateData.agent_user_id = application.agentUserId;
+      if (application.listPrice !== undefined) updateData.list_price = application.listPrice;
+      if (application.sellingPrice !== undefined) updateData.selling_price = application.sellingPrice;
+      if (application.internalAnnualRate !== undefined) {
+        updateData.internal_annual_rate = application.internalAnnualRate;
+      }
+      if (application.hideInterest !== undefined) updateData.hide_interest = application.hideInterest;
+      if (application.customerDisplayPrice !== undefined) {
+        updateData.customer_display_price = application.customerDisplayPrice;
+      }
+      if (application.customerDisplayRate !== undefined) {
+        updateData.customer_display_rate = application.customerDisplayRate;
+      }
+      if (application.pricingSnapshot !== undefined) {
+        updateData.pricing_snapshot = application.pricingSnapshot;
+      }
+      if (application.submittedAt !== undefined) updateData.submitted_at = application.submittedAt;
+      if (application.submittedBy !== undefined) updateData.submitted_by = application.submittedBy;
       if (application.installmentPlan !== undefined) updateData.installment_plan = application.installmentPlan;
       if (application.documents !== undefined) {
         // Ensure documents is properly formatted as JSONB
@@ -1241,10 +1650,18 @@ class SupabaseApiService {
         return { status: 'ERROR', message: 'Unauthorized', data: { rows: 0 } };
       }
       const { data: isAdminFlag, error: adminCheckErr } = await supabase.rpc('is_admin');
-      if (adminCheckErr || isAdminFlag !== true) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      const role = (profile?.role || '').trim().toLowerCase();
+      const canRebuild =
+        isAdminFlag === true || role === 'finance_officer';
+      if (adminCheckErr || !canRebuild) {
         return {
           status: 'ERROR',
-          message: 'Only admins can rebuild payment schedules',
+          message: 'Only admins or finance officers can rebuild payment schedules',
           data: { rows: 0 },
         };
       }
@@ -2504,6 +2921,537 @@ class SupabaseApiService {
     }
   }
 
+  async getCompanyById(id: string): Promise<ApiResponse<Company>> {
+    try {
+      const response = await supabase.from('companies').select('*').eq('id', id).single();
+      const company = mapSupabaseRow<Company>(handleSupabaseResponse<any>(response));
+      return { status: 'SUCCESS', data: company, message: 'Company fetched successfully' };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch company',
+        data: {} as Company,
+      };
+    }
+  }
+
+  /**
+   * Partner Hub list KPIs: vehicles, open credit apps, dealer agents, assigned credit officers.
+   */
+  async getPartnerHubSummaries(): Promise<ApiResponse<PartnerHubSummary[]>> {
+    try {
+      const companiesRes = await this.getCompanies();
+      if (companiesRes.status !== 'SUCCESS' || !companiesRes.data) {
+        throw new Error(companiesRes.message || 'Failed to load companies');
+      }
+
+      const [
+        { data: productRows, error: productErr },
+        { data: agentRows, error: agentErr },
+        { data: cocRows, error: cocErr },
+        { data: appRows, error: appErr },
+      ] = await Promise.all([
+        supabase.from('products').select('company_id').not('company_id', 'is', null),
+        supabase.from('users').select('company_id').eq('role', 'dealer_agent'),
+        supabase.from('credit_officer_companies').select('company_id'),
+        supabase
+          .from('applications')
+          .select('company_id')
+          .not('company_id', 'is', null)
+          .in('status', [
+            'under_review',
+            'resubmission_required',
+            'contract_signing_required',
+            'contracts_submitted',
+            'contract_under_review',
+            'down_payment_required',
+            'down_payment_submitted',
+          ]),
+      ]);
+
+      if (productErr) throw productErr;
+      if (agentErr) throw agentErr;
+      if (cocErr) throw cocErr;
+      if (appErr) throw appErr;
+
+      const countBy = (rows: { company_id?: string | null }[] | null) => {
+        const map = new Map<string, number>();
+        for (const r of rows || []) {
+          const id = r.company_id;
+          if (!id) continue;
+          map.set(id, (map.get(id) || 0) + 1);
+        }
+        return map;
+      };
+
+      const vehicles = countBy(productRows as { company_id?: string | null }[]);
+      const agents = countBy(agentRows as { company_id?: string | null }[]);
+      const officers = countBy(cocRows as { company_id?: string | null }[]);
+      const apps = countBy(appRows as { company_id?: string | null }[]);
+
+      const summaries: PartnerHubSummary[] = companiesRes.data.map((c) => ({
+        ...c,
+        vehicleCount: vehicles.get(c.id) || 0,
+        openApplicationCount: apps.get(c.id) || 0,
+        dealerAgentCount: agents.get(c.id) || 0,
+        creditOfficerCount: officers.get(c.id) || 0,
+      }));
+
+      return {
+        status: 'SUCCESS',
+        data: summaries,
+        message: 'Partner hub summaries fetched',
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch partner hub summaries',
+        data: [],
+      };
+    }
+  }
+
+  async getProductsByCompanyId(companyId: string): Promise<ApiResponse<Product[]>> {
+    try {
+      const response = await supabase
+        .from('products')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+      const products = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<Product>);
+      return { status: 'SUCCESS', data: products, message: 'Products fetched' };
+    } catch (error: any) {
+      return { status: 'ERROR', message: error.message || 'Failed to fetch products', data: [] };
+    }
+  }
+
+  async getUsersByCompanyId(companyId: string): Promise<ApiResponse<User[]>> {
+    try {
+      const response = await supabase
+        .from('users')
+        .select('*')
+        .eq('company_id', companyId)
+        .order('created_at', { ascending: false });
+      const users = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<User>);
+      return { status: 'SUCCESS', data: users, message: 'Users fetched' };
+    } catch (error: any) {
+      return { status: 'ERROR', message: error.message || 'Failed to fetch users', data: [] };
+    }
+  }
+
+  async getCreditOfficers(): Promise<ApiResponse<User[]>> {
+    try {
+      const response = await supabase
+        .from('users')
+        .select('*')
+        .eq('role', 'credit_officer')
+        .order('email', { ascending: true });
+      const users = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<User>);
+      return { status: 'SUCCESS', data: users, message: 'Credit officers fetched' };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch credit officers',
+        data: [],
+      };
+    }
+  }
+
+  async getCreditOfficerCompanyIds(userId: string): Promise<ApiResponse<string[]>> {
+    try {
+      const { data, error } = await supabase
+        .from('credit_officer_companies')
+        .select('company_id')
+        .eq('user_id', userId);
+      if (error) throw error;
+      return {
+        status: 'SUCCESS',
+        data: (data || []).map((r: { company_id: string }) => r.company_id),
+        message: 'Assignments fetched',
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch credit officer assignments',
+        data: [],
+      };
+    }
+  }
+
+  async getCreditOfficersForCompany(companyId: string): Promise<ApiResponse<User[]>> {
+    try {
+      const { data: links, error } = await supabase
+        .from('credit_officer_companies')
+        .select('user_id')
+        .eq('company_id', companyId);
+      if (error) throw error;
+      const ids = (links || []).map((r: { user_id: string }) => r.user_id);
+      if (ids.length === 0) {
+        return { status: 'SUCCESS', data: [], message: 'No credit officers assigned' };
+      }
+      const response = await supabase.from('users').select('*').in('id', ids);
+      const users = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<User>);
+      return { status: 'SUCCESS', data: users, message: 'Credit officers fetched' };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch credit officers for company',
+        data: [],
+      };
+    }
+  }
+
+  /**
+   * Replace credit-officer ↔ company memberships for one company (admin).
+   * Pass the full desired set of credit_officer user ids for this partner.
+   */
+  async setCompanyCreditOfficers(
+    companyId: string,
+    creditOfficerUserIds: string[]
+  ): Promise<ApiResponse<{ companyId: string; userIds: string[] }>> {
+    try {
+      const desired = [...new Set(creditOfficerUserIds.filter(Boolean))];
+      const { data: existing, error: existingErr } = await supabase
+        .from('credit_officer_companies')
+        .select('user_id')
+        .eq('company_id', companyId);
+      if (existingErr) throw existingErr;
+
+      const current = new Set(
+        (existing || []).map((r: { user_id: string }) => r.user_id)
+      );
+      const desiredSet = new Set(desired);
+      const toRemove = [...current].filter((id) => !desiredSet.has(id));
+      const toAdd = desired.filter((id) => !current.has(id));
+
+      if (toRemove.length > 0) {
+        const { error } = await supabase
+          .from('credit_officer_companies')
+          .delete()
+          .eq('company_id', companyId)
+          .in('user_id', toRemove);
+        if (error) throw error;
+      }
+      if (toAdd.length > 0) {
+        const { error } = await supabase.from('credit_officer_companies').insert(
+          toAdd.map((user_id) => ({ user_id, company_id: companyId }))
+        );
+        if (error) throw error;
+      }
+
+      return {
+        status: 'SUCCESS',
+        data: { companyId, userIds: desired },
+        message: 'Credit officer assignments updated',
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to update credit officer assignments',
+        data: { companyId, userIds: [] },
+      };
+    }
+  }
+
+  /** Credit portal: current officer scope + assignment count for empty states. */
+  async getMyCreditAssignmentInfo(): Promise<
+    ApiResponse<{ creditScope: 'all' | 'assigned'; companyIds: string[] }>
+  > {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData.session?.user?.id;
+      if (!uid) {
+        throw new Error('Not authenticated');
+      }
+      const { data: userRow, error: userErr } = await supabase
+        .from('users')
+        .select('credit_scope, role')
+        .eq('id', uid)
+        .single();
+      if (userErr) throw userErr;
+      const creditScope =
+        ((userRow as { credit_scope?: string } | null)?.credit_scope as
+          | 'all'
+          | 'assigned') || 'assigned';
+      const { data: links, error: linkErr } = await supabase
+        .from('credit_officer_companies')
+        .select('company_id')
+        .eq('user_id', uid);
+      if (linkErr) throw linkErr;
+      return {
+        status: 'SUCCESS',
+        data: {
+          creditScope,
+          companyIds: (links || []).map((r: { company_id: string }) => r.company_id),
+        },
+        message: 'Credit assignment info',
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to load credit assignment info',
+        data: { creditScope: 'assigned', companyIds: [] },
+      };
+    }
+  }
+
+  async getFinanceOfficers(): Promise<ApiResponse<User[]>> {
+    try {
+      const response = await supabase
+        .from('users')
+        .select('*')
+        .eq('role', 'finance_officer')
+        .order('email', { ascending: true });
+      const users = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<User>);
+      return { status: 'SUCCESS', data: users, message: 'Finance officers fetched' };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch finance officers',
+        data: [],
+      };
+    }
+  }
+
+  async getFinanceOfficersForCompany(companyId: string): Promise<ApiResponse<User[]>> {
+    try {
+      const { data: links, error } = await supabase
+        .from('finance_officer_companies')
+        .select('user_id')
+        .eq('company_id', companyId);
+      if (error) throw error;
+      const ids = (links || []).map((r: { user_id: string }) => r.user_id);
+      if (ids.length === 0) {
+        return { status: 'SUCCESS', data: [], message: 'No finance officers assigned' };
+      }
+      const response = await supabase.from('users').select('*').in('id', ids);
+      const users = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<User>);
+      return { status: 'SUCCESS', data: users, message: 'Finance officers fetched' };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch finance officers for company',
+        data: [],
+      };
+    }
+  }
+
+  /**
+   * Replace finance-officer ↔ company memberships for one company (admin).
+   * Does not change finance_scope; set scope via SQL/users row when needed.
+   */
+  async setCompanyFinanceOfficers(
+    companyId: string,
+    financeOfficerUserIds: string[]
+  ): Promise<ApiResponse<{ companyId: string; userIds: string[] }>> {
+    try {
+      const desired = [...new Set(financeOfficerUserIds.filter(Boolean))];
+      const { data: existing, error: existingErr } = await supabase
+        .from('finance_officer_companies')
+        .select('user_id')
+        .eq('company_id', companyId);
+      if (existingErr) throw existingErr;
+
+      const current = new Set(
+        (existing || []).map((r: { user_id: string }) => r.user_id)
+      );
+      const desiredSet = new Set(desired);
+      const toRemove = [...current].filter((id) => !desiredSet.has(id));
+      const toAdd = desired.filter((id) => !current.has(id));
+
+      if (toRemove.length > 0) {
+        const { error } = await supabase
+          .from('finance_officer_companies')
+          .delete()
+          .eq('company_id', companyId)
+          .in('user_id', toRemove);
+        if (error) throw error;
+      }
+      if (toAdd.length > 0) {
+        const { error } = await supabase.from('finance_officer_companies').insert(
+          toAdd.map((user_id) => ({ user_id, company_id: companyId }))
+        );
+        if (error) throw error;
+      }
+
+      return {
+        status: 'SUCCESS',
+        data: { companyId, userIds: desired },
+        message: 'Finance officer assignments updated',
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to update finance officer assignments',
+        data: { companyId, userIds: [] },
+      };
+    }
+  }
+
+  /** Finance portal: current officer scope + company assignments. */
+  async getMyFinanceAssignmentInfo(): Promise<
+    ApiResponse<{ financeScope: 'all' | 'assigned'; companyIds: string[] }>
+  > {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData.session?.user?.id;
+      if (!uid) {
+        throw new Error('Not authenticated');
+      }
+      const { data: userRow, error: userErr } = await supabase
+        .from('users')
+        .select('finance_scope, role')
+        .eq('id', uid)
+        .single();
+      if (userErr) throw userErr;
+      const financeScope =
+        ((userRow as { finance_scope?: string } | null)?.finance_scope as
+          | 'all'
+          | 'assigned') || 'all';
+      const { data: links, error: linkErr } = await supabase
+        .from('finance_officer_companies')
+        .select('company_id')
+        .eq('user_id', uid);
+      if (linkErr) throw linkErr;
+      return {
+        status: 'SUCCESS',
+        data: {
+          financeScope,
+          companyIds: (links || []).map((r: { company_id: string }) => r.company_id),
+        },
+        message: 'Finance assignment info',
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to load finance assignment info',
+        data: { financeScope: 'all', companyIds: [] },
+      };
+    }
+  }
+
+  /** Active sibling variants sharing model_family_key (detail page strip). */
+  async getSiblingProductsByFamily(
+    productId: string,
+    modelFamilyKey: string
+  ): Promise<ApiResponse<Product[]>> {
+    try {
+      if (!modelFamilyKey) {
+        return { status: 'SUCCESS', data: [], message: 'No family key' };
+      }
+      const response = await supabase
+        .from('products')
+        .select('*')
+        .eq('status', 'active')
+        .neq('id', productId)
+        .contains('attributes', [
+          { id: 'model_family_key', name: 'model_family_key', value: modelFamilyKey },
+        ]);
+      let products = handleSupabaseResponse<any[]>(response).map(mapSupabaseRow<Product>);
+
+      // Fallback if jsonb contains matching is picky about attribute shape
+      if (products.length === 0) {
+        const allRes = await supabase
+          .from('products')
+          .select('*')
+          .eq('status', 'active')
+          .neq('id', productId);
+        const all = handleSupabaseResponse<any[]>(allRes).map(mapSupabaseRow<Product>);
+        products = all.filter((p) => getModelFamilyKey(p) === modelFamilyKey);
+      }
+
+      return { status: 'SUCCESS', data: products, message: 'Sibling products fetched' };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to fetch sibling products',
+        data: [],
+      };
+    }
+  }
+
+  /**
+   * Narrow id → display name map for queue/list UIs.
+   * Avoids getUsers() (admin RPC + full applications aggregate).
+   */
+  async getUserDisplayNamesByIds(
+    ids: string[]
+  ): Promise<ApiResponse<Record<string, string>>> {
+    const unique = [...new Set(ids.filter(Boolean))];
+    if (unique.length === 0) {
+      return { status: 'SUCCESS', data: {}, message: 'No user ids' };
+    }
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id, email, name, first_name, last_name')
+        .in('id', unique);
+      if (error) {
+        return {
+          status: 'ERROR',
+          message: error.message || 'Failed to load user names',
+          data: {},
+        };
+      }
+      const map: Record<string, string> = {};
+      for (const row of data || []) {
+        const r = row as {
+          id: string;
+          email?: string;
+          name?: string;
+          first_name?: string;
+          last_name?: string;
+        };
+        map[r.id] =
+          (r.name || `${r.first_name || ''} ${r.last_name || ''}`).trim() ||
+          r.email ||
+          r.id;
+      }
+      return { status: 'SUCCESS', data: map, message: 'User names loaded' };
+    } catch (error: unknown) {
+      return {
+        status: 'ERROR',
+        message: error instanceof Error ? error.message : 'Failed to load user names',
+        data: {},
+      };
+    }
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<ApiResponse<User>> {
+    try {
+      const { data: rpcData, error: rpcError } = await supabase.rpc('admin_set_user_role', {
+        p_user_id: userId,
+        p_role: role,
+      });
+      if (rpcError) {
+        return {
+          status: 'ERROR',
+          message: rpcError.message || 'Failed to update user role',
+          data: {} as User,
+        };
+      }
+      const row = Array.isArray(rpcData) ? rpcData[0] : rpcData;
+      if (!row) {
+        return {
+          status: 'ERROR',
+          message: 'User not found',
+          data: {} as User,
+        };
+      }
+      return {
+        status: 'SUCCESS',
+        data: mapSupabaseRow<User>(row),
+        message: 'User role updated successfully',
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to update user role',
+        data: {} as User,
+      };
+    }
+  }
+
   async updateUserCompanyId(
     userId: string,
     companyId: string | null,
@@ -2643,61 +3591,68 @@ class SupabaseApiService {
         });
       }
 
-      // Get application counts for each user
-      const allApplications = await this.getApplications();
-      if (allApplications.status === 'SUCCESS' && allApplications.data) {
-        // Build a "latest application per email" map for backfilling missing user fields.
-        // `getApplications()` returns results ordered by created_at desc, so first hit is the latest.
-        const latestAppByEmail = new Map<string, Application>();
-        allApplications.data.forEach((app: Application) => {
-          const email = app.customerEmail?.toLowerCase();
-          if (!email) return;
-          if (!latestAppByEmail.has(email)) {
-            latestAppByEmail.set(email, app);
-          }
-        });
+      // Application counts / light backfill — narrow columns only (no vehicle/offer joins).
+      // Avoids getApplications() full-table join payload on every Users list load.
+      try {
+        const { data: appRows, error: appAggError } = await supabase
+          .from('applications')
+          .select(
+            'customer_email, customer_name, customer_phone, customer_info, status, blox_membership, created_at, updated_at'
+          )
+          .order('created_at', { ascending: false });
 
-        allApplications.data.forEach((app: Application) => {
-          const email = app.customerEmail?.toLowerCase();
-          if (email && userMap.has(email)) {
+        if (appAggError) {
+          console.warn('getUsers: application aggregate query failed', appAggError.message);
+        } else if (appRows) {
+          const latestAppByEmail = new Map<string, any>();
+          (appRows as any[]).forEach((app) => {
+            const email = (app.customer_email || '').toLowerCase();
+            if (!email) return;
+            if (!latestAppByEmail.has(email)) latestAppByEmail.set(email, app);
+
+            if (!userMap.has(email)) return;
             const user = userMap.get(email)!;
             user.totalApplications = (user.totalApplications || 0) + 1;
             if (app.status === 'active') {
               user.activeApplications = (user.activeApplications || 0) + 1;
             }
-            // Check membership
-            if (app.bloxMembership?.isActive) {
+            const membership = app.blox_membership;
+            if (
+              membership &&
+              (membership.isActive === true || membership.is_active === true)
+            ) {
               user.membershipStatus = 'active';
             }
-          }
-        });
+          });
 
-        // (Optional) Backfill missing user fields from their latest application record.
-        // This helps show Auth users that never filled full metadata but have applied at least once.
-        userMap.forEach((user, email) => {
-          const latest = latestAppByEmail.get(email);
-          if (!latest) return;
+          userMap.forEach((user, email) => {
+            const latest = latestAppByEmail.get(email);
+            if (!latest) return;
 
-          const customerInfo = (latest as any).customerInfo || {};
-          const nameFromApp = latest.customerName || '';
-          const phoneFromApp = latest.customerPhone || '';
+            const customerInfo = latest.customer_info || {};
+            const nameFromApp = latest.customer_name || '';
+            const phoneFromApp = latest.customer_phone || '';
 
-          // Fill name/first/last if missing
-          if (!user.name && nameFromApp) user.name = nameFromApp;
-          if (!user.firstName || !user.lastName) {
-            const parts = (nameFromApp || '').trim().split(/\s+/).filter(Boolean);
-            if (!user.firstName && parts.length > 0) user.firstName = parts[0];
-            if (!user.lastName && parts.length > 1) user.lastName = parts.slice(1).join(' ');
-          }
-          if (!user.firstName && customerInfo.firstName) user.firstName = customerInfo.firstName;
-          if (!user.lastName && customerInfo.lastName) user.lastName = customerInfo.lastName;
-
-          // Fill phone and IDs if missing
-          if (!user.phone && (phoneFromApp || customerInfo.phone)) user.phone = phoneFromApp || customerInfo.phone;
-          if (!user.nationalId && customerInfo.nationalId) user.nationalId = customerInfo.nationalId;
-          if (!user.nationality && customerInfo.nationality) user.nationality = customerInfo.nationality;
-          if (!user.gender && customerInfo.gender) user.gender = customerInfo.gender;
-        });
+            if (!user.name && nameFromApp) user.name = nameFromApp;
+            if (!user.firstName || !user.lastName) {
+              const parts = (nameFromApp || '').trim().split(/\s+/).filter(Boolean);
+              if (!user.firstName && parts.length > 0) user.firstName = parts[0];
+              if (!user.lastName && parts.length > 1) user.lastName = parts.slice(1).join(' ');
+            }
+            if (!user.firstName && customerInfo.firstName) user.firstName = customerInfo.firstName;
+            if (!user.lastName && customerInfo.lastName) user.lastName = customerInfo.lastName;
+            if (!user.phone && (phoneFromApp || customerInfo.phone)) {
+              user.phone = phoneFromApp || customerInfo.phone;
+            }
+            if (!user.nationalId && customerInfo.nationalId) user.nationalId = customerInfo.nationalId;
+            if (!user.nationality && customerInfo.nationality) {
+              user.nationality = customerInfo.nationality;
+            }
+            if (!user.gender && customerInfo.gender) user.gender = customerInfo.gender;
+          });
+        }
+      } catch (aggErr) {
+        console.warn('getUsers: application aggregate failed', aggErr);
       }
 
       // Fetch credits for all users (admin can see all, customers will be filtered by RLS)
@@ -2786,17 +3741,19 @@ class SupabaseApiService {
         
         if (user) {
           // Get user's applications for detailed info
-          const applicationsResponse = await this.getApplications();
+          const applicationsResponse = await this.getApplications({
+            customerEmail: email,
+            lean: true,
+            skipCache: true,
+          });
           if (applicationsResponse.status === 'SUCCESS' && applicationsResponse.data) {
-            const userApplications = applicationsResponse.data.filter(
-              (app) => app.customerEmail?.toLowerCase() === email.toLowerCase()
-            );
-            
+            const userApplications = applicationsResponse.data;
+
             user.totalApplications = userApplications.length;
             user.activeApplications = userApplications.filter(
               (app) => app.status === 'active'
             ).length;
-            
+
             // Get membership status from latest application
             const latestApp = userApplications[0];
             if (latestApp?.bloxMembership?.isActive) {

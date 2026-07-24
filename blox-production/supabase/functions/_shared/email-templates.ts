@@ -4,11 +4,9 @@
  * All templates return { subject, html } ready for the Resend API.
  * No Supabase branding anywhere — every email looks like it came from BLOX.
  *
- * Colour palette:
- *   Accent:     #00CFA2  (BLOX green)
- *   Dark:       #2E2C34
- *   Mid-grey:   #6B7280
- *   Light bg:   #F9FAFB
+ * Colour palette (Blox_Branding.pdf v1.0):
+ *   Deep green: #16535B · Emerald: #00CFA2 · Lime CTA: #DBFF00 on #16535B
+ *   Slate:      #708090 · Page bg: #F2F6F6
  */
 
 const FROM_BRAND = 'BLOX';
@@ -26,20 +24,20 @@ function shell(body: string): string {
   <meta name="color-scheme" content="light" />
   <title>BLOX</title>
   <style>
-    body { margin:0; padding:0; background:#F9FAFB; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; }
+    body { margin:0; padding:0; background:#F2F6F6; font-family:'IBM Plex Sans',Helvetica,Arial,sans-serif; }
     .wrapper { max-width:600px; margin:40px auto; background:#ffffff; border-radius:8px; overflow:hidden; }
     .top-bar { height:4px; background:#00CFA2; }
     .header { padding:28px 40px 20px; border-bottom:1px solid #E5E7EB; }
-    .logo { font-size:22px; font-weight:800; color:#2E2C34; letter-spacing:-0.5px; }
+    .logo { font-size:22px; font-weight:800; color:#16535B; letter-spacing:-0.5px; }
     .logo span { color:#00CFA2; }
-    .body { padding:36px 40px; color:#2E2C34; font-size:15px; line-height:1.6; }
-    .body h1 { font-size:22px; font-weight:700; margin:0 0 16px; color:#2E2C34; }
+    .body { padding:36px 40px; color:#16535B; font-size:15px; line-height:1.6; }
+    .body h1 { font-size:22px; font-weight:700; margin:0 0 16px; color:#16535B; }
     .body p { margin:0 0 16px; }
-    .cta { display:inline-block; margin:8px 0 24px; padding:14px 28px; background:#00CFA2; color:#ffffff !important; text-decoration:none; border-radius:6px; font-weight:600; font-size:15px; }
-    .info-box { background:#F9FAFB; border-left:4px solid #00CFA2; border-radius:4px; padding:16px 20px; margin:20px 0; }
+    .cta { display:inline-block; margin:8px 0 24px; padding:14px 28px; background:#DBFF00; color:#16535B !important; text-decoration:none; border-radius:6px; font-weight:600; font-size:15px; }
+    .info-box { background:#F2F6F6; border-left:4px solid #00CFA2; border-radius:4px; padding:16px 20px; margin:20px 0; }
     .info-box p { margin:4px 0; font-size:14px; color:#374151; }
     .info-box .label { color:#6B7280; font-size:12px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px; }
-    .footer { padding:24px 40px; background:#F9FAFB; border-top:1px solid #E5E7EB; font-size:12px; color:#9CA3AF; text-align:center; }
+    .footer { padding:24px 40px; background:#F2F6F6; border-top:1px solid #E5E7EB; font-size:12px; color:#9CA3AF; text-align:center; }
     .footer a { color:#6B7280; text-decoration:none; }
     @media (max-width:620px) {
       .wrapper { margin:0; border-radius:0; }
@@ -72,15 +70,15 @@ export const authTemplates = {
   /** Confirm signup — paste into Supabase Auth → Email Templates → Confirm signup */
   confirmSignup: `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><style>
-body{margin:0;padding:0;background:#F9FAFB;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;}
+body{margin:0;padding:0;background:#F2F6F6;font-family:'IBM Plex Sans',Helvetica,Arial,sans-serif;}
 .w{max-width:600px;margin:40px auto;background:#fff;border-radius:8px;overflow:hidden;}
 .bar{height:4px;background:#00CFA2;}
 .hd{padding:28px 40px 20px;border-bottom:1px solid #E5E7EB;}
-.logo{font-size:22px;font-weight:800;color:#2E2C34;}
+.logo{font-size:22px;font-weight:800;color:#16535B;}
 .logo span{color:#00CFA2;}
-.bd{padding:36px 40px;color:#2E2C34;font-size:15px;line-height:1.6;}
-.btn{display:inline-block;margin:16px 0 24px;padding:14px 28px;background:#00CFA2;color:#fff!important;text-decoration:none;border-radius:6px;font-weight:600;}
-.ft{padding:20px 40px;background:#F9FAFB;border-top:1px solid #E5E7EB;font-size:12px;color:#9CA3AF;text-align:center;}
+.bd{padding:36px 40px;color:#16535B;font-size:15px;line-height:1.6;}
+.btn{display:inline-block;margin:16px 0 24px;padding:14px 28px;background:#DBFF00;color:#16535B!important;text-decoration:none;border-radius:6px;font-weight:600;}
+.ft{padding:20px 40px;background:#F2F6F6;border-top:1px solid #E5E7EB;font-size:12px;color:#9CA3AF;text-align:center;}
 </style></head><body>
 <div class="w">
   <div class="bar"></div>
@@ -99,15 +97,15 @@ body{margin:0;padding:0;background:#F9FAFB;font-family:'Helvetica Neue',Helvetic
   /** Reset password — paste into Supabase Auth → Email Templates → Reset password */
   resetPassword: `<!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"/><style>
-body{margin:0;padding:0;background:#F9FAFB;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;}
+body{margin:0;padding:0;background:#F2F6F6;font-family:'IBM Plex Sans',Helvetica,Arial,sans-serif;}
 .w{max-width:600px;margin:40px auto;background:#fff;border-radius:8px;overflow:hidden;}
 .bar{height:4px;background:#00CFA2;}
 .hd{padding:28px 40px 20px;border-bottom:1px solid #E5E7EB;}
-.logo{font-size:22px;font-weight:800;color:#2E2C34;}
+.logo{font-size:22px;font-weight:800;color:#16535B;}
 .logo span{color:#00CFA2;}
-.bd{padding:36px 40px;color:#2E2C34;font-size:15px;line-height:1.6;}
-.btn{display:inline-block;margin:16px 0 24px;padding:14px 28px;background:#00CFA2;color:#fff!important;text-decoration:none;border-radius:6px;font-weight:600;}
-.ft{padding:20px 40px;background:#F9FAFB;border-top:1px solid #E5E7EB;font-size:12px;color:#9CA3AF;text-align:center;}
+.bd{padding:36px 40px;color:#16535B;font-size:15px;line-height:1.6;}
+.btn{display:inline-block;margin:16px 0 24px;padding:14px 28px;background:#DBFF00;color:#16535B!important;text-decoration:none;border-radius:6px;font-weight:600;}
+.ft{padding:20px 40px;background:#F2F6F6;border-top:1px solid #E5E7EB;font-size:12px;color:#9CA3AF;text-align:center;}
 </style></head><body>
 <div class="w">
   <div class="bar"></div>
@@ -128,6 +126,7 @@ body{margin:0;padding:0;background:#F9FAFB;font-family:'Helvetica Neue',Helvetic
 export type EmailTemplate =
   | 'application_submitted'
   | 'application_under_review'
+  | 'application_credit_approved'
   | 'application_approved'
   | 'application_rejected'
   | 'application_resubmission'
@@ -209,13 +208,28 @@ export function renderEmail(
         `),
       };
 
+    case 'application_credit_approved':
+      return {
+        subject: `Your application ${appId} is approved — awaiting activation`,
+        html: shell(`
+          <h1>Credit approved</h1>
+          <p>Hi ${name},</p>
+          <p>Great news! Your financing application ${appId} for <strong>${vehicle}</strong> has been <strong>approved by credit</strong> and is now awaiting finance activation.</p>
+          <div class="info-box">
+            <p class="label">What happens next</p>
+            <p>Our finance team will activate your financing shortly. You'll get another email once your installment schedule is live.</p>
+          </div>
+          <a class="cta" href="${link}">View my application</a>
+        `),
+      };
+
     case 'application_approved':
       return {
         subject: `Your application ${appId} is approved — financing is active`,
         html: shell(`
-          <h1>Application approved</h1>
+          <h1>Financing activated</h1>
           <p>Hi ${name},</p>
-          <p>Great news! Your financing application ${appId} for <strong>${vehicle}</strong> has been <strong>approved and activated</strong>.</p>
+          <p>Great news! Your financing application ${appId} for <strong>${vehicle}</strong> has been <strong>activated</strong>.</p>
           <div class="info-box">
             <p class="label">Next step</p>
             <p>Log in to view your installment schedule and set up your first payment.</p>

@@ -55,9 +55,9 @@ export class ReceiptService {
     const customerEmail = application.customerEmail || 'N/A';
     
     // Colors
-    const primaryColor = [0, 207, 162]; // Blox green
-    const darkGray = [26, 26, 26];
-    const lightGray = [102, 102, 102];
+    const primaryColor = [0, 207, 162]; // emerald
+    const darkGray = [22, 83, 91]; // deep green
+    const lightGray = [112, 128, 144]; // slate
     
     let yPos = 20;
     

@@ -261,7 +261,7 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
   
   // Log helper info on first load
   if (!(window as any).__storageUtilsLogged) {
-    console.log('%c💡 Storage Utilities Available', 'color: #DAFF01; font-weight: bold; font-size: 14px;');
+    console.log('%c💡 Storage Utilities Available', 'color: #DBFF00; font-weight: bold; font-size: 14px;');
     console.log('  - clearStorage() - Clear all storage');
     console.log('  - clearCustomerStorage() - Clear customer data only');
     console.log('  - clearApplicationData() - Clear application data only');

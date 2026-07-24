@@ -51,12 +51,12 @@ ChartJS.register(
 );
 
 const brandColors = {
-  primary: '#DAFF01',
-  primaryDark: '#B8D900',
-  bloxBlack: '#0E1909',
-  darkGrey: '#787663',
-  midGrey: '#C9C4B7',
-  lightGrey: '#F3F0ED',
+  primary: '#00CFA2',
+  primaryDark: '#00B894',
+  bloxBlack: '#16535B',
+  darkGrey: '#708090',
+  midGrey: '#A8B2BC',
+  lightGrey: '#F2F6F6',
 };
 
 const dateRangeOptions = [
@@ -227,7 +227,11 @@ export const DashboardPage: React.FC = () => {
                 <Box className="stat-icon" aria-hidden>
                   <Assessment />
                 </Box>
-                <Typography variant="h3" className="stat-value">
+                <Typography
+                  variant="h3"
+                  className="stat-value"
+                  sx={{ fontFamily: 'var(--font-numeric)', fontVariantNumeric: 'tabular-nums' }}
+                >
                   {stats.totalActions.toLocaleString()}
                 </Typography>
                 <Typography variant="body2" className="stat-label">
@@ -243,7 +247,11 @@ export const DashboardPage: React.FC = () => {
                 <Box className="stat-icon" aria-hidden>
                   <People />
                 </Box>
-                <Typography variant="h3" className="stat-value">
+                <Typography
+                  variant="h3"
+                  className="stat-value"
+                  sx={{ fontFamily: 'var(--font-numeric)', fontVariantNumeric: 'tabular-nums' }}
+                >
                   {stats.actionsByUser.length}
                 </Typography>
                 <Typography variant="body2" className="stat-label">
@@ -259,7 +267,11 @@ export const DashboardPage: React.FC = () => {
                 <Box className="stat-icon" aria-hidden>
                   <Description />
                 </Box>
-                <Typography variant="h3" className="stat-value">
+                <Typography
+                  variant="h3"
+                  className="stat-value"
+                  sx={{ fontFamily: 'var(--font-numeric)', fontVariantNumeric: 'tabular-nums' }}
+                >
                   {Object.keys(stats.actionsByResource).length}
                 </Typography>
                 <Typography variant="body2" className="stat-label">
@@ -275,7 +287,11 @@ export const DashboardPage: React.FC = () => {
                 <Box className="stat-icon" aria-hidden>
                   <TrendingUp />
                 </Box>
-                <Typography variant="h3" className="stat-value">
+                <Typography
+                  variant="h3"
+                  className="stat-value"
+                  sx={{ fontFamily: 'var(--font-numeric)', fontVariantNumeric: 'tabular-nums' }}
+                >
                   {Object.keys(stats.actionsByType).length}
                 </Typography>
                 <Typography variant="body2" className="stat-label">
@@ -303,7 +319,7 @@ export const DashboardPage: React.FC = () => {
                         y: {
                           beginAtZero: true,
                           ticks: { color: brandColors.darkGrey },
-                          grid: { color: 'rgba(201, 196, 183, 0.45)' },
+                          grid: { color: 'rgba(168, 178, 188, 0.45)' },
                         },
                         x: {
                           ticks: { color: brandColors.darkGrey },
@@ -371,7 +387,7 @@ export const DashboardPage: React.FC = () => {
                         x: {
                           beginAtZero: true,
                           ticks: { color: brandColors.darkGrey },
-                          grid: { color: 'rgba(201, 196, 183, 0.45)' },
+                          grid: { color: 'rgba(168, 178, 188, 0.45)' },
                         },
                         y: {
                           ticks: { color: brandColors.darkGrey },

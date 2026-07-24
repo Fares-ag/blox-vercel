@@ -5,7 +5,7 @@
 
   .back-button {
     margin-bottom: 24px;
-    color: #0E1909;
+    color: #16535B;
     
     &:hover {
       background-color: rgba(22, 83, 91, 0.08);
@@ -15,7 +15,7 @@
   .page-title {
     margin-bottom: 32px;
     font-weight: 600;
-    color: #0E1909;
+    color: #16535B;
   }
 
   .document-upload-section {
@@ -95,7 +95,7 @@
 
       &:hover {
         border-color: var(--primary-color); /* Lime Yellow on hover */
-        background-color: rgba(218, 255, 1, 0.05); /* Subtle Lime Yellow tint */
+        background-color: rgba(219, 255, 0, 0.05); /* Subtle Lime Yellow tint */
       }
 
       .upload-button {
@@ -107,7 +107,7 @@
         }
 
         &:hover {
-          background-color: rgba(218, 255, 1, 0.1);
+          background-color: rgba(219, 255, 0, 0.1);
         }
 
         &:disabled {

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><style>
+body{margin:0;padding:0;background:#F2F6F6;font-family:'IBM Plex Sans',Helvetica,Arial,sans-serif;}
+.w{max-width:600px;margin:40px auto;background:#fff;border-radius:8px;overflow:hidden;}
+.bar{height:4px;background:#00CFA2;}
+.hd{padding:28px 40px 20px;border-bottom:1px solid #E5E7EB;}
+.logo{font-size:22px;font-weight:800;color:#16535B;}
+.logo span{color:#00CFA2;}
+.bd{padding:36px 40px;color:#16535B;font-size:15px;line-height:1.6;}
+.btn{display:inline-block;margin:16px 0 24px;padding:14px 28px;background:#DBFF00;color:#16535B!important;text-decoration:none;border-radius:6px;font-weight:600;}
+.ft{padding:20px 40px;background:#F2F6F6;border-top:1px solid #E5E7EB;font-size:12px;color:#9CA3AF;text-align:center;}
+</style></head><body>
+<div class="w">
+  <div class="bar"></div>
+  <div class="hd"><div class="logo">BL<span>O</span>X</div></div>
+  <div class="bd">
+    <h1 style="font-size:22px;font-weight:700;margin:0 0 16px;">You're invited to BLOX</h1>
+    <p>You've been invited to join BLOX — Qatar's platform for smart vehicle financing.</p>
+    <p>Click the button below to accept the invitation and set up your account.</p>
+    <a class="btn" href="{{ .ConfirmationURL }}">Accept invitation</a>
+    <p style="font-size:13px;color:#6B7280;">If the button doesn't work, copy and paste this link into your browser:<br/>{{ .ConfirmationURL }}</p>
+    <p style="font-size:13px;color:#6B7280;">If you weren't expecting this invitation, you can safely ignore this email.</p>
+  </div>
+  <div class="ft">© 2026 BLOX Market · Doha, Qatar · <a href="mailto:support@blox.qa" style="color:#6B7280;">support@blox.qa</a></div>
+</div></body></html>

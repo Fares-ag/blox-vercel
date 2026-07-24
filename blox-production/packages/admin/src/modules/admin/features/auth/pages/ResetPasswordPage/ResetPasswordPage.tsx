@@ -2,12 +2,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Box, Typography, Link } from '@mui/material';
-import { useAuth } from '../../../../hooks/useAuth';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Input, Button, Skeleton } from '@shared/components';
 import { resetPasswordSchema } from '@shared/utils/validators';
 import { toast } from 'react-toastify';
 import { supabase } from '@shared/services/supabase.service';
+import { authService } from '@shared/services/auth.service';
+import { usePortalBasePath, withPortalBase } from '@shared/contexts/portal-base-path';
 import './ResetPasswordPage.scss';
 
 interface ResetPasswordFormData {
@@ -16,8 +17,9 @@ interface ResetPasswordFormData {
 }
 
 export const ResetPasswordPage: React.FC = () => {
-  const { resetPassword } = useAuth();
+  // Shared authService — safe when this page is reused by dealer/credit portals.
   const navigate = useNavigate();
+  const portalBase = usePortalBasePath();
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState(true);
   const [sessionValid, setSessionValid] = useState(false);
@@ -59,16 +61,16 @@ export const ResetPasswordPage: React.FC = () => {
 
   const onSubmit = useCallback(async (data: ResetPasswordFormData) => {
     setLoading(true);
-    const result = await resetPassword(data.password);
-    setLoading(false);
-
-    if (result.success) {
+    try {
+      await authService.resetPassword(data.password);
       toast.success('Password reset successful!');
-      navigate('/admin/auth/login');
-    } else {
-      toast.error(result.error || 'Failed to reset password');
+      navigate(withPortalBase(portalBase, '/auth/login'));
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to reset password');
+    } finally {
+      setLoading(false);
     }
-  }, [resetPassword, navigate]);
+  }, [navigate, portalBase]);
 
   if (validating) {
     return (
@@ -93,7 +95,7 @@ export const ResetPasswordPage: React.FC = () => {
           <Typography variant="body2" className="subtitle-text session-alert">
             This reset link is invalid or has expired. Please request a new one.
           </Typography>
-          <Link component={RouterLink} to="/admin/auth/forgot-password">
+          <Link component={RouterLink} to={withPortalBase(portalBase, '/auth/forgot-password')}>
             Request new reset link
           </Link>
         </Box>
@@ -105,7 +107,7 @@ export const ResetPasswordPage: React.FC = () => {
     <Box className="reset-password-page">
       <Box className="reset-password-container" component="main" aria-labelledby="reset-password-title">
         <Box className="reset-password-header">
-          <img src="/BloxLogoNav.png" alt="Blox" className="logo-image" />
+          <img src="/BloxLogo.png" alt="Blox" className="logo-image" />
           <Typography id="reset-password-title" variant="h2" className="welcome-text">
             Reset password
           </Typography>
@@ -115,7 +117,7 @@ export const ResetPasswordPage: React.FC = () => {
             </Typography>
           ) : null}
           <Typography variant="body2" className="subtitle-text">
-            Choose a new password for your Admin account
+            Choose a new password for your account
           </Typography>
         </Box>
 
@@ -144,7 +146,7 @@ export const ResetPasswordPage: React.FC = () => {
           </Button>
 
           <Box className="back-to-login">
-            <Link component={RouterLink} to="/admin/auth/login">
+            <Link component={RouterLink} to={withPortalBase(portalBase, '/auth/login')}>
               Back to login
             </Link>
           </Box>

@@ -25,6 +25,7 @@ import {
   TableSkeleton,
 } from '@shared/components';
 import { toast } from 'react-toastify';
+import { usePortalBasePath, withPortalBase } from '@shared/contexts/portal-base-path';
 import './ApplicationsListPage.scss';
 
 type StatusFilter =
@@ -55,9 +56,9 @@ const getScheduleHealth = (app: Application): ScheduleHealth => {
 
 const brandChip = {
   onTrack: {
-    bg: 'rgba(218, 255, 1, 0.22)',
-    fg: 'var(--blox-black)',
-    border: '1px solid var(--blox-black)',
+    bg: 'rgba(0, 207, 162, 0.16)',
+    fg: 'var(--blox-deep-green)',
+    border: '1px solid var(--blox-deep-green)',
   },
   overdue: {
     bg: 'var(--light-grey)',
@@ -70,14 +71,14 @@ const brandChip = {
     border: '1px solid var(--blox-black)',
   },
   medium: {
-    bg: 'rgba(120, 118, 99, 0.16)',
+    bg: 'rgba(112, 128, 144, 0.16)',
     fg: 'var(--blox-black)',
     border: '1px solid var(--dark-grey)',
   },
   low: {
-    bg: 'rgba(218, 255, 1, 0.18)',
-    fg: 'var(--blox-black)',
-    border: '1px solid var(--blox-black)',
+    bg: 'rgba(0, 207, 162, 0.14)',
+    fg: 'var(--blox-deep-green)',
+    border: '1px solid var(--blox-deep-green)',
   },
   muted: {
     bg: 'var(--card-hover)',
@@ -86,13 +87,19 @@ const brandChip = {
   },
 } as const;
 
+type DealerScope = 'all' | 'mine' | 'resubmission';
+
 export const ApplicationsListPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const portalBase = usePortalBasePath();
   const { list, loading, pagination, error: listError } = useAppSelector((state) => state.applications);
+  const { user } = useAppSelector((state) => state.auth);
+  const isDealer = (user?.role || '').toLowerCase() === 'dealer_agent';
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [activeTab, setActiveTab] = useState(0);
+  const [dealerScope, setDealerScope] = useState<DealerScope>('all');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [fullFilteredList, setFullFilteredList] = useState<Application[]>([]);
   const [catalogApps, setCatalogApps] = useState<Application[]>([]);
@@ -107,34 +114,23 @@ export const ApplicationsListPage: React.FC = () => {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  const filterApplicationsByStatus = useCallback((applications: Application[], filter: StatusFilter): Application[] => {
-    if (filter === 'all') return applications;
-    if (filter === 'inprogress') {
-      return applications.filter(
-        (app) =>
-          app.status === 'under_review' ||
-          app.status === 'resubmission_required' ||
-          app.status === 'draft'
-      );
-    }
+  const statusFilterToIn = useCallback((filter: StatusFilter): string[] | undefined => {
+    if (filter === 'all') return undefined;
+    if (filter === 'inprogress') return ['under_review', 'resubmission_required', 'draft'];
     if (filter === 'contracts') {
-      return applications.filter((app) =>
-        [
-          'contract_signing_required',
-          'contracts_submitted',
-          'contract_under_review',
-          'down_payment_required',
-          'down_payment_submitted',
-        ].includes(app.status)
-      );
+      return [
+        'contract_signing_required',
+        'contracts_submitted',
+        'contract_under_review',
+        'down_payment_required',
+        'down_payment_submitted',
+      ];
     }
-    if (filter === 'active') return applications.filter((app) => app.status === 'active');
-    if (filter === 'rejected') return applications.filter((app) => app.status === 'rejected');
-    if (filter === 'completed') return applications.filter((app) => app.status === 'completed');
-    if (filter === 'cancelled') {
-      return applications.filter((app) => app.status === 'submission_cancelled');
-    }
-    return applications;
+    if (filter === 'active') return ['active'];
+    if (filter === 'rejected') return ['rejected'];
+    if (filter === 'completed') return ['completed'];
+    if (filter === 'cancelled') return ['submission_cancelled'];
+    return undefined;
   }, []);
 
   const loadApplications = useCallback(async (forceRefresh = false) => {
@@ -148,62 +144,67 @@ export const ApplicationsListPage: React.FC = () => {
         supabaseCache.invalidatePattern('^applications:');
         console.log('🔄 Force refreshing applications list');
       }
-      
-      // Load from Supabase only (skip cache after create / force refresh)
+
+      const companyId = typeof advancedFilters.companyId === 'string' ? advancedFilters.companyId : '';
+      const scheduleHealth =
+        typeof advancedFilters.scheduleHealth === 'string' ? advancedFilters.scheduleHealth : '';
+      const createdRange = advancedFilters.createdRange as
+        | { startDate?: string | null; endDate?: string | null }
+        | undefined;
+
+      let statusIn = statusFilterToIn(statusFilter);
+      let agentUserId: string | undefined;
+      if (isDealer) {
+        if (dealerScope === 'mine' && user?.id) {
+          agentUserId = user.id;
+        } else if (dealerScope === 'resubmission') {
+          statusIn = ['resubmission_required'];
+        }
+      }
+
+      // Schedule-health needs installment_plan scanning; fetch a wider window then filter.
+      const useClientScheduleFilter = Boolean(scheduleHealth);
+      const pageLimit = pagination.limit;
+      const pageOffset = (pagination.page - 1) * pagination.limit;
+
       const supabaseResponse = await supabaseApiService.getApplications({
         skipCache: forceRefresh,
+        lean: true,
+        search: debouncedSearchTerm || undefined,
+        statusIn,
+        companyId: companyId || undefined,
+        agentUserId,
+        createdFrom: createdRange?.startDate || undefined,
+        createdTo: createdRange?.endDate
+          ? new Date(new Date(createdRange.endDate).getTime() + 24 * 60 * 60 * 1000 - 1).toISOString()
+          : undefined,
+        limit: useClientScheduleFilter ? 500 : pageLimit,
+        offset: useClientScheduleFilter ? 0 : pageOffset,
       });
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         let applications = supabaseResponse.data;
-        
-        // Apply search filter (using debounced term)
-        if (debouncedSearchTerm) {
-          const searchLower = debouncedSearchTerm.toLowerCase();
-          applications = applications.filter((app: Application) =>
-            app.customerName?.toLowerCase().includes(searchLower) ||
-            app.customerEmail?.toLowerCase().includes(searchLower) ||
-            app.id?.toLowerCase().includes(searchLower)
+
+        if (scheduleHealth) {
+          applications = applications.filter((app) => getScheduleHealth(app) === scheduleHealth);
+        }
+
+        setCatalogApps(applications);
+        setFullFilteredList(applications);
+
+        if (useClientScheduleFilter) {
+          const total = applications.length;
+          const start = pageOffset;
+          const end = start + pageLimit;
+          dispatch(setList({ applications: applications.slice(start, end), total }));
+        } else {
+          dispatch(
+            setList({
+              applications,
+              total: supabaseResponse.count ?? applications.length,
+            })
           );
         }
-        
-        setCatalogApps(applications);
-
-        // Apply status + advanced filters
-        let filtered = filterApplicationsByStatus(applications, statusFilter);
-
-        const companyId = typeof advancedFilters.companyId === 'string' ? advancedFilters.companyId : '';
-        if (companyId) {
-          filtered = filtered.filter((app) => app.companyId === companyId || app.company?.id === companyId);
-        }
-
-        const scheduleHealth =
-          typeof advancedFilters.scheduleHealth === 'string' ? advancedFilters.scheduleHealth : '';
-        if (scheduleHealth) {
-          filtered = filtered.filter((app) => getScheduleHealth(app) === scheduleHealth);
-        }
-
-        const createdRange = advancedFilters.createdRange as
-          | { startDate?: string | null; endDate?: string | null }
-          | undefined;
-        if (createdRange?.startDate) {
-          const start = new Date(createdRange.startDate).getTime();
-          filtered = filtered.filter((app) => new Date(app.createdAt).getTime() >= start);
-        }
-        if (createdRange?.endDate) {
-          const end = new Date(createdRange.endDate).getTime() + 24 * 60 * 60 * 1000 - 1;
-          filtered = filtered.filter((app) => new Date(app.createdAt).getTime() <= end);
-        }
-
-        setFullFilteredList(filtered);
-        
-        // Pagination
-        const total = filtered.length;
-        const start = (pagination.page - 1) * pagination.limit;
-        const end = start + pagination.limit;
-        const paginatedApps = filtered.slice(start, end);
-        
-        dispatch(setList({ applications: paginatedApps, total }));
         setLastLoadTime(Date.now());
       } else {
         throw new Error(supabaseResponse.message || 'Failed to load applications from Supabase');
@@ -221,31 +222,48 @@ export const ApplicationsListPage: React.FC = () => {
     debouncedSearchTerm,
     statusFilter,
     advancedFilters,
+    isDealer,
+    dealerScope,
+    user?.id,
     dispatch,
-    filterApplicationsByStatus,
+    statusFilterToIn,
   ]);
 
-  const companyOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    catalogApps.forEach((app) => {
-      const id = app.companyId || app.company?.id;
-      const name = app.company?.name || app.companyId;
-      if (id && name) map.set(id, name);
-    });
-    return [
-      { value: '', label: 'All companies' },
-      ...Array.from(map.entries()).map(([value, label]) => ({ value, label })),
-    ];
-  }, [catalogApps]);
+  const [companyOptions, setCompanyOptions] = useState<{ value: string; label: string }[]>([
+    { value: '', label: 'All companies' },
+  ]);
 
-  const filterConfigs: FilterConfig[] = useMemo(
-    () => [
-      {
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await supabaseApiService.getCompanies();
+        if (cancelled || res.status !== 'SUCCESS' || !res.data) return;
+        setCompanyOptions([
+          { value: '', label: 'All companies' },
+          ...res.data.map((c) => ({ value: c.id, label: c.name || c.id })),
+        ]);
+      } catch {
+        // optional
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filterConfigs: FilterConfig[] = useMemo(() => {
+    const configs: FilterConfig[] = [];
+    // Dealers are company-scoped by RLS — company filter is admin/credit-only noise.
+    if (!isDealer) {
+      configs.push({
         id: 'companyId',
         label: 'Company',
         type: 'select',
         options: companyOptions,
-      },
+      });
+    }
+    configs.push(
       {
         id: 'scheduleHealth',
         label: 'Payment schedule',
@@ -261,10 +279,10 @@ export const ApplicationsListPage: React.FC = () => {
         id: 'createdRange',
         label: 'Created date',
         type: 'daterange',
-      },
-    ],
-    [companyOptions]
-  );
+      }
+    );
+    return configs;
+  }, [companyOptions, isDealer]);
 
   const handleAdvancedFiltersChange = useCallback(
     (values: Record<string, unknown>) => {
@@ -350,9 +368,9 @@ export const ApplicationsListPage: React.FC = () => {
       totalLoanValue,
       totalReceivable,
       averagePaymentSize: installmentCount > 0 ? installmentSum / installmentCount : 0,
-      applicationCount: fullFilteredList.length,
+      applicationCount: pagination.total || fullFilteredList.length,
     };
-  }, [catalogApps, fullFilteredList]);
+  }, [catalogApps, fullFilteredList, pagination.total]);
 
   // Calculate asset distribution percentage based on real ownership:
   // (down payment + sum of paid installments) / vehicle price
@@ -384,7 +402,29 @@ export const ApplicationsListPage: React.FC = () => {
     {
       id: 'customerName',
       label: 'Customer Name',
-      minWidth: 150,
+      minWidth: 180,
+      format: (value: string, row: Application) => (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <span>{value}</span>
+          {row.customerInfo?.applicantType === 'corporate' && (
+            <Box
+              sx={{
+                display: 'inline-flex',
+                px: 1,
+                py: 0.25,
+                borderRadius: '8px',
+                fontSize: 11,
+                fontWeight: 600,
+                bgcolor: brandChip.muted.bg,
+                color: brandChip.muted.fg,
+                border: brandChip.muted.border,
+              }}
+            >
+              Corporate
+            </Box>
+          )}
+        </Box>
+      ),
     },
     {
       id: 'paymentHealth',
@@ -546,7 +586,7 @@ export const ApplicationsListPage: React.FC = () => {
               aria-label={`View application ${row.id}`}
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/admin/applications/view/${row.id}`);
+                navigate(withPortalBase(portalBase, `/applications/view/${row.id}`));
               }}
             >
               <Visibility fontSize="small" />
@@ -562,47 +602,72 @@ export const ApplicationsListPage: React.FC = () => {
       <Box className="page-header">
         <Box>
           <Typography variant="h2" className="page-title">
-            Applications
+            {isDealer ? 'My Applications' : 'Applications'}
           </Typography>
           <Typography variant="body2" className="page-subtitle">
-            {fullFilteredList.length} in this view · review, approve, and track ownership
+            {fullFilteredList.length} in this view
+            {isDealer
+              ? ' · drafts, resubmissions, and submitted deals'
+              : ' · review, approve, and track ownership'}
           </Typography>
         </Box>
-        <Button variant="primary" onClick={() => navigate('/admin/applications/add')} className="new-app-button">
+        <Button
+          variant="primary"
+          onClick={() => navigate(withPortalBase(portalBase, '/applications/add'))}
+          className="new-app-button"
+        >
           + New Application
         </Button>
       </Box>
 
-      <Box className="metrics-grid">
-        <Card
-          title="Total loan value"
-          value={metrics.totalLoanValue}
-          moduleType="currency"
-          icon={<AttachMoney sx={{ color: 'var(--blox-black)' }} />}
-          className="metric-card payable"
-        />
-        <Card
-          title="Total receivable"
-          value={metrics.totalReceivable}
-          moduleType="currency"
-          icon={<AccountBalance sx={{ color: 'var(--blox-black)' }} />}
-          className="metric-card receivable"
-        />
-        <Card
-          title="Average payment size"
-          value={metrics.averagePaymentSize}
-          moduleType="currency"
-          icon={<TrendingUp sx={{ color: 'var(--blox-black)' }} />}
-          className="metric-card profitability"
-        />
-        <Card
-          title="Applications in view"
-          value={metrics.applicationCount}
-          moduleType="number"
-          icon={<People sx={{ color: 'var(--blox-black)' }} />}
-          className="metric-card active"
-        />
-      </Box>
+      {!isDealer && (
+        <Box className="metrics-grid">
+          <Card
+            title="Total loan value"
+            value={metrics.totalLoanValue}
+            moduleType="currency"
+            icon={<AttachMoney sx={{ color: 'var(--blox-black)' }} />}
+            className="metric-card payable"
+          />
+          <Card
+            title="Total receivable"
+            value={metrics.totalReceivable}
+            moduleType="currency"
+            icon={<AccountBalance sx={{ color: 'var(--blox-black)' }} />}
+            className="metric-card receivable"
+          />
+          <Card
+            title="Average payment size"
+            value={metrics.averagePaymentSize}
+            moduleType="currency"
+            icon={<TrendingUp sx={{ color: 'var(--blox-black)' }} />}
+            className="metric-card profitability"
+          />
+          <Card
+            title="Applications in view"
+            value={metrics.applicationCount}
+            moduleType="number"
+            icon={<People sx={{ color: 'var(--blox-black)' }} />}
+            className="metric-card active"
+          />
+        </Box>
+      )}
+
+      {isDealer && (
+        <Box className="status-tabs-container" sx={{ mb: 1 }}>
+          <Tabs
+            value={dealerScope === 'all' ? 0 : dealerScope === 'mine' ? 1 : 2}
+            onChange={(_, v) =>
+              setDealerScope(v === 0 ? 'all' : v === 1 ? 'mine' : 'resubmission')
+            }
+            className="status-tabs"
+          >
+            <Tab label="Dealership" />
+            <Tab label="My applications" />
+            <Tab label="Needs resubmission" />
+          </Tabs>
+        </Box>
+      )}
 
       <Box className="status-tabs-container">
         <Tabs value={activeTab} onChange={handleTabChange} className="status-tabs">
@@ -677,7 +742,9 @@ export const ApplicationsListPage: React.FC = () => {
             totalRows={pagination.total}
             onPageChange={(page) => dispatch(setPage(page + 1))}
             onRowsPerPageChange={(limit) => dispatch(setLimit(limit))}
-            onRowClick={(row) => navigate(`/admin/applications/view/${row.id}`)}
+            onRowClick={(row) =>
+              navigate(withPortalBase(portalBase, `/applications/view/${row.id}`))
+            }
           />
         )}
       </Box>

@@ -1,45 +1,49 @@
 import { createTheme } from '@mui/material/styles';
+import { bloxAtmosphere, bloxBrand, bloxFonts } from './brand-tokens';
 
-// Blox Brand Colors
-// Primary: Lime Yellow (#DAFF01) - Hero color for CTAs and highlights
-// Blox Black (#0E1909) - Primary text and headers
-// Dark Grey (#787663) - Secondary text and borders
-// Mid Grey (#C9C4B7) - Dividers and secondary backgrounds
-// Light Grey (#F3F0ED) - Main backgrounds and cards
+/**
+ * MUI theme — premium teal composition (PDF v1.0).
+ * Deep green foundation · emerald wealth · lime CTA · misted surfaces.
+ */
 
 export const theme = createTheme({
   palette: {
+    /**
+     * Direction A root-cause fix: emerald is the everyday interactive accent,
+     * NOT lime. Lime is reserved for the single hero CTA per screen
+     * (see `.btn-primary` / `.blox-cta-hero`).
+     */
     primary: {
-      main: '#DAFF01',      // Lime Yellow - Hero color
-      dark: '#B8D900',      // Darker shade for hover states
-      light: '#E8FF33',     // Lighter shade for light backgrounds
-      contrastText: '#0E1909', // Blox Black for text on Lime Yellow
+      main: bloxBrand.emerald,
+      dark: bloxBrand.emeraldDark,
+      light: bloxBrand.emeraldLight,
+      contrastText: bloxBrand.deepGreenDark,
     },
     secondary: {
-      main: '#787663',      // Dark Grey - Secondary actions
-      dark: '#5A5849',      // Darker shade
-      light: '#9A9880',     // Lighter shade
-      contrastText: '#F3F0ED', // Light Grey (replaces white)
+      main: bloxBrand.deepGreen,
+      dark: bloxBrand.deepGreenDark,
+      light: '#1A6B74',
+      contrastText: bloxBrand.white,
     },
     background: {
-      default: '#F3F0ED',   // Light Grey - Main background
-      paper: '#F3F0ED',     // Light Grey for cards (replaces white)
+      default: bloxBrand.pageBg,
+      paper: bloxBrand.surface,
     },
     text: {
-      primary: '#0E1909',   // Blox Black - Primary text
-      secondary: '#787663', // Dark Grey - Secondary text
+      primary: bloxBrand.deepGreen,
+      secondary: bloxBrand.slate,
     },
-    divider: '#C9C4B7',     // Mid Grey - Dividers
+    divider: 'rgba(168, 178, 188, 0.55)',
     grey: {
-      50: '#F3F0ED',        // Light Grey
-      100: '#C9C4B7',       // Mid Grey
-      200: '#787663',       // Dark Grey
-      300: '#5A5849',       // Darker Grey
-      900: '#0E1909',       // Blox Black
+      50: bloxBrand.pageBg,
+      100: bloxBrand.surfaceMuted,
+      200: bloxBrand.slateLight,
+      300: bloxBrand.slate,
+      900: bloxBrand.deepGreenDark,
     },
   },
   typography: {
-    fontFamily: '"IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+    fontFamily: bloxFonts.text,
     h1: {
       fontSize: '32px',
       fontWeight: 700,
@@ -90,67 +94,121 @@ export const theme = createTheme({
   },
   shadows: [
     'none',
-    '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-    '0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.04)',
-    '0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04)',
-    '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
-    '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
+    '0 1px 2px 0 rgba(22, 83, 91, 0.05)',
+    '0 1px 3px 0 rgba(22, 83, 91, 0.08), 0 1px 2px -1px rgba(22, 83, 91, 0.04)',
+    '0 4px 6px -1px rgba(22, 83, 91, 0.08), 0 2px 4px -2px rgba(22, 83, 91, 0.04)',
+    '0 10px 15px -3px rgba(22, 83, 91, 0.1), 0 4px 6px -4px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
+    '0 20px 25px -5px rgba(22, 83, 91, 0.1), 0 8px 10px -6px rgba(22, 83, 91, 0.05)',
   ],
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
           textTransform: 'none',
-          fontFamily: '"IBM Plex Sans", sans-serif',
+          fontFamily: bloxFonts.text,
           fontSize: '15px',
-          fontWeight: 500,
+          fontWeight: 600,
           letterSpacing: '-0.01em',
-          borderRadius: '10px',
-          padding: '10px 20px',
-          transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+          borderRadius: '12px',
+          padding: '11px 22px',
+          transition: 'all 220ms cubic-bezier(0.22, 1, 0.36, 1)',
           boxShadow: 'none',
+        },
+        // Everyday primary = emerald (interactive accent)
+        containedPrimary: {
+          backgroundColor: bloxBrand.emerald,
+          color: bloxBrand.deepGreenDark,
+          boxShadow: bloxAtmosphere.emeraldGlow,
           '&:hover': {
-            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04)',
+            backgroundColor: bloxBrand.emeraldDark,
+            color: bloxBrand.white,
+            boxShadow: '0 10px 26px rgba(0, 207, 162, 0.28)',
+          },
+        },
+        // Structural secondary = deep green
+        containedSecondary: {
+          backgroundColor: bloxBrand.deepGreen,
+          color: bloxBrand.white,
+          boxShadow: bloxAtmosphere.softShadow,
+          '&:hover': {
+            backgroundColor: bloxBrand.deepGreenDark,
+          },
+        },
+        outlined: {
+          borderColor: 'rgba(22, 83, 91, 0.28)',
+          color: bloxBrand.deepGreen,
+          backgroundColor: 'rgba(255,255,255,0.55)',
+          backdropFilter: 'blur(8px)',
+          '&:hover': {
+            borderColor: bloxBrand.emerald,
+            backgroundColor: bloxBrand.emeraldWash,
           },
         },
       },
+      variants: [
+        {
+          // The precious lime hero CTA — one per screen. Deep-green text always.
+          props: { className: 'blox-cta-hero' },
+          style: {
+            backgroundColor: bloxBrand.lime,
+            color: bloxBrand.deepGreen,
+            boxShadow: bloxAtmosphere.limeGlow,
+            '&:hover': {
+              backgroundColor: bloxBrand.limeDark,
+              boxShadow: '0 12px 30px rgba(219, 255, 0, 0.36)',
+            },
+          },
+        },
+      ],
     },
     MuiPaper: {
       styleOverrides: {
         root: {
-          borderRadius: '16px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.04)',
+          borderRadius: '18px',
+          backgroundImage: 'none',
+          boxShadow: bloxAtmosphere.softShadow,
+          border: bloxAtmosphere.cardBorder,
         },
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          borderRadius: '16px',
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.04)',
-          transition: 'all 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+          borderRadius: '18px',
+          boxShadow: bloxAtmosphere.softShadow,
+          border: bloxAtmosphere.cardBorder,
+          transition: 'all 220ms cubic-bezier(0.22, 1, 0.36, 1)',
           '&:hover': {
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05)',
+            boxShadow: bloxAtmosphere.liftShadow,
           },
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          background: bloxAtmosphere.chromeGradient,
+          color: bloxBrand.white,
+          boxShadow: '0 8px 24px rgba(15, 58, 64, 0.18)',
         },
       },
     },
@@ -159,17 +217,18 @@ export const theme = createTheme({
         root: {
           '& .MuiOutlinedInput-root': {
             borderRadius: '10px',
-            transition: 'border-color 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1)',
+            transition:
+              'border-color 200ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1)',
             '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#8B8778', // Field idle — readable on white
+              borderColor: bloxBrand.slate,
             },
             '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#787663', // Dark Grey
+              borderColor: bloxBrand.slateDark,
             },
             '&.Mui-focused': {
-              boxShadow: '0 0 0 2px #DAFF01', // Brand outer ring
+              boxShadow: `0 0 0 3px rgba(0, 207, 162, 0.18)`,
               '& .MuiOutlinedInput-notchedOutline': {
-                borderColor: '#0E1909', // Black stroke for AA UI contrast
+                borderColor: bloxBrand.deepGreen,
                 borderWidth: '2px',
               },
             },
@@ -180,23 +239,22 @@ export const theme = createTheme({
     MuiCheckbox: {
       styleOverrides: {
         root: {
-          color: '#8B8778', // Readable unchecked edge
+          color: bloxBrand.slate,
           borderRadius: '4px',
           transition: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-          // Black control on light surfaces (lime-only fills fail ~1.15:1)
           '&.Mui-checked': {
-            color: '#0E1909',
+            color: bloxBrand.deepGreen,
             '& .MuiSvgIcon-root': {
-              color: '#0E1909',
+              color: bloxBrand.deepGreen,
             },
           },
           '&.Mui-focusVisible': {
-            outline: '2px solid #0E1909',
+            outline: `2px solid ${bloxBrand.deepGreen}`,
             outlineOffset: 2,
-            boxShadow: '0 0 0 4px #DAFF01',
+            boxShadow: `0 0 0 4px rgba(0, 207, 162, 0.20)`,
           },
           '&:hover': {
-            backgroundColor: 'rgba(14, 25, 9, 0.06)',
+            backgroundColor: 'rgba(22, 83, 91, 0.06)',
           },
         },
       },
@@ -204,17 +262,17 @@ export const theme = createTheme({
     MuiRadio: {
       styleOverrides: {
         root: {
-          color: '#8B8778',
+          color: bloxBrand.slate,
           '&.Mui-checked': {
-            color: '#0E1909',
+            color: bloxBrand.deepGreen,
           },
           '&.Mui-focusVisible': {
-            outline: '2px solid #0E1909',
+            outline: `2px solid ${bloxBrand.deepGreen}`,
             outlineOffset: 2,
-            boxShadow: '0 0 0 4px #DAFF01',
+            boxShadow: `0 0 0 4px rgba(0, 207, 162, 0.20)`,
           },
           '&:hover': {
-            backgroundColor: 'rgba(14, 25, 9, 0.06)',
+            backgroundColor: 'rgba(22, 83, 91, 0.06)',
           },
         },
       },
@@ -222,83 +280,83 @@ export const theme = createTheme({
     MuiDivider: {
       styleOverrides: {
         root: {
-          borderColor: '#C9C4B7', // Mid Grey
+          borderColor: bloxBrand.slateLight,
         },
       },
     },
   },
 });
 
-// CSS Variables for brand colors - Blox Brand Palette
+/** CSS / TS brand color map used by components and exports */
 export const brandColors = {
-  // Primary Brand Colors
-  primary: '#DAFF01',           // Lime Yellow - Hero color
-  primaryDark: '#B8D900',        // Darker Lime Yellow for hover
-  primaryLight: '#E8FF33',       // Lighter Lime Yellow
-  bloxBlack: '#0E1909',         // Blox Black - Primary text
-  darkGrey: '#787663',          // Dark Grey - Secondary text
-  midGrey: '#C9C4B7',           // Mid Grey - Dividers
-  lightGrey: '#F3F0ED',         // Light Grey - Backgrounds
-  
-  // Button Colors - Following Design Guidelines (No Green)
-  primaryBtnBg: '#DAFF01',       // Lime Yellow - Primary buttons
-  primaryBtnColor: '#0E1909',    // Blox Black text on Lime Yellow
-  primaryBtnHover: '#B8D900',     // Darker Lime Yellow for hover
-  secondaryBtnBg: '#F3F0ED',     // Light Grey - Secondary buttons
-  secondaryBtnColor: '#0E1909',  // Blox Black text on Light Grey
-  secondaryBtnHover: '#E8E5DF',   // Slightly darker light grey for hover
-  secondaryNeutralBg: '#F3F0ED', // Light Grey - Secondary Neutral buttons
-  secondaryNeutralColor: '#787663', // Dark Grey text on Light Grey
-  secondaryNeutralHover: '#E8E5DF', // Slightly darker light grey for hover
-  destructiveBtnBg: '#FFFFFF',    // White - Destructive buttons
-  destructiveBtnBorder: '#787663', // Dark Grey border for destructive
-  destructiveBtnColor: '#0E1909',  // Blox Black text for destructive
-  destructiveBtnHoverBg: '#F3F0ED', // Light Grey for hover
-  destructiveBtnHoverBorder: '#787663', // Dark Grey border for hover
-  tertiaryBtnColor: '#787663',    // Dark Grey - Tertiary (text only)
-  outlineBtnBorder: '#787663',   // Dark Grey border
-  // Focus States — dual-tone (black = a11y, lime = brand accent)
-  focusRingPrimary: '#0E1909',
-  focusRingBrand: '#DAFF01',
-  focusRingSecondary: '#0E1909',
-  focusRingNeutral: '#787663',
-  fieldFocusRing: '0 0 0 2px #DAFF01',
-  
-  // Form Colors
-  fieldLabelColor: '#0E1909',    // Blox Black
-  fieldBorderColor: '#8B8778',   // Idle field edge (~3.6:1 on white)
-  fieldBorderHover: '#787663',   // Dark Grey
-  fieldBorderFocus: '#0E1909',   // Black focus stroke
-  fieldPlaceholder: '#787663',    // Dark Grey
-  fieldBackground: '#FFFFFF',     // White
-  
-  // Table Colors
-  tableHeader: '#0E1909',        // Blox Black
-  tableHeaderColor: '#DAFF01',   // Lime Yellow text on Blox Black
-  tableRowHover: '#F3F0ED',      // Light Grey
-  
-  // Text Colors
-  primaryText: '#0E1909',         // Blox Black
-  secondaryText: '#787663',      // Dark Grey
-  customTextColor: '#787663',     // Dark Grey
-  
-  // Background Colors
-  background: '#F3F0ED',          // Light Grey
-  backgroundSecondary: '#FFFFFF', // White
-  cardBackground: '#FFFFFF',      // White
-  cardHover: '#F3F0ED',           // Light Grey
-  disabledBg: '#C9C4B7',          // Mid Grey
-  dividerColor: '#C9C4B7',        // Mid Grey
-  
-  // Status colors - Adjusted to work with new palette
-  statusDue: '#DAFF01',           // Lime Yellow for due/upcoming
-  statusActive: '#DAFF01',        // Lime Yellow for active
-  statusPaid: '#2E7D32',          // Green for paid/success
-  statusUnpaid: '#0E1909',       // Blox Black for unpaid (strong)
-  statusPartiallyPaid: '#787663', // Dark Grey
-  statusDraft: '#C9C4B7',         // Mid Grey for draft
-  statusCompleted: '#787663',    // Dark Grey for completed
-  statusUnderReview: '#DAFF01',  // Lime Yellow for review
-  statusRejected: '#0E1909',      // Blox Black for rejected
-  statusContractSigning: '#787663', // Dark Grey
+  primary: bloxBrand.lime,
+  primaryDark: bloxBrand.limeDark,
+  primaryLight: bloxBrand.limeLight,
+  bloxBlack: bloxBrand.deepGreen,
+  deepGreen: bloxBrand.deepGreen,
+  emerald: bloxBrand.emerald,
+  slate: bloxBrand.slate,
+  darkGrey: bloxBrand.slate,
+  midGrey: bloxBrand.slateLight,
+  lightGrey: bloxBrand.pageBg,
+
+  primaryBtnBg: bloxBrand.lime,
+  primaryBtnColor: bloxBrand.deepGreen,
+  primaryBtnHover: bloxBrand.limeDark,
+  secondaryBtnBg: bloxBrand.emeraldWash,
+  secondaryBtnColor: bloxBrand.deepGreen,
+  secondaryBtnHover: '#D4F7EE',
+  secondaryNeutralBg: bloxBrand.surfaceMuted,
+  secondaryNeutralColor: bloxBrand.slateDark,
+  secondaryNeutralHover: '#DCE6E6',
+  destructiveBtnBg: bloxBrand.white,
+  destructiveBtnBorder: bloxBrand.slate,
+  destructiveBtnColor: bloxBrand.deepGreen,
+  destructiveBtnHoverBg: bloxBrand.pageBgWarm,
+  destructiveBtnHoverBorder: bloxBrand.slate,
+  tertiaryBtnColor: bloxBrand.slate,
+  outlineBtnBorder: 'rgba(22, 83, 91, 0.28)',
+
+  focusRingPrimary: bloxBrand.deepGreen,
+  focusRingBrand: bloxBrand.emerald,
+  focusRingSecondary: bloxBrand.emerald,
+  focusRingNeutral: bloxBrand.slate,
+  fieldFocusRing: `0 0 0 2px ${bloxBrand.deepGreen}, 0 0 0 5px rgba(0, 207, 162, 0.18)`,
+
+  fieldLabelColor: bloxBrand.deepGreen,
+  fieldBorderColor: bloxBrand.slate,
+  fieldBorderHover: bloxBrand.deepGreen,
+  fieldBorderFocus: bloxBrand.deepGreen,
+  fieldPlaceholder: bloxBrand.slateLight,
+  fieldBackground: bloxBrand.white,
+
+  tableHeader: bloxBrand.deepGreenDark,
+  tableHeaderColor: bloxBrand.white,
+  tableRowHover: bloxBrand.pageBgWarm,
+
+  primaryText: bloxBrand.deepGreen,
+  secondaryText: bloxBrand.slate,
+  customTextColor: bloxBrand.slate,
+
+  background: bloxBrand.pageBg,
+  backgroundSecondary: bloxBrand.white,
+  cardBackground: bloxBrand.white,
+  cardHover: '#F5FAFA',
+  disabledBg: bloxBrand.slateLight,
+  dividerColor: 'rgba(168, 178, 188, 0.55)',
+
+  statusDue: bloxBrand.lime,
+  statusActive: bloxBrand.emerald,
+  statusPaid: bloxBrand.emerald,
+  statusUnpaid: bloxBrand.deepGreen,
+  statusPartiallyPaid: bloxBrand.slate,
+  statusDraft: bloxBrand.slateLight,
+  statusCompleted: bloxBrand.emeraldDark,
+  statusUnderReview: bloxBrand.slate,
+  statusRejected: bloxBrand.destructive,
+  statusContractSigning: bloxBrand.emerald,
+
+  atmosphere: bloxAtmosphere,
 };
+
+export { bloxAtmosphere, bloxBrand, bloxFonts };

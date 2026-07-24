@@ -4,6 +4,7 @@ import { logout, setLoading, setError, setCredentials } from '../store/slices/au
 import { authService } from '@shared/services/auth.service';
 import type { LoginCredentials, AuthResponse } from '@shared/models/user.model';
 import { useNavigate } from 'react-router-dom';
+import { isFullAdminRole } from '@shared/utils/rbac';
 
 export const useAuth = () => {
   const dispatch = useAppDispatch();
@@ -15,22 +16,20 @@ export const useAuth = () => {
       try {
         dispatch(setLoading(true));
         dispatch(setError(null));
-        
+
         const response: AuthResponse = await authService.login(credentials);
-        
-        // Admin portal: admin or super_admin (fail closed on missing/other roles)
-        const role = response.user.role;
-        if (role !== 'admin' && role !== 'super_admin') {
+
+        if (!isFullAdminRole(response.user.role)) {
           await authService.logout();
           const errorMessage =
-            'Access denied: Administrator privileges required. Only admin or super_admin users can access this portal.';
+            'Access denied: Administrator privileges required. Use the Dealer or Credit portal for those roles.';
           dispatch(setError(errorMessage));
           return { success: false, error: errorMessage };
         }
 
         dispatch(setCredentials({ user: response.user, token: response.token }));
         navigate('/admin/dashboard');
-        
+
         return { success: true };
       } catch (err: unknown) {
         const error = err instanceof Error ? err : new Error('Login failed');
@@ -48,8 +47,7 @@ export const useAuth = () => {
       await authService.logout();
       dispatch(logout());
       navigate('/admin/auth/login');
-    } catch (err) {
-      // Even if API call fails, clear local state
+    } catch {
       dispatch(logout());
       navigate('/admin/auth/login');
     }
@@ -86,4 +84,3 @@ export const useAuth = () => {
     resetPassword: handleResetPassword,
   };
 };
-

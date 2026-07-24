@@ -24,119 +24,146 @@ export const PrivacyPage: React.FC = () => {
         Last updated: {LAST_UPDATED}
       </Typography>
       <Paper sx={{ p: 3 }}>
-
-        <Section title="1. Data Controller">
+        <Section title="1. Who we are">
           <Typography paragraph>
-            BLOX ("we", "us") is the data controller responsible for the personal data collected
-            through this Platform. [TO BE COMPLETED BY LEGAL COUNSEL — insert full legal name,
-            commercial registration number, registered address in Qatar, and Data Protection
-            Officer contact details as required by Qatar's Personal Data Protection Law (Law No. 13
-            of 2016) and any applicable amendments.]
+            BLOX (&quot;we&quot;, &quot;us&quot;) operates the BLOX customer web and mobile
+            applications for vehicle financing in Qatar. We are the data controller for personal
+            data collected through this Platform.
+          </Typography>
+          <Typography paragraph>
+            Contact: support@blox.market
           </Typography>
         </Section>
 
-        <Section title="2. Data We Collect">
-          <Typography paragraph>
-            We collect the following categories of personal data:
-          </Typography>
+        <Section title="2. Data we collect">
+          <Typography paragraph>We collect the following categories of personal data:</Typography>
           <Typography component="ul" sx={{ pl: 3 }}>
-            <li>Identity data: full name, Qatar ID (QID), nationality, date of birth, gender</li>
-            <li>Contact data: email address, phone number, postal address</li>
-            <li>Financial data: employment information, salary details, bank information for
-              financing assessment</li>
-            <li>Documents: copies of ID, employment letters, and other KYC documents you
-              upload</li>
-            <li>Payment data: transaction records (card data is handled exclusively by SkipCash;
-              BLOX does not store full card numbers)</li>
-            <li>Usage data: IP address, browser type, pages visited, and access timestamps for
-              security and audit purposes</li>
+            <li>
+              <strong>Identity:</strong> full name, Qatar ID (QID), nationality, date of birth,
+              gender
+            </li>
+            <li>
+              <strong>Contact:</strong> email address, phone number, postal address
+            </li>
+            <li>
+              <strong>Financial:</strong> employment information, salary details, and related
+              information for financing assessment
+            </li>
+            <li>
+              <strong>Documents:</strong> ID copies, employment letters, bank statements, and other
+              KYC documents you upload
+            </li>
+            <li>
+              <strong>Payment records:</strong> transaction status and amounts (card data is
+              handled by SkipCash; BLOX does not store full card numbers)
+            </li>
+            <li>
+              <strong>Technical:</strong> IP address, browser or app version, and access timestamps
+              for security and support
+            </li>
           </Typography>
         </Section>
 
-        <Section title="3. How We Use Your Data">
-          <Typography paragraph>
-            We use your personal data to: (a) process and evaluate your financing application;
-            (b) verify your identity in compliance with KYC/AML obligations; (c) manage your
-            installment schedule and process payments; (d) communicate with you about your
-            application status; (e) comply with legal and regulatory obligations in Qatar;
-            (f) detect and prevent fraud and unauthorised access.
-          </Typography>
-          <Typography paragraph>
-            [TO BE COMPLETED BY LEGAL COUNSEL — identify the legal basis for each processing
-            purpose under Qatar law.]
-          </Typography>
-        </Section>
-
-        <Section title="4. Data Storage &amp; Security">
-          <Typography paragraph>
-            Your data is stored on servers located in [TO BE COMPLETED BY LEGAL COUNSEL — confirm
-            data residency location, e.g., Qatar or GCC region]. We implement row-level access
-            controls, encrypted transport (TLS), and authentication requirements to protect your
-            data. Documents are stored in a private, non-publicly accessible storage bucket.
+        <Section title="3. How we use your data">
+          <Typography paragraph>We use your personal data to:</Typography>
+          <Typography component="ul" sx={{ pl: 3 }}>
+            <li>Create and manage your account</li>
+            <li>Process and evaluate vehicle financing applications</li>
+            <li>Verify your identity in line with KYC / AML obligations</li>
+            <li>Manage installment schedules and process payments</li>
+            <li>Communicate about application status and support requests</li>
+            <li>Detect and prevent fraud or unauthorised access</li>
+            <li>Comply with legal and regulatory obligations in Qatar</li>
           </Typography>
         </Section>
 
-        <Section title="5. Payment Data">
+        <Section title="4. Sharing">
+          <Typography paragraph>
+            We share data with authorised dealership partners, credit and underwriting partners,
+            payment providers (SkipCash), and infrastructure providers (including Supabase) only as
+            needed to provide the service. We do not sell your personal data.
+          </Typography>
+        </Section>
+
+        <Section title="5. Storage &amp; security">
+          <Typography paragraph>
+            Data is transmitted over HTTPS / TLS. We use authentication and row-level access
+            controls to protect your information. Document uploads are stored in private,
+            non-public storage. We retain data for as long as needed to provide the service and as
+            required by applicable Qatar law and financial record-keeping rules.
+          </Typography>
+        </Section>
+
+        <Section title="6. Payment data">
           <Typography paragraph>
             Card and digital wallet payments are processed by SkipCash, a licensed payment service
             provider. BLOX does not store, transmit, or process full card numbers. Please review
-            SkipCash's own privacy policy for information about how they handle your payment data.
+            SkipCash&apos;s privacy policy for how they handle payment data.
           </Typography>
         </Section>
 
-        <Section title="6. Data Retention">
+        <Section title="7. Your rights">
           <Typography paragraph>
-            We retain your personal data for as long as necessary to fulfil the purposes described
-            in this Policy, and for a minimum period required by applicable Qatar law and financial
-            regulations. [TO BE COMPLETED BY LEGAL COUNSEL — specify minimum retention periods for
-            KYC, financial, and transaction records.]
+            Subject to applicable Qatar law, you may request access to the personal data we hold
+            about you, correction of inaccurate data, or deletion where the data is no longer
+            necessary for the purposes collected. You may also lodge a complaint with the relevant
+            data protection authority in Qatar.
+          </Typography>
+          <Typography paragraph>
+            To request deletion of some or all personal data while keeping your account, see{' '}
+            <Typography
+              component={RouterLink}
+              to="/customer/legal/delete-data"
+              sx={{ color: 'inherit', fontWeight: 600 }}
+            >
+              Delete data
+            </Typography>
+            . To close your account entirely, see{' '}
+            <Typography
+              component={RouterLink}
+              to="/customer/legal/delete-account"
+              sx={{ color: 'inherit', fontWeight: 600 }}
+            >
+              Delete account
+            </Typography>
+            , or email support@blox.market.
           </Typography>
         </Section>
 
-        <Section title="7. Your Rights">
+        <Section title="8. Children">
           <Typography paragraph>
-            Subject to applicable Qatar law, you may have the right to: access the personal data
-            we hold about you; request correction of inaccurate data; request deletion of your data
-            where it is no longer necessary for the purposes collected; object to processing; and
-            lodge a complaint with the relevant data protection authority in Qatar.
-          </Typography>
-          <Typography paragraph>
-            To exercise these rights, contact us at: support@blox.market
+            The Platform is intended for adults aged 18 and over. We do not knowingly collect
+            personal data from children.
           </Typography>
         </Section>
 
-        <Section title="8. Third-Party Services">
+        <Section title="9. Changes">
           <Typography paragraph>
-            We use the following third-party services that may process your data: Supabase
-            (database and authentication infrastructure), SkipCash (payment processing). Each
-            third party is bound by data processing agreements and applicable data protection law.
+            We may update this Policy from time to time. Material changes may be notified via the
+            Platform or by email. The &quot;Last updated&quot; date at the top of this page shows when
+            the most recent changes were made.
           </Typography>
         </Section>
 
-        <Section title="9. Changes to This Policy">
+        <Section title="10. Contact">
           <Typography paragraph>
-            We may update this Policy from time to time. We will notify you of material changes via
-            the Platform or by email. The "Last updated" date at the top of this page indicates
-            when the most recent changes were made.
-          </Typography>
-        </Section>
-
-        <Section title="10. Contact &amp; DPO">
-          <Typography paragraph>
-            For privacy enquiries or to exercise your data rights, contact:
-            support@blox.market
-          </Typography>
-          <Typography paragraph>
-            [TO BE COMPLETED BY LEGAL COUNSEL — add Data Protection Officer name and contact
-            details if required under Qatar PDPPL.]
+            For privacy enquiries or to exercise your data rights: support@blox.market
           </Typography>
         </Section>
 
         <Box sx={{ mt: 3 }}>
-          <Typography component={RouterLink} to="/customer/legal/terms" sx={{ display: 'block', mb: 1 }}>
+          <Typography
+            component={RouterLink}
+            to="/customer/legal/terms"
+            sx={{ display: 'block', mb: 1, color: 'inherit' }}
+          >
             Terms &amp; Conditions
           </Typography>
-          <Typography component={RouterLink} to="/customer/home" sx={{ display: 'block' }}>
+          <Typography
+            component={RouterLink}
+            to="/customer/home"
+            sx={{ display: 'block', color: 'inherit' }}
+          >
             Back to home
           </Typography>
         </Box>

@@ -200,6 +200,8 @@ class ActivityTrackingService {
     userEmail?: string;
     actionType?: ActionType;
     resourceType?: ResourceType;
+    /** Exact match, or pass application id — also matches `application-{id}` rows. */
+    resourceId?: string;
     startDate?: Date;
     endDate?: Date;
     limit?: number;
@@ -245,6 +247,15 @@ class ActivityTrackingService {
 
       if (options.resourceType) {
         query = query.eq('resource_type', options.resourceType);
+      }
+
+      if (options.resourceId) {
+        const rid = options.resourceId.trim();
+        if (rid) {
+          // Writers historically used either raw id or `application-{id}`.
+          const prefixed = rid.startsWith('application-') ? rid : `application-${rid}`;
+          query = query.in('resource_id', Array.from(new Set([rid, prefixed])));
+        }
       }
 
       if (options.startDate) {

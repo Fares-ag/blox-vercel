@@ -68,7 +68,7 @@ export const BadgeDisplay: React.FC<BadgeDisplayProps> = ({ application }) => {
                   {badge.name}
                 </Typography>
                 {isUnlocked && (
-                  <CheckCircle sx={{ color: '#4CAF50', fontSize: 18 }} />
+                  <CheckCircle sx={{ color: '#00CFA2', fontSize: 18 }} />
                 )}
               </Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -79,8 +79,8 @@ export const BadgeDisplay: React.FC<BadgeDisplayProps> = ({ application }) => {
                   label={`Unlocked ${formatDate(badge.unlockedDate)}`}
                   size="small"
                   sx={{
-                    backgroundColor: '#E8F5E9',
-                    color: '#2E7D32',
+                    backgroundColor: '#E6FBF5',
+                    color: '#00CFA2',
                     fontSize: '10px',
                     height: 20,
                   }}
@@ -150,7 +150,7 @@ export const BadgeDisplay: React.FC<BadgeDisplayProps> = ({ application }) => {
             backgroundColor: 'var(--card-hover)',
             '& .MuiLinearProgress-bar': {
               borderRadius: 5,
-              backgroundColor: '#2E7D32',
+              backgroundColor: '#00CFA2',
             },
           }}
         />
@@ -160,7 +160,7 @@ export const BadgeDisplay: React.FC<BadgeDisplayProps> = ({ application }) => {
       {unlockedBadges.length > 0 && (
         <Box className="unlocked-section" sx={{ mb: 3 }}>
           <Typography variant="subtitle1" fontWeight={700} gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'var(--primary-text)' }}>
-            <EmojiEvents sx={{ color: '#2E7D32' }} />
+            <EmojiEvents sx={{ color: '#00CFA2' }} />
             Unlocked Badges
           </Typography>
           <Grid container spacing={2} sx={{ mt: 1 }}>

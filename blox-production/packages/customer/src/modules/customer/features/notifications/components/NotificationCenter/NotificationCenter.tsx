@@ -133,10 +133,10 @@ export const NotificationCenter: React.FC = () => {
 
   const getNotificationColor = (type: Notification['type'], variant: 'bg' | 'icon') => {
     const colors = {
-      success: { bg: '#E8F5E9', icon: '#4CAF50' },
-      warning: { bg: '#FFF3E0', icon: '#FF9800' },
-      error: { bg: '#FFEBEE', icon: '#F44336' },
-      info: { bg: '#E3F2FD', icon: '#2196F3' },
+      success: { bg: '#E6FBF5', icon: '#00CFA2' },
+      warning: { bg: '#F7FFE0', icon: '#DBFF00' },
+      error: { bg: '#FFEBEE', icon: '#C62828' },
+      info: { bg: '#EEF3F3', icon: '#16535B' },
     };
     return colors[type][variant];
   };
@@ -185,7 +185,7 @@ export const NotificationCenter: React.FC = () => {
             maxHeight: 650,
             borderRadius: '12px',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08)',
-            border: '1px solid rgba(243, 240, 237, 0.12)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
             backgroundColor: 'var(--blox-black)',
           },
         }}
@@ -201,8 +201,8 @@ export const NotificationCenter: React.FC = () => {
                   label={unreadCount}
                   size="small"
                   sx={{
-                    backgroundColor: '#DAFF01',
-                    color: '#FFFFFF',
+                    backgroundColor: '#DBFF00',
+                    color: '#16535B',
                     fontWeight: 700,
                     fontSize: '11px',
                     height: '20px',
@@ -221,15 +221,15 @@ export const NotificationCenter: React.FC = () => {
             )}
           </Box>
 
-          <Divider sx={{ borderColor: 'rgba(243, 240, 237, 0.12)' }} />
+          <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.12)' }} />
 
           {notifications.length === 0 ? (
             <Box className="empty-state">
-              <NotificationsIcon sx={{ fontSize: 48, color: 'rgba(243, 240, 237, 0.5)', mb: 1 }} />
-              <Typography variant="body2" sx={{ color: 'rgba(243, 240, 237, 0.85)' }}>
+              <NotificationsIcon sx={{ fontSize: 48, color: 'rgba(255, 255, 255, 0.5)', mb: 1 }} />
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.85)' }}>
                 No notifications yet
               </Typography>
-              <Typography variant="caption" sx={{ mt: 0.5, color: 'rgba(243, 240, 237, 0.65)' }}>
+              <Typography variant="caption" sx={{ mt: 0.5, color: 'rgba(255, 255, 255, 0.65)' }}>
                 You'll see updates about your applications and payments here
               </Typography>
             </Box>
@@ -270,7 +270,7 @@ export const NotificationCenter: React.FC = () => {
                           className="notification-title"
                           sx={{
                             fontWeight: notification.read ? 500 : 700,
-                            color: notification.read ? 'rgba(243, 240, 237, 0.75)' : 'rgba(243, 240, 237, 0.95)',
+                            color: notification.read ? 'rgba(255, 255, 255, 0.75)' : 'rgba(255, 255, 255, 0.95)',
                           }}
                         >
                           {notification.title}
@@ -281,7 +281,7 @@ export const NotificationCenter: React.FC = () => {
                         variant="body2"
                         className="notification-message"
                         sx={{
-                          color: 'rgba(243, 240, 237, 0.8)',
+                          color: 'rgba(255, 255, 255, 0.8)',
                           mt: 0.5,
                           lineHeight: 1.5,
                         }}
@@ -292,7 +292,7 @@ export const NotificationCenter: React.FC = () => {
                         variant="caption"
                         className="notification-time"
                         sx={{
-                          color: 'rgba(243, 240, 237, 0.6)',
+                          color: 'rgba(255, 255, 255, 0.6)',
                           mt: 0.5,
                           display: 'block',
                         }}
@@ -302,7 +302,7 @@ export const NotificationCenter: React.FC = () => {
                     </Box>
                   </ListItem>
                   {index < notifications.length - 1 && (
-                    <Divider sx={{ borderColor: 'rgba(243, 240, 237, 0.08)', mx: 2 }} />
+                    <Divider sx={{ borderColor: 'rgba(255, 255, 255, 0.08)', mx: 2 }} />
                   )}
                 </React.Fragment>
               ))}

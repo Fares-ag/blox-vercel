@@ -1201,9 +1201,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
           justifyContent: 'space-between',
           alignItems: 'center',
           borderBottom: '1px solid',
-          borderColor: '#C9C4B7', // Mid Grey
-          bgcolor: '#DAFF01', // Lime Yellow
-          color: '#0E1909', // Blox Black
+          borderColor: '#A8B2BC', // Mid Grey
+          bgcolor: '#DBFF00', // Lime Yellow
+          color: '#16535B', // Blox Black
           py: 2,
           px: 3,
         }}
@@ -1211,15 +1211,15 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
           <Avatar
             sx={{
-              bgcolor: 'rgba(14, 25, 9, 0.1)', // Blox Black with opacity
+              bgcolor: 'rgba(22, 83, 91, 0.1)', // Blox Black with opacity
               width: 40,
               height: 40,
             }}
           >
-            <SmartToy sx={{ color: '#0E1909' }} />
+            <SmartToy sx={{ color: '#16535B' }} />
           </Avatar>
           <Box>
-            <Typography variant="h6" fontWeight={700} component="span" sx={{ color: '#0E1909' }}>
+            <Typography variant="h6" fontWeight={700} component="span" sx={{ color: '#16535B' }}>
               BLOX AI Assistant
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
@@ -1228,7 +1228,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
-                  bgcolor: isConnected ? '#DAFF01' : isConnecting ? '#B8D900' : '#787663', // Lime Yellow / Darker Lime Yellow / Dark Grey
+                  bgcolor: isConnected ? '#DBFF00' : isConnecting ? '#C4E600' : '#708090', // Lime Yellow / Darker Lime Yellow / Dark Grey
                   animation: isConnecting ? 'pulse 2s infinite' : 'none',
                   '@keyframes pulse': {
                     '0%, 100%': { opacity: 1 },
@@ -1236,7 +1236,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                   },
                 }}
               />
-              <Typography variant="caption" sx={{ color: '#787663', fontSize: '0.7rem' }}>
+              <Typography variant="caption" sx={{ color: '#708090', fontSize: '0.7rem' }}>
                 {isConnected ? 'Online' : isConnecting ? 'Connecting...' : 'Offline'}
               </Typography>
             </Box>
@@ -1246,9 +1246,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
           onClick={handleClose}
           size="small"
           sx={{
-            color: '#0E1909', // Blox Black
+            color: '#16535B', // Blox Black
             '&:hover': {
-              bgcolor: 'rgba(14, 25, 9, 0.1)', // Blox Black with opacity
+              bgcolor: 'rgba(22, 83, 91, 0.1)', // Blox Black with opacity
             },
           }}
         >
@@ -1256,7 +1256,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
         </IconButton>
       </DialogTitle>
 
-      <DialogContent sx={{ flex: 1, overflow: 'auto', p: 0, bgcolor: '#F3F0ED' }}>
+      <DialogContent sx={{ flex: 1, overflow: 'auto', p: 0, bgcolor: '#F2F6F6' }}>
         <Box className="chat-messages" sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {error && (
             <Fade in={!!error}>
@@ -1300,8 +1300,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                   mb: 2,
                   borderRadius: 2,
                   boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                  bgcolor: '#E3F2FD',
-                  border: '1px solid #2196F3',
+                  bgcolor: '#EEF3F3',
+                  border: '1px solid #00CFA2',
                 }}
                 action={
                   <Button
@@ -1365,13 +1365,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                 {message.role === 'assistant' && (
                   <Avatar
                     sx={{
-                      bgcolor: '#DAFF01', // Lime Yellow
+                      bgcolor: '#DBFF00', // Lime Yellow
                       width: 32,
                       height: 32,
-                      boxShadow: '0 2px 8px rgba(218, 255, 1, 0.3)',
+                      boxShadow: '0 2px 8px rgba(219, 255, 0, 0.3)',
                     }}
                   >
-                    <SmartToy sx={{ fontSize: 18, color: '#0E1909' }} />
+                    <SmartToy sx={{ fontSize: 18, color: '#16535B' }} />
                   </Avatar>
                 )}
                 <Box
@@ -1387,19 +1387,19 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                     sx={{
                       p: 2,
                       position: 'relative',
-                      bgcolor: message.role === 'user' ? '#DAFF01' : '#F3F0ED', // Lime Yellow for user, Light Grey for assistant
-                      color: message.role === 'user' ? '#0E1909' : '#0E1909', // Blox Black for both
+                      bgcolor: message.role === 'user' ? '#DBFF00' : '#F2F6F6', // Lime Yellow for user, Light Grey for assistant
+                      color: message.role === 'user' ? '#16535B' : '#16535B', // Blox Black for both
                       borderRadius: message.role === 'user' 
                         ? '16px 16px 4px 16px'
                         : '16px 16px 16px 4px',
                       boxShadow: message.role === 'user'
-                        ? '0 4px 12px rgba(218, 255, 1, 0.25)'
+                        ? '0 4px 12px rgba(219, 255, 0, 0.25)'
                         : '0 2px 8px rgba(0, 0, 0, 0.08)',
                       transition: 'transform 0.2s, box-shadow 0.2s',
                       '&:hover': {
                         transform: 'translateY(-2px)',
                         boxShadow: message.role === 'user'
-                          ? '0 6px 16px rgba(218, 255, 1, 0.3)'
+                          ? '0 6px 16px rgba(219, 255, 0, 0.3)'
                           : '0 4px 12px rgba(0, 0, 0, 0.12)',
                       },
                     }}
@@ -1414,7 +1414,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                           lineHeight: 1.6,
                           fontSize: '0.9rem',
                           fontWeight: message.role === 'user' ? 500 : 400,
-                          color: '#0E1909', // Blox Black for both
+                          color: '#16535B', // Blox Black for both
                           mb: message.files && message.files.length > 0 ? 1.5 : 0,
                           '& *': {
                             color: 'inherit',
@@ -1435,8 +1435,8 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                               gap: 1,
                               p: 1.5,
                               borderRadius: 2,
-                              bgcolor: message.role === 'user' ? 'rgba(14, 25, 9, 0.1)' : '#E8E5DF', // Blox Black with opacity for user, darker light grey for assistant
-                              border: `1px solid ${message.role === 'user' ? 'rgba(14, 25, 9, 0.2)' : '#C9C4B7'}`, // Blox Black with opacity / Mid Grey
+                              bgcolor: message.role === 'user' ? 'rgba(22, 83, 91, 0.1)' : '#E0E8E8', // Blox Black with opacity for user, darker light grey for assistant
+                              border: `1px solid ${message.role === 'user' ? 'rgba(22, 83, 91, 0.2)' : '#A8B2BC'}`, // Blox Black with opacity / Mid Grey
                             }}
                           >
                             {file.preview && file.type.startsWith('image/') ? (
@@ -1460,14 +1460,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                                   alignItems: 'center',
                                   gap: 1,
                                   flex: 1,
-                                  color: '#0E1909', // Blox Black for both
+                                  color: '#16535B', // Blox Black for both
                                 }}
                               >
                                 <Box
                                   sx={{
                                     p: 1,
                                     borderRadius: 1.5,
-                                    bgcolor: message.role === 'user' ? 'rgba(14, 25, 9, 0.15)' : '#C9C4B7', // Blox Black with opacity / Mid Grey
+                                    bgcolor: message.role === 'user' ? 'rgba(22, 83, 91, 0.15)' : '#A8B2BC', // Blox Black with opacity / Mid Grey
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -1480,7 +1480,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                                     variant="body2"
                                     sx={{
                                       fontWeight: 500,
-                                      color: '#0E1909', // Blox Black for both
+                                      color: '#16535B', // Blox Black for both
                                       overflow: 'hidden',
                                       textOverflow: 'ellipsis',
                                       whiteSpace: 'nowrap',
@@ -1491,7 +1491,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                                   <Typography
                                     variant="caption"
                                     sx={{
-                                      color: '#787663', // Dark Grey for both
+                                      color: '#708090', // Dark Grey for both
                                       fontSize: '0.7rem',
                                     }}
                                   >
@@ -1522,13 +1522,13 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                 {message.role === 'user' && (
                   <Avatar
                     sx={{
-                      bgcolor: '#787663', // Dark Grey
+                      bgcolor: '#708090', // Dark Grey
                       width: 32,
                       height: 32,
-                      boxShadow: '0 2px 8px rgba(120, 118, 99, 0.2)',
+                      boxShadow: '0 2px 8px rgba(112, 128, 144, 0.2)',
                     }}
                   >
-                    <Person sx={{ fontSize: 18, color: '#F3F0ED' }} />
+                    <Person sx={{ fontSize: 18, color: '#F2F6F6' }} />
                   </Avatar>
                 )}
               </Box>
@@ -1541,9 +1541,9 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
       <DialogActions
         sx={{
           borderTop: '1px solid',
-          borderColor: '#C9C4B7', // Mid Grey
+          borderColor: '#A8B2BC', // Mid Grey
           p: 2.5,
-          bgcolor: '#F3F0ED', // Light Grey
+          bgcolor: '#F2F6F6', // Light Grey
           gap: 1.5,
           flexDirection: 'column',
         }}
@@ -1568,11 +1568,11 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                 onDelete={() => removeFile(file.name)}
                 deleteIcon={<Cancel />}
                 sx={{
-                  bgcolor: '#E8E5DF', // Slightly darker light grey
+                  bgcolor: '#E0E8E8', // Slightly darker light grey
                   '& .MuiChip-deleteIcon': {
-                    color: '#787663', // Dark Grey
+                    color: '#708090', // Dark Grey
                     '&:hover': {
-                      color: '#0E1909', // Blox Black
+                      color: '#16535B', // Blox Black
                     },
                   },
                 }}
@@ -1593,21 +1593,21 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
             onClick={() => fileInputRef.current?.click()}
             disabled={!isConnected && !isConnecting}
             sx={{
-              bgcolor: '#F3F0ED', // Light Grey
-              color: '#787663', // Dark Grey
+              bgcolor: '#F2F6F6', // Light Grey
+              color: '#708090', // Dark Grey
               width: 48,
               height: 48,
-              border: '1.5px solid #C9C4B7', // Mid Grey
+              border: '1.5px solid #A8B2BC', // Mid Grey
               transition: 'all 0.2s',
               '&:hover': {
-                bgcolor: '#E8E5DF', // Slightly darker light grey
-                borderColor: '#DAFF01', // Lime Yellow
-                color: '#0E1909', // Blox Black
+                bgcolor: '#E0E8E8', // Slightly darker light grey
+                borderColor: '#DBFF00', // Lime Yellow
+                color: '#16535B', // Blox Black
               },
               '&:disabled': {
-                bgcolor: '#E8E5DF', // Slightly darker light grey
-                borderColor: '#C9C4B7', // Mid Grey
-                color: '#C9C4B7', // Mid Grey
+                bgcolor: '#E0E8E8', // Slightly darker light grey
+                borderColor: '#A8B2BC', // Mid Grey
+                color: '#A8B2BC', // Mid Grey
               },
             }}
           >
@@ -1618,12 +1618,12 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
               onClick={handleStartRecording}
               disabled={!isConnected && !isConnecting}
               sx={{
-                bgcolor: isRecording ? '#787663' : '#F3F0ED', // Dark Grey when recording, Light Grey otherwise
-                color: isRecording ? '#F3F0ED' : '#787663', // Light Grey text when recording, Dark Grey otherwise
+                bgcolor: isRecording ? '#708090' : '#F2F6F6', // Dark Grey when recording, Light Grey otherwise
+                color: isRecording ? '#F2F6F6' : '#708090', // Light Grey text when recording, Dark Grey otherwise
                 width: 48,
                 height: 48,
                 border: '1.5px solid',
-                borderColor: isRecording ? '#787663' : '#C9C4B7', // Dark Grey / Mid Grey
+                borderColor: isRecording ? '#708090' : '#A8B2BC', // Dark Grey / Mid Grey
                 transition: 'all 0.2s',
                 animation: isRecording ? 'pulse 1.5s infinite' : 'none',
                 '@keyframes pulse': {
@@ -1631,14 +1631,14 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                   '50%': { transform: 'scale(1.1)', opacity: 0.8 },
                 },
                 '&:hover': {
-                  bgcolor: isRecording ? '#5A5849' : '#E8E5DF', // Darker grey / Slightly darker light grey
-                  borderColor: isRecording ? '#5A5849' : '#DAFF01', // Darker grey / Lime Yellow
-                  color: isRecording ? '#F3F0ED' : '#0E1909', // Light Grey / Blox Black
+                  bgcolor: isRecording ? '#4A5560' : '#E0E8E8', // Darker grey / Slightly darker light grey
+                  borderColor: isRecording ? '#4A5560' : '#DBFF00', // Darker grey / Lime Yellow
+                  color: isRecording ? '#F2F6F6' : '#16535B', // Light Grey / Blox Black
                 },
                 '&:disabled': {
-                  bgcolor: '#E8E5DF', // Slightly darker light grey
-                  borderColor: '#C9C4B7', // Mid Grey
-                  color: '#C9C4B7', // Mid Grey
+                  bgcolor: '#E0E8E8', // Slightly darker light grey
+                  borderColor: '#A8B2BC', // Mid Grey
+                  color: '#A8B2BC', // Mid Grey
                 },
               }}
               title={isRecording ? 'Stop recording' : 'Start voice input'}
@@ -1671,34 +1671,34 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
               sx={{
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 3,
-                  bgcolor: isRecording ? '#E8E5DF' : '#F3F0ED', // Slightly darker light grey when recording, Light Grey otherwise
+                  bgcolor: isRecording ? '#E0E8E8' : '#F2F6F6', // Slightly darker light grey when recording, Light Grey otherwise
                   transition: 'all 0.2s',
-                  border: isRecording ? '2px solid #787663' : 'none', // Dark Grey border when recording
+                  border: isRecording ? '2px solid #708090' : 'none', // Dark Grey border when recording
                   '&:hover': {
-                    bgcolor: isRecording ? '#E8E5DF' : '#E8E5DF', // Slightly darker light grey
+                    bgcolor: isRecording ? '#E0E8E8' : '#E0E8E8', // Slightly darker light grey
                   },
                   '&.Mui-focused': {
-                    bgcolor: '#F3F0ED', // Light Grey
+                    bgcolor: '#F2F6F6', // Light Grey
                     boxShadow: isRecording 
-                      ? '0 0 0 3px rgba(120, 118, 99, 0.1)' // Dark Grey focus ring
-                      : '0 0 0 3px rgba(218, 255, 1, 0.4)', // Lime Yellow focus ring
+                      ? '0 0 0 3px rgba(112, 128, 144, 0.1)' // Dark Grey focus ring
+                      : '0 0 0 3px rgba(219, 255, 0, 0.4)', // Lime Yellow focus ring
                   },
                   '& fieldset': {
-                    borderColor: isRecording ? '#787663' : '#C9C4B7', // Dark Grey / Mid Grey
+                    borderColor: isRecording ? '#708090' : '#A8B2BC', // Dark Grey / Mid Grey
                     borderWidth: isRecording ? 2 : 1.5,
                   },
                   '&:hover fieldset': {
-                    borderColor: isRecording ? '#787663' : '#787663', // Dark Grey
+                    borderColor: isRecording ? '#708090' : '#708090', // Dark Grey
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: isRecording ? '#787663' : '#DAFF01', // Dark Grey / Lime Yellow
+                    borderColor: isRecording ? '#708090' : '#DBFF00', // Dark Grey / Lime Yellow
                     borderWidth: 2,
                   },
                 },
                 '& .MuiInputBase-input': {
                   fontSize: '0.95rem',
                   py: 1.5,
-                  color: isRecording && interimTranscript ? '#787663' : '#0E1909', // Dark Grey / Blox Black
+                  color: isRecording && interimTranscript ? '#708090' : '#16535B', // Dark Grey / Blox Black
                   fontStyle: isRecording && interimTranscript ? 'italic' : 'normal',
                 },
               }}
@@ -1710,7 +1710,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                   bottom: 8,
                   right: 12,
                   fontSize: '0.75rem',
-                  color: '#787663', // Dark Grey
+                  color: '#708090', // Dark Grey
                   fontWeight: 500,
                   display: 'flex',
                   alignItems: 'center',
@@ -1722,7 +1722,7 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
                     width: 6,
                     height: 6,
                     borderRadius: '50%',
-                    bgcolor: '#787663', // Dark Grey
+                    bgcolor: '#708090', // Dark Grey
                     animation: 'pulse 1s infinite',
                   }}
                 />
@@ -1735,23 +1735,23 @@ export const ChatModal: React.FC<ChatModalProps> = ({ open, onClose }) => {
             onClick={handleSend}
             disabled={(!inputMessage.trim() && selectedFiles.length === 0) || (!isConnected && !isConnecting) || uploadingFiles}
             sx={{
-              bgcolor: '#DAFF01', // Lime Yellow
-              color: '#0E1909', // Blox Black
+              bgcolor: '#DBFF00', // Lime Yellow
+              color: '#16535B', // Blox Black
               width: 48,
               height: 48,
-              boxShadow: '0 4px 12px rgba(218, 255, 1, 0.3)',
+              boxShadow: '0 4px 12px rgba(219, 255, 0, 0.3)',
               transition: 'all 0.2s',
               '&:hover': {
-                bgcolor: '#B8D900', // Darker Lime Yellow
+                bgcolor: '#C4E600', // Darker Lime Yellow
                 transform: 'translateY(-2px)',
-                boxShadow: '0 6px 16px rgba(218, 255, 1, 0.4)',
+                boxShadow: '0 6px 16px rgba(219, 255, 0, 0.4)',
               },
               '&:active': {
                 transform: 'translateY(0)',
               },
               '&:disabled': {
-                bgcolor: '#C9C4B7', // Mid Grey
-                color: '#787663', // Dark Grey
+                bgcolor: '#A8B2BC', // Mid Grey
+                color: '#708090', // Dark Grey
                 boxShadow: 'none',
                 transform: 'none',
               },

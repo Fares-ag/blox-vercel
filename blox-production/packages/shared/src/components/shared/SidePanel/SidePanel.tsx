@@ -89,7 +89,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         '& .MuiDrawer-paper': {
           width: { xs: collapsed ? 0 : 280, md: collapsed ? 80 : 280 },
           boxSizing: 'border-box',
-          background: 'linear-gradient(180deg, #787663 0%, #0E1909 100%)',
+          background: 'linear-gradient(180deg, #0F3A40 0%, #16535B 100%)',
+          borderRight: '1px solid rgba(0, 207, 162, 0.18)',
           transition: 'width 0.3s ease',
           display: { xs: collapsed ? 'none' : 'block' },
         },

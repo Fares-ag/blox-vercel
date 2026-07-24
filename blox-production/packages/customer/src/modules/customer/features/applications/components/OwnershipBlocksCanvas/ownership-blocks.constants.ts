@@ -10,11 +10,12 @@ export const CANVAS_HEIGHT = ROWS * UNIT;
 export const TWEEN_DURATION_MS = 600;
 
 export const COLORS = {
-  lime: '#B8D900',
-  limeDark: '#9AB800',
-  bloxBlack: '#0E1909',
-  unfilled: 'rgba(14,25,9,0.1)',
-  wheel: 'rgba(154,184,0,0.28)',
+  // Ownership = emerald wealth (Direction A)
+  emerald: '#00CFA2',
+  emeraldDark: '#00B894',
+  bloxBlack: '#16535B',
+  unfilled: 'rgba(22, 83, 91,0.1)',
+  wheel: 'rgba(0,207,162,0.24)',
 } as const;
 
 export const WHEELS = [

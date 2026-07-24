@@ -5,18 +5,29 @@ import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { useNavigate } from 'react-router-dom';
 import { setList, setLoading, setPage, setLimit, setFilters, clearFilters, removeProduct, setError } from '../../../../store/slices/products.slice';
 import { supabaseApiService } from '@shared/services';
+import type { Company } from '@shared/models';
 import type { Product } from '@shared/models/product.model';
 import { Table, type Column, Button, StatusBadge, SearchBar, FilterPanel, type FilterConfig, ExportButton, ConfirmDialog, EmptyState, TableSkeleton } from '@shared/components';
 import { formatCurrency } from '@shared/utils/formatters';
-import { useDebounce } from '@shared/utils';
+import { formatProductDisplayTitle, useDebounce } from '@shared/utils';
 import { toast } from 'react-toastify';
+import { usePortalBasePath, withPortalBase } from '@shared/contexts/portal-base-path';
 import './ProductsListPage.scss';
-
-// Using only Supabase - no API or localStorage fallbacks
 
 export const ProductsListPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+  const portalBase = usePortalBasePath();
+  const { user } = useAppSelector((state) => state.auth);
+  const role = (user?.role || '').toLowerCase();
+  const isAdminRole = role === 'admin' || role === 'super_admin';
+  const isDealer = role === 'dealer_agent';
+  const canManageVehicles = isAdminRole || isDealer;
+  /** Dealers may only mutate rows owned by their own company (mirrors RLS). */
+  const canEditRow = useCallback(
+    (row: Product) => isAdminRole || (isDealer && !!user?.companyId && row.companyId === user.companyId),
+    [isAdminRole, isDealer, user?.companyId]
+  );
   const { list, loading, pagination, filters } = useAppSelector((state) => state.products);
   const [searchTerm, setSearchTerm] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -24,53 +35,51 @@ export const ProductsListPage: React.FC = () => {
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [bulkActionsAnchor, setBulkActionsAnchor] = useState<null | HTMLElement>(null);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [partners, setPartners] = useState<Company[]>([]);
   const debouncedSearchTerm = useDebounce(searchTerm, 300); // Debounce search by 300ms
+
+  useEffect(() => {
+    if (!isAdminRole) return;
+    void supabaseApiService.getCompanies().then((res) => {
+      if (res.status === 'SUCCESS' && res.data) setPartners(res.data);
+    });
+  }, [isAdminRole]);
 
   const loadProducts = useCallback(async () => {
     try {
       dispatch(setLoading(true));
-      
-      // Load from Supabase only
-      const supabaseResponse = await supabaseApiService.getProducts();
-      
+
+      const offset = (pagination.page - 1) * pagination.limit;
+      const priceRange = filters.priceRange;
+      // Dealer: always scope to own company. Admin: optional Partner filter.
+      const companyId =
+        isDealer && user?.companyId
+          ? user.companyId
+          : isAdminRole && filters.companyId
+            ? filters.companyId
+            : undefined;
+
+      const supabaseResponse = await supabaseApiService.queryProducts({
+        limit: pagination.limit,
+        offset,
+        skipCache: true,
+        companyId,
+        status: filters.status?.length ? filters.status : undefined,
+        condition: filters.condition?.length ? filters.condition : undefined,
+        priceMin: priceRange?.[0],
+        priceMax: priceRange?.[1],
+        search: debouncedSearchTerm || undefined,
+      });
+
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
-        let products = supabaseResponse.data;
-        
-        // Apply search filter (using debounced term)
-        if (debouncedSearchTerm) {
-          const searchLower = debouncedSearchTerm.toLowerCase();
-          products = products.filter((p: Product) =>
-            p.make?.toLowerCase().includes(searchLower) ||
-            p.model?.toLowerCase().includes(searchLower) ||
-            p.id?.toLowerCase().includes(searchLower)
-          );
-        }
-        
-        // Apply status filter
-        const statusFilter = filters.status;
-        if (statusFilter && statusFilter.length > 0) {
-          products = products.filter((p: Product) => statusFilter.includes(p.status));
-        }
-        
-        // Apply condition filter
-        const conditionFilter = filters.condition;
-        if (conditionFilter && conditionFilter.length > 0) {
-          products = products.filter((p: Product) => conditionFilter.includes(p.condition));
-        }
-        
-        // Apply price range filter
-        if (filters.priceRange) {
-          const [min, max] = filters.priceRange;
-          products = products.filter((p: Product) => p.price >= min && p.price <= max);
-        }
-        
-        // Pagination
-        const total = products.length;
-        const start = (pagination.page - 1) * pagination.limit;
-        const end = start + pagination.limit;
-        const paginatedProducts = products.slice(start, end);
-        
-        dispatch(setList({ products: paginatedProducts, total }));
+        // Bulk select is current page only — do not silently select across 10k.
+        setSelectedProducts(new Set());
+        dispatch(
+          setList({
+            products: supabaseResponse.data,
+            total: supabaseResponse.count ?? supabaseResponse.data.length,
+          })
+        );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to load products from Supabase');
       }
@@ -84,7 +93,7 @@ export const ProductsListPage: React.FC = () => {
     } finally {
       dispatch(setLoading(false));
     }
-  }, [pagination.page, pagination.limit, filters, debouncedSearchTerm, dispatch]);
+  }, [pagination.page, pagination.limit, filters, debouncedSearchTerm, dispatch, isDealer, isAdminRole, user?.companyId]);
 
   useEffect(() => {
     loadProducts();
@@ -182,6 +191,19 @@ export const ProductsListPage: React.FC = () => {
   }, [selectedProducts, loadProducts]);
 
   const filterConfigs: FilterConfig[] = [
+    ...(isAdminRole
+      ? [
+          {
+            id: 'companyId',
+            label: 'Partner',
+            type: 'select' as const,
+            options: [
+              { value: '', label: 'All partners' },
+              ...partners.map((c) => ({ value: c.id, label: c.name })),
+            ],
+          },
+        ]
+      : []),
     { id: 'condition', label: 'Condition', type: 'multiselect', options: [
       { value: 'new', label: 'New' },
       { value: 'old', label: 'Old' },
@@ -190,7 +212,7 @@ export const ProductsListPage: React.FC = () => {
       { value: 'active', label: 'Active' },
       { value: 'inactive', label: 'Inactive' },
     ]},
-    { id: 'priceRange', label: 'Price Range', type: 'range', min: 0, max: 500000, step: 1000 },
+    { id: 'priceRange', label: 'Price Range', type: 'range', min: 0, max: 1000000, step: 5000 },
   ];
 
   const columns: Column<Product>[] = [
@@ -213,13 +235,9 @@ export const ProductsListPage: React.FC = () => {
     { id: 'id', label: 'ID', minWidth: 100 },
     {
       id: 'make',
-      label: 'Make',
-      minWidth: 100,
-    },
-    {
-      id: 'model',
-      label: 'Model',
-      minWidth: 150,
+      label: 'Vehicle',
+      minWidth: 220,
+      format: (_v, row) => formatProductDisplayTitle(row),
     },
     {
       id: 'modelYear',
@@ -244,30 +262,31 @@ export const ProductsListPage: React.FC = () => {
       label: 'Actions',
       minWidth: 120,
       align: 'center',
-      format: (_value, row) => (
-        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/admin/vehicles/${row.id}/edit`);
-            }}
-            color="primary"
-          >
-            <Edit fontSize="small" />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(row.id);
-            }}
-            color="error"
-          >
-            <Delete fontSize="small" />
-          </IconButton>
-        </Box>
-      ),
+      format: (_value, row) =>
+        canEditRow(row) ? (
+          <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(withPortalBase(portalBase, `/vehicles/${row.id}/edit`));
+              }}
+              color="primary"
+            >
+              <Edit fontSize="small" />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(row.id);
+              }}
+              color="error"
+            >
+              <Delete fontSize="small" />
+            </IconButton>
+          </Box>
+        ) : null,
     },
   ];
 
@@ -304,9 +323,11 @@ export const ProductsListPage: React.FC = () => {
             </>
           )}
           <ExportButton data={list} filename="vehicles" />
-          <Button variant="primary" onClick={() => navigate('/admin/vehicles/add')}>
-            Add Vehicle
-          </Button>
+          {canManageVehicles && (
+            <Button variant="primary" onClick={() => navigate(withPortalBase(portalBase, '/vehicles/add'))}>
+              Add Vehicle
+            </Button>
+          )}
         </Box>
       </Box>
 
@@ -346,9 +367,17 @@ export const ProductsListPage: React.FC = () => {
         ) : !loading && list.length === 0 ? (
           <EmptyState
             title="No vehicles match"
-            message="Adjust filters or add a vehicle to the catalog."
-            actionLabel="Add Vehicle"
-            onAction={() => navigate('/admin/vehicles/add')}
+            message={
+              canManageVehicles
+                ? 'Adjust filters or add a vehicle to the catalog.'
+                : 'Adjust filters or ask an admin if a vehicle is missing from the catalog.'
+            }
+            actionLabel={canManageVehicles ? 'Add Vehicle' : undefined}
+            onAction={
+              canManageVehicles
+                ? () => navigate(withPortalBase(portalBase, '/vehicles/add'))
+                : undefined
+            }
           />
         ) : (
           <Table
@@ -360,7 +389,9 @@ export const ProductsListPage: React.FC = () => {
             totalRows={pagination.total}
             onPageChange={(page) => dispatch(setPage(page + 1))}
             onRowsPerPageChange={(limit) => dispatch(setLimit(limit))}
-            onRowClick={(row) => navigate(`/admin/vehicles/${row.id}`)}
+            onRowClick={(row) =>
+              navigate(withPortalBase(portalBase, `/vehicles/${row.id}`))
+            }
           />
         )}
       </Box>

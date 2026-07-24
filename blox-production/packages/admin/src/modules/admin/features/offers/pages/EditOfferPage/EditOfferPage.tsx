@@ -214,8 +214,8 @@ export const EditOfferPage: React.FC = () => {
             )}
             {!watch('insuranceRateId') && (selected?.annualInsuranceRate || selected?.annualInsuranceRateProvider) && (
               <Grid item xs={12}>
-                <Box sx={{ p: 2, backgroundColor: '#fff3cd', borderRadius: 2, border: '1px solid #ffc107' }}>
-                  <Typography variant="body2" color="warning.main">
+                <Box sx={{ p: 2, backgroundColor: 'var(--blox-emerald-wash)', borderRadius: 2, border: '1px solid var(--blox-emerald)' }}>
+                  <Typography variant="body2" sx={{ color: 'var(--blox-deep-green)' }}>
                     This offer currently uses legacy insurance rate fields. Select an Insurance Rate product above to migrate to the new system.
                   </Typography>
                   <Box sx={{ mt: 1 }}>

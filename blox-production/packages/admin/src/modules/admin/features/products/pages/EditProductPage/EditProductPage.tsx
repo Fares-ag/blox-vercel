@@ -12,12 +12,14 @@ import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { resolveDocumentsSignedUrl } from '@shared/utils';
 import { toast } from 'react-toastify';
 import { useForm, useFieldArray } from 'react-hook-form';
+import { usePortalBasePath, withPortalBase } from '@shared/contexts/portal-base-path';
 import './EditProductPage.scss';
 
 export const EditProductPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const portalBase = usePortalBasePath();
   const { selected, loading } = useAppSelector((state) => state.products);
   const [saving, setSaving] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
@@ -109,7 +111,7 @@ export const EditProductPage: React.FC = () => {
     } catch (error: any) {
       console.error('❌ Failed to load vehicle:', error);
       toast.error(error.message || 'Failed to load vehicle');
-      navigate('/admin/vehicles');
+      navigate(withPortalBase(portalBase, '/vehicles'));
     } finally {
       dispatch(setLoading(false));
     }
@@ -202,7 +204,7 @@ export const EditProductPage: React.FC = () => {
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         dispatch(updateProduct(supabaseResponse.data));
         toast.success('Vehicle updated successfully');
-        navigate(`/admin/vehicles/${id}`);
+        navigate(withPortalBase(portalBase, `/vehicles/${id}`));
       } else {
         throw new Error(supabaseResponse.message || 'Failed to update vehicle');
       }
@@ -223,7 +225,7 @@ export const EditProductPage: React.FC = () => {
         <Button
           variant="text"
           startIcon={<ArrowBack />}
-          onClick={() => navigate(`/admin/vehicles/${id}`)}
+          onClick={() => navigate(withPortalBase(portalBase, `/vehicles/${id}`))}
           className="back-button"
         >
           Back to Vehicle
@@ -349,10 +351,6 @@ export const EditProductPage: React.FC = () => {
                   valueAsNumber: true,
                   validate: (v) => {
                     if (!Number.isFinite(v) || v <= 0) return 'Enter a valid price';
-                    const status = watch('status') || 'active';
-                    if (status === 'active' && v > 70_000) {
-                      return 'Active vehicles cannot exceed 70,000 QAR (Customer catalog cap).';
-                    }
                     return true;
                   },
                 })}
@@ -566,7 +564,7 @@ export const EditProductPage: React.FC = () => {
         </Paper>
 
         <Box className="form-actions">
-          <Button variant="secondary" onClick={() => navigate(`/admin/vehicles/${id}`)} size="large">
+          <Button variant="secondary" onClick={() => navigate(withPortalBase(portalBase, `/vehicles/${id}`))} size="large">
             Cancel
           </Button>
           <Button type="submit" variant="primary" loading={saving} size="large">

@@ -5,6 +5,7 @@ import type { User } from '@shared/models/user.model';
 import { supabase } from '@shared/services/supabase.service';
 import { loggingService } from '@shared/services/logging.service';
 import { devLogger } from '@shared/utils/logger.util';
+import { isFullAdminRole } from '@shared/utils/rbac';
 
 interface UserMetadata {
   role?: string;
@@ -15,7 +16,7 @@ interface UserMetadata {
 
 /**
  * Resolve role from public.users / is_admin() only.
- * Never grant admin from JWT user_metadata (client-settable).
+ * Never grant elevated roles from JWT user_metadata (client-settable).
  */
 const fetchUserRoleFromDB = async (userId: string, email: string): Promise<string> => {
   try {
@@ -35,7 +36,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string): Promise<strin
 
     if (!error && data?.role) {
       const role = String(data.role).trim().toLowerCase();
-      if (role === 'admin' || role === 'super_admin' || role === 'customer') return role;
+      if (isFullAdminRole(role) || role === 'customer') return role;
     }
 
     if (email) {
@@ -46,7 +47,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string): Promise<strin
         .maybeSingle();
       if (!emailError && emailData?.role) {
         const role = String(emailData.role).trim().toLowerCase();
-        if (role === 'admin' || role === 'super_admin' || role === 'customer') return role;
+        if (isFullAdminRole(role) || role === 'customer') return role;
       }
     }
 
@@ -59,6 +60,7 @@ const fetchUserRoleFromDB = async (userId: string, email: string): Promise<strin
 
 /**
  * AuthInitializer — Admin portal. Privilege only from public.users / is_admin().
+ * Allows admin / super_admin only (dealer and credit have their own apps).
  */
 export const AuthInitializer: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -74,7 +76,7 @@ export const AuthInitializer: React.FC = () => {
       const dbRole = await fetchUserRoleFromDB(session.user.id, session.user.email || '');
       if (!mounted) return;
 
-      if (dbRole === 'admin' || dbRole === 'super_admin') {
+      if (isFullAdminRole(dbRole)) {
         const meta = session.user.user_metadata || {};
         const user: User = {
           id: session.user.id,

@@ -27,40 +27,45 @@ const STATUS_CONFIG: Record<
   ApplicationStatus,
   { label: string; color: string; icon: React.ReactNode }
 > = {
-  draft: { label: 'Draft Created', color: '#FF9800', icon: <Pending /> }, // Orange
-  under_review: { label: 'Under Review', color: '#FFC107', icon: <AccessTime /> }, // Amber/Yellow
-  active: { label: 'Approved', color: '#2A2A2A', icon: <CheckCircle /> },
-  completed: { label: 'Completed', color: '#2E7D32', icon: <CheckCircle /> },
+  draft: { label: 'Draft Created', color: '#708090', icon: <Pending /> },
+  under_review: { label: 'Under Review', color: '#DBFF00', icon: <AccessTime /> },
+  active: { label: 'Approved', color: '#00CFA2', icon: <CheckCircle /> },
+  completed: { label: 'Completed', color: '#00CFA2', icon: <CheckCircle /> },
   rejected: { label: 'Rejected', color: '#C62828', icon: <Cancel /> },
   contract_signing_required: {
     label: 'Contract Signing Required',
-    color: '#5C5346',
+    color: '#DBFF00',
     icon: <AccessTime />,
   },
   resubmission_required: {
     label: 'Resubmission Required',
-    color: '#E65100',
+    color: '#DBFF00',
     icon: <Pending />,
   },
   contracts_submitted: {
     label: 'Contracts Submitted',
-    color: '#2A2A2A',
+    color: '#00CFA2',
     icon: <CheckCircle />,
   },
   contract_under_review: {
     label: 'Contract Under Review',
-    color: '#F9A825',
+    color: '#16535B',
     icon: <AccessTime />,
   },
   down_payment_required: {
     label: 'Down Payment Required',
-    color: '#E65100',
+    color: '#DBFF00',
     icon: <AccessTime />,
   },
   down_payment_submitted: {
     label: 'Down Payment Submitted',
-    color: '#2A2A2A',
+    color: '#00CFA2',
     icon: <CheckCircle />,
+  },
+  pending_finance_activation: {
+    label: 'Approved — awaiting finance activation',
+    color: '#DBFF00',
+    icon: <AccessTime />,
   },
   submission_cancelled: {
     label: 'Cancelled',
@@ -89,12 +94,12 @@ export const ApplicationTimeline: React.FC<ApplicationTimelineProps> = ({
           const isActive = event.status === currentStatus;
 
           const isDraft = event.status === 'draft';
-          const dotBg = isDraft ? config.color : (isActive ? config.color : '#C9C4B7');
+          const dotBg = isDraft ? config.color : (isActive ? config.color : '#A8B2BC');
           const iconColor = isDraft
             ? '#FFFFFF'
             : isActive
-              ? (config.color === '#FFC107' || config.color === '#FF9800' ? '#FFFFFF' : '#FFFFFF')
-              : '#787663';
+              ? (config.color === '#DBFF00' ? '#16535B' : '#FFFFFF')
+              : '#708090';
 
           return (
             <TimelineItem key={index}>

@@ -1,22 +1,22 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { Box, Typography, Card, CardContent, Button } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { Visibility, FileDownload } from '@mui/icons-material';
 import { StatusBadge, Loading, EmptyState } from '@shared/components';
 import { formatDateTime, formatCurrency } from '@shared/utils/formatters';
-import { supabaseApiService } from '@shared/services';
+import { supabaseApiService, ContractPdfService } from '@shared/services';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setApplications, setLoading, setError } from '../../../../store/slices/application.slice';
 import { toast } from 'react-toastify';
+import { devLogger } from '@shared/utils/logger.util';
 import './ApplicationsListPage.scss';
-
-// Dummy data removed - using only localStorage and API
 
 export const ApplicationsListPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { list, loading, error: listError } = useAppSelector((state) => state.application);
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const [downloadingContractId, setDownloadingContractId] = useState<string | null>(null);
 
   const loadApplications = useCallback(async () => {
     if (!user?.email) return;
@@ -54,6 +54,37 @@ export const ApplicationsListPage: React.FC = () => {
   const handleViewDetails = (applicationId: string) => {
     navigate(`/customer/my-applications/${applicationId}`);
   };
+
+  /** Fetch full row (contract_data) then generate PDF — same path as ApplicationDetailPage. */
+  const handleDownloadContract = useCallback(async (applicationId: string) => {
+    try {
+      setDownloadingContractId(applicationId);
+      const res = await supabaseApiService.getApplicationById(applicationId);
+      if (res.status !== 'SUCCESS' || !res.data) {
+        throw new Error(res.message || 'Application not found');
+      }
+      const app = res.data;
+      if (!app.contractGenerated || !app.contractData) {
+        toast.error('Contract not yet generated for this application');
+        return;
+      }
+      await ContractPdfService.generateAndSave(
+        {
+          application: app,
+          contractFormData: app.contractData,
+        },
+        `Contract-${app.id}-${new Date().toISOString().split('T')[0]}.pdf`
+      );
+      toast.success('Contract downloaded successfully! Please print and sign it.');
+    } catch (error: unknown) {
+      devLogger.error('Error generating contract PDF from list:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to generate contract PDF';
+      toast.error(errorMessage);
+    } finally {
+      setDownloadingContractId(null);
+    }
+  }, []);
 
   // Wait for user to be available before deciding empty vs loading (avoids empty state on first load after login)
   const userReady = user?.email !== undefined;
@@ -111,11 +142,18 @@ export const ApplicationsListPage: React.FC = () => {
                   <Box className="detail-row">
                     <Typography variant="caption" className="detail-label">
                       Vehicle Price
+                      {application.hideInterest ? ' (0%)' : ''}
                     </Typography>
                     <Typography variant="body2" className="detail-value" fontWeight={700} sx={{ color: 'var(--primary-text)', fontSize: 15 }}>
-                      {application.vehicle
-                        ? formatCurrency(application.vehicle.price)
-                        : 'N/A'}
+                      {formatCurrency(
+                        application.hideInterest && application.customerDisplayPrice != null
+                          ? application.customerDisplayPrice
+                          : application.sellingPrice != null
+                            ? application.sellingPrice
+                            : application.vehicle
+                              ? application.vehicle.price
+                              : 0
+                      )}
                     </Typography>
                   </Box>
                   <Box className="detail-row">
@@ -158,8 +196,12 @@ export const ApplicationsListPage: React.FC = () => {
                       variant="outlined"
                       startIcon={<FileDownload />}
                       className="download-button"
+                      disabled={downloadingContractId === application.id}
+                      onClick={() => handleDownloadContract(application.id)}
                     >
-                      Download Contract
+                      {downloadingContractId === application.id
+                        ? 'Downloading…'
+                        : 'Download Contract'}
                     </Button>
                   )}
                 </Box>

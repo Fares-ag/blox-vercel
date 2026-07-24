@@ -52,9 +52,12 @@ export const LoginPage: React.FC = () => {
     <Box className="login-page">
       <Box className="login-container" component="main" aria-labelledby="admin-login-title">
         <Box className="login-header">
-          <img src="/BloxLogoNav.png" alt="Blox" className="logo-image" />
+          <img src="/BloxLogo.png" alt="Blox" className="logo-image" />
           <Typography id="admin-login-title" variant="h2" className="welcome-text">
             Admin Portal
+          </Typography>
+          <Typography variant="overline" className="brand-tagline" sx={{ letterSpacing: '0.12em', color: 'text.secondary' }}>
+            Finance Unboxed
           </Typography>
           <Typography variant="body2" className="subtitle-text">
             Sign in to manage applications, vehicles, and operations
@@ -65,7 +68,8 @@ export const LoginPage: React.FC = () => {
           {showAccessDenied ? (
             <Alert severity="error" className="login-alert" role="alert">
               <Typography variant="body2">
-                <strong>Access denied.</strong> Administrator privileges are required for this portal.
+                <strong>Access denied.</strong> Administrator privileges are required. Dealer agents
+                and credit officers should use their own portals.
               </Typography>
             </Alert>
           ) : null}

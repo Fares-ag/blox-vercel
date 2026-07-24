@@ -1,86 +1,109 @@
 @use './responsive.scss' as *;
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
-  /* Blox Brand Colors - Primary Palette */
-  --primary-color: #DAFF01;        /* Lime Yellow - Hero color */
-  --primary-dark: #B8D900;         /* Darker Lime Yellow */
-  --primary-light: #E8FF33;        /* Lighter Lime Yellow */
-  --blox-black: #0E1909;           /* Blox Black - Primary text */
-  --dark-grey: #787663;            /* Dark Grey - Secondary text */
-  --mid-grey: #C9C4B7;             /* Mid Grey - Dividers */
-  --light-grey: #F3F0ED;           /* Light Grey - Backgrounds */
-  
-  /* Secondary Colors (for compatibility) */
-  --secondary-color: #787663;       /* Dark Grey */
-  --secondary-dark: #5A5849;       /* Darker Grey */
-  --secondary-light: #9A9880;       /* Lighter Grey */
-  
-  /* Button Colors - Following Design Guidelines (No Green) */
-  --primary-btn-bg: #DAFF01;       /* Lime Yellow - Primary buttons */
-  --primary-btn-color: #0E1909;    /* Blox Black text on Lime Yellow */
-  --primary-btn-hover: #B8D900;     /* Darker Lime Yellow for hover */
-  --secondary-btn-bg: #F3F0ED;      /* Light Grey - Secondary buttons */
-  --secondary-btn-color: #0E1909;  /* Blox Black text on Light Grey */
-  --secondary-btn-hover: #E8E5DF;   /* Slightly darker light grey for hover */
-  --secondary-neutral-bg: #F3F0ED; /* Light Grey - Secondary Neutral buttons */
-  --secondary-neutral-color: #787663; /* Dark Grey text on Light Grey */
-  --secondary-neutral-hover: #E8E5DF; /* Slightly darker light grey for hover */
-  --destructive-btn-bg: #F3F0ED;     /* Light Grey - Destructive buttons */
-  --destructive-btn-border: #787663; /* Dark Grey border for destructive */
-  --destructive-btn-color: #0E1909;  /* Blox Black text for destructive */
-  --destructive-btn-hover-bg: #E8E5DF; /* Slightly darker light grey for hover */
-  --destructive-btn-hover-border: #787663; /* Dark Grey border for hover */
-  --tertiary-btn-color: #787663;     /* Dark Grey - Tertiary (text only) */
-  --outline-btn-border: #787663;     /* Dark Grey border */
-  
-  /*
-   * Focus States — dual-tone on light UI:
-   * black provides WCAG 3:1 UI contrast; lime is brand accent only when paired.
-   * Lime alone on white/light-grey fails contrast (~1.15:1) — do not use as solo ring.
-   */
-  --focus-ring-primary: #0E1909;    /* Solid black — readable on light surfaces */
-  --focus-ring-brand: #DAFF01;      /* Brand accent; pair with black, or alone on dark */
-  --focus-ring-secondary: #0E1909;  /* Blox Black focus ring */
-  --focus-ring-neutral: #787663;    /* Dark Grey focus ring */
-  /* Outer lime halo; always pair with --field-border-focus (black) stroke */
-  --field-focus-ring: 0 0 0 2px #DAFF01;
+  /* Blox_Branding.pdf v1.0 — premium teal composition */
+  --blox-deep-green: #16535B;
+  --blox-deep-green-dark: #0F3A40;
+  --blox-emerald: #00CFA2;
+  --blox-emerald-dark: #00B894;
+  --blox-emerald-light: #4DD9B8;
+  --blox-emerald-wash: #E6FBF5;
+  --blox-lime: #DBFF00;
+  --blox-lime-dark: #C4E600;
+  --blox-lime-light: #E8FF66;
+  --blox-lime-wash: #F7FFE0;
+  --blox-white: #FFFFFF;
+  --blox-slate: #708090;
+  --blox-slate-dark: #4A5560;
+  --blox-slate-light: #A8B2BC;
+  --blox-page-bg: #F0F5F5;
+  --blox-page-bg-warm: #EEF3F3;
+  --blox-surface-muted: #E8F0F0;
 
-  /* Form & UI Colors */
-  --field-lable-color: #0E1909;     /* Blox Black */
-  --table-header: #0E1909;          /* Blox Black */
-  --table-header-color: #DAFF01;    /* Lime Yellow text on Blox Black */
-  --custom-text-color: #787663;     /* Dark Grey */
-  /* Idle field edge (~3.6:1 on white). Dividers stay --mid-grey / --divider-color. */
-  --field-border-color: #8B8778;
-  --field-border-hover: #787663;    /* Dark Grey — clearer than lime on light */
-  --field-border-focus: #0E1909;    /* Black focus stroke (a11y); lime via --field-focus-ring */
-  --primary-text: #0E1909;          /* Blox Black */
-  --secondary-text: #787663;        /* Dark Grey */
-  --field-placeholder: #787663;     /* Dark Grey */
-  --divider-color: #C9C4B7;         /* Mid Grey */
+  --font-text: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-numeric: 'Space Grotesk', 'IBM Plex Sans', sans-serif;
 
-  /* Status Colors - Adjusted for new palette */
-  --status-due: #DAFF01;             /* Lime Yellow */
-  --status-active: #DAFF01;         /* Lime Yellow */
-  --status-paid: #2E7D32;           /* Green - paid/success */
-  --status-unpaid: #0E1909;         /* Blox Black */
-  --status-partially-paid: #787663; /* Dark Grey */
-  --status-draft: #C9C4B7;          /* Mid Grey */
-  --status-completed: #787663;      /* Dark Grey */
-  --status-under-review: #DAFF01;   /* Lime Yellow */
-  --status-rejected: #0E1909;       /* Blox Black */
-  --status-contract-signing: #787663; /* Dark Grey */
+  /* Atmosphere — Direction A: calm canvas, dark moments reserved for hero/nav */
+  --blox-page-canvas: #F0F5F5;
+  --blox-page-gradient: radial-gradient(1400px 700px at 50% -20%, #F4F9F9 0%, #F0F5F5 55%, #EAF1F1 100%);
+  --blox-chrome-gradient: linear-gradient(168deg, #1B6068 0%, #16535B 45%, #0F3A40 100%);
+  --blox-hero-gradient: linear-gradient(150deg, #0F3A40 0%, #16535B 58%, #1B6C75 100%);
+  --blox-hero-glow: radial-gradient(600px 300px at 85% -10%, rgba(0, 207, 162, 0.22), transparent 60%),
+    radial-gradient(420px 240px at 100% 110%, rgba(219, 255, 0, 0.10), transparent 55%);
+  --blox-hairline: rgba(22, 83, 91, 0.08);
+  --lime-glow: 0 10px 26px rgba(219, 255, 0, 0.28);
+  --emerald-glow: 0 8px 22px rgba(0, 207, 162, 0.20);
 
-  /* Background Colors */
-  --background: #F3F0ED;            /* Light Grey – page background */
-  --background-secondary: #F3F0ED;   /* Light Grey (text on dark areas) */
-  --card-background: #FFFFFF;       /* White – cards stand out on page */
-  --card-hover: #F5F5F5;            /* Subtle grey for card hover */
-  --disabled-bg: #C9C4B7;           /* Mid Grey */
-  --overlay: rgba(14, 25, 9, 0.4);  /* Blox Black with opacity */
+  /* Primary palette aliases
+     Direction A: everyday interactive accent = emerald (was lime).
+     Lime lives only in --primary-btn-* (the hero CTA) + --blox-lime. */
+  --primary-color: var(--blox-emerald);
+  --primary-dark: var(--blox-emerald-dark);
+  --primary-light: var(--blox-emerald-light);
+  --blox-black: var(--blox-deep-green);
+  --dark-grey: var(--blox-slate);
+  --mid-grey: var(--blox-slate-light);
+  --light-grey: var(--blox-page-bg);
 
-  /* Spacing - Premium Scale */
+  --secondary-color: var(--blox-emerald);
+  --secondary-dark: var(--blox-emerald-dark);
+  --secondary-light: var(--blox-emerald-light);
+
+  --primary-btn-bg: var(--blox-lime);
+  --primary-btn-color: var(--blox-deep-green);
+  --primary-btn-hover: var(--blox-lime-dark);
+  --secondary-btn-bg: var(--blox-emerald-wash);
+  --secondary-btn-color: var(--blox-deep-green);
+  --secondary-btn-hover: #D4F7EE;
+  --secondary-neutral-bg: var(--blox-surface-muted);
+  --secondary-neutral-color: var(--blox-slate-dark);
+  --secondary-neutral-hover: #DCE6E6;
+  --destructive-btn-bg: var(--blox-white);
+  --destructive-btn-border: var(--blox-slate);
+  --destructive-btn-color: var(--blox-deep-green);
+  --destructive-btn-hover-bg: var(--blox-page-bg-warm);
+  --destructive-btn-hover-border: var(--blox-slate);
+  --tertiary-btn-color: var(--blox-slate);
+  --outline-btn-border: rgba(22, 83, 91, 0.28);
+
+  --focus-ring-primary: var(--blox-deep-green);
+  --focus-ring-brand: var(--blox-emerald);
+  --focus-ring-secondary: var(--blox-emerald);
+  --focus-ring-neutral: var(--blox-slate);
+  --field-focus-ring: 0 0 0 2px var(--blox-deep-green), 0 0 0 5px rgba(0, 207, 162, 0.18);
+
+  --field-lable-color: var(--blox-deep-green);
+  --table-header: var(--blox-deep-green-dark);
+  --table-header-color: var(--blox-white);
+  --custom-text-color: var(--blox-slate);
+  --field-border-color: rgba(112, 128, 144, 0.55);
+  --field-border-hover: var(--blox-deep-green);
+  --field-border-focus: var(--blox-deep-green);
+  --primary-text: var(--blox-deep-green);
+  --secondary-text: var(--blox-slate);
+  --field-placeholder: var(--blox-slate-light);
+  --divider-color: rgba(168, 178, 188, 0.55);
+
+  --status-due: var(--blox-lime);
+  --status-active: var(--blox-emerald);
+  --status-paid: var(--blox-emerald);
+  --status-unpaid: var(--blox-deep-green);
+  --status-partially-paid: var(--blox-slate);
+  --status-draft: var(--blox-slate-light);
+  --status-completed: var(--blox-emerald-dark);
+  --status-under-review: var(--blox-slate);
+  --status-rejected: #C62828;
+  --status-contract-signing: var(--blox-emerald);
+
+  --background: var(--blox-page-bg);
+  --background-secondary: var(--blox-white);
+  --card-background: var(--blox-white);
+  --card-hover: #F5FAFA;
+  --card-border: 1px solid rgba(22, 83, 91, 0.08);
+  --disabled-bg: var(--blox-slate-light);
+  --overlay: rgba(15, 58, 64, 0.48);
+
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
@@ -88,28 +111,26 @@
   --spacing-xl: 32px;
   --spacing-2xl: 48px;
 
-  /* Border Radius - Softer, More Modern */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 16px;
   --radius-xl: 20px;
-  --radius-card: 16px;
-  --radius-large-card: 24px;
+  --radius-card: 18px;
+  --radius-large-card: 28px;
   --radius-round: 50px;
 
-  /* Shadows - Premium Depth System */
-  --shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
-  --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  /* Teal-tinted shadows — 2 working levels (resting + lifted) */
+  --shadow-xs: 0 1px 2px rgba(15, 58, 64, 0.04);
+  --shadow-sm: 0 1px 2px rgba(15, 58, 64, 0.04), 0 4px 12px rgba(22, 83, 91, 0.05);
+  --shadow-md: 0 6px 18px rgba(22, 83, 91, 0.06), 0 1px 2px rgba(15, 58, 64, 0.04);
+  --shadow-lg: 0 14px 34px rgba(15, 58, 64, 0.12), 0 4px 12px rgba(0, 207, 162, 0.07);
+  --shadow-xl: 0 22px 44px rgba(15, 58, 64, 0.16), 0 8px 16px rgba(0, 207, 162, 0.06);
+  --card-shadow: 0 1px 2px rgba(15, 58, 64, 0.04), 0 6px 18px rgba(22, 83, 91, 0.06);
+  --card-shadow-hover: 0 14px 34px rgba(15, 58, 64, 0.12), 0 4px 12px rgba(0, 207, 162, 0.07);
 
-  /* Transitions - Smooth Premium Feel */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  --transition-slow: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-slow: 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -126,13 +147,16 @@ html,
 body {
   height: 100%;
   width: 100%;
-  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-text);
   font-size: 14px;
   font-weight: 400;
   line-height: 1.6;
   letter-spacing: -0.01em;
   color: var(--primary-text);
-  background-color: var(--background); /* Light Grey background - dark theme only for specific pages */
+  /* Calm misted canvas — no washes behind content (Direction A) */
+  background-color: var(--blox-page-canvas);
+  background-image: var(--blox-page-gradient);
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -143,6 +167,7 @@ body {
   height: 100%;
   width: 100%;
   overflow-x: hidden;
+  min-height: 100%;
 }
 
 /* Typography Hierarchy - Following Design Guidelines */
@@ -222,6 +247,68 @@ p, .body-copy {
   background: var(--dark-grey);
 }
 
+/* Money / rates / tenure / IDs — Space Grotesk */
+.blox-numeric,
+.numeric,
+[data-blox-numeric='true'] {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Headline money — the premium figure treatment (Direction A) */
+.blox-money {
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--primary-text);
+  line-height: 1.1;
+
+  .blox-money__currency {
+    font-size: 0.62em;
+    font-weight: 500;
+    color: var(--secondary-text);
+    margin-right: 0.28em;
+    letter-spacing: 0;
+  }
+
+  .blox-money__unit {
+    font-size: 0.5em;
+    font-weight: 500;
+    color: var(--secondary-text);
+    margin-left: 0.32em;
+    letter-spacing: 0;
+  }
+
+  &.blox-money--hero {
+    font-size: clamp(32px, 5vw, 44px);
+    font-weight: 700;
+  }
+
+  &.blox-money--lg {
+    font-size: 28px;
+    font-weight: 700;
+  }
+
+  &.blox-money--md {
+    font-size: 20px;
+  }
+
+  /* On deep-green chrome, the hero figure becomes the lime moment */
+  &.blox-money--on-dark {
+    color: var(--blox-white);
+  }
+
+  &.blox-money--accent {
+    color: var(--blox-lime);
+  }
+
+  &.blox-money--positive {
+    color: var(--blox-emerald);
+  }
+}
+
 /* Utility Classes */
 .text-center {
   text-align: center;
@@ -287,67 +374,94 @@ p, .body-copy {
    Clean Card Design System - Matching Vehicle Cards
    ============================================ */
 
-/* Standard Content Card - Light Grey Background (Default) */
+/* Standard Content Card */
 .content-card,
 .MuiPaper-root.content-card {
-  background-color: var(--card-background); /* Light Grey */
-  border-radius: var(--radius-card); /* 16px */
+  background-color: var(--card-background);
+  border-radius: var(--radius-card);
   box-shadow: var(--card-shadow);
-  border: none; /* No border for clean look */
-  padding: var(--spacing-lg); /* 24px */
-  transition: all var(--transition-base);
+  border: var(--card-border);
+  padding: var(--spacing-lg);
+  transition: transform var(--transition-base), box-shadow var(--transition-base), background-color var(--transition-base);
   position: relative;
   overflow: hidden;
 
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--blox-emerald), var(--blox-lime));
+    opacity: 0;
+    transition: opacity var(--transition-base);
+  }
+
   &:hover {
-    transform: translateY(-4px); /* Subtle lift */
+    transform: translateY(-2px);
     box-shadow: var(--card-shadow-hover);
-    background-color: var(--card-hover); /* Slightly darker on hover */
+    background-color: var(--card-hover);
+
+    &::before {
+      opacity: 1;
+    }
   }
 }
 
-/* Section Card - Dark Background (for content sections) */
+/* Section Card — premium chrome */
 .section-card,
 .MuiPaper-root.section-card {
-  background-color: var(--blox-black); /* Blox Black */
-  color: var(--background-secondary); /* Light Grey text */
-  border-radius: var(--radius-card); /* 16px */
-  box-shadow: var(--card-shadow);
-  border: none; /* No border for clean look */
-  padding: var(--spacing-lg); /* 24px */
-  transition: all var(--transition-base);
+  background: var(--blox-hero-gradient);
+  color: var(--background-secondary);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(0, 207, 162, 0.18);
+  padding: var(--spacing-lg);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
   position: relative;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    position: absolute;
+    right: -40px;
+    top: -40px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(219, 255, 0, 0.18), transparent 70%);
+    pointer-events: none;
+  }
 
   &:hover {
-    transform: translateY(-4px); /* Subtle lift */
-    box-shadow: var(--card-shadow-hover);
-    background-color: var(--blox-black); /* Stay dark on hover */
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-xl);
   }
 
   .section-title {
     font-size: 20px;
     font-weight: 700;
-    color: var(--background-secondary); /* Light Grey text */
+    color: var(--blox-white);
     letter-spacing: -0.01em;
     margin-bottom: var(--spacing-md);
   }
 }
 
-/* Stat Card - For dashboard statistics */
+/* Stat Card */
 .stat-card {
-  background-color: var(--card-background); /* Light Grey default */
+  background: linear-gradient(180deg, #FFFFFF 0%, #F7FBFA 100%);
   border-radius: var(--radius-card);
   box-shadow: var(--card-shadow);
-  border: none;
+  border: var(--card-border);
   padding: var(--spacing-lg);
-  transition: all var(--transition-base);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
   height: 100%;
   display: flex;
   flex-direction: column;
 
   &.stat-card-dark {
-    background-color: var(--blox-black);
+    background: var(--blox-chrome-gradient);
     color: var(--background-secondary);
+    border-color: rgba(0, 207, 162, 0.2);
 
     .stat-value,
     .stat-label {
@@ -355,39 +469,47 @@ p, .body-copy {
     }
 
     .stat-icon {
-      color: var(--primary-color); /* Lime Yellow */
+      color: var(--blox-lime);
+    }
+
+    .stat-value.highlight {
+      color: var(--blox-lime);
     }
   }
 
   &:hover {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
     box-shadow: var(--card-shadow-hover);
   }
 
   .stat-value {
+    font-family: var(--font-numeric);
     font-size: 32px;
     font-weight: 700;
-    color: var(--primary-text); /* Blox Black */
+    color: var(--primary-text);
     letter-spacing: -0.02em;
     margin-bottom: var(--spacing-xs);
     line-height: 1.2;
 
     &.highlight {
-      color: var(--primary-color); /* Lime Yellow for emphasis */
+      background: linear-gradient(90deg, var(--blox-deep-green), var(--blox-emerald));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
     }
   }
 
   .stat-label {
     font-size: 14px;
     font-weight: 400;
-    color: var(--secondary-text); /* Dark Grey */
-    opacity: 0.8;
+    color: var(--secondary-text);
+    opacity: 0.9;
   }
 
   .stat-icon {
     font-size: 32px;
-    color: var(--primary-color); /* Lime Yellow */
-    opacity: 0.9;
+    color: var(--blox-emerald);
+    opacity: 0.95;
   }
 }
 
@@ -403,7 +525,7 @@ p, .body-copy {
     transition: all var(--transition-base);
 
     &:hover {
-      transform: translateY(-4px);
+      transform: translateY(-2px);
       box-shadow: var(--card-shadow-hover);
       background-color: var(--card-hover);
     }

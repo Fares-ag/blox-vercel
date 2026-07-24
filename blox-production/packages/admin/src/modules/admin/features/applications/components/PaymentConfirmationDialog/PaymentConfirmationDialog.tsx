@@ -148,7 +148,7 @@ export const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps>
       }}
     >
       <DialogTitle sx={{ pb: 2, position: 'relative' }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, color: '#000000' }}>
+        <Typography variant="h5" sx={{ fontWeight: 700, color: '#16535B' }}>
           Confirm Payment
         </Typography>
         <IconButton
@@ -186,7 +186,7 @@ export const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps>
             sx={{
               fontSize: '16px',
               fontWeight: 600,
-              color: '#000000',
+              color: '#16535B',
               mb: 2,
             }}
           >
@@ -288,7 +288,7 @@ export const PaymentConfirmationDialog: React.FC<PaymentConfirmationDialogProps>
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  backgroundColor: '#F9FAFB',
+                  backgroundColor: '#F2F6F6',
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

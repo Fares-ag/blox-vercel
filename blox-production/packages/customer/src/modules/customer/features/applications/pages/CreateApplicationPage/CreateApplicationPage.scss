@@ -11,7 +11,7 @@
     text-transform: none;
 
     &:hover {
-      background-color: rgba(218, 255, 1, 0.1); /* Subtle Lime Yellow tint */
+      background-color: rgba(219, 255, 0, 0.1); /* Subtle Lime Yellow tint */
     }
   }
 
@@ -91,7 +91,7 @@
           }
 
           &:hover {
-            background-color: rgba(218, 255, 1, 0.05); /* Subtle Lime Yellow tint */
+            background-color: rgba(219, 255, 0, 0.05); /* Subtle Lime Yellow tint */
           }
         }
 
@@ -115,7 +115,7 @@
 
           &.drag-active {
             border-color: var(--primary-color); /* Lime Yellow */
-            background-color: rgba(218, 255, 1, 0.05); /* Subtle Lime Yellow tint */
+            background-color: rgba(219, 255, 0, 0.05); /* Subtle Lime Yellow tint */
           }
 
           &.uploading {
@@ -163,7 +163,7 @@
           align-items: center;
           padding: var(--spacing-md);
           background-color: var(--background); /* Light Grey */
-          border: 1px solid #DAFF01;
+          border: 1px solid #DBFF00;
           border-radius: 8px;
 
           .document-info {
@@ -173,7 +173,7 @@
 
             .document-name {
               font-weight: 600;
-              color: #000000;
+              color: #16535B;
             }
           }
         }

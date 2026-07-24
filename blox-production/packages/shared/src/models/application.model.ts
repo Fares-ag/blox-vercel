@@ -7,9 +7,35 @@ import type { ContractFormData } from '../services/contractPdf.service';
  * Extended customer information with optional fields
  * Allows for additional fields beyond the base CustomerInformation interface
  */
+export type ApplicantType = 'individual' | 'corporate';
+
+export interface CorporateAuthorizedSignatory {
+  firstName: string;
+  lastName: string;
+  qid?: string;
+  nationality?: string;
+  position?: string;
+  email: string;
+  phone?: string;
+}
+
+export interface CorporateApplicantInfo {
+  legalName: string;
+  crNumber: string;
+  tradeName?: string;
+  industry?: string;
+  registeredAddress?: Address;
+  authorizedSignatory: CorporateAuthorizedSignatory;
+}
+
 export interface ExtendedCustomerInformation extends CustomerInformation {
   gender?: string;
   nationalId?: string; // Legacy field name, use qid instead
+  /** Defaults to individual when omitted (backward compatible). */
+  applicantType?: ApplicantType;
+  /** Shared across sibling apps created in one corporate bulk submit. */
+  bulkBatchId?: string;
+  corporate?: CorporateApplicantInfo;
   [key: string]: unknown; // Allow additional fields for flexibility
 }
 
@@ -33,6 +59,23 @@ export interface Application {
   createdAt: string;
   updatedAt: string;
   submissionDate?: string;
+  /** Showroom agent owning this application */
+  agentUserId?: string;
+  /** Catalog list price snapshot at quote time */
+  listPrice?: number;
+  /** Negotiated deal price (may differ from list) */
+  sellingPrice?: number;
+  /** True BLOX rate used for economics (e.g. 0.07) */
+  internalAnnualRate?: number;
+  /** When true, customer UI shows display price @ 0% */
+  hideInterest?: boolean;
+  /** Customer-facing vehicle/total price */
+  customerDisplayPrice?: number;
+  /** Customer-facing rate (0 when hideInterest) */
+  customerDisplayRate?: number;
+  submittedAt?: string;
+  submittedBy?: string;
+  pricingSnapshot?: Record<string, unknown>;
   contractGenerated?: boolean;
   contractSigned?: boolean;
   contractData?: ContractFormData;
@@ -85,6 +128,7 @@ export type ApplicationStatus =
   | 'contract_under_review'
   | 'down_payment_required'
   | 'down_payment_submitted'
+  | 'pending_finance_activation'
   | 'submission_cancelled';
 
 export interface CustomerInformation {

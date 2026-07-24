@@ -116,8 +116,8 @@
         }
 
         &.today {
-          background-color: rgba(218, 255, 1, 0.15); /* Slightly brighter Lime Yellow tint */
-          border-color: var(--primary-color); /* Lime Yellow border */
+          background-color: rgba(0, 207, 162, 0.12);
+          border-color: var(--blox-emerald);
           border-width: 2px;
           font-weight: 600;
         }
@@ -142,15 +142,15 @@
             font-size: 11px;
 
             &.paid {
-              background-color: rgba(120, 118, 99, 0.25); /* Dark Grey tint - increased opacity */
+              background-color: rgba(112, 128, 144, 0.25); /* Dark Grey tint - increased opacity */
               color: var(--dark-grey); /* Dark Grey text */
-              border: 1px solid rgba(120, 118, 99, 0.3);
+              border: 1px solid rgba(112, 128, 144, 0.3);
             }
 
             &.upcoming {
-              background-color: rgba(218, 255, 1, 0.3); /* Lime Yellow tint - increased opacity */
+              background-color: rgba(0, 207, 162, 0.16);
               color: var(--primary-text); /* Blox Black text for better contrast */
-              border: 1px solid rgba(218, 255, 1, 0.5);
+              border: 1px solid rgba(0, 207, 162, 0.35);
             }
 
             &.overdue {
@@ -161,14 +161,14 @@
             }
 
             &.active {
-              background-color: rgba(218, 255, 1, 0.3); /* Lime Yellow tint - increased opacity */
+              background-color: rgba(0, 207, 162, 0.16);
               color: var(--primary-text); /* Blox Black text for better contrast */
-              border: 1px solid rgba(218, 255, 1, 0.5);
+              border: 1px solid rgba(0, 207, 162, 0.35);
             }
 
             &.deferred {
-              border-left: 3px solid var(--primary-color); /* Lime Yellow border */
-              background-color: rgba(218, 255, 1, 0.3); /* Lime Yellow tint - increased opacity */
+              border-left: 3px solid var(--blox-emerald);
+              background-color: rgba(0, 207, 162, 0.16);
               color: var(--primary-text); /* Blox Black text for better contrast */
               position: relative;
               
@@ -180,7 +180,7 @@
 
             &.partially-deferred {
               border-left: 3px solid var(--dark-grey); /* Dark Grey border */
-              background-color: rgba(120, 118, 99, 0.25); /* Dark Grey tint - increased opacity */
+              background-color: rgba(112, 128, 144, 0.25); /* Dark Grey tint - increased opacity */
               color: var(--dark-grey); /* Dark Grey text */
               position: relative;
               

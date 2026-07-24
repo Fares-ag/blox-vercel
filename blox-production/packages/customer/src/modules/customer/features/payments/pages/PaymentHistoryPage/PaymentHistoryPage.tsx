@@ -69,15 +69,12 @@ export const PaymentHistoryPage: React.FC = () => {
       setLoading(true);
       setLoadError(null);
 
-      // Load applications from Supabase only
-      const supabaseResponse = await supabaseApiService.getApplications();
+      const supabaseResponse = await supabaseApiService.getApplications({
+        customerEmail: user.email,
+      });
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
-        // Filter to current user's applications (use Redux auth)
-        const applications = supabaseResponse.data as Application[];
-        const userApplications = applications.filter(
-          (app: Application) => app.customerEmail?.toLowerCase() === user.email.toLowerCase()
-        );
+        const userApplications = supabaseResponse.data as Application[];
       // Extract all payment transactions
       const allTransactions: PaymentTransaction[] = [];
 
@@ -161,9 +158,10 @@ export const PaymentHistoryPage: React.FC = () => {
     return Array.from(apps.entries()).map(([id, name]) => ({ id, name }));
   }, [transactions]);
 
-  // Brand colors: Lime Yellow #DAFF01, Blox Black #0E1909
-  const LIME_YELLOW = [218, 255, 1] as [number, number, number];
-  const BLOX_BLACK = [14, 25, 9] as [number, number, number];
+  // Brand colors: Lime Yellow #DBFF00, Blox Black #16535B
+  const LIME_YELLOW = [219, 255, 0] as [number, number, number];
+  const BLOX_DEEP_GREEN = [22, 83, 91] as [number, number, number];
+  const BLOX_LIME = [219, 255, 0] as [number, number, number];
   const PAGE_WIDTH = 210;
   const MARGIN = 18;
   const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
@@ -178,7 +176,7 @@ export const PaymentHistoryPage: React.FC = () => {
       let y = MARGIN;
 
       // Brand header bar (Blox Black background, Lime Yellow text)
-      doc.setFillColor(...BLOX_BLACK);
+      doc.setFillColor(...BLOX_DEEP_GREEN);
       doc.rect(0, 0, PAGE_WIDTH, 36, 'F');
       doc.setTextColor(...LIME_YELLOW);
       doc.setFontSize(22);
@@ -192,7 +190,7 @@ export const PaymentHistoryPage: React.FC = () => {
       doc.text('Vehicle financing · Keep this receipt for your records', PAGE_WIDTH / 2, 31, { align: 'center' });
 
       y = 46;
-      doc.setTextColor(...BLOX_BLACK);
+      doc.setTextColor(...BLOX_DEEP_GREEN);
 
       // Receipt number & date
       const receiptNum = transaction.transactionId || `REC-${transaction.applicationId.slice(0, 8)}-${moment(transaction.paidDate || transaction.dueDate).format('YYYYMMDD')}`;
@@ -208,7 +206,7 @@ export const PaymentHistoryPage: React.FC = () => {
       y += 10;
 
       // Divider
-      doc.setDrawColor(218, 255, 1);
+      doc.setDrawColor(...BLOX_LIME);
       doc.setLineWidth(0.5);
       doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
       y += 12;
@@ -225,7 +223,7 @@ export const PaymentHistoryPage: React.FC = () => {
       doc.setFontSize(10);
       doc.setTextColor(80, 80, 80);
       doc.text(user?.email || '—', MARGIN, y);
-      doc.setTextColor(...BLOX_BLACK);
+      doc.setTextColor(...BLOX_DEEP_GREEN);
       y += 14;
 
       // Vehicle & application
@@ -240,7 +238,7 @@ export const PaymentHistoryPage: React.FC = () => {
       doc.setFontSize(9);
       doc.setTextColor(80, 80, 80);
       doc.text(`Application ${transaction.applicationName.replace(/^Application\s+/i, '')}`, MARGIN, y);
-      doc.setTextColor(...BLOX_BLACK);
+      doc.setTextColor(...BLOX_DEEP_GREEN);
       y += 14;
 
       // Installment / payment details box
@@ -277,16 +275,16 @@ export const PaymentHistoryPage: React.FC = () => {
       y += 58;
 
       // Status badge (Paid)
-      doc.setFillColor(218, 255, 1);
+      doc.setFillColor(...BLOX_LIME);
       doc.rect(PAGE_WIDTH - MARGIN - 22, y - 6, 22, 8, 'F');
-      doc.setTextColor(...BLOX_BLACK);
+      doc.setTextColor(...BLOX_DEEP_GREEN);
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.text('PAID', PAGE_WIDTH - MARGIN - 11, y - 0.5, { align: 'center' });
       y += 16;
 
       // Divider
-      doc.setDrawColor(218, 255, 1);
+      doc.setDrawColor(...BLOX_LIME);
       doc.line(MARGIN, y, PAGE_WIDTH - MARGIN, y);
       y += 14;
 
@@ -300,7 +298,7 @@ export const PaymentHistoryPage: React.FC = () => {
     } else {
       // ——— Payment History (multiple transactions) ———
       let yPos = MARGIN;
-      doc.setFillColor(...BLOX_BLACK);
+      doc.setFillColor(...BLOX_DEEP_GREEN);
       doc.rect(0, 0, PAGE_WIDTH, 28, 'F');
       doc.setTextColor(...LIME_YELLOW);
       doc.setFontSize(18);
@@ -310,14 +308,14 @@ export const PaymentHistoryPage: React.FC = () => {
       doc.setFont('helvetica', 'normal');
       doc.text('Payment History', PAGE_WIDTH / 2, 21, { align: 'center' });
       yPos = 36;
-      doc.setTextColor(...BLOX_BLACK);
+      doc.setTextColor(...BLOX_DEEP_GREEN);
       doc.setFontSize(9);
       doc.text(`Generated: ${moment().format('MMMM D, YYYY h:mm A')}`, MARGIN, yPos);
       doc.text(`Client: ${user?.name || user?.email || '—'}`, PAGE_WIDTH - MARGIN, yPos, { align: 'right' });
       yPos += 12;
 
       const lineHeight = 8;
-      doc.setFillColor(...BLOX_BLACK);
+      doc.setFillColor(...BLOX_DEEP_GREEN);
       doc.rect(MARGIN, yPos - 5, CONTENT_WIDTH, lineHeight, 'F');
       doc.setTextColor(...LIME_YELLOW);
       doc.setFont('helvetica', 'bold');
@@ -329,7 +327,7 @@ export const PaymentHistoryPage: React.FC = () => {
       doc.text('Amount', MARGIN + 145, yPos);
       doc.text('Status', MARGIN + 175, yPos);
       yPos += lineHeight + 2;
-      doc.setTextColor(...BLOX_BLACK);
+      doc.setTextColor(...BLOX_DEEP_GREEN);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
 

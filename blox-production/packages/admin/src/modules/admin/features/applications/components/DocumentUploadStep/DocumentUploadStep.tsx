@@ -13,7 +13,7 @@ interface DocumentCategory {
   required: boolean;
 }
 
-const documentCategories: DocumentCategory[] = [
+const individualDocumentCategories: DocumentCategory[] = [
   { id: 'id', name: 'National ID', required: false },
   { id: 'passport', name: 'Passport', required: false },
   { id: 'license', name: 'Driving License', required: false },
@@ -22,7 +22,16 @@ const documentCategories: DocumentCategory[] = [
   { id: 'other', name: 'Other Documents', required: false },
 ];
 
+const corporateDocumentCategories: DocumentCategory[] = [
+  { id: 'cr', name: 'Commercial Registration', required: false },
+  { id: 'computer_card', name: 'Computer Card', required: false },
+  { id: 'rental_agreement', name: 'Rental Agreement', required: false },
+  { id: 'signatory_id', name: 'Authorised Signatory QID', required: false },
+];
+
 export const DocumentUploadStep: React.FC<StepProps> = ({ data, updateData }) => {
+  const isCorporate = data?.customerInfo?.applicantType === 'corporate';
+  const documentCategories = isCorporate ? corporateDocumentCategories : individualDocumentCategories;
   const [documents, setDocuments] = useState<any[]>(data.documents || []);
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
@@ -110,6 +119,11 @@ export const DocumentUploadStep: React.FC<StepProps> = ({ data, updateData }) =>
       <Typography variant="h3" className="section-title">
         Upload Documents
       </Typography>
+      {isCorporate && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Company documents will be attached to every application created in this batch.
+        </Typography>
+      )}
 
       <Grid container spacing={3}>
         {documentCategories.map((category) => {

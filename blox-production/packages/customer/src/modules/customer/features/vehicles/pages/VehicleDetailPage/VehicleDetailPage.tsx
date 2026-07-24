@@ -13,10 +13,16 @@ import { Button } from '@shared/components';
 import type { Product } from '@shared/models/product.model';
 import type { Promotion } from '@shared/models/promotion.model';
 import { formatCurrency } from '@shared/utils/formatters';
+import {
+  formatProductDisplayTitle,
+  getModelFamilyKey,
+  getProductBodyStyle,
+  getProductPerformanceLine,
+} from '@shared/utils';
 import { Loading, EmptyState } from '@shared/components';
 import { supabaseApiService } from '@shared/services';
 import { InstallmentCalculator } from '../../components/InstallmentCalculator/InstallmentCalculator';
-import { CUSTOMER_MAX_VEHICLE_PRICE_QAR, vehicleService } from '../../../../services/vehicle.service';
+import { vehicleService } from '../../../../services/vehicle.service';
 import { getVehicleDisplayImage } from '../../utils/vehicle-image.utils';
 import { toast } from 'react-toastify';
 import moment from 'moment';
@@ -28,6 +34,7 @@ export const VehicleDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [vehicle, setVehicle] = useState<Product | null>(null);
+  const [siblings, setSiblings] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [calculatorData, setCalculatorData] = useState<any>(null);
   const [activePromotions, setActivePromotions] = useState<Promotion[]>([]);
@@ -71,8 +78,18 @@ export const VehicleDetailPage: React.FC = () => {
 
       if (response.status === 'SUCCESS' && response.data?.id) {
         const product = response.data;
-        if (product.status === 'active' && product.price <= CUSTOMER_MAX_VEHICLE_PRICE_QAR) {
+        if (product.status === 'active') {
           setVehicle(product);
+          const family = getModelFamilyKey(product);
+          if (family) {
+            const sibRes = await supabaseApiService.getSiblingProductsByFamily(
+              product.id,
+              family
+            );
+            setSiblings(sibRes.status === 'SUCCESS' && sibRes.data ? sibRes.data : []);
+          } else {
+            setSiblings([]);
+          }
         } else {
           toast.error('This vehicle is not available');
           navigate('/customer/vehicles');
@@ -130,6 +147,9 @@ export const VehicleDetailPage: React.FC = () => {
   }
 
   const imageUrl = getVehicleDisplayImage(vehicle);
+  const displayTitle = formatProductDisplayTitle(vehicle);
+  const bodyStyle = getProductBodyStyle(vehicle);
+  const performanceLine = getProductPerformanceLine(vehicle);
 
   return (
     <Box className="vehicle-detail-page" sx={{ width: '100%', maxWidth: '100%', margin: 0 }}>
@@ -148,11 +168,46 @@ export const VehicleDetailPage: React.FC = () => {
           <Paper className="image-section card">
             <img
               src={imageUrl}
-              alt={`${vehicle.make} ${vehicle.model}`}
+              alt={displayTitle}
               className="main-image"
               loading="lazy"
             />
           </Paper>
+
+          <Box sx={{ mt: 2, mb: 1 }}>
+            <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+              {displayTitle}
+            </Typography>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+              <Chip
+                size="small"
+                label={vehicle.condition === 'new' ? 'New' : 'Used'}
+              />
+              {bodyStyle && <Chip size="small" label={bodyStyle} variant="outlined" />}
+              {performanceLine && (
+                <Chip size="small" label={performanceLine} variant="outlined" />
+              )}
+            </Box>
+          </Box>
+
+          {siblings.length > 0 && (
+            <Paper className="siblings-section card" sx={{ mt: 2, p: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5 }}>
+                Other variants
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                {siblings.map((sib) => (
+                  <Chip
+                    key={sib.id}
+                    label={`${formatProductDisplayTitle(sib)} · ${formatCurrency(sib.price)}`}
+                    onClick={() => navigate(`/customer/vehicles/${sib.id}`)}
+                    clickable
+                    variant="outlined"
+                  />
+                ))}
+              </Box>
+            </Paper>
+          )}
 
           <Paper className="specifications-section card" sx={{ mt: 3 }}>
             <Typography variant="h5" className="section-title">
@@ -260,17 +315,17 @@ export const VehicleDetailPage: React.FC = () => {
                   icon={<Celebration />}
                   sx={{
                     mb: 1,
-                    backgroundColor: 'rgba(218, 255, 1, 0.1)',
-                    color: 'var(--background-secondary)',
-                    border: '1px solid rgba(218, 255, 1, 0.2)',
-                    '& .MuiAlert-icon': { color: 'var(--primary-color)' },
-                    '& .MuiAlert-message': { color: 'var(--background-secondary)' },
+                    backgroundColor: 'var(--blox-emerald-wash)',
+                    color: 'var(--blox-deep-green)',
+                    border: '1px solid rgba(0, 207, 162, 0.28)',
+                    '& .MuiAlert-icon': { color: 'var(--blox-emerald-dark)' },
+                    '& .MuiAlert-message': { color: 'var(--blox-deep-green)' },
                   }}
                 >
-                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5, color: 'var(--background-secondary)' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5, color: 'var(--blox-deep-green)' }}>
                     {promo.name}
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'var(--background-secondary)', opacity: 0.9 }}>
+                  <Typography variant="body2" sx={{ color: 'var(--blox-deep-green)', opacity: 0.9 }}>
                     {promo.description}
                   </Typography>
                   <Typography variant="caption" sx={{ display: 'block', mt: 0.5, opacity: 0.8, color: 'var(--background-secondary)' }}>

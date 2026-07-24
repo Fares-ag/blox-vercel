@@ -12,13 +12,13 @@
   }
 
   .dashboard-title {
-    color: var(--primary-text, #0e1909);
+    color: var(--primary-text, #16535B);
     font-weight: 700;
     margin-bottom: var(--spacing-xs, 4px);
   }
 
   .dashboard-subtitle {
-    color: var(--secondary-text, #787663);
+    color: var(--secondary-text, #708090);
   }
 
   .dashboard-controls {
@@ -33,13 +33,13 @@
 
   .dashboard-refresh-btn {
     background: var(--card-background, #ffffff);
-    border: 1px solid var(--divider-color, #c9c4b7);
+    border: 1px solid var(--divider-color, #A8B2BC);
     border-radius: 10px;
-    color: var(--blox-black, #0e1909);
+    color: var(--blox-black, #16535B);
 
     &:hover {
-      background: var(--light-grey, #f3f0ed);
-      color: var(--blox-black, #0e1909);
+      background: var(--light-grey, #F2F6F6);
+      color: var(--blox-black, #16535B);
     }
 
     .spin {
@@ -52,10 +52,10 @@
   }
 
   .range-chip {
-    background: var(--light-grey, #f3f0ed) !important;
-    color: var(--blox-black, #0e1909) !important;
+    background: var(--light-grey, #F2F6F6) !important;
+    color: var(--blox-black, #16535B) !important;
     font-weight: 600;
-    border: 1px solid var(--divider-color, #c9c4b7);
+    border: 1px solid var(--divider-color, #A8B2BC);
   }
 
   .chart-canvas {
@@ -97,55 +97,59 @@
       right: var(--spacing-md, 16px);
       opacity: 0.12;
       font-size: 3rem;
-      color: var(--blox-black, #0e1909);
+      color: var(--blox-black, #16535B);
     }
 
     .stat-value {
-      color: var(--primary-text, #0e1909);
+      color: var(--primary-text, #16535B);
       font-weight: 700;
       margin: var(--spacing-md, 16px) 0 var(--spacing-xs, 4px);
     }
 
     .stat-label {
-      color: var(--secondary-text, #787663);
+      color: var(--secondary-text, #708090);
       letter-spacing: 0.3px;
       font-size: 12px;
       font-weight: 500;
     }
 
     &.stat-card-primary {
-      background: linear-gradient(
-        135deg,
-        var(--primary-color, #daff01) 0%,
-        var(--primary-dark, #b8d900) 100%
-      );
+      background: linear-gradient(140deg, #0F3A40 0%, #16535B 100%);
+
+      .stat-value {
+        color: var(--blox-lime, #DBFF00);
+      }
+
+      .stat-label {
+        color: #FFFFFF;
+      }
 
       .stat-icon {
-        color: var(--blox-black, #0e1909);
+        color: #FFFFFF;
       }
     }
 
     &.stat-card-secondary {
       background: var(--card-background, #ffffff);
-      border: 1px solid var(--divider-color, #c9c4b7);
+      border: 1px solid var(--divider-color, #A8B2BC);
     }
 
     &.stat-card-accent {
-      background: linear-gradient(135deg, var(--dark-grey, #787663) 0%, #0e1909 100%);
+      background: linear-gradient(135deg, var(--dark-grey, #708090) 0%, #16535B 100%);
 
       .stat-value,
       .stat-label {
-        color: var(--light-grey, #f3f0ed);
+        color: var(--light-grey, #F2F6F6);
       }
 
       .stat-icon {
-        color: var(--light-grey, #f3f0ed);
+        color: var(--light-grey, #F2F6F6);
       }
     }
 
     &.stat-card-info {
       background: var(--card-background, #ffffff);
-      border-left: 4px solid var(--primary-color, #daff01);
+      border-left: 4px solid var(--blox-emerald, #00CFA2);
     }
   }
 
@@ -167,7 +171,7 @@
     margin-bottom: var(--spacing-lg, 24px);
 
     h4 {
-      color: var(--primary-text, #0e1909);
+      color: var(--primary-text, #16535B);
       font-weight: 600;
       font-size: 18px;
     }
@@ -185,12 +189,12 @@
     align-items: center;
     gap: var(--spacing-md, 16px);
     padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-    background-color: var(--light-grey, #f3f0ed);
+    background-color: var(--light-grey, #F2F6F6);
     border-radius: 12px;
     transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
 
     &:hover {
-      background-color: rgba(201, 196, 183, 0.45);
+      background-color: rgba(168, 178, 188, 0.45);
       transform: translateX(4px);
     }
   }
@@ -207,7 +211,7 @@
   }
 
   .leaderboard-email {
-    color: var(--primary-text, #0e1909);
+    color: var(--primary-text, #16535B);
     font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -215,14 +219,14 @@
   }
 
   .leaderboard-count {
-    color: var(--secondary-text, #787663);
+    color: var(--secondary-text, #708090);
     font-size: 12px;
   }
 
   .leaderboard-bar {
     width: 100px;
     height: 8px;
-    background-color: var(--mid-grey, #c9c4b7);
+    background-color: var(--mid-grey, #A8B2BC);
     border-radius: 4px;
     overflow: hidden;
     position: relative;
@@ -232,7 +236,7 @@
     height: 100%;
     border-radius: 4px;
     transition: width 300ms ease;
-    background-color: var(--primary-color, #daff01);
+    background-color: var(--blox-emerald, #00CFA2);
   }
 }
 

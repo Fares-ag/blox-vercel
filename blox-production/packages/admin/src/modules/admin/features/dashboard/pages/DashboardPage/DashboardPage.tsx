@@ -180,20 +180,20 @@ export const DashboardPage: React.FC = () => {
       {
         label: 'Projected Revenue',
         data: analyticsData.revenueForecast.map((r) => r.projectedRevenue),
-        borderColor: '#0E1909',
-        backgroundColor: 'rgba(218, 255, 1, 0.15)',
+        borderColor: '#16535B',
+        backgroundColor: 'rgba(0, 207, 162, 0.15)',
       },
       {
         label: 'Actual Revenue',
         data: analyticsData.revenueForecast.map((r) => r.actualRevenue),
-        borderColor: '#B8D900',
-        backgroundColor: 'rgba(184, 217, 0, 0.15)',
+        borderColor: '#00CFA2',
+        backgroundColor: 'rgba(0, 207, 162, 0.15)',
       },
       {
         label: 'Forecasted Revenue',
         data: analyticsData.revenueForecast.map((r) => r.forecastedRevenue),
-        borderColor: '#C9C4B7',
-        backgroundColor: 'rgba(201, 196, 183, 0.25)',
+        borderColor: '#A8B2BC',
+        backgroundColor: 'rgba(168, 178, 188, 0.25)',
         borderDash: [5, 5],
       },
     ];
@@ -209,14 +209,14 @@ export const DashboardPage: React.FC = () => {
       {
         label: 'Collection Rate (%)',
         data: analyticsData.paymentCollectionRates.map((r) => r.collectionRate),
-        borderColor: '#B8D900',
-        backgroundColor: 'rgba(184, 217, 0, 0.15)',
+        borderColor: '#00CFA2',
+        backgroundColor: 'rgba(0, 207, 162, 0.15)',
       },
       {
         label: 'Overdue Rate (%)',
         data: analyticsData.paymentCollectionRates.map((r) => r.overdueRate),
-        borderColor: '#0E1909',
-        backgroundColor: 'rgba(14, 25, 9, 0.08)',
+        borderColor: '#16535B',
+        backgroundColor: 'rgba(22, 83, 91, 0.08)',
       },
     ];
   }, [analyticsData?.paymentCollectionRates]);
@@ -268,7 +268,7 @@ export const DashboardPage: React.FC = () => {
     datasets: [
       {
         data: [stats.paidInstallments, stats.unpaidInstallments],
-        backgroundColor: ['#B8D900', '#0E1909'],
+        backgroundColor: ['#00CFA2', '#16535B'],
         borderWidth: 0,
       },
     ],
@@ -502,7 +502,7 @@ export const DashboardPage: React.FC = () => {
               label="Total Assets Ownership"
               value={stats.totalAssetsOwnership}
               maxValue={100}
-              color="#0E1909"
+              color="#16535B"
             />
             <SegmentedBarChart
               label="Total Assets Distributions"
@@ -510,12 +510,12 @@ export const DashboardPage: React.FC = () => {
                 {
                   label: 'Owned by Customer',
                   value: stats.customerOwnershipPercentage,
-                  color: '#787663',
+                  color: '#708090',
                 },
                 {
                   label: 'Owned by Blox',
                   value: stats.bloxOwnershipPercentage,
-                  color: '#B8D900',
+                  color: '#00CFA2',
                 },
               ]}
               total={100}
@@ -552,12 +552,12 @@ export const DashboardPage: React.FC = () => {
                     {
                       label: 'Paid Installments',
                       value: stats.paidInstallments,
-                      color: '#B8D900',
+                      color: '#00CFA2',
                     },
                     {
                       label: 'Unpaid Installments',
                       value: stats.unpaidInstallments,
-                      color: '#0E1909',
+                      color: '#16535B',
                     },
                   ]}
                   />
@@ -617,7 +617,7 @@ export const DashboardPage: React.FC = () => {
                 <Typography variant="body2" className="financial-label">
                   Monthly Payable
                 </Typography>
-                <Typography variant="h4" className="financial-value payable">
+                <Typography variant="h4" className="financial-value payable blox-numeric">
                   QAR {(stats.monthlyPayable / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Typography>
               </Box>
@@ -625,7 +625,7 @@ export const DashboardPage: React.FC = () => {
                 <Typography variant="body2" className="financial-label">
                   Monthly Receivable
                 </Typography>
-                <Typography variant="h4" className="financial-value receivable">
+                <Typography variant="h4" className="financial-value receivable blox-numeric">
                   QAR {(stats.monthlyReceivable / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </Typography>
               </Box>
@@ -633,7 +633,7 @@ export const DashboardPage: React.FC = () => {
                 <Typography variant="body2" className="financial-label">
                   Average Payment Size
                 </Typography>
-                <Typography variant="h4" className="financial-value average-payment-size">
+                <Typography variant="h4" className="financial-value average-payment-size blox-numeric">
                   {stats.paidInstallments > 0
                     ? `QAR ${(stats.realRevenue / stats.paidInstallments / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                     : '—'}
@@ -724,7 +724,7 @@ export const DashboardPage: React.FC = () => {
                       value: stage.count,
                       percentage: stage.percentage,
                       dropOffRate: stage.dropOffRate,
-                      color: stage.stage === 'Active' ? '#B8D900' : stage.stage === 'Completed' ? '#0E1909' : '#C9C4B7',
+                      color: stage.stage === 'Active' ? '#00CFA2' : stage.stage === 'Completed' ? '#16535B' : '#A8B2BC',
                     }))}
                   />
                 ) : (

@@ -12,11 +12,13 @@ import { Button, Input, Select, type SelectOption } from '@shared/components';
 import { resolveDocumentsSignedUrl } from '@shared/utils';
 import { toast } from 'react-toastify';
 import { useForm, useFieldArray } from 'react-hook-form';
+import { usePortalBasePath, withPortalBase } from '@shared/contexts/portal-base-path';
 import './AddVehiclePage.scss';
 
 export const AddVehiclePage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const portalBase = usePortalBasePath();
   const [saving, setSaving] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   /** Storage paths persisted on the product */
@@ -180,7 +182,7 @@ export const AddVehiclePage: React.FC = () => {
         const product = supabaseResponse.data;
         dispatch(addProduct(product));
         toast.success('Vehicle created successfully!');
-        navigate(`/admin/vehicles/${product.id}`);
+        navigate(withPortalBase(portalBase, `/vehicles/${product.id}`));
       } else {
         throw new Error(supabaseResponse.message || 'Failed to create product');
       }
@@ -190,7 +192,7 @@ export const AddVehiclePage: React.FC = () => {
     } finally {
       setSaving(false);
     }
-  }, [uploadedImages, dispatch, navigate]);
+  }, [uploadedImages, dispatch, navigate, portalBase]);
 
   return (
     <Box className="add-vehicle-page">
@@ -198,7 +200,7 @@ export const AddVehiclePage: React.FC = () => {
         <Button
           variant="secondary"
           startIcon={<ArrowBack />}
-          onClick={() => navigate('/admin/vehicles')}
+          onClick={() => navigate(withPortalBase(portalBase, '/vehicles'))}
           className="back-button"
         >
           Back to Vehicles
@@ -324,15 +326,11 @@ export const AddVehiclePage: React.FC = () => {
                   valueAsNumber: true,
                   validate: (v) => {
                     if (!Number.isFinite(v) || v <= 0) return 'Enter a valid price';
-                    const status = watch('status') || 'active';
-                    if (status === 'active' && v > 70_000) {
-                      return 'Active vehicles cannot exceed 70,000 QAR (Customer catalog cap). Set status to inactive to save a higher price.';
-                    }
                     return true;
                   },
                 })}
                 error={!!errors.price}
-                helperText={errors.price?.message || 'Active vehicles max 70,000 QAR for Customer catalog'}
+                helperText={errors.price?.message}
                 placeholder="0.00"
               />
             </Grid>
@@ -541,7 +539,7 @@ export const AddVehiclePage: React.FC = () => {
         </Paper>
 
         <Box className="form-actions">
-          <Button variant="secondary" onClick={() => navigate('/admin/vehicles')} size="large">
+          <Button variant="secondary" onClick={() => navigate(withPortalBase(portalBase, '/vehicles'))} size="large">
             Cancel
           </Button>
           <Button type="submit" variant="primary" loading={saving} size="large">

@@ -1030,7 +1030,7 @@ export const PaymentPage: React.FC = () => {
                           <Typography variant="body2" color="text.secondary">
                             Early Settlement Discount
                           </Typography>
-                          <Typography variant="body1" fontWeight={600} sx={{ color: '#10B981' }}>
+                          <Typography variant="body1" fontWeight={600} sx={{ color: '#00CFA2' }}>
                             -{formatCurrency(discountCalculation.totalDiscount)}
                           </Typography>
                           <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
@@ -1060,7 +1060,7 @@ export const PaymentPage: React.FC = () => {
                       <Typography variant="body2" color="text.secondary">
                         Final Amount to Pay
                       </Typography>
-                      <Typography variant="h6" fontWeight={700} sx={{ color: '#DAFF01' }}>
+                      <Typography variant="h6" fontWeight={700} className="blox-numeric" sx={{ color: 'var(--blox-deep-green)' }}>
                         {formatCurrency(discountCalculation.finalAmount)}
                       </Typography>
                     </Box>
@@ -1078,7 +1078,7 @@ export const PaymentPage: React.FC = () => {
                   <Typography variant="body2" color="text.secondary">
                     Type
                   </Typography>
-                  <Typography variant="body1" fontWeight={600} sx={{ color: '#DAFF01' }}>
+                  <Typography variant="body1" fontWeight={600} sx={{ color: 'var(--blox-deep-green)' }}>
                     Full Settlement
                   </Typography>
                 </Box>
@@ -1108,7 +1108,7 @@ export const PaymentPage: React.FC = () => {
                     <Typography variant="body2" color="text.secondary">
                       Already Paid
                     </Typography>
-                    <Typography variant="body1" fontWeight={600} sx={{ color: '#DAFF01' }}>
+                    <Typography variant="body1" fontWeight={600} className="blox-numeric" sx={{ color: 'var(--blox-emerald-dark)' }}>
                       {formatCurrency(paymentSchedule.paidAmount)}
                     </Typography>
                   </Box>
@@ -1118,7 +1118,7 @@ export const PaymentPage: React.FC = () => {
                     <Typography variant="body2" color="text.secondary">
                       Remaining Amount
                     </Typography>
-                    <Typography variant="body1" fontWeight={600} sx={{ color: '#ff9800' }}>
+                    <Typography variant="body1" fontWeight={600} className="blox-numeric" sx={{ color: 'var(--blox-deep-green)' }}>
                       {formatCurrency(paymentSchedule.remainingAmount)}
                     </Typography>
                   </Box>
@@ -1134,18 +1134,18 @@ export const PaymentPage: React.FC = () => {
                   mb: 3,
                   p: 2,
                   border: '2px solid',
-                  borderColor: useCustomAmount ? '#DAFF01' : '#e0e0e0',
+                  borderColor: useCustomAmount ? 'var(--blox-emerald)' : 'rgba(22, 83, 91, 0.14)',
                   borderRadius: 2,
-                  backgroundColor: useCustomAmount ? 'rgba(218, 255, 1, 0.05)' : 'rgba(0, 0, 0, 0.02)',
+                  backgroundColor: useCustomAmount ? 'var(--blox-emerald-wash)' : 'rgba(22, 83, 91, 0.02)',
                   transition: 'all 0.3s ease',
                 }}
               >
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                  <AttachMoney sx={{ color: useCustomAmount ? '#DAFF01' : '#666', fontSize: 20 }} />
+                  <AttachMoney sx={{ color: useCustomAmount ? 'var(--blox-emerald-dark)' : 'var(--blox-slate)', fontSize: 20 }} />
                   <Typography 
                     variant="subtitle2" 
                     fontWeight={600}
-                    sx={{ color: useCustomAmount ? '#DAFF01' : '#333' }}
+                    sx={{ color: useCustomAmount ? 'var(--blox-deep-green)' : 'var(--blox-slate-dark)' }}
                   >
                     Pay Custom Amount (Optional)
                   </Typography>
@@ -1163,9 +1163,9 @@ export const PaymentPage: React.FC = () => {
                         }
                       }}
                       sx={{
-                        color: '#DAFF01',
+                        color: 'var(--blox-slate)',
                         '&.Mui-checked': {
-                          color: '#DAFF01',
+                          color: 'var(--blox-emerald-dark)',
                         },
                       }}
                     />

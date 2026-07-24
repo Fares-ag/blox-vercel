@@ -6,18 +6,79 @@ import { formatDate, formatCurrency } from '@shared/utils/formatters';
 import './ReviewStep.scss';
 
 export const ReviewStep: React.FC<StepProps> = ({ data }) => {
+  const isCorporate = data?.customerInfo?.applicantType === 'corporate';
+  const corporate = data?.customerInfo?.corporate;
+  const signatory = corporate?.authorizedSignatory;
+  const vehicles: any[] =
+    Array.isArray(data.vehicles) && data.vehicles.length > 0
+      ? data.vehicles
+      : data.vehicle
+        ? [data.vehicle]
+        : [];
+
   return (
     <Box className="review-step">
       <Typography variant="h3" className="section-title">
         Review Application
       </Typography>
 
+      {isCorporate && vehicles.length > 1 && (
+        <Paper className="review-section" sx={{ bgcolor: 'var(--light-grey, #f5f5f5)' }}>
+          <Typography variant="body1" fontWeight={600}>
+            Will create {vehicles.length} draft applications (one per vehicle)
+          </Typography>
+        </Paper>
+      )}
+
       <Paper className="review-section">
         <Typography variant="h4" className="section-subtitle">
-          Customer Information
+          {isCorporate ? 'Company Information' : 'Customer Information'}
         </Typography>
         <Divider sx={{ my: 2 }} />
         {data.customerInfo ? (
+          isCorporate ? (
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="textSecondary">Legal Name</Typography>
+                <Typography variant="body1">{corporate?.legalName || '—'}</Typography>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="textSecondary">CR Number</Typography>
+                <Typography variant="body1">{corporate?.crNumber || '—'}</Typography>
+              </Grid>
+              {corporate?.tradeName && (
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="textSecondary">Trade Name</Typography>
+                  <Typography variant="body1">{corporate.tradeName}</Typography>
+                </Grid>
+              )}
+              {corporate?.industry && (
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="textSecondary">Industry</Typography>
+                  <Typography variant="body1">{corporate.industry}</Typography>
+                </Grid>
+              )}
+              <Grid item xs={12}>
+                <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>Authorized Signatory</Typography>
+                <Typography variant="body1">
+                  {[signatory?.firstName, signatory?.lastName].filter(Boolean).join(' ') || '—'}
+                  {signatory?.position ? ` · ${signatory.position}` : ''}
+                </Typography>
+              </Grid>
+              {signatory?.email && (
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="textSecondary">Signatory Email</Typography>
+                  <Typography variant="body1">{signatory.email}</Typography>
+                </Grid>
+              )}
+              {signatory?.phone && (
+                <Grid item xs={12} sm={6}>
+                  <Typography variant="body2" color="textSecondary">Signatory Phone</Typography>
+                  <Typography variant="body1">{signatory.phone}</Typography>
+                </Grid>
+              )}
+            </Grid>
+          ) : (
           <Grid container spacing={2}>
             <Grid item xs={12} sm={6}>
               <Typography variant="body2" color="textSecondary">
@@ -115,6 +176,7 @@ export const ReviewStep: React.FC<StepProps> = ({ data }) => {
               </Grid>
             )}
           </Grid>
+          )
         ) : (
           <Typography variant="body2" color="textSecondary">
             No customer information provided
@@ -127,30 +189,23 @@ export const ReviewStep: React.FC<StepProps> = ({ data }) => {
           Vehicle Information
         </Typography>
         <Divider sx={{ my: 2 }} />
-        {data.vehicle ? (
+        {vehicles.length > 0 ? (
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={6}>
-              <Typography variant="body2" color="textSecondary">
-                Vehicle
-              </Typography>
-              <Typography variant="body1">
-                {[data.vehicle.make, data.vehicle.model, data.vehicle.trim].filter(Boolean).join(' ')}
-              </Typography>
-            </Grid>
-            {data.vehicle.modelYear && (
-              <Grid item xs={12} sm={6}>
-                <Typography variant="body2" color="textSecondary">
-                  Year
+            {vehicles.map((vehicle: any) => (
+              <Grid item xs={12} key={vehicle.id}>
+                <Typography variant="body1">
+                  {[vehicle.make, vehicle.model, vehicle.trim].filter(Boolean).join(' ')}
+                  {vehicle.modelYear ? ` (${vehicle.modelYear})` : ''}
+                  {vehicle.price != null ? ` — ${formatCurrency(vehicle.price)}` : ''}
                 </Typography>
-                <Typography variant="body1">{data.vehicle.modelYear}</Typography>
               </Grid>
-            )}
-            {data.vehicle.price && (
-              <Grid item xs={12} sm={6}>
+            ))}
+            {vehicles.length > 1 && (
+              <Grid item xs={12}>
                 <Typography variant="body2" color="textSecondary">
-                  Price
+                  Total:{' '}
+                  {formatCurrency(vehicles.reduce((s: number, v: any) => s + (Number(v.price) || 0), 0))}
                 </Typography>
-                <Typography variant="body1">{formatCurrency(data.vehicle.price)}</Typography>
               </Grid>
             )}
           </Grid>

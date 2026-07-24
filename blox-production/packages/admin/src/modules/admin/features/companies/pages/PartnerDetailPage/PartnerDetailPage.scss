@@ -1,0 +1,75 @@
+.partner-detail-page {
+  padding: var(--spacing-lg);
+  background: transparent;
+
+  .page-header {
+    margin-bottom: var(--spacing-md);
+
+    .page-title {
+      margin-top: var(--spacing-md);
+      font-weight: 700;
+      font-size: 32px;
+      color: var(--primary-text);
+      letter-spacing: -0.02em;
+    }
+
+    .page-subtitle {
+      margin-top: var(--spacing-xs);
+      color: var(--secondary-text);
+      font-size: 14px;
+    }
+  }
+
+  .partner-tabs {
+    margin-bottom: var(--spacing-md);
+  }
+
+  .partner-tab-panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--spacing-md);
+
+    .kpi-card {
+      padding: var(--spacing-md);
+      background: var(--card-background);
+      border: 1px solid var(--divider-color);
+      border-radius: var(--radius-card);
+
+      h3 {
+        margin-top: 4px;
+        font-size: 28px;
+        font-weight: 700;
+      }
+    }
+  }
+
+  .form-section,
+  .table-section {
+    padding: var(--spacing-md);
+    background: var(--card-background);
+    border: 1px solid var(--divider-color);
+    border-radius: var(--radius-card);
+  }
+
+  .company-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+
+  .people-panel {
+    .people-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: var(--spacing-md);
+      flex-wrap: wrap;
+    }
+  }
+}

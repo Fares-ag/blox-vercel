@@ -68,14 +68,18 @@ export const PaymentCalendarPage: React.FC = () => {
     (async () => {
       try {
         // Calendar is cross-application: enable if any payable application exists for this user.
-        const appsResponse = await supabaseApiService.getApplications();
-        if (appsResponse.status !== 'SUCCESS' || !appsResponse.data || !user?.email) {
+        if (!user?.email) {
           if (mounted) setCanPay(false);
           return;
         }
-        const userApps = appsResponse.data.filter(
-          (a) => a.customerEmail?.toLowerCase() === user.email?.toLowerCase()
-        );
+        const appsResponse = await supabaseApiService.getApplications({
+          customerEmail: user.email,
+        });
+        if (appsResponse.status !== 'SUCCESS' || !appsResponse.data) {
+          if (mounted) setCanPay(false);
+          return;
+        }
+        const userApps = appsResponse.data;
         const results = await Promise.all(
           userApps.map((a) => paymentPermissionsService.getCanPayForApplication(a.id))
         );
@@ -117,15 +121,12 @@ export const PaymentCalendarPage: React.FC = () => {
         return;
       }
 
-      // Load applications from Supabase only
-      const supabaseResponse = await supabaseApiService.getApplications();
+      const supabaseResponse = await supabaseApiService.getApplications({
+        customerEmail: user.email,
+      });
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
-        // Filter to current user's applications by email
-        const userEmail = user.email;
-        const userApplications = supabaseResponse.data.filter(
-          (app) => app.customerEmail?.toLowerCase() === userEmail.toLowerCase()
-        );
+        const userApplications = supabaseResponse.data;
 
         const calendarPayments: CalendarPayment[] = [];
         const startOfMonth = currentDate.clone().startOf('month');
@@ -602,11 +603,11 @@ export const PaymentCalendarPage: React.FC = () => {
                           disabled={checkingCanPay || !canPay}
                           sx={{ 
                             flex: canDeferPayment(payment) ? 1 : 'none',
-                            backgroundColor: '#0E1909',
+                            backgroundColor: '#16535B',
                             color: 'var(--primary-color)',
                             border: '1px solid var(--primary-color)',
                             '&:hover': {
-                              backgroundColor: '#0E1909',
+                              backgroundColor: '#16535B',
                               borderColor: 'var(--primary-color)',
                               opacity: 0.9,
                             }

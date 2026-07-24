@@ -298,8 +298,8 @@ export const OfferDetailPage: React.FC = () => {
               // Fallback to legacy fields if no insurance rate reference
               <Grid container spacing={3}>
                 <Grid item xs={12}>
-                  <Box sx={{ p: 2, backgroundColor: '#fff3cd', borderRadius: 2, border: '1px solid #ffc107' }}>
-                    <Typography variant="body2" color="warning.main">
+                  <Box sx={{ p: 2, backgroundColor: 'var(--blox-emerald-wash)', borderRadius: 2, border: '1px solid var(--blox-emerald)' }}>
+                    <Typography variant="body2" sx={{ color: 'var(--blox-deep-green)' }}>
                       This offer uses legacy insurance rate fields. Consider updating it to use an Insurance Rate product reference.
                     </Typography>
                   </Box>
@@ -332,7 +332,7 @@ export const OfferDetailPage: React.FC = () => {
                 </Grid>
               </Grid>
             ) : (
-              <Box sx={{ p: 2, backgroundColor: '#ffebee', borderRadius: 2, border: '1px solid #f44336' }}>
+              <Box sx={{ p: 2, backgroundColor: '#FFEBEE', borderRadius: 2, border: '1px solid #C62828' }}>
                 <Typography variant="body2" color="error.main">
                   No insurance rate assigned to this offer. Please edit the offer to assign an insurance rate.
                 </Typography>

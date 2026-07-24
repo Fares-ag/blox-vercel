@@ -54,29 +54,30 @@ export const Config = {
   ],
 
   paymentStatuses: [
-    { status: 'Due', color: '#DAFF01' },           // Lime Yellow
-    { status: 'Active', color: '#DAFF01' },       // Lime Yellow
-    { status: 'Paid', color: '#787663' },         // Dark Grey
-    { status: 'Upcoming', color: '#DAFF01' },     // Lime Yellow
-    { status: 'Partially Paid', color: '#787663' }, // Dark Grey
-    { status: 'Unpaid', color: '#0E1909' },       // Blox Black
-    { status: 'Over Paid', color: '#787663' },    // Dark Grey
-    { status: 'Instant Paid', color: '#787663' }, // Dark Grey
+    { status: 'Due', color: '#DBFF00' },
+    { status: 'Active', color: '#DBFF00' },
+    { status: 'Paid', color: '#00CFA2' },
+    { status: 'Upcoming', color: '#DBFF00' },
+    { status: 'Partially Paid', color: '#708090' },
+    { status: 'Unpaid', color: '#16535B' },
+    { status: 'Over Paid', color: '#00CFA2' },
+    { status: 'Instant Paid', color: '#00CFA2' },
   ],
 
   statusConfig: [
-    { status: 'Draft', color: '#FF9800' },                    // Orange
-    { status: 'Active', color: '#2196F3' },                   // Blue
-    { status: 'Completed', color: '#4CAF50' },                // Green
-    { status: 'Under Review', color: '#1565C0' },            // Dark blue – clear on light background
-    { status: 'Rejected', color: '#F44336' },                 // Red
-    { status: 'Contract Signing Required', color: '#9C27B0' }, // Purple
-    { status: 'Resubmission Required', color: '#FF9800' },   // Orange
-    { status: 'Contracts Submitted', color: '#2196F3' },     // Blue
-    { status: 'Contract Under Review', color: '#1565C0' },   // Dark blue – clear on light background
-    { status: 'Down Payment Required', color: '#FF9800' },   // Orange
-    { status: 'Down Payment Submitted', color: '#2196F3' },  // Blue
-    { status: 'Submission Cancelled', color: '#757575' },    // Grey
+    { status: 'Draft', color: '#708090' },
+    { status: 'Active', color: '#00CFA2' },
+    { status: 'Completed', color: '#00CFA2' },
+    { status: 'Under Review', color: '#16535B' },
+    { status: 'Rejected', color: '#C62828' },
+    { status: 'Contract Signing Required', color: '#DBFF00' },
+    { status: 'Resubmission Required', color: '#DBFF00' },
+    { status: 'Contracts Submitted', color: '#00CFA2' },
+    { status: 'Contract Under Review', color: '#16535B' },
+    { status: 'Down Payment Required', color: '#DBFF00' },
+    { status: 'Down Payment Submitted', color: '#00CFA2' },
+    { status: 'Pending Finance Activation', color: '#DBFF00' },
+    { status: 'Submission Cancelled', color: '#708090' },
   ],
 
   tenure: ['1 Year', '2 Years', '3 Years', '4 Years', '5 Years'],

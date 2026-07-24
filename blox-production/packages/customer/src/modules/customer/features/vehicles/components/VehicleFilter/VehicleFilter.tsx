@@ -4,7 +4,7 @@ import { ExpandMore } from '@mui/icons-material';
 import { Select, Input, Button } from '@shared/components';
 import type { SelectOption } from '@shared/components';
 import {
-  CUSTOMER_MAX_VEHICLE_PRICE_QAR,
+  vehicleService,
   type VehicleFilters,
 } from '../../../../services/vehicle.service';
 import './VehicleFilter.scss';
@@ -19,38 +19,38 @@ export const VehicleFilter: React.FC<VehicleFilterProps> = ({ filters, onChange 
   const [models, setModels] = useState<string[]>([]);
   const [localFilters, setLocalFilters] = useState<VehicleFilters>(filters);
 
-  // Available makes (could come from API)
-  const availableMakes = ['Toyota', 'Honda', 'Nissan', 'BMW', 'Mercedes-Benz', 'Audi', 'Lexus'];
-
   useEffect(() => {
     setLocalFilters(filters);
   }, [filters]);
 
   useEffect(() => {
-    // Load makes
-    setMakes(availableMakes);
+    void vehicleService.getMakes().then((res) => {
+      if (res.status === 'SUCCESS' && res.data) {
+        setMakes(res.data);
+      }
+    });
   }, []);
 
   useEffect(() => {
-    // Load models when make changes
-    if (localFilters.make) {
-      // In real app, fetch from API
-      const modelsByMake: Record<string, string[]> = {
-        Toyota: ['Camry', 'Corolla', 'RAV4', 'Highlander'],
-        Honda: ['Accord', 'Civic', 'CR-V', 'Pilot'],
-        Nissan: ['Altima', 'Sentra', 'Rogue', 'Pathfinder'],
-        BMW: ['3 Series', '5 Series', 'X3', 'X5'],
-        'Mercedes-Benz': ['C-Class', 'E-Class', 'GLC', 'GLE'],
-        Audi: ['A4', 'A6', 'Q5', 'Q7'],
-        Lexus: ['ES', 'RX', 'NX', 'GX'],
-      };
-      setModels(modelsByMake[localFilters.make] || []);
-    } else {
+    if (!localFilters.make) {
       setModels([]);
+      return;
     }
+    let cancelled = false;
+    void vehicleService.getModelsByMake(localFilters.make).then((res) => {
+      if (cancelled) return;
+      if (res.status === 'SUCCESS' && res.data) {
+        setModels(res.data);
+      } else {
+        setModels([]);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [localFilters.make]);
 
-  const handleFilterChange = (key: keyof VehicleFilters, value: any, applyImmediately = false) => {
+  const handleFilterChange = (key: keyof VehicleFilters, value: unknown, applyImmediately = false) => {
     const newFilters = { ...localFilters, [key]: value };
     setLocalFilters(newFilters);
     if (applyImmediately) {
@@ -99,7 +99,6 @@ export const VehicleFilter: React.FC<VehicleFilterProps> = ({ filters, onChange 
                 const value = e.target.value ? String(e.target.value) : undefined;
                 const newFilters = { ...localFilters, make: value, model: undefined };
                 setLocalFilters(newFilters);
-                // Apply immediately so the vehicle list updates right away
                 onChange(newFilters);
               }}
               placeholder="All Makes"
@@ -138,13 +137,9 @@ export const VehicleFilter: React.FC<VehicleFilterProps> = ({ filters, onChange 
               value={localFilters.maxPrice?.toString() || ''}
               onChange={(e) => {
                 const raw = e.target.value ? Number(e.target.value) : undefined;
-                const capped =
-                  raw === undefined
-                    ? undefined
-                    : Math.min(raw, CUSTOMER_MAX_VEHICLE_PRICE_QAR);
-                handleFilterChange('maxPrice', capped);
+                handleFilterChange('maxPrice', raw);
               }}
-              placeholder={String(CUSTOMER_MAX_VEHICLE_PRICE_QAR)}
+              placeholder="Any"
             />
           </Box>
         </AccordionDetails>
@@ -205,4 +200,3 @@ export const VehicleFilter: React.FC<VehicleFilterProps> = ({ filters, onChange 
     </Box>
   );
 };
-

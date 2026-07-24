@@ -46,9 +46,12 @@ export const LoginPage: React.FC = () => {
     <Box className="login-page">
       <Box className="login-container" component="main" aria-labelledby="super-admin-login-title">
         <Box className="login-header">
-          <img src="/BloxLogoNav.png" alt="Blox" className="logo-image" />
+          <img src="/BloxLogo.png" alt="Blox" className="logo-image" />
           <Typography id="super-admin-login-title" variant="h2" className="welcome-text">
             Super Admin Portal
+          </Typography>
+          <Typography variant="overline" className="brand-tagline" sx={{ letterSpacing: '0.12em', color: 'text.secondary' }}>
+            Finance Unboxed
           </Typography>
           <Typography variant="body2" className="subtitle-text">
             Sign in to monitor activity and system health

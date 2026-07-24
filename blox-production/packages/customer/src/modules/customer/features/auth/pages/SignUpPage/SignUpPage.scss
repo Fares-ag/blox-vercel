@@ -3,16 +3,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--background); /* Solid background - no gradient */
+  background: var(--blox-page-gradient, var(--background));
   padding: var(--spacing-md, 24px);
 
   .signup-container {
     width: 100%;
     max-width: 600px;
-    background: var(--card-background); /* Light Grey */
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-    padding: var(--spacing-xl, 40px);
+    background: var(--card-background);
+    border: 1px solid var(--blox-hairline, rgba(22, 83, 91, 0.08));
+    border-radius: var(--radius-large-card, 28px);
+    box-shadow: var(--card-shadow);
+    padding: var(--spacing-2xl, 48px) var(--spacing-xl, 40px);
     max-height: 90vh;
     overflow-y: auto;
 
@@ -27,13 +28,14 @@
       }
 
       .welcome-text {
-        color: var(--primary-color); /* Lime Yellow */
-        font-weight: 600;
+        color: var(--primary-text);
+        font-weight: 700;
+        letter-spacing: -0.02em;
         margin-bottom: var(--spacing-xs, 8px);
       }
 
       .subtitle-text {
-        color: var(--secondary-text); /* Dark Grey */
+        color: var(--secondary-text);
       }
     }
 
@@ -57,9 +59,9 @@
         margin-top: var(--spacing-sm, 8px);
 
         a {
-          color: var(--primary-color); /* Lime Yellow */
+          color: var(--blox-emerald-dark);
           text-decoration: none;
-          font-weight: 500;
+          font-weight: 600;
 
           &:hover {
             text-decoration: underline;

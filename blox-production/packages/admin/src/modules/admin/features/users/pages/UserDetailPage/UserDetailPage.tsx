@@ -47,6 +47,8 @@ export const UserDetailPage: React.FC = () => {
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [companyId, setCompanyId] = useState<string>('');
   const [savingCompany, setSavingCompany] = useState(false);
+  const [userRole, setUserRole] = useState<string>('customer');
+  const [savingRole, setSavingRole] = useState(false);
 
   const loadUserDetails = useCallback(async () => {
     if (!email) return;
@@ -60,6 +62,7 @@ export const UserDetailPage: React.FC = () => {
         const userData = userResponse.data;
         setUser(userData);
         setCompanyId(userData.companyId || '');
+        setUserRole((userData.role || 'customer').toLowerCase());
         // Set credits balance from user data
         if (userData.creditsBalance !== undefined) {
           setCreditsBalance(userData.creditsBalance);
@@ -68,13 +71,14 @@ export const UserDetailPage: React.FC = () => {
         throw new Error(userResponse.message || 'Failed to load user');
       }
 
-      // Load user's applications
-      const appsResponse = await supabaseApiService.getApplications();
+      // Load user's applications (server-side email filter)
+      const appsResponse = await supabaseApiService.getApplications({
+        customerEmail: decodeURIComponent(email),
+        lean: true,
+        skipCache: true,
+      });
       if (appsResponse.status === 'SUCCESS' && appsResponse.data) {
-        const userApps = appsResponse.data.filter(
-          (app) => app.customerEmail?.toLowerCase() === decodeURIComponent(email).toLowerCase()
-        );
-        setApplications(userApps);
+        setApplications(appsResponse.data);
       }
 
       // Load user's credits (after user is loaded)
@@ -132,6 +136,26 @@ export const UserDetailPage: React.FC = () => {
       setSavingCompany(false);
     }
   }, [user?.id]);
+
+  const handleRoleChange = useCallback(async (nextRole: string) => {
+    if (!user?.id) return;
+    try {
+      setSavingRole(true);
+      setUserRole(nextRole);
+      const res = await supabaseApiService.updateUserRole(user.id, nextRole);
+      if (res.status !== 'SUCCESS' || !res.data) {
+        throw new Error(res.message || 'Failed to update user role');
+      }
+      setUser({ ...user, ...res.data, role: nextRole });
+      toast.success(`Role set to ${nextRole}`);
+    } catch (error: unknown) {
+      const msg = error instanceof Error ? error.message : 'Failed to update user role';
+      toast.error(msg);
+      setUserRole((user.role || 'customer').toLowerCase());
+    } finally {
+      setSavingRole(false);
+    }
+  }, [user]);
 
 
   const handleManageCredits = async (action: CreditsAction, amount: number, description: string) => {
@@ -251,6 +275,28 @@ export const UserDetailPage: React.FC = () => {
               <Typography variant="body1" fontWeight={600}>
                 {user.email}
               </Typography>
+            </Box>
+
+            <Box className="info-item">
+              <Box className="info-label">
+                <Typography variant="body2" color="text.secondary">Role</Typography>
+              </Box>
+              <FormControl size="small" fullWidth disabled={savingRole}>
+                <InputLabel id="user-role-select-label">Role</InputLabel>
+                <Select
+                  labelId="user-role-select-label"
+                  label="Role"
+                  value={userRole}
+                  onChange={(e) => handleRoleChange(String(e.target.value))}
+                >
+                  <MenuItem value="customer">Customer</MenuItem>
+                  <MenuItem value="dealer_agent">Dealer agent</MenuItem>
+                  <MenuItem value="credit_officer">Credit officer</MenuItem>
+                  <MenuItem value="finance_officer">Finance officer</MenuItem>
+                  <MenuItem value="admin">Admin</MenuItem>
+                  <MenuItem value="super_admin">Super admin</MenuItem>
+                </Select>
+              </FormControl>
             </Box>
 
             <Box className="info-item">

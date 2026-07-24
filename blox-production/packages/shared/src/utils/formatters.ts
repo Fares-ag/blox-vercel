@@ -51,12 +51,12 @@ export const getStatusColor = (status: string): string => {
   const statusConfig = Config.statusConfig.find((s) => 
     s.status.toLowerCase().trim() === normalizedStatus
   );
-  return statusConfig?.color || '#C9C4B7'; // Mid Grey as default
+  return statusConfig?.color || '#A8B2BC'; // Mid Grey as default
 };
 
 export const getPaymentStatusColor = (status: string): string => {
   const paymentStatus = Config.paymentStatuses.find((s) => s.status.toLowerCase() === status.toLowerCase());
-  return paymentStatus?.color || '#C9C4B7'; // Mid Grey as default
+  return paymentStatus?.color || '#A8B2BC'; // Mid Grey as default
 };
 
 export const formatPhoneNumber = (phone: string): string => {

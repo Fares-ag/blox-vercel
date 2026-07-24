@@ -4,7 +4,7 @@
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  background-color: var(--background); /* Light Grey background */
+  background-color: transparent;
 
   .back-button {
     color: var(--primary-text); /* Blox Black */
@@ -12,7 +12,7 @@
     margin-bottom: 24px;
 
     &:hover {
-      background-color: rgba(14, 25, 9, 0.05); /* Blox Black with opacity */
+      background-color: rgba(22, 83, 91, 0.05); /* Blox Black with opacity */
     }
   }
 
@@ -54,14 +54,14 @@
     }
 
     .secondary-action {
-      color: var(--background-secondary); /* Light Grey */
-      border-color: var(--divider-color); /* Mid Grey */
+      color: var(--blox-deep-green);
+      border-color: rgba(22, 83, 91, 0.28);
       text-transform: none;
       font-weight: 600;
 
       &:hover {
-        border-color: var(--primary-color); /* Lime Yellow */
-        background-color: rgba(218, 255, 1, 0.1); /* Lime Yellow tint */
+        border-color: var(--blox-emerald);
+        background-color: var(--blox-emerald-wash);
       }
     }
   }
@@ -110,7 +110,7 @@
         }
 
         &:not(.Mui-disabled):hover {
-          background-color: rgba(218, 255, 1, 0.1); /* Lime Yellow tint */
+          background-color: var(--blox-emerald-wash);
         }
 
         &.Mui-disabled {
@@ -257,12 +257,20 @@
           gap: 4px;
 
           .highlight-amount {
-            color: var(--primary-color); /* Lime Yellow */
+            font-family: var(--font-numeric);
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--blox-deep-green);
             font-size: 18px;
           }
 
           .monthly-payment-amount {
-            color: #2E7D32; /* Green – monthly payment */
+            font-family: var(--font-numeric);
+            font-variant-numeric: tabular-nums;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--blox-emerald-dark); /* Emerald – monthly payment */
           }
         }
       }
@@ -304,7 +312,7 @@
           padding: var(--spacing-md);
           background-color: var(--background); /* Light Grey */
           border-radius: var(--radius-sm);
-          border-left: 4px solid var(--primary-color); /* Lime Yellow */
+          border-left: 4px solid var(--blox-emerald);
           transition: all var(--transition-base);
 
           &:hover {
@@ -350,12 +358,12 @@
 
     .MuiTable-root {
       .MuiTableHead-root .MuiTableRow-root .MuiTableCell-head {
-        background-color: var(--blox-black, #0E1909);
-        color: var(--primary-color);
+        background-color: var(--blox-deep-green-dark, #0F3A40);
+        color: var(--blox-white);
         font-weight: 700;
         font-size: 13px;
         padding: 14px 16px;
-        border-bottom: 2px solid rgba(218, 255, 1, 0.3);
+        border-bottom: 2px solid rgba(0, 207, 162, 0.35);
       }
 
       .MuiTableBody-root .MuiTableRow-root {
@@ -366,7 +374,7 @@
           border-bottom: 1px solid var(--divider-color);
         }
         &:hover .MuiTableCell-root {
-          background-color: rgba(218, 255, 1, 0.06);
+          background-color: var(--blox-emerald-wash);
         }
       }
     }
@@ -543,7 +551,7 @@
       }
       
       &::-webkit-scrollbar-thumb {
-        background: rgba(218, 255, 1, 0.3); /* Lime Yellow with opacity */
+        background: rgba(0, 207, 162, 0.35);
         border-radius: 3px;
       }
     }

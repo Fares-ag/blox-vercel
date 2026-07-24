@@ -10,3 +10,11 @@ export interface Company {
   updatedAt?: string;
 }
 
+/** At-a-glance Partner Hub row (admin). */
+export interface PartnerHubSummary extends Company {
+  vehicleCount: number;
+  openApplicationCount: number;
+  dealerAgentCount: number;
+  creditOfficerCount: number;
+}
+

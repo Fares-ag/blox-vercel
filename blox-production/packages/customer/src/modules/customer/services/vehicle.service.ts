@@ -6,8 +6,12 @@ import {
   mergeCatalogWithSeed,
 } from '../features/vehicles/data/catalog-seed';
 
-/** Customer catalog cap: hide vehicles priced above this amount (QAR). */
-export const CUSTOMER_MAX_VEHICLE_PRICE_QAR = 70_000;
+/**
+ * Soft default max for the customer price-range filter slider (QAR).
+ * This is NOT a hard catalog cap — premium partner inventory (e.g. Audi) can
+ * exceed it. Customers can raise the max filter to see higher-priced vehicles.
+ */
+export const CUSTOMER_MAX_VEHICLE_PRICE_QAR = 1_000_000;
 
 export interface VehicleFilters {
   search?: string;
@@ -20,55 +24,52 @@ export interface VehicleFilters {
   maxYear?: number;
   page?: number;
   limit?: number;
+  /** Reserved vehicle ids excluded before range (pre-range). */
+  excludeIds?: string[];
 }
 
 class VehicleService {
   /**
-   * Get all vehicles (public - no auth required)
+   * Server-paged active vehicles (public — no auth required for RLS active read).
    */
-  async getVehicles(filters?: VehicleFilters): Promise<ApiResponse<Product[]>> {
-    // Delegate to Supabase products API and then filter client-side
-    const response = await supabaseApiService.getProducts();
+  async getVehicles(
+    filters?: VehicleFilters
+  ): Promise<ApiResponse<Product[]> & { count?: number | null }> {
+    const page = Math.max(filters?.page ?? 1, 1);
+    const limit = Math.max(filters?.limit ?? 12, 1);
+    const offset = (page - 1) * limit;
+
+    const response = await supabaseApiService.queryProducts({
+      limit,
+      offset,
+      status: ['active'],
+      make: filters?.make ? [filters.make] : undefined,
+      model: filters?.model ? [filters.model] : undefined,
+      condition: filters?.condition ? [filters.condition] : undefined,
+      priceMin: filters?.minPrice,
+      priceMax: filters?.maxPrice,
+      modelYearMin: filters?.minYear,
+      modelYearMax: filters?.maxYear,
+      search: filters?.search,
+      excludeIds: filters?.excludeIds,
+    });
+
     if (response.status !== 'SUCCESS' || !response.data) {
       return {
         status: 'ERROR',
         message: response.message || 'Failed to load vehicles from Supabase',
         data: [],
+        count: 0,
       };
     }
 
-    // Merge local Qatar catalog seed (RLS blocks anon product inserts)
-    // Cap catalog at 70,000 QAR for the customer browse experience
-    let vehicles = mergeCatalogWithSeed(response.data as Product[]).filter(
-      (v) => v.status === 'active' && v.price <= CUSTOMER_MAX_VEHICLE_PRICE_QAR
-    );
-
-    if (filters) {
-      if (filters.search) {
-        const q = filters.search.toLowerCase();
-        vehicles = vehicles.filter(
-          (v) =>
-            v.make.toLowerCase().includes(q) ||
-            v.model.toLowerCase().includes(q) ||
-            v.id.toLowerCase().includes(q)
-        );
-      }
-      if (filters.make) vehicles = vehicles.filter((v) => v.make === filters.make);
-      if (filters.model) vehicles = vehicles.filter((v) => v.model === filters.model);
-      if (filters.condition) vehicles = vehicles.filter((v) => v.condition === filters.condition);
-      if (filters.minPrice) vehicles = vehicles.filter((v) => v.price >= filters.minPrice!);
-      const effectiveMaxPrice = Math.min(
-        filters.maxPrice ?? CUSTOMER_MAX_VEHICLE_PRICE_QAR,
-        CUSTOMER_MAX_VEHICLE_PRICE_QAR
-      );
-      vehicles = vehicles.filter((v) => v.price <= effectiveMaxPrice);
-      if (filters.minYear) vehicles = vehicles.filter((v) => v.modelYear >= filters.minYear!);
-      if (filters.maxYear) vehicles = vehicles.filter((v) => v.modelYear <= filters.maxYear!);
-    }
+    // Seed only fills missing images on returned page rows — never invents inventory.
+    const vehicles = mergeCatalogWithSeed(response.data as Product[]);
 
     return {
       status: 'SUCCESS',
       data: vehicles,
+      count: response.count ?? vehicles.length,
       message: 'Vehicles loaded from Supabase',
     };
   }
@@ -86,10 +87,7 @@ class VehicleService {
         data: {} as Product,
       };
     }
-    if (
-      response.data.status !== 'active' ||
-      response.data.price > CUSTOMER_MAX_VEHICLE_PRICE_QAR
-    ) {
+    if (response.data.status !== 'active') {
       return {
         status: 'ERROR',
         message: 'This vehicle is not available',
@@ -122,47 +120,18 @@ class VehicleService {
   }
 
   /**
-   * Get available makes (for filter dropdown)
+   * Distinct makes via facet RPC (no full-table product download).
    */
   async getMakes(): Promise<ApiResponse<string[]>> {
-    const response = await supabaseApiService.getProducts();
-    if (response.status !== 'SUCCESS' || !response.data) {
-      return {
-        status: 'ERROR',
-        message: response.message || 'Failed to load makes from Supabase',
-        data: [],
-      };
-    }
-    // Only show makes from active in-cap vehicles (remote + seed)
-    const activeVehicles = mergeCatalogWithSeed(response.data).filter(
-      (v) => v.status === 'active' && v.price <= CUSTOMER_MAX_VEHICLE_PRICE_QAR
-    );
-    const makes = Array.from(new Set(activeVehicles.map((v) => v.make))).sort();
-    return { status: 'SUCCESS', data: makes, message: 'Makes loaded from Supabase' };
+    return supabaseApiService.getProductMakes('active');
   }
 
   /**
-   * Get models for a specific make
+   * Distinct models for a make via facet RPC.
    */
   async getModelsByMake(make: string): Promise<ApiResponse<string[]>> {
-    const response = await supabaseApiService.getProducts();
-    if (response.status !== 'SUCCESS' || !response.data) {
-      return {
-        status: 'ERROR',
-        message: response.message || 'Failed to load models from Supabase',
-        data: [],
-      };
-    }
-    // Only show models from active in-cap vehicles (remote + seed)
-    const activeVehicles = mergeCatalogWithSeed(response.data).filter(
-      (v) => v.status === 'active' && v.price <= CUSTOMER_MAX_VEHICLE_PRICE_QAR
-    );
-    const models = Array.from(
-      new Set(activeVehicles.filter((v) => v.make === make).map((v) => v.model))
-    ).sort();
-    return { status: 'SUCCESS', data: models, message: 'Models loaded from Supabase' };
+    return supabaseApiService.getProductModels(make, 'active');
   }
 }
 
 export const vehicleService = new VehicleService();
-

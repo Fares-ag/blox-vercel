@@ -28,7 +28,7 @@
 
       .page-title {
         font-weight: 700;
-        color: #000000;
+        color: #16535B;
         margin-bottom: 8px;
         font-size: 32px;
       }
@@ -61,7 +61,7 @@
 
       .section-title {
         font-weight: 700;
-        color: #000000;
+        color: #16535B;
         font-size: 20px;
         margin-bottom: 4px;
       }
@@ -94,7 +94,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: linear-gradient(135deg, rgba(218, 255, 1, 0.05) 0%, rgba(218, 255, 1, 0.02) 100%);
+        background: rgba(0, 207, 162, 0.05);
         opacity: 0;
         transition: opacity 0.3s ease;
       }
@@ -159,7 +159,7 @@
 
         &:hover {
           border-color: var(--blox-black);
-          box-shadow: 0 4px 12px rgba(218, 255, 1, 0.2);
+          box-shadow: 0 4px 12px rgba(0, 207, 162, 0.2);
           transform: translateY(-2px);
 
           .remove-image-button {

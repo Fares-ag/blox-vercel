@@ -99,14 +99,16 @@
 
       .MuiTypography-h5 {
         margin-top: var(--spacing-xs);
+        font-family: var(--font-numeric);
+        font-variant-numeric: tabular-nums;
         font-size: 24px;
         font-weight: 700;
-        color: var(--primary-text); /* Blox Black */
+        color: var(--primary-text); /* Deep green */
         letter-spacing: -0.02em;
-        
-        // Highlight amounts with Lime Yellow
+
+        // Positive / paid emphasis in emerald
         &.highlight {
-          color: var(--primary-color); /* Lime Yellow */
+          color: var(--blox-emerald-dark);
         }
       }
     }
@@ -132,7 +134,7 @@
     }
 
     .MuiTableHead-root {
-      background-color: rgba(218, 255, 1, 0.1); /* Subtle Lime Yellow tint */
+      background-color: var(--blox-emerald-wash);
 
       .MuiTableCell-head {
         font-weight: 700;
@@ -147,7 +149,7 @@
       transition: background-color var(--transition-base);
       
       &:hover {
-        background-color: rgba(218, 255, 1, 0.05); /* Subtle Lime Yellow tint on hover */
+        background-color: var(--blox-emerald-wash);
       }
     }
 

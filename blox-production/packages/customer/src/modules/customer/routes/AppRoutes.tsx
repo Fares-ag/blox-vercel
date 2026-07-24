@@ -38,6 +38,16 @@ const FAQPage = React.lazy(() => import('../features/help/pages/FAQPage/FAQPage'
 const ContactSupportPage = React.lazy(() => import('../features/help/pages/ContactSupportPage/ContactSupportPage').then(m => ({ default: m.ContactSupportPage })));
 const TermsPage = React.lazy(() => import('../features/help/pages/TermsPage/TermsPage').then(m => ({ default: m.TermsPage })));
 const PrivacyPage = React.lazy(() => import('../features/help/pages/PrivacyPage/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
+const DeleteAccountPage = React.lazy(() =>
+  import('../features/help/pages/DeleteAccountPage/DeleteAccountPage').then((m) => ({
+    default: m.DeleteAccountPage,
+  }))
+);
+const DeleteDataPage = React.lazy(() =>
+  import('../features/help/pages/DeleteDataPage/DeleteDataPage').then((m) => ({
+    default: m.DeleteDataPage,
+  }))
+);
 
 // Contract Routes
 const ContractSigningPage = React.lazy(() => import('../features/contracts/pages/ContractSigningPage/ContractSigningPage').then(m => ({ default: m.ContractSigningPage })));
@@ -182,6 +192,22 @@ export const AppRoutes: React.FC = () => {
         element={
           <CustomerNavWrapper>
             <PrivacyPage />
+          </CustomerNavWrapper>
+        }
+      />
+      <Route
+        path="/customer/legal/delete-account"
+        element={
+          <CustomerNavWrapper>
+            <DeleteAccountPage />
+          </CustomerNavWrapper>
+        }
+      />
+      <Route
+        path="/customer/legal/delete-data"
+        element={
+          <CustomerNavWrapper>
+            <DeleteDataPage />
           </CustomerNavWrapper>
         }
       />

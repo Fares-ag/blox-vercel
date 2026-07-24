@@ -90,10 +90,10 @@ class ReportExportService {
             body {
               font-family: 'IBM Plex Sans', Arial, sans-serif;
               padding: 20px;
-              color: #2E2C34;
+              color: #16535B;
             }
             h1 {
-              color: #2E2C34;
+              color: #16535B;
               border-bottom: 2px solid #00CFA2;
               padding-bottom: 10px;
             }
@@ -340,7 +340,7 @@ class ReportExportService {
     
     // Brand colors
     const primaryColor = '#00CFA2';
-    const secondaryColor = '#2E2C34';
+    const secondaryColor = '#16535B';
 
     // Add top accent bar
     doc.setFillColor(primaryColor);
@@ -438,7 +438,7 @@ class ReportExportService {
 
     // Brand colors
     const primaryColor = '#00CFA2';
-    const secondaryColor = '#2E2C34';
+    const secondaryColor = '#16535B';
     const successColor = '#09C97F';
     const dangerColor = '#F95668';
 
@@ -602,7 +602,7 @@ class ReportExportService {
     let yPosition = 60;
 
     // Brand colors
-    const secondaryColor = '#2E2C34';
+    const secondaryColor = '#16535B';
 
     // Load logo
     const logoBase64 = await this.loadLogo();

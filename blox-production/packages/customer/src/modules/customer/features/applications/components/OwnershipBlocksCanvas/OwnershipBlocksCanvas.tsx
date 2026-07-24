@@ -171,7 +171,16 @@ export const OwnershipBlocksCanvas: React.FC<OwnershipBlocksCanvasProps> = ({
             <Typography variant="body2" sx={{ color: 'var(--secondary-text)' }}>
               Your Share
             </Typography>
-            <Typography variant="h4" fontWeight={700} sx={{ color: 'var(--primary-text)' }}>
+            <Typography
+              variant="h4"
+              fontWeight={700}
+              sx={{
+                color: 'var(--blox-emerald-dark, #00B894)',
+                fontFamily: 'var(--font-numeric)',
+                fontVariantNumeric: 'tabular-nums',
+                letterSpacing: '-0.02em',
+              }}
+            >
               {yourPct.toFixed(1)}%
             </Typography>
             <Box className="stat-bar">
@@ -183,7 +192,16 @@ export const OwnershipBlocksCanvas: React.FC<OwnershipBlocksCanvasProps> = ({
             <Typography variant="body2" sx={{ color: 'var(--secondary-text)' }}>
               BLOX Share
             </Typography>
-            <Typography variant="h4" fontWeight={700} sx={{ color: 'var(--primary-text)' }}>
+            <Typography
+              variant="h4"
+              fontWeight={700}
+              sx={{
+                color: 'var(--primary-text)',
+                fontFamily: 'var(--font-numeric)',
+                fontVariantNumeric: 'tabular-nums',
+                letterSpacing: '-0.02em',
+              }}
+            >
               {bloxPct.toFixed(1)}%
             </Typography>
             <Box className="stat-bar">

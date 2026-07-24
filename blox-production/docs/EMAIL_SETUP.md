@@ -6,23 +6,20 @@ These templates must be pasted manually into the Supabase Dashboard because Auth
 
 **Dashboard path:** Authentication → Email Templates
 
-### 1. Confirm signup
+**Copy-paste files** (one subject + one HTML per template):
 
-**Subject:** `Confirm your BLOX account`
+[`docs/auth-email-templates/`](./auth-email-templates/)
 
-Paste the HTML from `supabase/functions/_shared/email-templates.ts` → `authTemplates.confirmSignup`.
+| Dashboard template | Subject file | Body file |
+|--------------------|--------------|-----------|
+| Confirm signup | `01-confirm-signup.subject.txt` | `01-confirm-signup.html` |
+| Reset password | `02-reset-password.subject.txt` | `02-reset-password.html` |
+| Magic Link | `03-magic-link.subject.txt` | `03-magic-link.html` |
+| Invite user | `04-invite-user.subject.txt` | `04-invite-user.html` |
+| Change Email Address | `05-change-email.subject.txt` | `05-change-email.html` |
+| Reauthentication | `06-reauthentication.subject.txt` | `06-reauthentication.html` |
 
-### 2. Reset password
-
-**Subject:** `Reset your BLOX password`
-
-Paste the HTML from `authTemplates.resetPassword`.
-
-### 3. Magic Link (if used)
-
-Use the same shell as the confirm template, replacing the CTA copy with "Log in to BLOX" and the link with `{{ .ConfirmationURL }}`.
-
-> **Important:** The templates already use `{{ .ConfirmationURL }}` — that's Supabase's Go template variable. Do NOT change it.
+> **Important:** Keep `{{ .ConfirmationURL }}` and `{{ .Token }}` as-is — those are Supabase's Go template variables.
 
 ---
 

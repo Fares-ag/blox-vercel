@@ -100,8 +100,8 @@ export class ContractPdfService {
     this.lineHeight = 6;
     this.primaryColor = '#00CFA2';
     this.secondaryColor = '#16535B';
-    this.textColor = '#1a1a1a';
-    this.lightGray = '#666666';
+    this.textColor = '#16535B';
+    this.lightGray = '#708090';
   }
 
   async generateContract(data: ContractData): Promise<void> {

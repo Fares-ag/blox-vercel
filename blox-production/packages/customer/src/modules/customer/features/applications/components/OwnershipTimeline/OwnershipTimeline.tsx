@@ -30,17 +30,17 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
   const timeline = calculateOwnershipTimeline(application);
 
   const getMilestoneIcon = (milestone: OwnershipMilestone) => {
-    if (milestone.milestone === 'full_owner') return <EmojiEvents sx={{ color: '#FF6B35' }} />;
+    if (milestone.milestone === 'full_owner') return <EmojiEvents sx={{ color: '#DBFF00' }} />;
     if (milestone.milestone === 'almost_there') return <EmojiEvents sx={{ color: '#5C5346' }} />;
     if (milestone.milestone === 'halfway') return <EmojiEvents sx={{ color: '#2A2A2A' }} />;
-    if (milestone.paymentStatus === 'paid') return <CheckCircle sx={{ color: '#4CAF50' }} />;
-    if (milestone.paymentStatus === 'missed') return <Schedule sx={{ color: '#F44336' }} />;
+    if (milestone.paymentStatus === 'paid') return <CheckCircle sx={{ color: '#00CFA2' }} />;
+    if (milestone.paymentStatus === 'missed') return <Schedule sx={{ color: '#C62828' }} />;
     return <Schedule sx={{ color: '#9E9E9E' }} />;
   };
 
   const getMilestoneColor = (milestone: OwnershipMilestone): string => {
-    if (milestone.paymentStatus === 'paid') return '#4CAF50';
-    if (milestone.paymentStatus === 'missed') return '#F44336';
+    if (milestone.paymentStatus === 'paid') return '#00CFA2';
+    if (milestone.paymentStatus === 'missed') return '#C62828';
     return '#9E9E9E';
   };
 
@@ -93,7 +93,7 @@ export const OwnershipTimeline: React.FC<OwnershipTimelineProps> = ({ applicatio
                       width: 40,
                       height: 40,
                       borderRadius: '50%',
-                      backgroundColor: milestone.paymentStatus === 'paid' ? '#2E7D32' : 'var(--card-hover)',
+                      backgroundColor: milestone.paymentStatus === 'paid' ? '#00CFA2' : 'var(--card-hover)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',

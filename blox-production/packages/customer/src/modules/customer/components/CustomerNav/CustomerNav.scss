@@ -1,9 +1,9 @@
 .customer-nav {
-  /* Blox Brand Navigation: Light background with black text */
-  background: var(--card-background); /* Light Grey */
-  border-bottom: 1px solid var(--divider-color); /* Mid Grey border */
-  color: var(--primary-text); /* Blox Black text */
-  box-shadow: var(--card-shadow);
+  background: linear-gradient(180deg, rgba(15, 58, 64, 0.92) 0%, rgba(22, 83, 91, 0.9) 100%);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(0, 207, 162, 0.22);
+  color: var(--blox-white);
+  box-shadow: 0 10px 30px rgba(15, 58, 64, 0.22);
   border-radius: 0 !important;
 
   .nav-toolbar {
@@ -33,7 +33,7 @@
       flex: 1;
 
       .nav-link {
-        color: var(--primary-text); /* Blox Black text */
+        color: rgba(255, 255, 255, 0.82);
         text-transform: none;
         font-weight: 600;
         font-size: 15px;
@@ -45,24 +45,22 @@
         font-family: 'IBM Plex Sans', sans-serif;
 
         &:hover {
-          background-color: var(--card-hover) !important;
-          color: var(--primary-text) !important; /* Black text on hover */
-          border-color: var(--divider-color);
+          background-color: rgba(255, 255, 255, 0.08) !important;
+          color: var(--blox-white) !important;
           transform: translateY(-1px);
-          box-shadow: var(--shadow-xs);
         }
 
         &.active {
-          color: var(--primary-btn-color); /* Blox Black text */
-          background-color: var(--primary-color); /* Lime Yellow background */
-          border-color: var(--primary-color);
+          color: var(--blox-deep-green-dark);
+          background-color: var(--blox-emerald);
+          border-color: var(--blox-emerald);
           font-weight: 700;
-          box-shadow: var(--shadow-sm);
-          
+          box-shadow: 0 6px 16px rgba(0, 207, 162, 0.28);
+
           &:hover {
-            background-color: var(--primary-btn-hover) !important; /* Darker Lime Yellow */
-            border-color: var(--primary-btn-hover);
-            color: var(--primary-btn-color); /* Blox Black text */
+            background-color: var(--blox-emerald-dark) !important;
+            border-color: var(--blox-emerald-dark);
+            color: var(--blox-white);
           }
         }
       }
@@ -78,17 +76,16 @@
         align-items: center;
         gap: 8px;
         padding: 8px 12px;
-        background: #0E1909;
-        border: 1px solid var(--divider-color);
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(0, 207, 162, 0.28);
         border-radius: var(--radius-md);
         transition: all var(--transition-base);
         min-width: 140px;
 
         &:hover {
-          background: #0E1909;
-          border-color: var(--primary-color); /* Lime Yellow */
+          background: rgba(255, 255, 255, 0.12);
+          border-color: var(--blox-emerald);
           transform: translateY(-1px);
-          box-shadow: var(--shadow-xs);
         }
 
         .wallet-icon-wrapper {
@@ -97,11 +94,11 @@
           justify-content: center;
           width: 32px;
           height: 32px;
-          background: rgba(218, 255, 1, 0.2);
-          border-radius: 0;
+          background: rgba(0, 207, 162, 0.18);
+          border-radius: var(--radius-sm);
 
           .wallet-icon {
-            color: var(--primary-color); /* Lime Yellow */
+            color: var(--blox-emerald);
             font-size: 20px;
           }
         }
@@ -124,11 +121,13 @@
           }
 
           .wallet-balance {
-            color: var(--background-secondary); /* Light Grey text on dark background */
+            color: var(--blox-white);
             font-size: 16px;
             font-weight: 700;
             line-height: 1.2;
-            font-family: 'IBM Plex Sans', sans-serif;
+            font-family: var(--font-numeric);
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.01em;
           }
         }
 
@@ -150,22 +149,22 @@
         transition: background-color var(--transition-base);
 
         &:hover {
-          background-color: var(--card-hover);
+          background-color: rgba(255, 255, 255, 0.08);
         }
 
         .user-avatar {
           width: 32px;
           height: 32px;
           border-radius: var(--radius-round);
-          background-color: var(--dark-grey); /* Dark Grey background */
-          color: var(--card-background); /* Light Grey text */
+          background-color: var(--blox-emerald);
+          color: var(--blox-deep-green-dark);
           font-size: 14px;
-          font-weight: 600;
+          font-weight: 700;
         }
 
         .user-name {
           font-weight: 600;
-          color: var(--primary-text); /* Blox Black text */
+          color: var(--blox-white);
           font-size: 14px;
           font-family: 'IBM Plex Sans', sans-serif;
         }
@@ -176,8 +175,8 @@
         gap: 12px;
 
         .login-button {
-          color: var(--primary-text); /* Blox Black text */
-          border-color: var(--divider-color); /* Mid Grey border */
+          color: var(--blox-white);
+          border-color: rgba(255, 255, 255, 0.4);
           border-width: 1.5px;
           text-transform: none;
           font-weight: 600;
@@ -189,30 +188,30 @@
           border-radius: var(--radius-md) !important;
 
           &:hover {
-            border-color: var(--primary-color); /* Lime Yellow border */
-            background-color: var(--card-hover);
-            color: var(--primary-text); /* Black text */
+            border-color: var(--blox-emerald);
+            background-color: rgba(255, 255, 255, 0.08);
+            color: var(--blox-white);
             border-width: 1.5px;
           }
         }
 
         .signup-button {
-          background-color: var(--primary-color); /* Lime Yellow */
-          color: var(--primary-btn-color); /* Blox Black text */
+          background-color: var(--blox-emerald);
+          color: var(--blox-deep-green-dark);
           text-transform: none;
-          font-weight: 600;
+          font-weight: 700;
           font-size: 14px;
           padding: 10px 24px;
           font-family: 'IBM Plex Sans', sans-serif;
           letter-spacing: 0.01em;
-          box-shadow: var(--shadow-xs);
+          box-shadow: var(--emerald-glow);
           border-radius: var(--radius-md) !important;
-          border: 1px solid var(--primary-color);
+          border: 1px solid var(--blox-emerald);
 
           &:hover {
-            background-color: var(--primary-btn-hover); /* Darker Lime Yellow */
-            border-color: var(--primary-btn-hover);
-            box-shadow: var(--shadow-sm);
+            background-color: var(--blox-emerald-dark);
+            border-color: var(--blox-emerald-dark);
+            color: var(--blox-white);
             transform: translateY(-1px);
           }
         }
@@ -222,7 +221,7 @@
 
   .mobile-menu-button {
     display: none;
-    color: var(--primary-text); /* Blox Black icon */
+    color: var(--blox-white);
 
     @media (max-width: 960px) {
       display: flex;

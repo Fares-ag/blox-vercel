@@ -122,9 +122,9 @@ export const UsersListPage: React.FC = () => {
             size="small"
             sx={{
               fontWeight: 600,
-              backgroundColor: active ? 'rgba(218, 255, 1, 0.22)' : 'var(--light-grey)',
-              color: 'var(--blox-black)',
-              border: '1px solid var(--blox-black)',
+              backgroundColor: active ? 'rgba(0, 207, 162, 0.16)' : 'var(--light-grey)',
+              color: active ? 'var(--blox-deep-green)' : 'var(--blox-black)',
+              border: active ? '1px solid var(--blox-deep-green)' : '1px solid var(--blox-black)',
             }}
           />
         );

@@ -110,16 +110,16 @@ export function drawOwnershipBlocks(
     ctx.save();
     if (isLeading) {
       ctx.shadowBlur = 16;
-      ctx.shadowColor = COLORS.lime;
+      ctx.shadowColor = COLORS.emerald;
     }
 
     if (isFilled) {
       const progress = totalCells > 0 ? i / totalCells : 0;
       const alpha = 0.65 + 0.35 * progress;
-      // Darker lime range: #9AB800 → #C4E800
-      const r = Math.round(154 + (196 - 154) * progress);
-      const g = Math.round(184 + (232 - 184) * progress);
-      ctx.fillStyle = `rgba(${r},${g},0,${alpha})`;
+      // Emerald range: #00B894 → #00CFA2
+      const g = Math.round(184 + (207 - 184) * progress);
+      const b = Math.round(148 + (162 - 148) * progress);
+      ctx.fillStyle = `rgba(0,${g},${b},${alpha})`;
     } else {
       ctx.fillStyle = COLORS.unfilled;
     }
@@ -143,8 +143,8 @@ export function drawOwnershipBlocks(
     const centerX = cx * CANVAS_WIDTH;
     const centerY = cy * CANVAS_HEIGHT;
     const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, CELL * 2);
-    gradient.addColorStop(0, 'rgba(184,217,0,0.45)');
-    gradient.addColorStop(1, 'rgba(184,217,0,0)');
+    gradient.addColorStop(0, 'rgba(0,207,162,0.42)');
+    gradient.addColorStop(1, 'rgba(0,207,162,0)');
     ctx.fillStyle = gradient;
     ctx.beginPath();
     ctx.arc(centerX, centerY, CELL * 2, 0, Math.PI * 2);

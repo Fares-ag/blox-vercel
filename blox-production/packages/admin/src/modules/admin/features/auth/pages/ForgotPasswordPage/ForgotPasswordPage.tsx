@@ -2,11 +2,12 @@ import React, { useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import { Box, Typography, Link } from '@mui/material';
-import { useAuth } from '../../../../hooks/useAuth';
 import { Link as RouterLink } from 'react-router-dom';
 import { Input, Button } from '@shared/components';
 import { forgotPasswordSchema } from '@shared/utils/validators';
 import { toast } from 'react-toastify';
+import { authService } from '@shared/services/auth.service';
+import { usePortalBasePath, withPortalBase } from '@shared/contexts/portal-base-path';
 import './ForgotPasswordPage.scss';
 
 interface ForgotPasswordFormData {
@@ -14,7 +15,8 @@ interface ForgotPasswordFormData {
 }
 
 export const ForgotPasswordPage: React.FC = () => {
-  const { forgotPassword } = useAuth();
+  // Use shared authService (not portal useAuth) so dealer/credit reuse keeps correct redirects.
+  const portalBase = usePortalBasePath();
   const [loading, setLoading] = React.useState(false);
 
   const {
@@ -30,21 +32,21 @@ export const ForgotPasswordPage: React.FC = () => {
 
   const onSubmit = useCallback(async (data: ForgotPasswordFormData) => {
     setLoading(true);
-    const result = await forgotPassword(data.email);
-    setLoading(false);
-
-    if (result.success) {
+    try {
+      await authService.forgotPassword(data.email);
       toast.success('Password reset email sent!');
-    } else {
-      toast.error(result.error || 'Failed to send reset email');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send reset email');
+    } finally {
+      setLoading(false);
     }
-  }, [forgotPassword]);
+  }, []);
 
   return (
     <Box className="forgot-password-page">
       <Box className="forgot-password-container">
         <Box className="forgot-password-header">
-          <img src="/BloxLogoNav.png" alt="Blox" className="logo-image" />
+          <img src="/BloxLogo.png" alt="Blox" className="logo-image" />
           <Typography variant="h2" sx={{ fontWeight: 700, fontSize: 28 }}>Forgot password</Typography>
           <Typography variant="body2" className="subtitle-text">
             Enter your email address and we'll send you a link to reset your password
@@ -66,7 +68,7 @@ export const ForgotPasswordPage: React.FC = () => {
           </Button>
 
           <Box className="back-to-login">
-            <Link component={RouterLink} to="/admin/auth/login">
+            <Link component={RouterLink} to={withPortalBase(portalBase, '/auth/login')}>
               Back to Login
             </Link>
           </Box>

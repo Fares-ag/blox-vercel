@@ -2,7 +2,14 @@
  * Role-Based Access Control (RBAC) utilities
  */
 
-export type UserRole = 'admin' | 'super_admin' | 'customer' | 'viewer';
+export type UserRole =
+  | 'admin'
+  | 'super_admin'
+  | 'customer'
+  | 'viewer'
+  | 'dealer_agent'
+  | 'credit_officer'
+  | 'finance_officer';
 
 export interface Permission {
   resource: string;
@@ -88,7 +95,76 @@ const rolePermissions: RolePermissions[] = [
       { resource: 'dashboard', action: 'read' },
     ],
   },
+  {
+    role: 'dealer_agent',
+    permissions: [
+      { resource: 'applications', action: 'create' },
+      { resource: 'applications', action: 'read' },
+      { resource: 'applications', action: 'update' },
+      // Dealers manage ONLY their own company's inventory (enforced by RLS).
+      { resource: 'products', action: 'create' },
+      { resource: 'products', action: 'read' },
+      { resource: 'products', action: 'update' },
+      { resource: 'products', action: 'delete' },
+      { resource: 'offers', action: 'read' },
+      { resource: 'dashboard', action: 'read' },
+    ],
+  },
+  {
+    role: 'credit_officer',
+    permissions: [
+      { resource: 'applications', action: 'read' },
+      { resource: 'applications', action: 'update' },
+      { resource: 'products', action: 'read' },
+      { resource: 'offers', action: 'read' },
+      { resource: 'dashboard', action: 'read' },
+    ],
+  },
+  {
+    role: 'finance_officer',
+    permissions: [
+      { resource: 'applications', action: 'read' },
+      { resource: 'applications', action: 'update' },
+      { resource: 'products', action: 'read' },
+      { resource: 'offers', action: 'read' },
+      { resource: 'payments', action: 'read' },
+      { resource: 'ledgers', action: 'read' },
+      { resource: 'dashboard', action: 'read' },
+    ],
+  },
 ];
+
+/** Roles that may use any ops Vite shell (admin, dealer, credit, or finance). */
+export function isOpsPortalRole(role?: string | null): boolean {
+  const r = (role || '').trim().toLowerCase();
+  return (
+    r === 'admin' ||
+    r === 'super_admin' ||
+    r === 'dealer_agent' ||
+    r === 'credit_officer' ||
+    r === 'finance_officer'
+  );
+}
+
+export function isFullAdminRole(role?: string | null): boolean {
+  const r = (role || '').trim().toLowerCase();
+  return r === 'admin' || r === 'super_admin';
+}
+
+/** Role allowed into packages/dealer only. */
+export function isDealerPortalRole(role?: string | null): boolean {
+  return (role || '').trim().toLowerCase() === 'dealer_agent';
+}
+
+/** Role allowed into packages/credit only. */
+export function isCreditPortalRole(role?: string | null): boolean {
+  return (role || '').trim().toLowerCase() === 'credit_officer';
+}
+
+/** Role allowed into packages/finance only. */
+export function isFinancePortalRole(role?: string | null): boolean {
+  return (role || '').trim().toLowerCase() === 'finance_officer';
+}
 
 /**
  * Check if a role has permission for a resource and action

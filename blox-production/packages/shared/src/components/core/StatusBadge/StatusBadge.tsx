@@ -10,14 +10,17 @@ export interface StatusBadgeProps {
 
 const LIME_STATUS_VARS = new Set([
   'var(--status-due)',
-  'var(--status-active)',
   'var(--status-under-review)',
 ]);
 
 const isLimeFill = (bgColor: string): boolean => {
   if (LIME_STATUS_VARS.has(bgColor)) return true;
   const normalized = bgColor.toLowerCase();
-  return normalized.includes('daff01') || normalized.includes('b8d900');
+  return (
+    normalized.includes('dbff00') ||
+    normalized.includes('c4e600') ||
+    normalized.includes('e8ff66')
+  );
 };
 
 export const StatusBadge: React.FC<StatusBadgeProps> = React.memo(({ status, type = 'application' }) => {
@@ -36,36 +39,24 @@ export const StatusBadge: React.FC<StatusBadgeProps> = React.memo(({ status, typ
     return getStatusColor(status);
   };
 
-  const formattedStatus = status
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
+  const statusLabels: Record<string, string> = {
+    pending_finance_activation: 'Approved — awaiting finance activation',
+  };
+  const formattedStatus =
+    statusLabels[status.toLowerCase()] ||
+    status
+      .split('_')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
 
   const backgroundColor = getColor();
   const limeFill = isLimeFill(backgroundColor);
 
-  const getTextColor = (bgColor: string): string => {
+  const getTextColor = (): string => {
     if (limeFill) {
       return 'var(--blox-black)';
     }
-    if (bgColor.startsWith('var(--')) {
-      return '#FFFFFF';
-    }
-    if (bgColor.includes('FFC107') || bgColor.includes('FF9800')) {
-      return '#0E1909';
-    }
-    if (
-      bgColor.includes('2196F3') ||
-      bgColor.includes('4CAF50') ||
-      bgColor.includes('9C27B0') ||
-      bgColor.includes('F44336') ||
-      bgColor.includes('757575')
-    ) {
-      return '#FFFFFF';
-    }
-    if (bgColor.includes('787663') || bgColor.includes('C9C4B7')) {
-      return '#FFFFFF';
-    }
+    // Deep green / slate / emerald fills → white; lime handled above
     return '#FFFFFF';
   };
 
@@ -75,12 +66,12 @@ export const StatusBadge: React.FC<StatusBadgeProps> = React.memo(({ status, typ
       className="status-badge"
       sx={{
         backgroundColor: backgroundColor,
-        color: getTextColor(backgroundColor),
+        color: getTextColor(),
         fontWeight: 600,
         fontSize: '13px',
         height: '26px',
         px: 1,
-        // Lime chips dissolve into #F3F0ED without an edge
+        // Lime chips dissolve into #F2F6F6 without an edge
         border: limeFill ? '1px solid var(--blox-black)' : '1px solid transparent',
       }}
     />

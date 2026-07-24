@@ -11,6 +11,7 @@ import { PageSkeleton } from '../../../../components/PageSkeleton/PageSkeleton';
 import { formatCurrency, formatDate } from '@shared/utils/formatters';
 import { resolveDocumentsSignedUrl } from '@shared/utils';
 import { toast } from 'react-toastify';
+import { usePortalBasePath, withPortalBase } from '@shared/contexts/portal-base-path';
 import './ProductDetailPage.scss';
 
 // Dummy data for testing
@@ -19,8 +20,16 @@ import './ProductDetailPage.scss';
 export const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const portalBase = usePortalBasePath();
   const dispatch = useAppDispatch();
+  const { user } = useAppSelector((state) => state.auth);
+  const role = (user?.role || '').toLowerCase();
+  const isAdminRole = role === 'admin' || role === 'super_admin';
+  const isDealer = role === 'dealer_agent';
   const { selected, loading } = useAppSelector((state) => state.products);
+  // Dealers manage only their own company's vehicles (mirrors RLS).
+  const canManageVehicles =
+    isAdminRole || (isDealer && !!user?.companyId && selected?.companyId === user.companyId);
   const [isActive, setIsActive] = React.useState(selected?.status === 'active');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [imageModalOpen, setImageModalOpen] = useState(false);
@@ -123,7 +132,7 @@ export const ProductDetailPage: React.FC = () => {
         // Remove from Redux
         dispatch(removeProduct(id));
         toast.success('Vehicle deleted successfully');
-        navigate('/admin/products');
+        navigate(withPortalBase(portalBase, '/vehicles'));
       } else {
         throw new Error(supabaseResponse.message || 'Failed to delete vehicle');
       }
@@ -156,7 +165,7 @@ export const ProductDetailPage: React.FC = () => {
     return (
       <Box className="product-detail-page">
         <Typography variant="h4">Vehicle not found</Typography>
-        <Button variant="secondary" onClick={() => navigate('/admin/products')}>
+        <Button variant="secondary" onClick={() => navigate(withPortalBase(portalBase, '/vehicles'))}>
           Back to List
         </Button>
       </Box>
@@ -166,21 +175,25 @@ export const ProductDetailPage: React.FC = () => {
   return (
     <Box className="product-detail-page">
       <Box className="page-header">
-        <Button variant="secondary" onClick={() => navigate('/admin/products')}>
+        <Button variant="secondary" onClick={() => navigate(withPortalBase(portalBase, '/vehicles'))}>
           Back to List
         </Button>
         <Typography variant="h2">Vehicle Details</Typography>
         <Box className="header-actions">
-          <FormControlLabel
-            control={<Switch checked={isActive} onChange={handleStatusToggle} />}
-            label={isActive ? 'Active' : 'Inactive'}
-          />
-          <Button variant="primary" onClick={() => navigate(`/admin/products/${id}/edit`)}>
-            Edit
-          </Button>
-          <Button variant="secondary" onClick={handleDelete}>
-            Delete
-          </Button>
+          {canManageVehicles && (
+            <>
+              <FormControlLabel
+                control={<Switch checked={isActive} onChange={handleStatusToggle} />}
+                label={isActive ? 'Active' : 'Inactive'}
+              />
+              <Button variant="primary" onClick={() => navigate(withPortalBase(portalBase, `/vehicles/${id}/edit`))}>
+                Edit
+              </Button>
+              <Button variant="secondary" onClick={handleDelete}>
+                Delete
+              </Button>
+            </>
+          )}
         </Box>
       </Box>
 

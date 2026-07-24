@@ -1,11 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Typography, Paper } from '@mui/material';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Box, Typography, Paper, IconButton } from '@mui/material';
+import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 import {
-  CUSTOMER_MAX_VEHICLE_PRICE_QAR,
   vehicleService,
   type VehicleFilters,
 } from '../../../../services/vehicle.service';
-import { mergeCatalogWithSeed } from '../../data/catalog-seed';
 import type { Product } from '@shared/models/product.model';
 import { VehicleCard } from '../../components/VehicleCard/VehicleCard';
 import { VehicleFilter } from '../../components/VehicleFilter/VehicleFilter';
@@ -25,103 +24,75 @@ export const VehicleBrowsePage: React.FC = () => {
   });
   const [totalCount, setTotalCount] = useState(0);
   const { user } = useAppSelector((state) => state.auth);
+  const reservedIdsRef = useRef<string[] | null>(null);
+  const reservedEmailRef = useRef<string | undefined>(undefined);
 
-  useEffect(() => {
-    loadVehicles();
-  }, [filters, searchTerm]);
+  const ensureReservedIds = useCallback(async (): Promise<string[]> => {
+    const email = user?.email ?? undefined;
+    // Cache once per browse session / email; empty set is valid.
+    if (reservedIdsRef.current !== null && reservedEmailRef.current === email) {
+      return reservedIdsRef.current;
+    }
+    try {
+      const reserved = await supabaseApiService.getReservedVehicleIds(email);
+      reservedIdsRef.current = Array.from(reserved);
+      reservedEmailRef.current = email;
+      return reservedIdsRef.current;
+    } catch (e) {
+      console.error('Failed to load reserved vehicles', e);
+      return [];
+    }
+  }, [user?.email]);
 
-  const loadVehicles = async () => {
+  const loadVehicles = useCallback(async () => {
     try {
       setLoading(true);
-      const searchFilters: VehicleFilters = {
+      const excludeIds = await ensureReservedIds();
+      const response = await vehicleService.getVehicles({
         ...filters,
         search: searchTerm || undefined,
-      };
+        excludeIds,
+      });
 
-      // Fetch vehicles from Supabase — limit to 120 rows for initial load.
-      // Active filtering + price cap further reduce the visible set client-side.
-      const response = await supabaseApiService.getProducts({ limit: 120 });
       if (response.status === 'SUCCESS' && response.data) {
-        // Merge local Qatar catalog seed; keep only active vehicles ≤ price cap
-        let filteredVehicles = mergeCatalogWithSeed(response.data).filter(
-          (v) => v.status === 'active' && v.price <= CUSTOMER_MAX_VEHICLE_PRICE_QAR
-        );
-
-        // Exclude vehicles reserved by other customers — use the narrow query
-        // (vehicle_id only, server-side status + email filter) instead of
-        // fetching the full applications table.
-        try {
-          const reservedVehicleIds = await supabaseApiService.getReservedVehicleIds(
-            user?.email ?? undefined
-          );
-          filteredVehicles = filteredVehicles.filter((v) => !reservedVehicleIds.has(v.id));
-        } catch (e) {
-          console.error('Failed to filter reserved vehicles', e);
-        }
-
-        // Apply search filter
-        if (searchTerm) {
-          filteredVehicles = filteredVehicles.filter(
-            (v) =>
-              v.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              v.model.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-        }
-
-        // Apply other filters
-        if (filters.make) {
-          filteredVehicles = filteredVehicles.filter((v) => v.make === filters.make);
-        }
-        if (filters.model) {
-          filteredVehicles = filteredVehicles.filter((v) => v.model === filters.model);
-        }
-        if (filters.condition) {
-          filteredVehicles = filteredVehicles.filter((v) => v.condition === filters.condition);
-        }
-        if (filters.minPrice) {
-          filteredVehicles = filteredVehicles.filter((v) => v.price >= filters.minPrice!);
-        }
-        {
-          const effectiveMaxPrice = Math.min(
-            filters.maxPrice ?? CUSTOMER_MAX_VEHICLE_PRICE_QAR,
-            CUSTOMER_MAX_VEHICLE_PRICE_QAR
-          );
-          filteredVehicles = filteredVehicles.filter((v) => v.price <= effectiveMaxPrice);
-        }
-        if (filters.minYear) {
-          filteredVehicles = filteredVehicles.filter((v) => v.modelYear >= filters.minYear!);
-        }
-        if (filters.maxYear) {
-          filteredVehicles = filteredVehicles.filter((v) => v.modelYear <= filters.maxYear!);
-        }
-
-        setVehicles(filteredVehicles);
-        setTotalCount(filteredVehicles.length);
+        setVehicles(response.data);
+        setTotalCount(response.count ?? response.data.length);
       } else {
         throw new Error(response.message || 'Failed to load vehicles');
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load vehicles');
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error('Failed to load vehicles');
+      toast.error(err.message);
       setVehicles([]);
       setTotalCount(0);
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, searchTerm, ensureReservedIds]);
+
+  useEffect(() => {
+    void loadVehicles();
+  }, [loadVehicles]);
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
-    setFilters({ ...filters, page: 1 }); // Reset to first page on search
+    setFilters((prev) => ({ ...prev, page: 1 }));
   };
 
   const handleFilterChange = (newFilters: Partial<VehicleFilters>) => {
-    setFilters({ ...filters, ...newFilters, page: 1 }); // Reset to first page on filter change
+    setFilters((prev) => ({ ...prev, ...newFilters, page: 1 }));
   };
 
   const handlePageChange = (page: number) => {
-    setFilters({ ...filters, page });
+    setFilters((prev) => ({ ...prev, page }));
     window.scrollTo({ top: 0 });
   };
+
+  const page = filters.page || 1;
+  const limit = filters.limit || 12;
+  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+  const showingFrom = totalCount === 0 ? 0 : (page - 1) * limit + 1;
+  const showingTo = Math.min(page * limit, totalCount);
 
   return (
     <Box className="vehicle-browse-page">
@@ -164,13 +135,27 @@ export const VehicleBrowsePage: React.FC = () => {
                 ))}
               </Box>
 
-              {/* Pagination - Simple version for now */}
-              {totalCount > (filters.limit || 12) && (
+              {totalCount > limit && (
                 <Box className="pagination-section">
+                  <IconButton
+                    size="small"
+                    aria-label="Previous page"
+                    disabled={page <= 1}
+                    onClick={() => handlePageChange(page - 1)}
+                  >
+                    <ChevronLeft />
+                  </IconButton>
                   <Typography variant="body2" className="pagination-text">
-                    Showing {((filters.page || 1) - 1) * (filters.limit || 12) + 1} -{' '}
-                    {Math.min((filters.page || 1) * (filters.limit || 12), totalCount)} of {totalCount}
+                    Showing {showingFrom} - {showingTo} of {totalCount}
                   </Typography>
+                  <IconButton
+                    size="small"
+                    aria-label="Next page"
+                    disabled={page >= totalPages}
+                    onClick={() => handlePageChange(page + 1)}
+                  >
+                    <ChevronRight />
+                  </IconButton>
                 </Box>
               )}
             </>
@@ -180,4 +165,3 @@ export const VehicleBrowsePage: React.FC = () => {
     </Box>
   );
 };
-

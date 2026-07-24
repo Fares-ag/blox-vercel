@@ -5,7 +5,7 @@
 
   .section-title {
     font-weight: 700;
-    color: #000000;
+    color: #16535B;
     margin-bottom: 16px;
     font-family: 'IBM Plex Sans', sans-serif;
   }
@@ -22,14 +22,14 @@
     .down-payment-display {
       margin-top: 8px;
       font-weight: 600;
-      color: #000000;
+      color: #16535B;
       font-size: 14px;
     }
   }
 
   .summary-section {
     padding: 20px;
-    background-color: #F9FAFB;
+    background-color: #F2F6F6;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
@@ -42,7 +42,7 @@
 
       .MuiTypography-h6 {
         font-weight: 700;
-        color: #000000;
+        color: #16535B;
       }
     }
   }
@@ -52,7 +52,7 @@
     flex-direction: column;
     gap: 16px;
     padding: 16px;
-    background-color: #F9FAFB;
+    background-color: #F2F6F6;
     border-radius: 8px;
 
     .MuiFormControlLabel-root {
@@ -71,7 +71,7 @@
       grid-template-columns: repeat(2, 1fr);
       gap: 16px;
       padding: 20px;
-      background-color: #F9FAFB;
+      background-color: #F2F6F6;
       border-radius: 8px;
 
       .plan-item {
@@ -93,13 +93,13 @@
 
     .schedule-year {
       padding: 16px;
-      background-color: #F9FAFB;
+      background-color: #F2F6F6;
       border-radius: 8px;
       border-left: 4px solid var(--primary-btn-bg);
 
       .year-label {
         margin-bottom: 12px;
-        color: #000000;
+        color: #16535B;
         font-size: 14px;
       }
 

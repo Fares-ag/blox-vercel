@@ -86,9 +86,9 @@ export class ErrorBoundary extends Component<Props, State> {
               className="error-button"
               sx={{
                 backgroundColor: 'var(--primary-btn-bg)',
-                color: 'white',
+                color: 'var(--primary-btn-color)',
                 '&:hover': {
-                  backgroundColor: '#B8E001',
+                  backgroundColor: 'var(--primary-btn-hover)',
                 },
               }}
             >

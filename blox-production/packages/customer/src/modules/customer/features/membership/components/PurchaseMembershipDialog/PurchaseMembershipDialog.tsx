@@ -51,7 +51,7 @@ export const PurchaseMembershipDialog: React.FC<PurchaseMembershipDialogProps> =
         <Box
           sx={{
             p: 2,
-            border: '2px solid #DAFF01',
+            border: '2px solid #DBFF00',
             borderRadius: 2,
           }}
         >
@@ -71,7 +71,7 @@ export const PurchaseMembershipDialog: React.FC<PurchaseMembershipDialogProps> =
             <Typography variant="body2" fontWeight={600}>
               Total Cost:
             </Typography>
-            <Typography variant="h6" color="#DAFF01" fontWeight={700}>
+            <Typography variant="h6" color="#DBFF00" fontWeight={700}>
               {formatCurrency(totalCost)}
             </Typography>
           </Box>

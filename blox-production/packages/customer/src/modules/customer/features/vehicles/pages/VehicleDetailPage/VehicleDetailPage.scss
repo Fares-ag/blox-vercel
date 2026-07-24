@@ -173,9 +173,9 @@
 
     .features-box {
       padding: var(--spacing-md);
-      background-color: rgba(218, 255, 1, 0.15); /* More visible Lime Yellow tint */
+      background-color: var(--blox-emerald-wash);
       border-radius: var(--radius-sm);
-      border: 1px solid rgba(218, 255, 1, 0.4); /* More visible Lime Yellow border */
+      border: 1px solid rgba(0, 207, 162, 0.28);
       margin-top: var(--spacing-md);
 
       .MuiTypography-subtitle2 {

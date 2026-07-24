@@ -46,7 +46,12 @@ import { StatusBadge, Loading, EmptyState, ConfirmDialog } from '@shared/compone
 import { formatDate, formatDateTable, formatCurrency } from '@shared/utils/formatters';
 import { parseTenureToMonths } from '@shared/utils/tenure.utils';
 import { calculateOwnership } from '@shared/utils/ownership.utils';
-import { customerCanCancelApplication, openDocumentsStorageRef } from '@shared/utils';
+import {
+  customerCanCancelApplication,
+  openDocumentsStorageRef,
+  getCustomerFacingPrice,
+  getCustomerFacingRatePercent,
+} from '@shared/utils';
 import { devLogger } from '@shared/utils/logger.util';
 import { toast } from 'react-toastify';
 import { ApplicationTimeline } from '../../components/ApplicationTimeline/ApplicationTimeline';
@@ -444,13 +449,13 @@ export const ApplicationDetailPage: React.FC = () => {
                 startIcon={<Description />}
                 onClick={handleSignContract}
                 sx={{
-                  borderColor: '#DAFF01',
-                  color: '#DAFF01',
+                  borderColor: 'var(--blox-emerald)',
+                  color: 'var(--blox-deep-green)',
                   fontWeight: 600,
                   textTransform: 'none',
                   '&:hover': {
-                    borderColor: '#B8E001',
-                    backgroundColor: 'rgba(218, 255, 1, 0.1)',
+                    borderColor: 'var(--blox-emerald-dark)',
+                    backgroundColor: 'var(--blox-emerald-wash)',
                   },
                 }}
               >
@@ -473,12 +478,14 @@ export const ApplicationDetailPage: React.FC = () => {
                     startIcon={<FileDownload />}
                     onClick={handleDownloadContract}
                     sx={{
-                      backgroundColor: '#DAFF01',
-                      color: '#FFFFFF',
+                      backgroundColor: 'var(--blox-emerald)',
+                      color: 'var(--blox-deep-green-dark)',
                       fontWeight: 600,
                       textTransform: 'none',
+                      boxShadow: 'var(--emerald-glow)',
                       '&:hover': {
-                        backgroundColor: '#B8E001',
+                        backgroundColor: 'var(--blox-emerald-dark)',
+                        color: 'var(--blox-white)',
                       },
                     }}
                   >
@@ -489,13 +496,13 @@ export const ApplicationDetailPage: React.FC = () => {
                     startIcon={<Print />}
                     onClick={handlePrintContract}
                     sx={{
-                      borderColor: '#DAFF01',
-                      color: '#DAFF01',
+                      borderColor: 'var(--blox-emerald)',
+                      color: 'var(--blox-deep-green)',
                       fontWeight: 600,
                       textTransform: 'none',
                       '&:hover': {
-                        borderColor: '#B8E001',
-                        backgroundColor: 'rgba(218, 255, 1, 0.1)',
+                        borderColor: 'var(--blox-emerald-dark)',
+                        backgroundColor: 'var(--blox-emerald-wash)',
                       },
                     }}
                   >
@@ -530,15 +537,15 @@ export const ApplicationDetailPage: React.FC = () => {
                       fullWidth
                       startIcon={<CloudUpload />}
                       sx={{
-                        borderColor: '#DAFF01',
-                        color: '#DAFF01',
+                        borderColor: 'var(--blox-emerald)',
+                        color: 'var(--blox-deep-green)',
                         fontWeight: 600,
                         textTransform: 'none',
                         py: 1.5,
                         mb: 2,
                         '&:hover': {
-                          borderColor: '#B8E001',
-                          backgroundColor: 'rgba(218, 255, 1, 0.1)',
+                          borderColor: 'var(--blox-emerald-dark)',
+                          backgroundColor: 'var(--blox-emerald-wash)',
                         },
                       }}
                     >
@@ -558,16 +565,16 @@ export const ApplicationDetailPage: React.FC = () => {
                         onClick={handleSubmitSignedContract}
                         disabled={uploading}
                         sx={{
-                          backgroundColor: '#DAFF01',
-                          color: '#FFFFFF',
+                          backgroundColor: '#DBFF00',
+                          color: '#16535B',
                           fontWeight: 600,
                           textTransform: 'none',
                           py: 1.5,
                           '&:hover': {
-                            backgroundColor: '#B8E001',
+                            backgroundColor: '#C4E600',
                           },
                           '&:disabled': {
-                            backgroundColor: '#DAFF01',
+                            backgroundColor: '#DBFF00',
                             opacity: 0.7,
                           },
                         }}
@@ -604,12 +611,12 @@ export const ApplicationDetailPage: React.FC = () => {
             onClick={handleDownloadContract}
             className="download-contract-button"
             sx={{
-              backgroundColor: '#0E1909',
+              backgroundColor: '#16535B',
               color: '#FFFFFF',
               fontWeight: 600,
               textTransform: 'none',
               '&:hover': {
-                backgroundColor: '#0A6B6A',
+                backgroundColor: '#16535B',
               },
             }}
           >
@@ -845,9 +852,10 @@ export const ApplicationDetailPage: React.FC = () => {
                   <Box className="info-item">
                     <Typography variant="caption" color="text.secondary">
                       Vehicle Price
+                      {application.hideInterest ? ' (0% offer)' : ''}
                     </Typography>
                     <Typography variant="body1" fontWeight={600}>
-                      {formatCurrency(application.vehicle.price)}
+                      {formatCurrency(getCustomerFacingPrice(application))}
                     </Typography>
                   </Box>
                 </Box>
@@ -870,6 +878,22 @@ export const ApplicationDetailPage: React.FC = () => {
               </Box>
               <Divider sx={{ my: 2 }} />
               <Box className="info-grid">
+                <Box className="info-item">
+                  <Typography variant="caption" color="text.secondary">
+                    Vehicle / Package Price
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    {formatCurrency(getCustomerFacingPrice(application))}
+                  </Typography>
+                </Box>
+                <Box className="info-item">
+                  <Typography variant="caption" color="text.secondary">
+                    Interest / Profit Rate
+                  </Typography>
+                  <Typography variant="body1" fontWeight={600}>
+                    {getCustomerFacingRatePercent(application).toFixed(2)}%
+                  </Typography>
+                </Box>
                 <Box className="info-item">
                   <Typography variant="caption" color="text.secondary">
                     Loan Amount
@@ -1094,9 +1118,10 @@ export const ApplicationDetailPage: React.FC = () => {
                       onClick={handleSettleAllPayments}
                       disabled={checkingCanPay || !canPay}
                       sx={{
-                        backgroundColor: '#DAFF01',
+                        backgroundColor: '#DBFF00',
+                        color: '#16535B',
                         '&:hover': {
-                          backgroundColor: '#B8E001',
+                          backgroundColor: '#C4E600',
                         },
                       }}
                     >
@@ -1144,11 +1169,11 @@ export const ApplicationDetailPage: React.FC = () => {
                         <TableRow 
                           key={index}
                           sx={{
-                            backgroundColor: payment.isBalloon ? '#fff3e0' : 'inherit',
+                            backgroundColor: payment.isBalloon ? '#E6FBF5' : 'inherit',
                             '&:hover': {
-                              backgroundColor: payment.isBalloon ? '#ffe0b2' : '#f5f5f5',
+                              backgroundColor: payment.isBalloon ? '#D4F7EE' : '#EEF3F3',
                             },
-                            borderLeft: payment.isBalloon ? '4px solid #ff9800' : 'none',
+                            borderLeft: payment.isBalloon ? '4px solid var(--blox-emerald)' : 'none',
                           }}
                         >
                           <TableCell>
@@ -1163,9 +1188,9 @@ export const ApplicationDetailPage: React.FC = () => {
                                     px: 0.5,
                                     py: 0.25,
                                     borderRadius: 0.5,
-                                    backgroundColor: '#ff9800',
-                                    color: '#fff',
-                                    fontWeight: 600,
+                                    backgroundColor: 'var(--blox-emerald)',
+                                    color: '#0F3A40',
+                                    fontWeight: 700,
                                     fontSize: '0.65rem',
                                   }}
                                 >
@@ -1182,8 +1207,9 @@ export const ApplicationDetailPage: React.FC = () => {
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Typography 
                                   variant="body2" 
-                                  fontWeight={600}
-                                  sx={{ color: payment.isBalloon ? '#ff9800' : 'inherit' }}
+                                  className="blox-numeric"
+                                  fontWeight={700}
+                                  sx={{ color: payment.isBalloon ? 'var(--blox-emerald-dark)' : 'inherit' }}
                                 >
                                   {formatCurrency(payment.amount)}
                                 </Typography>
@@ -1194,8 +1220,8 @@ export const ApplicationDetailPage: React.FC = () => {
                                       px: 0.5,
                                       py: 0.25,
                                       borderRadius: 0.5,
-                                      backgroundColor: '#fff3e0',
-                                      color: '#e65100',
+                                      backgroundColor: '#E6FBF5',
+                                      color: '#16535B',
                                       fontWeight: 600,
                                     }}
                                   >
@@ -1244,7 +1270,7 @@ export const ApplicationDetailPage: React.FC = () => {
                               variant="body2" 
                               fontWeight={600} 
                               sx={{ 
-                                color: '#10B981',
+                                color: '#00CFA2',
                                 backgroundColor: '#D1FAE5',
                                 px: 1,
                                 py: 0.5,
@@ -1282,13 +1308,14 @@ export const ApplicationDetailPage: React.FC = () => {
                                 onClick={() => handleMakePayment(index)}
                                 disabled={checkingCanPay || !canPay}
                                 sx={{
-                                  backgroundColor: '#0E1909',
-                                  color: 'var(--primary-color)',
-                                  border: '1px solid var(--primary-color)',
+                                  backgroundColor: 'var(--blox-emerald)',
+                                  color: 'var(--blox-deep-green-dark)',
+                                  border: 'none',
+                                  boxShadow: 'none',
+                                  fontWeight: 700,
                                   '&:hover': {
-                                    backgroundColor: '#0E1909',
-                                    borderColor: 'var(--primary-color)',
-                                    opacity: 0.9,
+                                    backgroundColor: 'var(--blox-emerald-dark)',
+                                    color: 'var(--blox-white)',
                                   }
                                 }}
                               >

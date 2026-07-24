@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
+  Alert,
   Box,
   Typography,
   FormControlLabel,
@@ -24,6 +25,7 @@ import type { StepProps } from '@shared/components/shared/MultiStepForm/MultiSte
 import { Config } from '@shared/config/app.config';
 import { formatCurrency, formatDate } from '@shared/utils/formatters';
 import { formatMonthsToTenure, parseTenureToMonths } from '@shared/utils/tenure.utils';
+import { computeHideInterestDisplay } from '@shared/utils/deal-pricing.utils';
 import moment from 'moment';
 type Moment = moment.Moment;
 import type { PaymentSchedule, PaymentStatus } from '@shared/models/application.model';
@@ -1033,11 +1035,93 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
     setEditingScheduleRow(newRow);
   };
 
+  const syncHideInterestDisplay = useCallback(
+    (checked: boolean, planOverride?: typeof data.installmentPlan) => {
+      const plan = planOverride || data.installmentPlan;
+      const sellingPrice =
+        Number(data.sellingPrice ?? data.vehicle?.price) || 0;
+      const internalRate =
+        data.internalAnnualRate ??
+        (annualRatePercent > 0 ? annualRatePercent / 100 : undefined);
+
+      if (checked && plan) {
+        const display = computeHideInterestDisplay({
+          sellingPrice,
+          installmentPlan: plan,
+          internalAnnualRate: internalRate,
+        });
+        updateData({
+          hideInterest: true,
+          internalAnnualRate: internalRate,
+          customerDisplayPrice: display.customerDisplayPrice,
+          customerDisplayRate: 0,
+          pricingSnapshot: display.pricingSnapshot,
+        });
+      } else {
+        updateData({
+          hideInterest: false,
+          internalAnnualRate: internalRate,
+          customerDisplayPrice: sellingPrice,
+          customerDisplayRate: annualRatePercent,
+          pricingSnapshot: undefined,
+        });
+      }
+    },
+    [
+      annualRatePercent,
+      data.installmentPlan,
+      data.internalAnnualRate,
+      data.sellingPrice,
+      data.vehicle?.price,
+      updateData,
+    ]
+  );
+
+  useEffect(() => {
+    if (!data.hideInterest || !data.installmentPlan) return;
+    syncHideInterestDisplay(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    data.hideInterest,
+    data.installmentPlan?.totalAmount,
+    data.installmentPlan?.downPayment,
+    data.installmentPlan?.schedule?.length,
+    annualRatePercent,
+  ]);
+
   return (
     <Box className="installment-plan-step">
       <Typography variant="h3" className="section-title">
         Installment Plan
       </Typography>
+
+      <Paper variant="outlined" sx={{ p: 2, mb: 3 }}>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={!!data.hideInterest}
+              onChange={(e) => syncHideInterestDisplay(e.target.checked)}
+            />
+          }
+          label="Hide interest from customer (show all-in price at 0%)"
+        />
+        {!!data.hideInterest && (
+          <Alert severity="info" sx={{ mt: 1 }}>
+            Customer sees{' '}
+            <strong>
+              {formatCurrency(
+                Number(
+                  data.customerDisplayPrice ??
+                    data.sellingPrice ??
+                    data.vehicle?.price
+                ) || 0
+              )}{' '}
+              · 0%
+            </strong>
+            . Installment amounts stay the same; BLOX keeps the true rate internally.
+          </Alert>
+        )}
+      </Paper>
 
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6}>
@@ -1177,7 +1261,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                   />
                 </Grid>
               </Grid>
-              <Box sx={{ mt: 2, p: 2, backgroundColor: '#e3f2fd', borderRadius: 2 }}>
+              <Box sx={{ mt: 2, p: 2, backgroundColor: '#EEF3F3', borderRadius: 2 }}>
                 <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
                   Total: {downPaymentPercent + installmentPercent + balloonPercent}%
                 </Typography>
@@ -1281,8 +1365,8 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
 
             {/* Auto Mode Requirements */}
             {entryMode === 'auto' && !data.offer && (
-              <Box sx={{ mb: 2, p: 2, backgroundColor: '#fff3cd', borderRadius: 2, border: '1px solid #ffc107' }}>
-                <Typography variant="body2" color="warning.main">
+              <Box sx={{ mb: 2, p: 2, backgroundColor: 'var(--blox-emerald-wash)', borderRadius: 2, border: '1px solid var(--blox-emerald)' }}>
+                <Typography variant="body2" sx={{ color: 'var(--blox-deep-green)' }}>
                   Please select an offer in the previous step to calculate loan details.
                 </Typography>
               </Box>
@@ -1311,7 +1395,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                 />
                 
                 {useBalloonPayment && (
-                  <Box sx={{ mt: 2, p: 2, backgroundColor: '#e3f2fd', borderRadius: 2, border: '1px solid #2196f3' }}>
+                  <Box sx={{ mt: 2, p: 2, backgroundColor: '#EEF3F3', borderRadius: 2, border: '1px solid #00CFA2' }}>
                     <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
                       Balloon Payment Configuration
                     </Typography>
@@ -1361,7 +1445,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
             )}
             
             {entryMode === 'auto' && data.offer && (
-              <Box sx={{ mb: 3, p: 2, backgroundColor: '#e7f3ff', borderRadius: 2, border: '1px solid #2196f3' }}>
+              <Box sx={{ mb: 3, p: 2, backgroundColor: '#EEF3F3', borderRadius: 2, border: '1px solid #00CFA2' }}>
                 <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
                   Selected Offer: {data.offer.name}
                 </Typography>
@@ -1525,7 +1609,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                       p: 2,
                       backgroundColor: '#ffebee',
                       borderRadius: 2,
-                      border: '1px solid #f44336',
+                      border: '1px solid #C62828',
                     }}
                   >
                     <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1, color: '#c62828' }}>
@@ -1549,16 +1633,16 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                     sx={{
                       mb: 2,
                       p: 1.5,
-                      backgroundColor: '#e8f5e9',
+                      backgroundColor: '#E6FBF5',
                       borderRadius: 2,
-                      border: '1px solid #4caf50',
+                      border: '1px solid #00CFA2',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 1,
                     }}
                   >
-                    <CheckCircle sx={{ color: '#2e7d32', fontSize: 20 }} />
-                    <Typography variant="body2" sx={{ color: '#2e7d32' }}>
+                    <CheckCircle sx={{ color: '#00CFA2', fontSize: 20 }} />
+                    <Typography variant="body2" sx={{ color: '#00CFA2' }}>
                       Payment schedule is valid
                     </Typography>
                   </Box>
@@ -1602,9 +1686,9 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                             key={index} 
                             hover
                             sx={{
-                              backgroundColor: payment.isBalloon ? 'rgba(218, 255, 1, 0.18)' : 'inherit',
+                              backgroundColor: payment.isBalloon ? 'rgba(0, 207, 162, 0.14)' : 'inherit',
                               '&:hover': {
-                                backgroundColor: payment.isBalloon ? 'rgba(218, 255, 1, 0.28)' : 'var(--light-grey)',
+                                backgroundColor: payment.isBalloon ? 'rgba(0, 207, 162, 0.22)' : 'var(--light-grey)',
                               },
                               borderLeft: payment.isBalloon ? '4px solid var(--blox-black)' : 'none',
                             }}
@@ -1732,16 +1816,16 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                                       fontWeight: 600,
                                       backgroundColor:
                                         payment.status === 'paid'
-                                          ? '#d4edda'
+                                          ? '#E6FBF5'
                                           : payment.status === 'active'
-                                          ? '#fff3cd'
-                                          : '#e7f3ff',
+                                          ? 'var(--blox-emerald-wash)'
+                                          : '#EEF3F3',
                                       color:
                                         payment.status === 'paid'
-                                          ? '#155724'
+                                          ? '#00CFA2'
                                           : payment.status === 'active'
-                                          ? '#856404'
-                                          : '#004085',
+                                          ? '#16535B'
+                                          : '#16535B',
                                     }}
                                   >
                                     {payment.status}
@@ -1932,7 +2016,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                     </Box>
                   </Box>
                 ) : (
-                  <Box sx={{ mt: 2, p: 2, backgroundColor: '#ffebee', borderRadius: 2, border: '1px solid #f44336' }}>
+                  <Box sx={{ mt: 2, p: 2, backgroundColor: '#FFEBEE', borderRadius: 2, border: '1px solid #C62828' }}>
                     <Typography variant="body2" color="error.main">
                       Loan amount must be greater than 0. Please adjust the down payment.
                     </Typography>
@@ -2044,7 +2128,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                     gridTemplateColumns: 'repeat(2, 1fr)', 
                     gap: 2, 
                     p: 2.5, 
-                    backgroundColor: '#F9FAFB', 
+                    backgroundColor: '#F2F6F6', 
                     borderRadius: 2,
                     mb: 2
                   }}
@@ -2091,7 +2175,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                   gridTemplateColumns: 'repeat(2, 1fr)', 
                   gap: 2, 
                   p: 2.5, 
-                  backgroundColor: '#F9FAFB', 
+                  backgroundColor: '#F2F6F6', 
                   borderRadius: 2 
                 }}
               >
@@ -2155,7 +2239,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                 <TableContainer component={Paper} variant="outlined" sx={{ mt: 2 }}>
                   <Table size="small">
                     <TableHead>
-                      <TableRow sx={{ backgroundColor: '#F9FAFB' }}>
+                      <TableRow sx={{ backgroundColor: '#F2F6F6' }}>
                         <TableCell sx={{ fontWeight: 600 }}>Month</TableCell>
                         <TableCell sx={{ fontWeight: 600 }}>Due Date</TableCell>
                         <TableCell align="right" sx={{ fontWeight: 600 }}>Principal</TableCell>
@@ -2172,7 +2256,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                           <React.Fragment key={scheduleItem.month}>
                             {isYearStart && (
                               <TableRow sx={{ backgroundColor: '#F0F9FF' }}>
-                                <TableCell colSpan={7} sx={{ fontWeight: 600, color: '#0E1909', py: 1 }}>
+                                <TableCell colSpan={7} sx={{ fontWeight: 600, color: '#16535B', py: 1 }}>
                                   Year {String(scheduleItem.year).padStart(2, '0')}
                                 </TableCell>
                               </TableRow>
@@ -2180,7 +2264,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                             <TableRow 
                               sx={{ 
                                 '&:hover': { backgroundColor: '#FAFAFA' },
-                                borderLeft: isYearStart ? '3px solid #0E1909' : 'none'
+                                borderLeft: isYearStart ? '3px solid #16535B' : 'none'
                               }}
                             >
                               <TableCell>
@@ -2204,7 +2288,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                                 </Typography>
                               </TableCell>
                               <TableCell align="right">
-                                <Typography variant="body2" fontWeight={600} sx={{ color: '#0E1909' }}>
+                                <Typography variant="body2" fontWeight={600} sx={{ color: '#16535B' }}>
                                   {formatCurrency(scheduleItem.totalPayment)}
                                 </Typography>
                               </TableCell>
@@ -2229,7 +2313,7 @@ export const InstallmentPlanStep: React.FC<StepProps> = ({ data, updateData }) =
                                   variant="body2" 
                                   fontWeight={600} 
                                   sx={{ 
-                                    color: '#10B981',
+                                    color: '#00CFA2',
                                     backgroundColor: '#D1FAE5',
                                     px: 1,
                                     py: 0.5,

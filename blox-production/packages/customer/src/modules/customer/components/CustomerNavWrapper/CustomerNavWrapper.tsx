@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, Fab, Tooltip } from '@mui/material';
 import { Chat } from '@mui/icons-material';
 import { CustomerNav } from '../CustomerNav/CustomerNav';
+import { CustomerFooter } from '../CustomerFooter/CustomerFooter';
 import { ChatModal } from '../../features/help/components/ChatModal';
 import { Config } from '@shared/config/app.config';
 import './CustomerNavWrapper.scss';
@@ -26,6 +27,7 @@ export const CustomerNavWrapper: React.FC<CustomerNavWrapperProps> = ({ children
       <Box className="customer-content-wrapper">
         {children}
       </Box>
+      <CustomerFooter />
       {/* Chatbot for non-authenticated users */}
       {CHATBOT_ENABLED && (
         <>

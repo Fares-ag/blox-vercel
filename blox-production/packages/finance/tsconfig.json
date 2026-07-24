@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@finance/*": ["./src/modules/finance/*"],
+      "@shared/*": ["../shared/src/*"],
+      "@admin-module/*": ["../admin/src/modules/admin/*"]
+    }
+  },
+  "include": [
+    "src",
+    "../admin/src/modules/admin/features/**/*",
+    "../admin/src/modules/admin/store/**/*",
+    "../admin/src/modules/admin/components/**/*"
+  ]
+}

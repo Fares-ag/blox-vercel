@@ -2,7 +2,7 @@
   padding: var(--spacing-md);
   max-width: 100%;
   width: 100%;
-  background-color: var(--background);
+  background-color: transparent;
 
   .dashboard-header {
     display: flex;
@@ -28,16 +28,18 @@
     }
   }
 
+  /* Secondary stat cards — quiet white surface, emerald icon, deep-green figure */
   .stat-card {
     height: 100%;
-    transition: all var(--transition-base);
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
     border-radius: var(--radius-card);
     background: var(--card-background);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-    border: 1px solid var(--divider-color);
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--blox-hairline, rgba(22, 83, 91, 0.08));
 
     &:hover {
-      background: var(--card-background);
+      transform: translateY(-2px);
+      box-shadow: var(--card-shadow-hover);
     }
 
     .MuiCardContent-root {
@@ -53,10 +55,13 @@
 
     .stat-icon {
       font-size: 28px;
+      color: var(--blox-emerald);
       opacity: 1;
     }
 
     .stat-value {
+      font-family: var(--font-numeric);
+      font-variant-numeric: tabular-nums;
       font-weight: 700;
       font-size: 28px;
       margin-bottom: var(--spacing-xs);
@@ -66,106 +71,83 @@
     }
 
     .stat-label {
-      color: var(--primary-text);
+      color: var(--secondary-text);
       font-size: 14px;
       font-weight: 600;
     }
 
     &.stat-card-primary {
-      .stat-icon {
-        color: var(--primary-text); /* Blox Black */
-        opacity: 1;
-      }
-      .stat-value {
-        color: var(--primary-text); /* Blox Black */
-        opacity: 1;
-        font-weight: 700;
-      }
-      .stat-label {
-        color: var(--primary-text) !important; /* Blox Black */
-        opacity: 1 !important;
-        font-weight: 600;
-      }
+      .stat-icon { color: var(--blox-emerald); }
+      .stat-value { color: var(--primary-text); }
+    }
+
+    /* Total Paid — wealth positive reads emerald */
+    &.stat-card-success {
+      .stat-icon { color: var(--blox-emerald); }
+      .stat-value { color: var(--blox-emerald-dark); }
     }
 
     &.stat-card-warning {
-      background-color: #0E1909 !important;
-      border: 1px solid rgba(218, 255, 1, 0.2);
-
-      &:hover {
-        background-color: #0E1909 !important;
-      }
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.08);
-      
-      .stat-icon {
-        color: var(--primary-color); /* Lime Yellow */
-      }
-      .stat-value {
-        color: var(--primary-color); /* Lime Yellow */
-      }
-      .stat-label {
-        color: var(--background-secondary) !important; /* Light Grey */
-        opacity: 1 !important;
-      }
+      .stat-icon { color: var(--blox-slate); }
+      .stat-value { color: var(--primary-text); }
       .overdue-notice {
-        color: var(--background-secondary) !important; /* Light Grey */
+        color: var(--status-rejected, #C62828) !important;
         font-weight: 600;
         margin-top: 4px;
         display: block;
-        opacity: 1 !important;
       }
     }
 
-    &.stat-card-success {
-      .stat-icon {
-        color: var(--primary-text); /* Blox Black */
-        opacity: 1;
+    /* HERO stat — the single deep-green + lime moment on the dashboard */
+    &.stat-card-info {
+      position: relative;
+      overflow: hidden;
+      background: var(--blox-hero-gradient, linear-gradient(150deg, #0F3A40 0%, #16535B 58%, #1B6C75 100%)) !important;
+      border: 1px solid rgba(0, 207, 162, 0.24);
+      box-shadow: var(--shadow-lg);
+
+      &::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: var(--blox-hero-glow);
+        pointer-events: none;
       }
+
+      .MuiCardContent-root { position: relative; z-index: 1; }
+
+      .stat-icon { color: var(--blox-emerald-light); }
       .stat-value {
-        color: var(--primary-text); /* Blox Black */
-        opacity: 1;
+        color: var(--blox-lime);
         font-weight: 700;
       }
       .stat-label {
-        color: var(--primary-text) !important; /* Blox Black */
-        opacity: 1 !important;
-        font-weight: 600;
-      }
-    }
-
-    &.stat-card-info {
-      background-color: #0E1909 !important;
-      border: 1px solid rgba(218, 255, 1, 0.2);
-
-      &:hover {
-        background-color: #0E1909 !important;
-      }
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 2px rgba(0, 0, 0, 0.08);
-      
-      .stat-icon {
-        color: var(--primary-color); /* Lime Yellow */
-      }
-      .stat-value {
-        color: var(--primary-color); /* Lime Yellow */
-      }
-      .stat-label {
-        color: var(--background-secondary) !important; /* Light Grey */
+        color: rgba(255, 255, 255, 0.82) !important;
         opacity: 1 !important;
       }
     }
   }
 
-  .section-card {
+  /* Quiet white content panels — override the global dark ".section-card" chrome */
+  .section-card,
+  .MuiPaper-root.section-card {
     padding: var(--spacing-lg);
     border-radius: var(--radius-card);
-    background-color: var(--card-background);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-    border: 1px solid var(--divider-color);
+    background: var(--card-background);
+    color: var(--primary-text);
+    box-shadow: var(--card-shadow);
+    border: 1px solid var(--blox-hairline, rgba(22, 83, 91, 0.08));
     min-height: 0; // Allow flex shrinking
     transition: all var(--transition-base);
 
+    /* Neutralize the global section-card gradient accents (::before bar, ::after lime blob) */
+    &::before,
+    &::after {
+      display: none !important;
+    }
+
     &:hover {
-      background-color: var(--card-background);
+      background: var(--card-background);
     }
 
     .section-title {
@@ -184,18 +166,21 @@
       opacity: 1 !important;
     }
 
-    /* Overview values – brand dark green (Blox) */
+    /* Overview values — Space Grotesk, deep green */
     .application-stats .stat-item .MuiTypography-h6,
     .payment-overview .payment-stat-item .MuiTypography-h6 {
+      font-family: var(--font-numeric);
+      font-variant-numeric: tabular-nums;
       font-size: 19px;
       font-weight: 700;
-      color: #1B5E20;
+      letter-spacing: -0.01em;
+      color: var(--blox-deep-green);
     }
 
     /* Overdue row: label and number stay red */
     .payment-stat-item-overdue .overdue-label,
     .payment-stat-item-overdue .overdue-value {
-      color: #F44336 !important;
+      color: #C62828 !important;
     }
   }
 
@@ -251,7 +236,7 @@
       .payment-amount {
         text-align: center;
         padding: 16px 0;
-        color: var(--primary-color);
+        color: var(--blox-deep-green);
       }
     }
   }

@@ -366,9 +366,9 @@ export const CustomerNav: React.FC = () => {
                   }}
                   sx={{ 
                     ml: 1,
-                    color: 'var(--primary-color)',
+                    color: 'var(--blox-emerald)',
                     '&:hover': {
-                      backgroundColor: 'rgba(218, 255, 1, 0.2)',
+                      backgroundColor: 'rgba(0, 207, 162, 0.18)',
                     }
                   }}
                 >

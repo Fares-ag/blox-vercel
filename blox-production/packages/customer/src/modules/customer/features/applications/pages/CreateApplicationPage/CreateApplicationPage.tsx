@@ -40,7 +40,7 @@ import { supabaseApiService } from '@shared/services';
 import { supabase } from '@shared/services/supabase.service';
 import { devLogger } from '@shared/utils/logger.util';
 import { customerAuthService } from '../../../../services/customerAuth.service';
-import { vehicleService, CUSTOMER_MAX_VEHICLE_PRICE_QAR } from '../../../../services/vehicle.service';
+import { vehicleService } from '../../../../services/vehicle.service';
 import { toast } from 'react-toastify';
 import { MembershipConfig, OfferConfig } from '@shared/config/app.config';
 import { formatMonthsToTenure } from '@shared/utils/tenure.utils';
@@ -246,15 +246,9 @@ export const CreateApplicationPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // Enforce ≤70k customer catalog rule (same as browse/detail)
       const response = await vehicleService.getVehicleById(id);
 
       if (response.status === 'SUCCESS' && response.data && response.data.status === 'active') {
-        if (response.data.price > CUSTOMER_MAX_VEHICLE_PRICE_QAR) {
-          toast.error('This vehicle is not available for customer applications');
-          navigate('/customer/vehicles');
-          return;
-        }
         setVehicle(response.data);
       } else {
         toast.error(response.message || 'Vehicle not found or inactive');
@@ -999,7 +993,8 @@ export const CreateApplicationPage: React.FC = () => {
               Upload Documents
             </Typography>
             <Typography variant="body2" color="text.secondary" className="section-subtitle">
-              Blox requires the following documents to process your application. (Optional for submission)
+              Qatar ID, bank statement, and salary certificate are required to submit.
+              Additional documents are optional.
             </Typography>
             <Divider sx={{ my: 3 }} />
 

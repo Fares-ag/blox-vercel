@@ -535,8 +535,10 @@ Type definitions live in the **shared** package; key exports include:
 | `npm run dev:customer` | Customer app dev server |
 | `npm run dev:admin` | Admin app (default `npm run dev`) |
 | `npm run dev:super-admin` | Super-admin dev server |
+| `npm run dev:credit` | Credit portal (`:5177`, base `/credit`) |
+| `npm run dev:finance` | Finance portal (`:5179`, base `/finance`) — see `docs/FINANCE_PORTAL.md` |
 | `npm run build` | Build all workspaces |
-| `npm run build:customer` / `:admin` / `:super-admin` | Per-package production build |
+| `npm run build:customer` / `:admin` / `:super-admin` / `:credit` / `:finance` | Per-package production build |
 | `npm run lint` | Lint all workspaces |
 
 Each package’s `vite.config` sets **port**, **aliases** (e.g. `@shared` → `packages/shared/src`), and env handling.

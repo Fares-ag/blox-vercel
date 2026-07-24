@@ -53,6 +53,11 @@ const UsersListPage = React.lazy(() => import('../features/users/pages/UsersList
 const UserDetailPage = React.lazy(() => import('../features/users/pages/UserDetailPage/UserDetailPage').then(m => ({ default: m.UserDetailPage })));
 const SettlementDiscountSettingsPage = React.lazy(() => import('../features/settings/pages/SettlementDiscountSettingsPage/SettlementDiscountSettingsPage').then(m => ({ default: m.SettlementDiscountSettingsPage })));
 const CompaniesPage = React.lazy(() => import('../features/companies/pages/CompaniesPage/CompaniesPage').then(m => ({ default: m.CompaniesPage })));
+const PartnerDetailPage = React.lazy(() =>
+  import('../features/companies/pages/PartnerDetailPage/PartnerDetailPage').then((m) => ({
+    default: m.PartnerDetailPage,
+  }))
+);
 const PendingBankTransfersPage = React.lazy(() =>
   import('../features/payments/pages/PendingBankTransfersPage/PendingBankTransfersPage').then((m) => ({
     default: m.PendingBankTransfersPage,
@@ -129,6 +134,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="users" element={<UsersListPage />} />
         <Route path="users/:email" element={<UserDetailPage />} />
         <Route path="companies" element={<CompaniesPage />} />
+        <Route path="companies/:id" element={<PartnerDetailPage />} />
         <Route path="ledgers" element={<LedgersListPage />} />
         <Route path="settings/settlement-discounts" element={<SettlementDiscountSettingsPage />} />
         {/* Dev-only: blocked in production builds */}

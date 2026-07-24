@@ -1,5 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Paper, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  Box,
+  Typography,
+  Paper,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Checkbox,
+  Chip,
+} from '@mui/material';
 import Grid from '@mui/material/GridLegacy';
 import { Input, Button, Loading, Select, type SelectOption } from '@shared/components';
 import type { StepProps } from '@shared/components/shared/MultiStepForm/MultiStepForm';
@@ -9,14 +19,16 @@ import { formatCurrency } from '@shared/utils/formatters';
 import { toast } from 'react-toastify';
 import './VehicleSelectionStep.scss';
 
-// Dummy data removed - using only localStorage and API
-
 export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) => {
+  const isCorporate = data?.customerInfo?.applicantType === 'corporate';
   const [searchTerm, setSearchTerm] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Product | null>(
-    data.vehicleId ? { id: data.vehicleId } as Product : null
+    data.vehicle || (data.vehicleId ? ({ id: data.vehicleId } as Product) : null)
+  );
+  const [selectedVehicles, setSelectedVehicles] = useState<Product[]>(
+    Array.isArray(data.vehicles) ? data.vehicles : data.vehicle ? [data.vehicle] : []
   );
 
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -76,9 +88,47 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
     searchVehicles();
   }, [searchVehicles]);
 
+  const selectedIds = useMemo(
+    () => new Set(selectedVehicles.map((v) => v.id)),
+    [selectedVehicles]
+  );
+
+  const totalSelectedPrice = useMemo(
+    () => selectedVehicles.reduce((sum, v) => sum + (Number(v.price) || 0), 0),
+    [selectedVehicles]
+  );
+
   const handleSelectVehicle = (vehicle: Product) => {
+    if (isCorporate) {
+      const exists = selectedIds.has(vehicle.id);
+      const next = exists
+        ? selectedVehicles.filter((v) => v.id !== vehicle.id)
+        : [...selectedVehicles, vehicle];
+      setSelectedVehicles(next);
+      // Keep primary vehicle as first selected for installment plan step compatibility
+      const primary = next[0] || null;
+      setSelectedVehicle(primary);
+      updateData({
+        vehicles: next,
+        vehicleId: primary?.id || null,
+        vehicle: primary || null,
+      });
+      return;
+    }
     setSelectedVehicle(vehicle);
-    updateData({ vehicleId: vehicle.id, vehicle });
+    updateData({ vehicleId: vehicle.id, vehicle, vehicles: undefined });
+  };
+
+  const handleRemoveSelected = (vehicleId: string) => {
+    const next = selectedVehicles.filter((v) => v.id !== vehicleId);
+    setSelectedVehicles(next);
+    const primary = next[0] || null;
+    setSelectedVehicle(primary);
+    updateData({
+      vehicles: next,
+      vehicleId: primary?.id || null,
+      vehicle: primary || null,
+    });
   };
 
   const conditionOptions: SelectOption[] = [
@@ -166,8 +216,13 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
   return (
     <Box className="vehicle-selection-step">
       <Typography variant="h3" className="section-title">
-        Search and Select Vehicle
+        {isCorporate ? 'Search and Select Vehicles' : 'Search and Select Vehicle'}
       </Typography>
+      {isCorporate && (
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Select one or more vehicles. Each selected vehicle will create a separate draft application.
+        </Typography>
+      )}
 
       <Box className="search-section" sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
         <Box sx={{ flex: 1 }}>
@@ -187,25 +242,39 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
         <Loading />
       ) : products.length > 0 ? (
         <Grid container spacing={2} className="vehicles-grid">
-          {products.map((vehicle) => (
-            <Grid item xs={12} sm={6} md={4} key={vehicle.id}>
-              <Paper
-                className={`vehicle-card ${selectedVehicle?.id === vehicle.id ? 'selected' : ''}`}
-                onClick={() => handleSelectVehicle(vehicle)}
-              >
-                <Typography variant="h4">{vehicle.make} {vehicle.model}</Typography>
-                <Typography variant="body2" color="textSecondary">
-                  {vehicle.trim} • {vehicle.modelYear}
-                </Typography>
-                <Typography variant="h5" className="price">
-                  {formatCurrency(vehicle.price)}
-                </Typography>
-                <Typography variant="caption" color="textSecondary">
-                  {vehicle.condition} • {vehicle.mileage.toLocaleString()} km
-                </Typography>
-              </Paper>
-            </Grid>
-          ))}
+          {products.map((vehicle) => {
+            const isSelected = isCorporate
+              ? selectedIds.has(vehicle.id)
+              : selectedVehicle?.id === vehicle.id;
+            return (
+              <Grid item xs={12} sm={6} md={4} key={vehicle.id}>
+                <Paper
+                  className={`vehicle-card ${isSelected ? 'selected' : ''}`}
+                  onClick={() => handleSelectVehicle(vehicle)}
+                  sx={{ position: 'relative' }}
+                >
+                  {isCorporate && (
+                    <Checkbox
+                      checked={isSelected}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={() => handleSelectVehicle(vehicle)}
+                      sx={{ position: 'absolute', top: 4, right: 4 }}
+                    />
+                  )}
+                  <Typography variant="h4">{vehicle.make} {vehicle.model}</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    {vehicle.trim} • {vehicle.modelYear}
+                  </Typography>
+                  <Typography variant="h5" className="price">
+                    {formatCurrency(vehicle.price)}
+                  </Typography>
+                  <Typography variant="caption" color="textSecondary">
+                    {vehicle.condition} • {(vehicle.mileage || 0).toLocaleString()} km
+                  </Typography>
+                </Paper>
+              </Grid>
+            );
+          })}
         </Grid>
       ) : (
         <Box sx={{ mt: 3, textAlign: 'center', py: 4 }}>
@@ -215,7 +284,24 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
         </Box>
       )}
 
-      {selectedVehicle && (
+      {isCorporate && selectedVehicles.length > 0 && (
+        <Box className="selected-vehicle-info" sx={{ mt: 3 }}>
+          <Typography variant="h4" sx={{ mb: 1 }}>
+            Selected ({selectedVehicles.length}) — Total {formatCurrency(totalSelectedPrice)}
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {selectedVehicles.map((v) => (
+              <Chip
+                key={v.id}
+                label={`${v.make} ${v.model} · ${formatCurrency(v.price)}`}
+                onDelete={() => handleRemoveSelected(v.id)}
+              />
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {!isCorporate && selectedVehicle && (
         <Box className="selected-vehicle-info">
           <Typography variant="h4">Selected Vehicle</Typography>
           <Typography variant="body1">

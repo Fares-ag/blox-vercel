@@ -1,0 +1,38 @@
+.customer-footer {
+  margin-top: auto;
+  border-top: 1px solid var(--divider-color, rgba(22, 83, 91, 0.12));
+  background: var(--card-background, #fff);
+  padding: 20px clamp(16px, 3vw, 32px);
+
+  &__inner {
+    max-width: 1120px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 24px;
+  }
+
+  &__brand {
+    color: var(--secondary-text, #5a6b6e);
+    font-weight: 500;
+  }
+
+  &__links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 20px;
+  }
+
+  &__link {
+    color: var(--blox-deep-green, #16535b) !important;
+    font-size: 14px;
+    font-weight: 500;
+
+    &:hover {
+      color: var(--blox-emerald-dark, #00a882) !important;
+    }
+  }
+}

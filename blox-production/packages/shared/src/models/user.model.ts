@@ -15,6 +15,16 @@ export interface User {
   /** Company assignment (used to enable/disable payment features). */
   companyId?: string;
   company?: Company;
+  /**
+   * Credit officers only: `all` = platform-wide queue; `assigned` = only
+   * companies in `credit_officer_companies`.
+   */
+  creditScope?: 'all' | 'assigned';
+  /**
+   * Finance officers only: `all` = platform-wide; `assigned` = only
+   * companies in `finance_officer_companies`.
+   */
+  financeScope?: 'all' | 'assigned';
   /** Convenience flag (typically derived from company.canPay). */
   canPay?: boolean;
   /** Optional permission list for future fine-grained RBAC. */

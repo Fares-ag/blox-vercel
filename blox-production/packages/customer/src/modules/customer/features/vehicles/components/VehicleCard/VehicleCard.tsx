@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardMedia, Typography, Box, Button, Divider } from '@mui/material';
 import type { Product } from '@shared/models/product.model';
 import { formatCurrency } from '@shared/utils/formatters';
+import { formatProductDisplayTitle } from '@shared/utils';
 import { getVehicleDisplayImage } from '../../utils/vehicle-image.utils';
 import './VehicleCard.scss';
 
@@ -16,13 +17,13 @@ const getAvailableColors = (vehicle: Product): string[] => {
   // Map vehicle color to available color options
   // In production, this would come from vehicle.colorOptions or similar field
   const colorMap: Record<string, string[]> = {
-    'black': ['#0E1909', '#787663', '#C9C4B7'], // Blox Black, Dark Grey, Mid Grey
-    'silver': ['#C9C4B7', '#F3F0ED', '#787663'], // Mid Grey, Light Grey, Dark Grey
-    'white': ['#F3F0ED', '#C9C4B7', '#787663'], // Light Grey, Mid Grey, Dark Grey
+    'black': ['#16535B', '#708090', '#A8B2BC'], // Blox Black, Dark Grey, Mid Grey
+    'silver': ['#A8B2BC', '#F2F6F6', '#708090'], // Mid Grey, Light Grey, Dark Grey
+    'white': ['#F2F6F6', '#A8B2BC', '#708090'], // Light Grey, Mid Grey, Dark Grey
   };
   
   const vehicleColor = vehicle.color?.toLowerCase() || 'silver';
-  return colorMap[vehicleColor] || ['#0E1909', '#787663', '#C9C4B7']; // Default to brand colors
+  return colorMap[vehicleColor] || ['#16535B', '#708090', '#A8B2BC']; // Default to brand colors
 };
 
 export const VehicleCard: React.FC<VehicleCardProps> = React.memo(({ vehicle }) => {
@@ -63,7 +64,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = React.memo(({ vehicle }) 
       onKeyDown={handleKeyDown}
       role="button"
       tabIndex={0}
-      aria-label={`View details for ${vehicle.make} ${vehicle.model}`}
+      aria-label={`View details for ${formatProductDisplayTitle(vehicle)}`}
     >
       <Box className="vehicle-image-wrapper">
         {/* Color Indicators */}
@@ -85,7 +86,7 @@ export const VehicleCard: React.FC<VehicleCardProps> = React.memo(({ vehicle }) 
         <CardMedia
           component="img"
           image={imageUrl}
-          alt={`${vehicle.make} ${vehicle.model}`}
+          alt={formatProductDisplayTitle(vehicle)}
           className="vehicle-image"
           loading="lazy"
         />
@@ -96,9 +97,9 @@ export const VehicleCard: React.FC<VehicleCardProps> = React.memo(({ vehicle }) 
           {vehicle.make}
         </Typography>
 
-        {/* Model Name */}
+        {/* Model + trim variant */}
         <Typography variant="h6" className="vehicle-model">
-          {vehicle.model}
+          {[vehicle.model, vehicle.trim].filter(Boolean).join(' ')}
         </Typography>
 
         {/* Description */}

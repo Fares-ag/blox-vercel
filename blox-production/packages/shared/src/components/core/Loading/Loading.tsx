@@ -17,11 +17,11 @@ export const Loading: React.FC<LoadingProps> = ({
     <Box className={`loading-container ${fullScreen ? 'fullscreen' : ''}`}>
       <Box className="animated-logo-wrapper" style={{ width: size, height: size }}>
         <img 
-          src="/BloxLogoNav.png" 
+          src="/BloxLogo.png" 
           alt="Blox Logo" 
           className="animated-logo"
           onError={() => {
-            console.error('Failed to load logo at /BloxLogoNav.png');
+            console.error('Failed to load logo at /BloxLogo.png');
             console.error('Current path:', window.location.pathname);
           }}
         />

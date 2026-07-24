@@ -84,14 +84,18 @@ export const DashboardPage: React.FC = () => {
       try {
         // Dashboard shows payments across applications; we enable the button if at least one
         // of the user's applications is payable (active company + can_pay).
-        const appsResponse = await supabaseApiService.getApplications();
-        if (appsResponse.status !== 'SUCCESS' || !appsResponse.data || !user?.email) {
+        if (!user?.email) {
           if (mounted) setCanPay(false);
           return;
         }
-        const userApps = appsResponse.data.filter(
-          (a) => a.customerEmail?.toLowerCase() === user.email?.toLowerCase()
-        );
+        const appsResponse = await supabaseApiService.getApplications({
+          customerEmail: user.email,
+        });
+        if (appsResponse.status !== 'SUCCESS' || !appsResponse.data) {
+          if (mounted) setCanPay(false);
+          return;
+        }
+        const userApps = appsResponse.data;
 
         // Check all apps in parallel, allow if any app can pay.
         const results = await Promise.all(
@@ -131,27 +135,31 @@ export const DashboardPage: React.FC = () => {
     try {
       setLoading(true);
 
-      // Load applications from Supabase only
-      const supabaseResponse = await supabaseApiService.getApplications();
+      const userEmail = user?.email;
+      if (!userEmail) {
+        console.warn('⚠️ No user email found, cannot load dashboard data');
+        setApplications([]);
+        setLoading(false);
+        return;
+      }
+
+      const supabaseResponse = await supabaseApiService.getApplications({
+        customerEmail: userEmail,
+      });
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
-        // Filter to current user's applications by email
-        const userEmail = user?.email;
-        if (!userEmail) {
-          console.warn('⚠️ No user email found, cannot load dashboard data');
-          setApplications([]);
-          setLoading(false);
-          return;
-        }
-        
-        const userApplications = supabaseResponse.data.filter(
-          (app) => app.customerEmail?.toLowerCase() === userEmail.toLowerCase()
-        );
-
+        const userApplications = supabaseResponse.data;
         setApplications(userApplications);
 
       // Calculate stats
-      const activeStatuses = ['active', 'contract_signing_required', 'contracts_submitted', 'contract_under_review', 'down_payment_required'];
+      const activeStatuses = [
+        'active',
+        'contract_signing_required',
+        'contracts_submitted',
+        'contract_under_review',
+        'down_payment_required',
+        'pending_finance_activation',
+      ];
       const activeApps = userApplications.filter((app) => activeStatuses.includes(app.status));
       
       // Calculate payment stats
@@ -302,21 +310,20 @@ export const DashboardPage: React.FC = () => {
   const getActivityColor = (type: RecentActivity['type']) => {
     switch (type) {
       case 'payment':
-        return '#2E7D32'; // Green - clear on light green background
+        return '#00CFA2';
       case 'application':
-        return '#2196F3';
+        return '#16535B';
       case 'contract':
-        return '#FF9800';
+        return '#16535B';
       case 'document':
-        return '#9C27B0';
+        return '#00CFA2';
       default:
-        return '#757575';
+        return '#708090';
     }
   };
 
-  /** Light background tint for activity icon wrapper (payment uses green tint for contrast) */
   const getActivityIconBg = (type: RecentActivity['type']) => {
-    if (type === 'payment') return '#2E7D3218'; // Light green tint
+    if (type === 'payment') return '#00CFA218';
     return `${getActivityColor(type)}30`;
   };
 
@@ -369,12 +376,12 @@ export const DashboardPage: React.FC = () => {
         <Card className="stat-card stat-card-primary">
           <CardContent>
             <Box className="stat-header">
-              <DescriptionOutlined className="stat-icon" sx={{ color: 'var(--primary-text)', opacity: 1 }} />
+              <DescriptionOutlined className="stat-icon" sx={{ color: 'var(--blox-emerald)', opacity: 1 }} />
               <Chip 
                 label={stats.activeApplications} 
                 sx={{
-                  backgroundColor: 'var(--primary-color)',
-                  color: '#0E1909', 
+                  backgroundColor: 'var(--blox-emerald-wash)',
+                  color: 'var(--blox-deep-green)', 
                   fontWeight: 700,
                   fontSize: '12px',
                   height: '24px'
@@ -391,22 +398,22 @@ export const DashboardPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="stat-card stat-card-warning" sx={{ backgroundColor: '#0E1909' }}>
+        <Card className="stat-card stat-card-warning">
           <CardContent>
             <Box className="stat-header">
-              <Schedule className="stat-icon" sx={{ color: 'var(--primary-color)' }} />
+              <Schedule className="stat-icon" sx={{ color: 'var(--blox-slate)' }} />
               {stats.overduePayments > 0 && (
-                <Chip label={stats.overduePayments} sx={{ backgroundColor: '#F95668', color: '#FFFFFF', fontWeight: 600 }} size="small" />
+                <Chip label={stats.overduePayments} sx={{ backgroundColor: 'var(--status-rejected, #C62828)', color: '#FFFFFF', fontWeight: 600 }} size="small" />
               )}
             </Box>
-            <Typography variant="h6" className="stat-value" sx={{ color: 'var(--primary-color)' }}>
+            <Typography variant="h6" className="stat-value" sx={{ color: 'var(--primary-text)' }}>
               {stats.upcomingPayments}
             </Typography>
-            <Typography variant="body2" className="stat-label" sx={{ color: 'var(--background-secondary)', opacity: 1 }}>
+            <Typography variant="body2" className="stat-label" sx={{ color: 'var(--secondary-text)', opacity: 1 }}>
               Upcoming Payments
             </Typography>
             {stats.overduePayments > 0 && (
-              <Typography variant="caption" className="overdue-notice" sx={{ color: 'var(--background-secondary)', opacity: 1, fontWeight: 600 }}>
+              <Typography variant="caption" className="overdue-notice" sx={{ color: 'var(--status-rejected, #C62828)', opacity: 1, fontWeight: 600 }}>
                 {stats.overduePayments} overdue
               </Typography>
             )}
@@ -416,26 +423,26 @@ export const DashboardPage: React.FC = () => {
         <Card className="stat-card stat-card-success">
           <CardContent>
             <Box className="stat-header">
-              <TrendingUp className="stat-icon" sx={{ color: 'var(--primary-text)', opacity: 1 }} />
+              <TrendingUp className="stat-icon" sx={{ color: 'var(--blox-emerald)', opacity: 1 }} />
             </Box>
-            <Typography variant="h6" className="stat-value" sx={{ color: 'var(--primary-text)', opacity: 1, fontWeight: 700 }}>
+            <Typography variant="h6" className="stat-value" sx={{ color: 'var(--blox-emerald-dark)', opacity: 1, fontWeight: 700 }}>
               {formatCurrency(stats.totalPaid)}
             </Typography>
-            <Typography variant="body2" className="stat-label" sx={{ color: 'var(--primary-text)', opacity: 1, fontWeight: 600 }}>
+            <Typography variant="body2" className="stat-label" sx={{ color: 'var(--secondary-text)', opacity: 1, fontWeight: 600 }}>
               Total Paid
             </Typography>
           </CardContent>
         </Card>
 
-        <Card className="stat-card stat-card-info" sx={{ backgroundColor: '#0E1909' }}>
+        <Card className="stat-card stat-card-info">
           <CardContent>
             <Box className="stat-header">
-              <CreditCard className="stat-icon" sx={{ color: 'var(--primary-color)' }} />
+              <CreditCard className="stat-icon" sx={{ color: 'var(--blox-emerald-light)' }} />
             </Box>
-            <Typography variant="h6" className="stat-value" sx={{ color: 'var(--primary-color)' }}>
+            <Typography variant="h6" className="stat-value" sx={{ color: 'var(--blox-lime)' }}>
               {formatCurrency(stats.remainingBalance)}
             </Typography>
-            <Typography variant="body2" className="stat-label" sx={{ color: 'var(--background-secondary)', opacity: 1 }}>
+            <Typography variant="body2" className="stat-label" sx={{ color: 'rgba(255,255,255,0.82)', opacity: 1 }}>
               Remaining Balance
             </Typography>
           </CardContent>
@@ -454,13 +461,13 @@ export const DashboardPage: React.FC = () => {
             gap: 2,
             background: 'var(--card-background)',
             color: 'var(--primary-text)',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)',
             borderRadius: 'var(--radius-card)',
             padding: 'var(--spacing-md)',
-            border: '1px solid var(--primary-color)',
+            border: '1px solid var(--blox-hairline, rgba(22, 83, 91, 0.08))',
+            boxShadow: 'var(--card-shadow)',
             transition: 'all var(--transition-base)',
             '&:hover': {
-              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08)',
+              boxShadow: 'var(--card-shadow-hover)',
             },
           }}
         >
@@ -476,7 +483,7 @@ export const DashboardPage: React.FC = () => {
                 justifyContent: 'center',
               }}
             >
-              <Star sx={{ color: 'var(--primary-color)', fontSize: 20 }} />
+              <Star sx={{ color: 'var(--blox-emerald)', fontSize: 20 }} />
             </Box>
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 700, color: 'var(--primary-text)', fontSize: 16 }}>
@@ -491,15 +498,17 @@ export const DashboardPage: React.FC = () => {
             variant="contained"
             onClick={() => setPurchaseDialogOpen(true)}
             sx={{
-              backgroundColor: 'var(--primary-color)',
-              color: 'var(--primary-btn-color)',
+              backgroundColor: 'var(--blox-emerald)',
+              color: 'var(--blox-deep-green-dark)',
               fontWeight: 700,
               px: 3,
               py: 1,
               borderRadius: 999,
               textTransform: 'none',
+              boxShadow: 'var(--emerald-glow)',
               '&:hover': {
-                backgroundColor: 'var(--primary-btn-hover)',
+                backgroundColor: 'var(--blox-emerald-dark)',
+                color: 'var(--blox-white)',
               },
             }}
           >
@@ -556,8 +565,10 @@ export const DashboardPage: React.FC = () => {
                   onClick={() => navigate('/customer/vehicles')}
                   className="quick-action-btn"
                   sx={{ 
-                    backgroundColor: '#DAFF01',
-                    '&:hover': { backgroundColor: '#B8E001' }
+                    backgroundColor: 'var(--blox-emerald)',
+                    color: 'var(--blox-deep-green-dark)',
+                    boxShadow: 'var(--emerald-glow)',
+                    '&:hover': { backgroundColor: 'var(--blox-emerald-dark)', color: 'var(--blox-white)' }
                   }}
                 >
                   Browse Vehicles
@@ -569,17 +580,16 @@ export const DashboardPage: React.FC = () => {
                 onClick={() => navigate('/customer/my-applications')}
                 className="quick-action-btn"
                 sx={{
-                  backgroundColor: '#0E1909',
-                  color: 'var(--background-secondary)',
-                  borderColor: 'var(--primary-color)',
+                  backgroundColor: 'var(--card-background)',
+                  color: 'var(--blox-deep-green)',
+                  borderColor: 'rgba(0, 207, 162, 0.4)',
                   borderWidth: '1.5px',
                   '&:hover': {
-                    backgroundColor: '#0E1909',
-                    borderColor: 'var(--primary-color)',
-                    opacity: 0.9,
+                    backgroundColor: 'var(--blox-emerald-wash)',
+                    borderColor: 'var(--blox-emerald)',
                   },
                   '& .MuiSvgIcon-root': {
-                    color: 'var(--primary-color)',
+                    color: 'var(--blox-emerald)',
                   },
                 }}
               >
@@ -592,17 +602,16 @@ export const DashboardPage: React.FC = () => {
                 onClick={() => navigate('/customer/payment-calendar')}
                 className="quick-action-btn"
                 sx={{
-                  backgroundColor: '#0E1909',
-                  color: 'var(--background-secondary)',
-                  borderColor: 'var(--primary-color)',
+                  backgroundColor: 'var(--card-background)',
+                  color: 'var(--blox-deep-green)',
+                  borderColor: 'rgba(0, 207, 162, 0.4)',
                   borderWidth: '1.5px',
                   '&:hover': {
-                    backgroundColor: '#0E1909',
-                    borderColor: 'var(--primary-color)',
-                    opacity: 0.9,
+                    backgroundColor: 'var(--blox-emerald-wash)',
+                    borderColor: 'var(--blox-emerald)',
                   },
                   '& .MuiSvgIcon-root': {
-                    color: 'var(--primary-color)',
+                    color: 'var(--blox-emerald)',
                   },
                 }}
               >
@@ -615,17 +624,16 @@ export const DashboardPage: React.FC = () => {
                 onClick={() => navigate('/customer/payment-history')}
                 className="quick-action-btn"
                 sx={{
-                  backgroundColor: '#0E1909',
-                  color: 'var(--background-secondary)',
-                  borderColor: 'var(--primary-color)',
+                  backgroundColor: 'var(--card-background)',
+                  color: 'var(--blox-deep-green)',
+                  borderColor: 'rgba(0, 207, 162, 0.4)',
                   borderWidth: '1.5px',
                   '&:hover': {
-                    backgroundColor: '#0E1909',
-                    borderColor: 'var(--primary-color)',
-                    opacity: 0.9,
+                    backgroundColor: 'var(--blox-emerald-wash)',
+                    borderColor: 'var(--blox-emerald)',
                   },
                   '& .MuiSvgIcon-root': {
-                    color: 'var(--primary-color)',
+                    color: 'var(--blox-emerald)',
                   },
                 }}
               >
@@ -672,11 +680,13 @@ export const DashboardPage: React.FC = () => {
                     }
                   }}
                   sx={{ 
-                    backgroundColor: 'var(--primary-color)',
-                    color: 'var(--primary-btn-color)',
+                    backgroundColor: 'var(--blox-emerald)',
+                    color: 'var(--blox-deep-green-dark)',
                     fontWeight: 700,
+                    boxShadow: 'var(--emerald-glow)',
                     '&:hover': { 
-                      backgroundColor: 'var(--primary-btn-hover)',
+                      backgroundColor: 'var(--blox-emerald-dark)',
+                      color: 'var(--blox-white)',
                     }
                   }}
                 >
@@ -694,16 +704,17 @@ export const DashboardPage: React.FC = () => {
                       px: 3,
                       py: 1.5,
                       borderRadius: 999,
-                      backgroundColor: '#000000',
-                      border: '2px solid var(--primary-color)',
+                      backgroundColor: 'var(--blox-emerald-wash)',
+                      border: '1.5px solid rgba(0, 207, 162, 0.35)',
                     }}
                   >
                   <Typography
                     variant="h4"
                     fontWeight={800}
+                    className="blox-numeric"
                     sx={{
-                        color: 'var(--primary-color)',
-                        letterSpacing: '0.02em',
+                        color: 'var(--blox-deep-green)',
+                        letterSpacing: '-0.01em',
                         fontSize: 32,
                     }}
                   >
@@ -898,10 +909,10 @@ export const DashboardPage: React.FC = () => {
                 <>
                   <Divider sx={{ my: 1.5, borderColor: 'var(--divider-color)' }} />
                   <Box className="payment-stat-item payment-stat-item-overdue">
-                    <Typography variant="body2" className="overdue-label" sx={{ color: '#F44336', fontSize: 13, fontWeight: 500 }}>
+                    <Typography variant="body2" className="overdue-label" sx={{ color: '#C62828', fontSize: 13, fontWeight: 500 }}>
                       Overdue Payments
                     </Typography>
-                    <Typography variant="h6" fontWeight={700} className="overdue-value" sx={{ color: '#F44336', fontSize: 18 }}>
+                    <Typography variant="h6" fontWeight={700} className="overdue-value" sx={{ color: '#C62828', fontSize: 18 }}>
                       {stats.overduePayments}
                     </Typography>
                   </Box>

@@ -2,10 +2,7 @@ import type { ApplicationStatus } from '../models/application.model';
 
 /**
  * Allowed application status transitions.
- * Enforced in supabaseApiService.updateApplication (fail closed).
- *
- * Customer: resubmit docs, submit signed contract, cancel early pipeline.
- * Admin/super_admin: ops matrix (includes direct approve → active).
+ * Enforced in supabaseApiService.updateApplication (fail closed) + DB trigger.
  */
 
 const CUSTOMER_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
@@ -14,15 +11,79 @@ const CUSTOMER_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> 
   under_review: ['submission_cancelled'],
   draft: ['under_review', 'submission_cancelled'],
   down_payment_required: ['submission_cancelled'],
+  pending_finance_activation: ['submission_cancelled'],
 };
 
-const ADMIN_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
-  draft: ['under_review', 'active', 'rejected', 'submission_cancelled'],
+const DEALER_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
+  draft: ['under_review', 'submission_cancelled'],
+  resubmission_required: ['under_review'],
+};
+
+/** Credit approves into pending_finance_activation — never activates. */
+const CREDIT_OFFICER_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
   under_review: [
     'contract_signing_required',
     'resubmission_required',
     'rejected',
-    'active', // direct approve (product-supported)
+    'pending_finance_activation',
+    'submission_cancelled',
+  ],
+  resubmission_required: ['under_review', 'rejected', 'submission_cancelled'],
+  contract_signing_required: [
+    'contracts_submitted',
+    'resubmission_required',
+    'rejected',
+    'under_review',
+  ],
+  contracts_submitted: [
+    'contract_under_review',
+    'pending_finance_activation',
+    'contract_signing_required',
+    'rejected',
+    'resubmission_required',
+  ],
+  contract_under_review: [
+    'pending_finance_activation',
+    'contract_signing_required',
+    'rejected',
+    'down_payment_required',
+  ],
+  down_payment_required: [
+    'down_payment_submitted',
+    'pending_finance_activation',
+    'rejected',
+  ],
+  down_payment_submitted: [
+    'pending_finance_activation',
+    'rejected',
+    'down_payment_required',
+  ],
+  rejected: ['under_review'],
+};
+
+/** Finance owns final activation. */
+const FINANCE_OFFICER_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
+  pending_finance_activation: ['active', 'rejected', 'under_review'],
+  contracts_submitted: ['pending_finance_activation', 'active', 'rejected'],
+  contract_under_review: ['pending_finance_activation', 'active', 'rejected'],
+  down_payment_submitted: ['pending_finance_activation', 'active', 'rejected'],
+  rejected: ['under_review'],
+};
+
+const ADMIN_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
+  draft: [
+    'under_review',
+    'active',
+    'pending_finance_activation',
+    'rejected',
+    'submission_cancelled',
+  ],
+  under_review: [
+    'contract_signing_required',
+    'resubmission_required',
+    'rejected',
+    'active',
+    'pending_finance_activation',
     'submission_cancelled',
   ],
   resubmission_required: ['under_review', 'rejected', 'submission_cancelled'],
@@ -35,25 +96,76 @@ const ADMIN_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
   contracts_submitted: [
     'contract_under_review',
     'active',
+    'pending_finance_activation',
     'contract_signing_required',
     'rejected',
     'resubmission_required',
   ],
   contract_under_review: [
     'active',
+    'pending_finance_activation',
     'contract_signing_required',
     'rejected',
     'down_payment_required',
   ],
-  down_payment_required: ['down_payment_submitted', 'active', 'rejected'],
-  down_payment_submitted: ['active', 'rejected', 'down_payment_required'],
+  down_payment_required: [
+    'down_payment_submitted',
+    'active',
+    'pending_finance_activation',
+    'rejected',
+  ],
+  down_payment_submitted: [
+    'active',
+    'pending_finance_activation',
+    'rejected',
+    'down_payment_required',
+  ],
+  pending_finance_activation: ['active', 'rejected', 'under_review', 'submission_cancelled'],
   active: ['completed', 'submission_cancelled'],
   rejected: ['under_review'],
   completed: [],
   submission_cancelled: ['under_review'],
 };
 
-export type TransitionActor = 'customer' | 'admin' | 'super_admin' | 'system';
+export type TransitionActor =
+  | 'customer'
+  | 'admin'
+  | 'super_admin'
+  | 'dealer_agent'
+  | 'credit_officer'
+  | 'finance_officer'
+  | 'system';
+
+/** Statuses credit officers see in their queue (submitted pipeline). */
+export const CREDIT_PIPELINE_STATUSES: ApplicationStatus[] = [
+  'under_review',
+  'resubmission_required',
+  'contract_signing_required',
+  'contracts_submitted',
+  'contract_under_review',
+  'down_payment_required',
+  'down_payment_submitted',
+];
+
+/**
+ * Credit queue list statuses — pipeline plus rejected so officers can reopen
+ * without needing a deep link. Pending finance / active stay out.
+ */
+export const CREDIT_QUEUE_STATUSES: ApplicationStatus[] = [
+  ...CREDIT_PIPELINE_STATUSES,
+  'rejected',
+];
+
+/** Finance activation queue (primary + adjacent handoff states). */
+export const FINANCE_ACTIVATION_QUEUE_STATUSES: ApplicationStatus[] = [
+  'pending_finance_activation',
+  'contracts_submitted',
+  'contract_under_review',
+  'down_payment_submitted',
+];
+
+/** Finance operational book (activated financing). */
+export const FINANCE_ACTIVE_BOOK_STATUSES: ApplicationStatus[] = ['active'];
 
 export function canTransitionApplicationStatus(
   from: ApplicationStatus,
@@ -64,8 +176,19 @@ export function canTransitionApplicationStatus(
   if (actor === 'system') return true;
 
   if (actor === 'customer') {
-    const allowed = CUSTOMER_ALLOWED[from] || [];
-    return allowed.includes(to);
+    return (CUSTOMER_ALLOWED[from] || []).includes(to);
+  }
+
+  if (actor === 'dealer_agent') {
+    return (DEALER_ALLOWED[from] || []).includes(to);
+  }
+
+  if (actor === 'credit_officer') {
+    return (CREDIT_OFFICER_ALLOWED[from] || []).includes(to);
+  }
+
+  if (actor === 'finance_officer') {
+    return (FINANCE_OFFICER_ALLOWED[from] || []).includes(to);
   }
 
   if (actor === 'admin' || actor === 'super_admin') {

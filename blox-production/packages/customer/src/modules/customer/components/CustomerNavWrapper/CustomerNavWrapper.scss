@@ -10,21 +10,22 @@
     width: 100%;
   }
 
-  // Chatbot FAB button styles - Using brand colors
+  // Chatbot FAB — routine chrome, emerald (not lime)
   .fab-chat {
     position: fixed;
     bottom: 24px;
     right: 24px;
     z-index: 1000;
-    background-color: #DAFF01 !important; // Lime Yellow
-    color: #0E1909 !important; // Blox Black
-    box-shadow: 0 4px 12px rgba(218, 255, 1, 0.3);
+    background-color: var(--blox-emerald) !important;
+    color: var(--blox-deep-green-dark) !important;
+    box-shadow: 0 8px 22px rgba(0, 207, 162, 0.28);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out, background-color 0.2s ease-in-out;
 
     &:hover {
-      background-color: #B8D900 !important; // Darker Lime Yellow
+      background-color: var(--blox-emerald-dark) !important;
+      color: var(--blox-white) !important;
       transform: scale(1.05);
-      box-shadow: 0 6px 16px rgba(218, 255, 1, 0.4);
+      box-shadow: 0 10px 26px rgba(0, 207, 162, 0.35);
     }
 
     @media (max-width: 768px) {

@@ -10,17 +10,17 @@
   <style>
     /* ═══════════════════════════════════════════════════════════════
        BLOX CORPORATE IDENTITY (CI)
-       Primary: #DAFF01 (Lime Yellow) | Text: #0E1909 (Blox Black)
-       Secondary: #787663 (Dark Grey) | Mid: #C9C4B7 | Background: #F3F0ED
+       Primary: #DBFF00 (Lime) | Text: #16535B (Deep Green)
+       Secondary: #708090 (Slate) | Mid: #A8B2BC | Background: #F2F6F6
        Font: IBM Plex Sans
        ═══════════════════════════════════════════════════════════════ */
     :root {
-      --blox-primary: #DAFF01;
-      --blox-primary-dark: #B8D900;
-      --blox-black: #0E1909;
-      --blox-dark-grey: #787663;
-      --blox-mid-grey: #C9C4B7;
-      --blox-light-grey: #F3F0ED;
+      --blox-primary: #DBFF00;
+      --blox-primary-dark: #C4E600;
+      --blox-black: #16535B;
+      --blox-dark-grey: #708090;
+      --blox-mid-grey: #A8B2BC;
+      --blox-light-grey: #F2F6F6;
     }
     * { box-sizing: border-box; }
     body {
@@ -473,14 +473,14 @@
             }
           } catch (e) {}
         }
-        return '<b style="font-size:28pt;color:#0E1909;font-family:Arial,sans-serif;">BLOX</b>';
+        return '<b style="font-size:28pt;color:#16535B;font-family:Arial,sans-serif;">BLOX</b>';
       }
 
       function t(w, s) { return '<table width="' + w + '" border="0" cellpadding="0" cellspacing="0" style="width:' + w + ';border-collapse:collapse;' + (s || '') + '">'; }
       function td(s, c) { return '<tr><td style="' + s + '">' + c + '</td></tr>'; }
       function p(s, c) { return '<p style="' + s + '">' + c + '</p>'; }
 
-      var base = 'font-family:Arial,sans-serif;font-size:11pt;line-height:150%;color:#0E1909;';
+      var base = 'font-family:Arial,sans-serif;font-size:11pt;line-height:150%;color:#16535B;';
       var arBase = base + 'direction:rtl;text-align:right;';
 
       function walkChildren(el) {
@@ -500,15 +500,15 @@
           var isAr = cls.indexOf('ar') !== -1;
 
           if (cls.indexOf('doc-title') !== -1) {
-            out += p('font-size:15pt;font-weight:bold;color:#0E1909;font-family:Arial,sans-serif;margin:18pt 0 6pt;', htm);
+            out += p('font-size:15pt;font-weight:bold;color:#16535B;font-family:Arial,sans-serif;margin:18pt 0 6pt;', htm);
           } else if (cls.indexOf('doc-subtitle') !== -1) {
-            out += p('font-size:11pt;color:#787663;font-family:Arial,sans-serif;margin:0 0 14pt;', htm);
+            out += p('font-size:11pt;color:#708090;font-family:Arial,sans-serif;margin:0 0 14pt;', htm);
           } else if (cls.indexOf('section-title') !== -1) {
-            out += t('100%', 'margin:16pt 0 10pt;') + td('width:100%;background:#F3F0ED;border-left:4pt solid #DAFF01;padding:8pt 12pt;font-size:12pt;font-weight:bold;color:#0E1909;font-family:Arial,sans-serif;', htm) + '</table>';
+            out += t('100%', 'margin:16pt 0 10pt;') + td('width:100%;background:#F2F6F6;border-left:4pt solid #DBFF00;padding:8pt 12pt;font-size:12pt;font-weight:bold;color:#16535B;font-family:Arial,sans-serif;', htm) + '</table>';
           } else if (cls.indexOf('divider') !== -1) {
-            out += t('100%', 'margin:14pt 0;') + td('border-top:1pt solid #C9C4B7;font-size:1pt;line-height:1pt;', '&nbsp;') + '</table>';
+            out += t('100%', 'margin:14pt 0;') + td('border-top:1pt solid #A8B2BC;font-size:1pt;line-height:1pt;', '&nbsp;') + '</table>';
           } else if (cls.indexOf('article-num') !== -1) {
-            out += p('font-size:11pt;font-weight:bold;color:#0E1909;font-family:Arial,sans-serif;margin:12pt 0 6pt;', htm);
+            out += p('font-size:11pt;font-weight:bold;color:#16535B;font-family:Arial,sans-serif;margin:12pt 0 6pt;', htm);
           } else if (cls.indexOf('article-body') !== -1 || cls.indexOf('preamble') !== -1) {
             var ps = n.querySelectorAll('p');
             for (var j = 0; j < ps.length; j++) {
@@ -523,14 +523,14 @@
           } else if (cls.indexOf('signature-block') !== -1) {
             out += buildSignatureBlock(n);
           } else if (cls.indexOf('blox-footer') !== -1) {
-            out += t('100%', 'margin-top:20pt;') + td('width:100%;border-top:3pt solid #DAFF01;padding:10pt 0;font-size:9pt;color:#787663;font-family:Arial,sans-serif;', '<b style="color:#0E1909;">BLOX</b> &nbsp; QFC LLC \u2022 Qatar Financial Centre \u2022 Confidential') + '</table>';
+            out += t('100%', 'margin-top:20pt;') + td('width:100%;border-top:3pt solid #DBFF00;padding:10pt 0;font-size:9pt;color:#708090;font-family:Arial,sans-serif;', '<b style="color:#16535B;">BLOX</b> &nbsp; QFC LLC \u2022 Qatar Financial Centre \u2022 Confidential') + '</table>';
           } else if (tag === 'p' || tag === 'div') {
             var st2 = isAr ? arBase : base;
             out += p(st2 + 'margin:0 0 6pt;', htm);
           } else if (tag === 'em' || tag === 'strong' || tag === 'b' || tag === 'i') {
             out += '<' + tag + '>' + htm + '</' + tag + '>';
           } else if (tag === 'footer') {
-            out += t('100%', 'margin-top:20pt;') + td('width:100%;border-top:3pt solid #DAFF01;padding:10pt 0;font-size:9pt;color:#787663;font-family:Arial,sans-serif;', '<b style="color:#0E1909;">BLOX</b> &nbsp; QFC LLC \u2022 Qatar Financial Centre \u2022 Confidential') + '</table>';
+            out += t('100%', 'margin-top:20pt;') + td('width:100%;border-top:3pt solid #DBFF00;padding:10pt 0;font-size:9pt;color:#708090;font-family:Arial,sans-serif;', '<b style="color:#16535B;">BLOX</b> &nbsp; QFC LLC \u2022 Qatar Financial Centre \u2022 Confidential') + '</table>';
           } else {
             out += p(base + 'margin:0 0 6pt;', htm);
           }
@@ -547,8 +547,8 @@
           for (var c = 0; c < cells.length; c++) {
             var isH = cells[c].tagName === 'TH';
             var isAr = cells[c].className.indexOf('ar') !== -1;
-            var st = 'width:50%;padding:8pt 10pt;vertical-align:top;border:1pt solid #C9C4B7;font-family:Arial,sans-serif;font-size:10.5pt;color:#0E1909;';
-            if (isH) st += 'font-weight:bold;background:#F3F0ED;';
+            var st = 'width:50%;padding:8pt 10pt;vertical-align:top;border:1pt solid #A8B2BC;font-family:Arial,sans-serif;font-size:10.5pt;color:#16535B;';
+            if (isH) st += 'font-weight:bold;background:#F2F6F6;';
             if (isAr) st += 'direction:rtl;text-align:right;';
             h += '<td style="' + st + '">' + cells[c].innerHTML + '</td>';
           }
@@ -566,8 +566,8 @@
           var cells = rows[r].querySelectorAll('th, td');
           for (var c = 0; c < cells.length; c++) {
             var isH = cells[c].tagName === 'TH';
-            var st = 'padding:6pt 10pt;border:1pt solid #C9C4B7;font-family:Arial,sans-serif;font-size:10.5pt;color:#0E1909;text-align:left;';
-            if (isH) st += 'font-weight:bold;background:#F3F0ED;';
+            var st = 'padding:6pt 10pt;border:1pt solid #A8B2BC;font-family:Arial,sans-serif;font-size:10.5pt;color:#16535B;text-align:left;';
+            if (isH) st += 'font-weight:bold;background:#F2F6F6;';
             h += '<td style="' + st + '">' + cells[c].innerHTML + '</td>';
           }
           h += '</tr>';
@@ -578,10 +578,10 @@
 
       function buildSignatureBlock(el) {
         var h = t('100%', 'margin:20pt 0;');
-        h += td('width:100%;border-top:1pt solid #C9C4B7;font-size:1pt;', '&nbsp;');
+        h += td('width:100%;border-top:1pt solid #A8B2BC;font-size:1pt;', '&nbsp;');
         var tds = el.querySelectorAll('td');
         for (var i = 0; i < tds.length; i++) {
-          h += td('padding:5pt 0;font-family:Arial,sans-serif;font-size:10.5pt;color:#0E1909;', tds[i].innerHTML);
+          h += td('padding:5pt 0;font-family:Arial,sans-serif;font-size:10.5pt;color:#16535B;', tds[i].innerHTML);
         }
         h += '</table>';
         return h;
@@ -595,17 +595,17 @@
         var body = walkChildren(db);
 
         var cover = t('100%', '') +
-          td('background:#DAFF01;padding:24pt 20pt;text-align:center;border-bottom:4pt solid #0E1909;mso-line-height-rule:exactly;', logo) +
+          td('background:#DBFF00;padding:24pt 20pt;text-align:center;border-bottom:4pt solid #16535B;mso-line-height-rule:exactly;', logo) +
           '<tr><td style="background:#FFFFFF;padding:60pt 30pt 50pt;text-align:center;">' +
-            p('font-size:24pt;font-weight:bold;color:#0E1909;font-family:Arial,sans-serif;margin:0 0 30pt;', 'Memorandum of Understanding') +
-            p('font-size:11pt;color:#787663;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:2pt;margin:0 0 20pt;', 'BETWEEN') +
-            p('font-size:16pt;font-weight:bold;color:#0E1909;font-family:Arial,sans-serif;margin:0 0 4pt;', 'BLOX QFC LLC') +
-            p('font-size:10pt;color:#787663;font-family:Arial,sans-serif;margin:0 0 20pt;', '(Hereinafter referred to as \u201cBlox\u201d)') +
-            p('font-size:11pt;color:#787663;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:2pt;margin:0 0 20pt;', 'AND') +
-            p('font-size:16pt;font-weight:bold;color:#0E1909;font-family:Arial,sans-serif;margin:0 0 4pt;', '[DEALER NAME]') +
-            p('font-size:10pt;color:#787663;font-family:Arial,sans-serif;margin:0 0 20pt;', '(Hereinafter referred to as \u201cthe Dealer\u201d)') +
+            p('font-size:24pt;font-weight:bold;color:#16535B;font-family:Arial,sans-serif;margin:0 0 30pt;', 'Memorandum of Understanding') +
+            p('font-size:11pt;color:#708090;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:2pt;margin:0 0 20pt;', 'BETWEEN') +
+            p('font-size:16pt;font-weight:bold;color:#16535B;font-family:Arial,sans-serif;margin:0 0 4pt;', 'BLOX QFC LLC') +
+            p('font-size:10pt;color:#708090;font-family:Arial,sans-serif;margin:0 0 20pt;', '(Hereinafter referred to as \u201cBlox\u201d)') +
+            p('font-size:11pt;color:#708090;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:2pt;margin:0 0 20pt;', 'AND') +
+            p('font-size:16pt;font-weight:bold;color:#16535B;font-family:Arial,sans-serif;margin:0 0 4pt;', '[DEALER NAME]') +
+            p('font-size:10pt;color:#708090;font-family:Arial,sans-serif;margin:0 0 20pt;', '(Hereinafter referred to as \u201cthe Dealer\u201d)') +
           '</td></tr>' +
-          td('background:#F3F0ED;padding:12pt 20pt;text-align:center;border-top:1pt solid #C9C4B7;font-size:9pt;color:#787663;font-family:Arial,sans-serif;', 'Confidential \u2022 BLOX QFC LLC \u2022 Qatar Financial Centre') +
+          td('background:#F2F6F6;padding:12pt 20pt;text-align:center;border-top:1pt solid #A8B2BC;font-size:9pt;color:#708090;font-family:Arial,sans-serif;', 'Confidential \u2022 BLOX QFC LLC \u2022 Qatar Financial Centre') +
           '</table>' +
           '<br clear="all" style="mso-special-character:line-break;page-break-before:always;" />';
 
@@ -615,7 +615,7 @@
           '<style>' +
           '@page Section1 { size:595.3pt 841.9pt; margin:56.7pt 70.9pt 56.7pt 70.9pt; mso-header-margin:35.4pt; mso-footer-margin:35.4pt; mso-paper-source:0; }' +
           'div.Section1 { page:Section1; }' +
-          'body { font-family:Arial,sans-serif; font-size:11pt; line-height:150%; color:#0E1909; }' +
+          'body { font-family:Arial,sans-serif; font-size:11pt; line-height:150%; color:#16535B; }' +
           'table { mso-cellspacing:0; }' +
           'p { mso-style-type:personal; mso-pagination:none; }' +
           '</style>' +

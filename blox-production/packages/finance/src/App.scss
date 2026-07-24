@@ -1,0 +1,9 @@
+.credit-app-wrapper {
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--blox-page-canvas, #F0F5F5);
+  background-image: var(--blox-page-gradient);
+  background-attachment: fixed;
+  position: relative;
+  z-index: 0;
+}

@@ -20,9 +20,17 @@ class AuthService {
           .eq('id', userId)
           .maybeSingle();
 
+        const allowedRoles = new Set([
+          'admin',
+          'super_admin',
+          'customer',
+          'dealer_agent',
+          'credit_officer',
+        ]);
+
         if (!error && data?.role) {
           const role = String(data.role).trim().toLowerCase();
-          if (role === 'admin' || role === 'super_admin' || role === 'customer') return role;
+          if (allowedRoles.has(role)) return role;
         }
 
         if (email) {
@@ -34,7 +42,7 @@ class AuthService {
 
           if (!emailError && emailData?.role) {
             const role = String(emailData.role).trim().toLowerCase();
-            if (role === 'admin' || role === 'super_admin' || role === 'customer') return role;
+            if (allowedRoles.has(role)) return role;
           }
         }
 
@@ -165,9 +173,23 @@ class AuthService {
     }
   }
 
+  /**
+   * Resolve password-reset landing path from the portal that initiated the request.
+   * Hardcoding /admin broke dealer/credit/customer reset links on separate origins.
+   */
+  private resolvePasswordResetRedirectTo(): string {
+    const origin = window.location.origin;
+    const path = window.location.pathname || '';
+    if (path.startsWith('/dealer')) return `${origin}/dealer/auth/reset-password`;
+    if (path.startsWith('/credit')) return `${origin}/credit/auth/reset-password`;
+    if (path.startsWith('/customer')) return `${origin}/customer/auth/reset-password`;
+    if (path.startsWith('/super-admin')) return `${origin}/super-admin/auth/reset-password`;
+    return `${origin}/admin/auth/reset-password`;
+  }
+
   async forgotPassword(email: string): Promise<void> {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/admin/auth/reset-password`,
+      redirectTo: this.resolvePasswordResetRedirectTo(),
     });
 
     if (error) {

@@ -37,7 +37,7 @@ export default defineConfig(async () => {
       // 'hidden' keeps maps for Sentry upload but never serves them publicly
       sourcemap: 'hidden',
       minify: 'esbuild',
-      target: 'es2015',
+      target: 'es2020',
       cssCodeSplit: true,
       rollupOptions: {
         output: {

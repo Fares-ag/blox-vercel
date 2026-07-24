@@ -63,10 +63,10 @@ describe('SupabaseApiService', () => {
         },
       ];
 
-      mockQueryBuilder.order.mockResolvedValue({
-        data: mockProducts,
-        error: null,
-      });
+      // Chainable thenable: supports .order().order() then await
+      mockQueryBuilder.order.mockReturnThis();
+      mockQueryBuilder.then = (resolve: (v: unknown) => unknown) =>
+        Promise.resolve(resolve({ data: mockProducts, error: null }));
 
       const result = await supabaseApiService.getProducts();
 
@@ -75,13 +75,17 @@ describe('SupabaseApiService', () => {
       expect(supabase.from).toHaveBeenCalledWith('products');
       expect(mockQueryBuilder.select).toHaveBeenCalledWith('*');
       expect(mockQueryBuilder.order).toHaveBeenCalledWith('created_at', { ascending: false });
+      expect(mockQueryBuilder.order).toHaveBeenCalledWith('id', { ascending: false });
     });
 
     it('should handle errors when fetching products', async () => {
-      mockQueryBuilder.order.mockResolvedValue({
-        data: null,
-        error: { message: 'Database error' },
-      });
+      mockQueryBuilder.order.mockReturnThis();
+      mockQueryBuilder.then = (resolve: (v: unknown) => unknown, reject?: (e: unknown) => unknown) =>
+        Promise.resolve(
+          reject
+            ? reject(new Error('Database error'))
+            : resolve({ data: null, error: { message: 'Database error' } })
+        );
 
       const result = await supabaseApiService.getProducts();
 

@@ -8,6 +8,7 @@ import './Button.scss';
 export type ButtonVariant =
   | 'primary'
   | 'secondary'
+  | 'secondary-soft'
   | 'secondary-neutral'
   | 'destructive'
   | 'tertiary'
@@ -36,6 +37,8 @@ export const Button: React.FC<ButtonProps> = React.memo(({
         return 'btn-primary';
       case 'secondary':
         return 'btn-secondary';
+      case 'secondary-soft':
+        return 'btn-secondary-soft';
       case 'secondary-neutral':
         return 'btn-secondary-neutral';
       case 'destructive':

@@ -15,7 +15,7 @@ const adminMenuItems: MenuItem[] = [
   { id: 'applications', label: 'Applications', path: '/admin/applications' },
   { id: 'pending-bank', label: 'Bank Transfers', path: '/admin/payments/pending-bank' },
   { id: 'users', label: 'Users', path: '/admin/users' },
-  { id: 'companies', label: 'Companies', path: '/admin/companies' },
+  { id: 'companies', label: 'Partner Hub', path: '/admin/companies' },
   { id: 'products', label: 'Vehicles', path: '/admin/vehicles' },
   { id: 'offers', label: 'Offers', path: '/admin/offers' },
   { id: 'promotions', label: 'Promotions', path: '/admin/promotions' },

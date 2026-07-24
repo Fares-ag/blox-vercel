@@ -50,7 +50,7 @@ import {
 } from '@mui/icons-material';
 import { useAppDispatch, useAppSelector } from '../../../../store/hooks';
 import { setSelected, setLoading, updateApplication, removeApplication, setList } from '../../../../store/slices/applications.slice';
-import { supabaseApiService } from '@shared/services';
+import { supabaseApiService, activityTrackingService, type ActivityLog } from '@shared/services';
 import type { Application, Company, Document, PaymentSchedule, PaymentStatus } from '@shared/models';
 import type { ProductAttribute } from '@shared/models/product.model';
 import { Button, StatusBadge, HorizontalBarChart, SegmentedBarChart } from '@shared/components';
@@ -68,6 +68,7 @@ import { PaymentConfirmationDialog, type PaymentMethod } from '../../components/
 import { EditApplicationDialog } from '../../components/EditApplicationDialog/EditApplicationDialog';
 import { ContractPdfService } from '@shared/services';
 import { supabase } from '@shared/services/supabase.service';
+import { usePortalBasePath, withPortalBase } from '@shared/contexts/portal-base-path';
 import './ApplicationDetailPage.scss';
 
 // Using only Supabase - no API or localStorage fallbacks
@@ -84,9 +85,20 @@ async function openApplicationDocument(doc: Pick<Document, 'url'> & { path?: str
 export const ApplicationDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const portalBase = usePortalBasePath();
   const dispatch = useAppDispatch();
   const { selected, loading } = useAppSelector((state) => state.applications);
+  const { user } = useAppSelector((state) => state.auth);
+  const role = (user?.role || '').toLowerCase();
+  const isDealer = role === 'dealer_agent';
+  const isCreditOfficer = role === 'credit_officer';
+  const isFinanceOfficer = role === 'finance_officer';
+  const isFullAdmin = role === 'admin' || role === 'super_admin';
+  const isSuperAdmin = role === 'super_admin';
+  const canCreditDecide = isCreditOfficer || isFullAdmin;
+  const canFinanceActivate = isFinanceOfficer || isFullAdmin;
   const [activeTab, setActiveTab] = useState(0);
+  const [submittingToCredit, setSubmittingToCredit] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [companyId, setCompanyId] = useState<string>('');
@@ -105,6 +117,9 @@ export const ApplicationDetailPage: React.FC = () => {
   const [convertingSchedule, setConvertingSchedule] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+  const [activityLogsLoading, setActivityLogsLoading] = useState(false);
+  const [activityLogsError, setActivityLogsError] = useState<string | null>(null);
 
   const loadApplicationDetails = useCallback(async (applicationId: string) => {
     try {
@@ -132,6 +147,41 @@ export const ApplicationDetailPage: React.FC = () => {
       loadApplicationDetails(id);
     }
   }, [id, loadApplicationDetails]);
+
+  // Load activity_logs when Logs tab opens. RLS allows SELECT for super_admin only.
+  useEffect(() => {
+    if (activeTab !== 3 || !id) return;
+    if (!isSuperAdmin) {
+      setActivityLogs([]);
+      setActivityLogsError(null);
+      setActivityLogsLoading(false);
+      return;
+    }
+    let mounted = true;
+    (async () => {
+      try {
+        setActivityLogsLoading(true);
+        setActivityLogsError(null);
+        const { data } = await activityTrackingService.getActivityLogs({
+          resourceId: id,
+          limit: 50,
+        });
+        if (mounted) setActivityLogs(data || []);
+      } catch (e: unknown) {
+        if (mounted) {
+          setActivityLogs([]);
+          setActivityLogsError(
+            e instanceof Error ? e.message : 'Failed to load activity logs'
+          );
+        }
+      } finally {
+        if (mounted) setActivityLogsLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [activeTab, id, isSuperAdmin]);
 
   useEffect(() => {
     let mounted = true;
@@ -209,7 +259,9 @@ export const ApplicationDetailPage: React.FC = () => {
         templateId: emailOpts.templateId,
         data: {
           applicationId: id,
-          vehicleName: displayData.productName ?? displayData.vehicleName,
+          vehicleName: displayData.vehicle
+            ? `${displayData.vehicle.make || ''} ${displayData.vehicle.model || ''}`.trim()
+            : undefined,
           ...emailOpts.data,
         },
         userEmail: displayData.customerEmail,
@@ -475,7 +527,7 @@ export const ApplicationDetailPage: React.FC = () => {
     return (
       <Box className="application-detail-page">
         <Typography variant="h4">Application not found</Typography>
-        <Button variant="secondary" onClick={() => navigate('/admin/applications')}>
+        <Button variant="secondary" onClick={() => navigate(withPortalBase(portalBase, '/applications'))}>
           Back to List
         </Button>
       </Box>
@@ -548,6 +600,7 @@ export const ApplicationDetailPage: React.FC = () => {
   const statusMap: Record<string, string> = {
     'draft': 'Draft',
     'under_review': 'Under Review',
+    'pending_finance_activation': 'Approved — awaiting finance activation',
     'active': 'Active',
     'completed': 'Completed',
     'submission_cancelled': 'Submission Cancelled',
@@ -561,7 +614,8 @@ export const ApplicationDetailPage: React.FC = () => {
   };
 
   // Calculate asset distribution percentages based on real installment data
-  const vehiclePrice = displayData.vehicle?.price || 0;
+  const vehiclePrice =
+    Number(displayData.sellingPrice) || displayData.vehicle?.price || 0;
   const downPayment = displayData.downPayment || displayData.installmentPlan?.downPayment || 0;
   let paidInstallmentsTotal = 0;
 
@@ -689,7 +743,8 @@ export const ApplicationDetailPage: React.FC = () => {
       
       switch (action) {
         case 'approve':
-          newStatus = 'active';
+          // Credit/admin contract approve → finance queue (admin may still activate directly elsewhere)
+          newStatus = isFinanceOfficer ? 'active' : 'pending_finance_activation';
           break;
         case 'reject':
           newStatus = 'rejected';
@@ -709,21 +764,35 @@ export const ApplicationDetailPage: React.FC = () => {
       });
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
-        if (action === 'approve') {
+        if (action === 'approve' && newStatus === 'active') {
           await syncPaymentSchedulesFromPlan(id);
         }
         dispatch(updateApplication(supabaseResponse.data));
         dispatch(setSelected(supabaseResponse.data));
-        toast.success(`Contract ${action === 'approve' ? 'approved' : action === 'reject' ? 'rejected' : 'sent for resubmission'} successfully!`);
+        toast.success(
+          action === 'approve'
+            ? newStatus === 'active'
+              ? 'Contract approved and financing activated!'
+              : 'Contract approved — sent to finance for activation.'
+            : `Contract ${action === 'reject' ? 'rejected' : 'sent for resubmission'} successfully!`
+        );
         setContractReviewOpen(false);
 
-        if (action === 'approve') {
+        if (action === 'approve' && newStatus === 'active') {
           void createNotificationForCustomer(
             'success',
             'Application Activated',
             `Your application #${id?.slice(0, 8)} has been activated! Your financing is now active.`,
             `/customer/my-applications/${id}`,
             { templateId: 'application_approved', idempotencyKey: `approved:${id}` }
+          );
+        } else if (action === 'approve') {
+          void createNotificationForCustomer(
+            'info',
+            'Approved — Awaiting Activation',
+            `Your application #${id?.slice(0, 8)} was approved by credit and is awaiting finance activation.`,
+            `/customer/my-applications/${id}`,
+            { templateId: 'application_credit_approved', idempotencyKey: `credit_approved:${id}` }
           );
         } else if (action === 'reject') {
           void createNotificationForCustomer(
@@ -791,10 +860,13 @@ export const ApplicationDetailPage: React.FC = () => {
     }
   };
 
-  const handleDirectApprove = async () => {
+  /** Credit: approve into finance queue (does not activate). */
+  const handleApproveForFinance = async () => {
     if (!id || !displayData || approving || rejecting) return;
 
-    const confirmed = window.confirm('Are you sure you want to approve and activate this application? This will make it active immediately.');
+    const confirmed = window.confirm(
+      'Approve this application for finance? Financing will stay inactive until a finance officer activates it.'
+    );
     if (!confirmed) return;
 
     try {
@@ -803,10 +875,57 @@ export const ApplicationDetailPage: React.FC = () => {
         throw new Error('Installment plan is missing for this application');
       }
 
-      // Generate payment schedule if not present
       const paymentSchedule = generatePaymentSchedule(displayData);
-      
-      // Update in Supabase only
+
+      const supabaseResponse = await supabaseApiService.updateApplication(id, {
+        status: 'pending_finance_activation',
+        installmentPlan: {
+          ...displayData.installmentPlan,
+          schedule: paymentSchedule,
+        },
+        updatedAt: new Date().toISOString(),
+      });
+
+      if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
+        dispatch(updateApplication(supabaseResponse.data));
+        dispatch(setSelected(supabaseResponse.data));
+        toast.success('Approved for finance — awaiting activation.');
+        void createNotificationForCustomer(
+          'info',
+          'Approved — Awaiting Activation',
+          `Your application #${id?.slice(0, 8)} was approved by credit and is awaiting finance activation.`,
+          `/customer/my-applications/${id}`,
+          { templateId: 'application_credit_approved', idempotencyKey: `credit_approved:${id}` }
+        );
+      } else {
+        throw new Error(supabaseResponse.message || 'Failed to approve application');
+      }
+    } catch (error: unknown) {
+      console.error('❌ Failed to approve for finance:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to approve application';
+      toast.error(errorMessage);
+    } finally {
+      setApproving(false);
+    }
+  };
+
+  /** Finance (or admin): activate financing + bootstrap schedules. */
+  const handleFinanceActivate = async () => {
+    if (!id || !displayData || approving || rejecting) return;
+
+    const confirmed = window.confirm(
+      'Activate financing for this application? This sets status to Active and starts the installment schedule.'
+    );
+    if (!confirmed) return;
+
+    try {
+      setApproving(true);
+      if (!displayData.installmentPlan) {
+        throw new Error('Installment plan is missing for this application');
+      }
+
+      const paymentSchedule = generatePaymentSchedule(displayData);
+
       const supabaseResponse = await supabaseApiService.updateApplication(id, {
         status: 'active',
         installmentPlan: {
@@ -815,30 +934,33 @@ export const ApplicationDetailPage: React.FC = () => {
         },
         updatedAt: new Date().toISOString(),
       });
-      
+
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
         await syncPaymentSchedulesFromPlan(id);
         dispatch(updateApplication(supabaseResponse.data));
         dispatch(setSelected(supabaseResponse.data));
-        toast.success('Application approved and activated successfully!');
+        toast.success('Financing activated successfully!');
         void createNotificationForCustomer(
           'success',
-          'Application Approved',
-          `Your application #${id?.slice(0, 8)} has been approved and activated! Your financing is now active.`,
+          'Application Activated',
+          `Your application #${id?.slice(0, 8)} has been activated! Your financing is now active.`,
           `/customer/my-applications/${id}`,
           { templateId: 'application_approved', idempotencyKey: `approved:${id}` }
         );
       } else {
-        throw new Error(supabaseResponse.message || 'Failed to approve application');
+        throw new Error(supabaseResponse.message || 'Failed to activate application');
       }
     } catch (error: unknown) {
-      console.error('❌ Failed to approve application:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to approve application';
+      console.error('❌ Failed to activate financing:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to activate application';
       toast.error(errorMessage);
     } finally {
       setApproving(false);
     }
   };
+
+  /** @deprecated Use handleApproveForFinance / handleFinanceActivate */
+  const handleDirectApprove = handleApproveForFinance;
 
   const handleActivateDraft = async () => {
     if (!id || !displayData || approving || rejecting) return;
@@ -923,7 +1045,7 @@ export const ApplicationDetailPage: React.FC = () => {
           dispatch(removeApplication(id));
           toast.success('Application deleted successfully');
           setTimeout(() => {
-            navigate('/admin/applications');
+            navigate(withPortalBase(portalBase, '/applications'));
           }, 100);
           return;
         }
@@ -947,7 +1069,7 @@ export const ApplicationDetailPage: React.FC = () => {
       toast.success('Application deleted successfully');
       
       // Navigate to list page - it will reload fresh data from server
-      navigate('/admin/applications', { replace: true });
+      navigate(withPortalBase(portalBase, '/applications'), { replace: true });
     } catch (error: any) {
       console.error('❌ Exception during delete:', error);
       console.error('Error details:', {
@@ -1063,12 +1185,57 @@ export const ApplicationDetailPage: React.FC = () => {
     }
   };
 
+  const handleSubmitToCredit = async () => {
+    if (!id || !selected || submittingToCredit) return;
+    const confirmed = window.confirm(
+      selected.status === 'resubmission_required'
+        ? 'Resubmit this application to the credit queue?'
+        : 'Submit this application for credit review?'
+    );
+    if (!confirmed) return;
+    try {
+      setSubmittingToCredit(true);
+      const nowIso = new Date().toISOString();
+      const supabaseResponse = await supabaseApiService.updateApplication(id, {
+        status: 'under_review',
+        submittedAt: nowIso,
+        submittedBy: user?.id,
+        submissionDate: nowIso,
+      } as any);
+      if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
+        dispatch(updateApplication(supabaseResponse.data));
+        dispatch(setSelected(supabaseResponse.data));
+        toast.success('Submitted to credit queue');
+      } else {
+        throw new Error(supabaseResponse.message || 'Failed to submit for credit review');
+      }
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to submit for credit review';
+      toast.error(errorMessage);
+    } finally {
+      setSubmittingToCredit(false);
+    }
+  };
+
   return (
     <Box className="application-detail-page">
       {/* Header Section */}
       <Box className="page-header">
         <Box className="header-left">
-          <Button variant="secondary" startIcon={<ArrowBack />} onClick={() => navigate('/admin/applications')} className="back-button">
+          <Button
+            variant="secondary"
+            startIcon={<ArrowBack />}
+            onClick={() =>
+              navigate(
+                withPortalBase(
+                  portalBase,
+                  portalBase === '/credit' || isCreditOfficer ? '/queue' : '/applications'
+                )
+              )
+            }
+            className="back-button"
+          >
             Back
         </Button>
           <Box className="header-title-section">
@@ -1082,31 +1249,67 @@ export const ApplicationDetailPage: React.FC = () => {
         </Box>
         <Box className="header-actions">
           <StatusBadge status={statusMap[displayData.status] || displayData.status} type="application" />
-          <FormControl size="small" sx={{ minWidth: 220 }} disabled={companiesLoading || savingCompany}>
-            <InputLabel id="application-company-select-label">Company</InputLabel>
-            <Select
-              labelId="application-company-select-label"
-              label="Company"
-              value={companyId}
-              onChange={(e) => handleCompanyChange(String(e.target.value))}
+          {displayData.customerInfo?.applicantType === 'corporate' && (
+            <Chip label="Corporate" size="small" color="primary" variant="outlined" />
+          )}
+          {displayData.customerInfo?.bulkBatchId && (
+            <Chip
+              label={`Bulk batch ${String(displayData.customerInfo.bulkBatchId).slice(0, 8)}`}
+              size="small"
+              variant="outlined"
+            />
+          )}
+          {displayData.hideInterest && (
+            <Chip
+              label={`Customer view: 0% / ${formatCurrency(displayData.customerDisplayPrice ?? 0)}`}
+              size="small"
+              color="warning"
+              variant="outlined"
+            />
+          )}
+          {isFullAdmin && (
+            <FormControl size="small" sx={{ minWidth: 220 }} disabled={companiesLoading || savingCompany}>
+              <InputLabel id="application-company-select-label">Company</InputLabel>
+              <Select
+                labelId="application-company-select-label"
+                label="Company"
+                value={companyId}
+                onChange={(e) => handleCompanyChange(String(e.target.value))}
+              >
+                <MenuItem value="">No company</MenuItem>
+                {companies.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    {c.name}{c.code ? ` (${c.code})` : ''}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+          {/* Schedule rebuild API is admin-only — do not offer Edit Installments to credit officers. */}
+          {isFullAdmin && (
+            <Button
+              variant="secondary"
+              startIcon={<Edit />}
+              onClick={() => setEditDialogOpen(true)}
+              disabled={approving || rejecting || reviewing || convertingSchedule || savingEdit}
             >
-              <MenuItem value="">No company</MenuItem>
-              {companies.map((c) => (
-                <MenuItem key={c.id} value={c.id}>
-                  {c.name}{c.code ? ` (${c.code})` : ''}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Button
-            variant="secondary"
-            startIcon={<Edit />}
-            onClick={() => setEditDialogOpen(true)}
-            disabled={approving || rejecting || reviewing || convertingSchedule || savingEdit}
-          >
-            Edit Installments
-          </Button>
-          {displayData.status === 'draft' && (
+              Edit Installments
+            </Button>
+          )}
+          {isDealer &&
+            (displayData.status === 'draft' || displayData.status === 'resubmission_required') && (
+              <Button
+                variant="primary"
+                startIcon={<CheckCircle />}
+                onClick={handleSubmitToCredit}
+                loading={submittingToCredit}
+              >
+                {displayData.status === 'resubmission_required'
+                  ? 'Resubmit to Credit'
+                  : 'Submit for Credit Review'}
+              </Button>
+            )}
+          {isFullAdmin && displayData.status === 'draft' && (
             <Button
               variant="primary"
               startIcon={<CheckCircle />}
@@ -1117,7 +1320,7 @@ export const ApplicationDetailPage: React.FC = () => {
               Activate
             </Button>
           )}
-          {(displayData.status === 'under_review') && (
+          {canCreditDecide && displayData.status === 'under_review' && (
             <>
               <Button
                 variant="primary"
@@ -1132,12 +1335,24 @@ export const ApplicationDetailPage: React.FC = () => {
                 variant="primary"
                 startIcon={<CheckCircle />}
                 className="approve-button"
-                onClick={handleDirectApprove}
+                onClick={handleApproveForFinance}
                 loading={approving}
                 disabled={rejecting}
               >
-                Approve & Activate
+                Approve for Finance
               </Button>
+              {isFullAdmin && (
+                <Button
+                  variant="secondary"
+                  startIcon={<CheckCircle />}
+                  className="approve-button"
+                  onClick={handleFinanceActivate}
+                  loading={approving}
+                  disabled={rejecting}
+                >
+                  Activate (Admin)
+                </Button>
+              )}
               <Button 
                 variant="secondary" 
                 startIcon={<Edit />} 
@@ -1159,8 +1374,39 @@ export const ApplicationDetailPage: React.FC = () => {
               </Button>
             </>
           )}
-          {(displayData.status === 'resubmission_required' ||
-            displayData.status === 'contract_signing_required') && (
+          {canFinanceActivate &&
+            (displayData.status === 'pending_finance_activation' ||
+              displayData.status === 'contracts_submitted' ||
+              displayData.status === 'contract_under_review' ||
+              displayData.status === 'down_payment_submitted') && (
+            <>
+              <Button
+                variant="primary"
+                startIcon={<CheckCircle />}
+                className="approve-button"
+                onClick={handleFinanceActivate}
+                loading={approving}
+                disabled={rejecting}
+              >
+                Activate Financing
+              </Button>
+              {(isFinanceOfficer || displayData.status === 'pending_finance_activation') && (
+                <Button
+                  variant="secondary"
+                  startIcon={<Cancel />}
+                  className="reject-button"
+                  onClick={handleReject}
+                  loading={rejecting}
+                  disabled={approving}
+                >
+                  Reject
+                </Button>
+              )}
+            </>
+          )}
+          {canCreditDecide &&
+            (displayData.status === 'resubmission_required' ||
+              displayData.status === 'contract_signing_required') && (
             <>
               <Button
                 variant="secondary"
@@ -1185,8 +1431,9 @@ export const ApplicationDetailPage: React.FC = () => {
               </Button>
             </>
           )}
-          {(displayData.status === 'contracts_submitted' ||
-            displayData.status === 'contract_under_review') && (
+          {canCreditDecide &&
+            (displayData.status === 'contracts_submitted' ||
+              displayData.status === 'contract_under_review') && (
             <Button
               variant="primary"
               startIcon={<Visibility />}
@@ -1196,8 +1443,9 @@ export const ApplicationDetailPage: React.FC = () => {
               Review Contract
             </Button>
           )}
-          {(displayData.status === 'rejected' ||
-            displayData.status === 'submission_cancelled') && (
+          {canCreditDecide &&
+            (displayData.status === 'rejected' ||
+              displayData.status === 'submission_cancelled') && (
             <Button
               variant="primary"
               startIcon={<CheckCircle />}
@@ -1213,16 +1461,48 @@ export const ApplicationDetailPage: React.FC = () => {
               Download Contract
             </Button>
           )}
-          <Button
-            variant="secondary"
-            startIcon={<Delete />}
-            onClick={handleDeleteApplication}
-            disabled={approving || rejecting || reviewing}
-          >
-            Delete
-          </Button>
+          {isFullAdmin && (
+            <Button
+              variant="secondary"
+              startIcon={<Delete />}
+              onClick={handleDeleteApplication}
+              disabled={approving || rejecting || reviewing}
+            >
+              Delete
+            </Button>
+          )}
         </Box>
       </Box>
+
+      {(displayData.sellingPrice != null || displayData.hideInterest) && (
+        <Alert severity="info" icon={<AttachMoney />} sx={{ mb: 3 }}>
+          <Typography variant="body2" fontWeight={600}>
+            Deal economics (internal)
+          </Typography>
+          <Typography variant="body2">
+            List {formatCurrency(displayData.listPrice ?? displayData.vehicle?.price ?? 0)}
+            {' · '}
+            Selling {formatCurrency(displayData.sellingPrice ?? displayData.vehicle?.price ?? 0)}
+            {displayData.internalAnnualRate != null && (
+              <>
+                {' · '}
+                Rate{' '}
+                {(Number(displayData.internalAnnualRate) <= 1
+                  ? Number(displayData.internalAnnualRate) * 100
+                  : Number(displayData.internalAnnualRate)
+                ).toFixed(2)}
+                %
+              </>
+            )}
+          </Typography>
+          {displayData.hideInterest && (
+            <Typography variant="caption" sx={{ display: 'block', mt: 0.5 }}>
+              Customer view: {formatCurrency(displayData.customerDisplayPrice ?? 0)} at 0% (same
+              installment amounts)
+            </Typography>
+          )}
+        </Alert>
+      )}
 
       {/* Cancelled by Customer Alert */}
       {displayData.status === 'submission_cancelled' && displayData.cancelledByCustomer && (
@@ -1261,15 +1541,153 @@ export const ApplicationDetailPage: React.FC = () => {
           <Box className="detail-content">
         {/* Left Column - Main Content (60%) */}
         <Box className="left-column">
-          {/* Customer Information */}
+          {/* Customer / Company Information */}
           <Paper className="detail-section">
             <Box className="section-header">
               <Person className="section-icon" />
               <Typography variant="h5" className="section-title">
-          Customer Information
-        </Typography>
+                {displayData.customerInfo?.applicantType === 'corporate'
+                  ? 'Company Information'
+                  : 'Customer Information'}
+              </Typography>
             </Box>
             <Divider sx={{ my: 2 }} />
+            {displayData.customerInfo?.applicantType === 'corporate' ? (
+              <Grid container spacing={3}>
+                <Grid item xs={12} sm={6}>
+                  <Box className="info-item">
+                    <Typography variant="caption" className="info-label">Legal Name</Typography>
+                    <Typography variant="body1" className="info-value">
+                      {displayData.customerInfo.corporate?.legalName || displayData.customerName}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box className="info-item">
+                    <Typography variant="caption" className="info-label">CR Number</Typography>
+                    <Typography variant="body1" className="info-value">
+                      {displayData.customerInfo.corporate?.crNumber || 'N/A'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                {displayData.customerInfo.corporate?.tradeName && (
+                  <Grid item xs={12} sm={6}>
+                    <Box className="info-item">
+                      <Typography variant="caption" className="info-label">Trade Name</Typography>
+                      <Typography variant="body1" className="info-value">
+                        {displayData.customerInfo.corporate.tradeName}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                )}
+                {displayData.customerInfo.corporate?.industry && (
+                  <Grid item xs={12} sm={6}>
+                    <Box className="info-item">
+                      <Typography variant="caption" className="info-label">Industry</Typography>
+                      <Typography variant="body1" className="info-value">
+                        {displayData.customerInfo.corporate.industry}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                )}
+                {displayData.customerInfo.corporate?.registeredAddress && (
+                  <Grid item xs={12}>
+                    <Box className="info-item">
+                      <Typography variant="caption" className="info-label">Registered Address</Typography>
+                      <Typography variant="body1" className="info-value">
+                        {[
+                          displayData.customerInfo.corporate.registeredAddress.street,
+                          displayData.customerInfo.corporate.registeredAddress.city,
+                          displayData.customerInfo.corporate.registeredAddress.country,
+                          displayData.customerInfo.corporate.registeredAddress.postalCode,
+                        ]
+                          .filter(Boolean)
+                          .join(', ') || 'N/A'}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                )}
+                <Grid item xs={12}>
+                  <Typography variant="subtitle2" sx={{ mt: 1, mb: 1 }}>
+                    Authorized Signatory
+                  </Typography>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box className="info-item">
+                    <Typography variant="caption" className="info-label">Name</Typography>
+                    <Typography variant="body1" className="info-value">
+                      {[
+                        displayData.customerInfo.corporate?.authorizedSignatory?.firstName,
+                        displayData.customerInfo.corporate?.authorizedSignatory?.lastName,
+                      ]
+                        .filter(Boolean)
+                        .join(' ') || 'N/A'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box className="info-item">
+                    <Typography variant="caption" className="info-label">Position</Typography>
+                    <Typography variant="body1" className="info-value">
+                      {displayData.customerInfo.corporate?.authorizedSignatory?.position || 'N/A'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box className="info-item">
+                    <Typography variant="caption" className="info-label">Email</Typography>
+                    <Typography variant="body1" className="info-value">
+                      {displayData.customerInfo.corporate?.authorizedSignatory?.email ||
+                        displayData.customerEmail}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box className="info-item">
+                    <Typography variant="caption" className="info-label">Phone</Typography>
+                    <Typography variant="body1" className="info-value">
+                      {displayData.customerInfo.corporate?.authorizedSignatory?.phone ||
+                        displayData.customerPhone ||
+                        'N/A'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box className="info-item">
+                    <Typography variant="caption" className="info-label">QID</Typography>
+                    <Typography variant="body1" className="info-value">
+                      {displayData.customerInfo.corporate?.authorizedSignatory?.qid || 'N/A'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <Box className="info-item">
+                    <Typography variant="caption" className="info-label">Nationality</Typography>
+                    <Typography variant="body1" className="info-value">
+                      {displayData.customerInfo.corporate?.authorizedSignatory?.nationality || 'N/A'}
+                    </Typography>
+                  </Box>
+                </Grid>
+                {displayData.customerInfo.bulkBatchId && (
+                  <Grid item xs={12}>
+                    <Box className="info-item">
+                      <Typography variant="caption" className="info-label">Bulk batch</Typography>
+                      <Typography variant="body1" className="info-value">
+                        Part of bulk batch {String(displayData.customerInfo.bulkBatchId)}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                )}
+                <Grid item xs={12} sm={6}>
+                  <Box className="info-item">
+                    <Typography variant="caption" className="info-label">Application Date</Typography>
+                    <Typography variant="body1" className="info-value">
+                      {formatDateTable(displayData.createdAt)}
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            ) : (
             <Grid container spacing={3}>
               <Grid item xs={12} sm={6}>
                 <Box className="info-item">
@@ -1425,18 +1843,6 @@ export const ApplicationDetailPage: React.FC = () => {
                   </Box>
                 </Grid>
               )}
-              {displayData.customerInfo?.employment?.employmentDuration && (
-                <Grid item xs={12} sm={6}>
-                  <Box className="info-item">
-                    <Typography variant="caption" className="info-label">
-                      Employment Duration
-                    </Typography>
-                    <Typography variant="body1" className="info-value">
-                      {displayData.customerInfo.employment.employmentDuration}
-                    </Typography>
-                  </Box>
-                </Grid>
-              )}
               {displayData.customerInfo?.address && (
                 <>
                   <Grid item xs={12}>
@@ -1497,6 +1903,7 @@ export const ApplicationDetailPage: React.FC = () => {
                 </Box>
               </Grid>
             </Grid>
+            )}
           </Paper>
 
           {/* Vehicle Information */}
@@ -1813,13 +2220,28 @@ export const ApplicationDetailPage: React.FC = () => {
               <Grid item xs={12} sm={6}>
                 <Box className="info-item">
                   <Typography variant="caption" className="info-label">
-                    Vehicle Price
+                    Selling Price (deal)
                   </Typography>
                   <Typography variant="h6" className="info-value highlight">
-                    {formatCurrency((displayData.loanAmount || 0) + (displayData.downPayment || 0))}
+                    {formatCurrency(
+                      displayData.sellingPrice ??
+                        (displayData.loanAmount || 0) + (displayData.downPayment || 0)
+                    )}
                   </Typography>
                 </Box>
               </Grid>
+              {displayData.listPrice != null && (
+                <Grid item xs={12} sm={6}>
+                  <Box className="info-item">
+                    <Typography variant="caption" className="info-label">
+                      List Price (catalog)
+                    </Typography>
+                    <Typography variant="h6" className="info-value">
+                      {formatCurrency(displayData.listPrice)}
+                    </Typography>
+                  </Box>
+                </Grid>
+              )}
               <Grid item xs={12} sm={6}>
                 <Box className="info-item">
                   <Typography variant="caption" className="info-label">
@@ -2025,7 +2447,7 @@ export const ApplicationDetailPage: React.FC = () => {
                 label="Total Assets Ownership"
                 value={100}
                 maxValue={100}
-                color="#787663"
+                color="#708090"
               />
               <Box sx={{ mt: 3 }}>
                 <SegmentedBarChart
@@ -2093,7 +2515,7 @@ export const ApplicationDetailPage: React.FC = () => {
             <Box sx={{ mb: 3 }}>
               <Box className="section-header" sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                 <Receipt className="section-icon" sx={{ color: 'var(--blox-black)', fontSize: 24 }} />
-                <Typography variant="h5" className="section-title" sx={{ fontWeight: 700, color: '#000000', fontFamily: "'IBM Plex Sans', sans-serif", margin: 0 }}>
+                <Typography variant="h5" className="section-title" sx={{ fontWeight: 700, color: '#16535B', fontFamily: "'IBM Plex Sans', sans-serif", margin: 0 }}>
                   Transactions
                 </Typography>
               </Box>
@@ -2172,7 +2594,7 @@ export const ApplicationDetailPage: React.FC = () => {
                     className="section-title"
                     sx={{
                       fontWeight: 700,
-                      color: '#000000',
+                      color: '#16535B',
                       fontFamily: "'IBM Plex Sans', sans-serif",
                       margin: 0,
                     }}
@@ -2277,7 +2699,7 @@ export const ApplicationDetailPage: React.FC = () => {
                                 variant="body2" 
                                 fontWeight={600} 
                                 sx={{ 
-                                  color: '#10B981',
+                                  color: '#00CFA2',
                                   backgroundColor: '#D1FAE5',
                                   px: 1,
                                   py: 0.5,
@@ -2289,7 +2711,7 @@ export const ApplicationDetailPage: React.FC = () => {
                               </Typography>
                             </TableCell>
                             <TableCell align="center">
-                            {schedule.status !== 'paid' && (
+                            {isFullAdmin && schedule.status !== 'paid' && (
                               <Tooltip title="Mark as Paid">
                                 <IconButton
                                   size="small"
@@ -2329,7 +2751,22 @@ export const ApplicationDetailPage: React.FC = () => {
                 </Typography>
               </Box>
               <Divider sx={{ my: 2 }} />
+              {!isSuperAdmin && (
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  Tracked activity events are visible to super admins only. Lifecycle dates below are still shown.
+                </Alert>
+              )}
+              {activityLogsLoading ? (
+                <Typography variant="body2" color="text.secondary">
+                  Loading activity…
+                </Typography>
+              ) : activityLogsError ? (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  {activityLogsError}
+                </Alert>
+              ) : null}
               <Box className="timeline">
+                {/* Lifecycle anchors always shown */}
                 <Box className="timeline-item">
                   <Box className="timeline-dot" />
                   <Box className="timeline-content">
@@ -2354,19 +2791,29 @@ export const ApplicationDetailPage: React.FC = () => {
                     </Box>
                   </Box>
                 )}
-                {displayData.updatedAt !== displayData.createdAt && (
-                  <Box className="timeline-item">
+                {isSuperAdmin &&
+                  !activityLogsLoading &&
+                  activityLogs.length === 0 &&
+                  !activityLogsError && (
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                      No tracked activity events for this application yet.
+                    </Typography>
+                  )}
+                {activityLogs.map((log) => (
+                  <Box className="timeline-item" key={log.id}>
                     <Box className="timeline-dot" />
                     <Box className="timeline-content">
                       <Typography variant="body2" className="timeline-title">
-                        Last Updated
+                        {log.description || `${log.actionType} ${log.resourceType || ''}`.trim()}
                       </Typography>
                       <Typography variant="caption" className="timeline-date">
-                        {formatDateTable(displayData.updatedAt)}
-            </Typography>
+                        {log.createdAt ? formatDateTable(log.createdAt) : '—'}
+                        {log.userEmail ? ` · ${log.userEmail}` : ''}
+                        {log.userRole ? ` (${log.userRole})` : ''}
+                      </Typography>
                     </Box>
                   </Box>
-                )}
+                ))}
               </Box>
             </Paper>
           </Box>
@@ -2382,9 +2829,53 @@ export const ApplicationDetailPage: React.FC = () => {
                 </Typography>
               </Box>
               <Divider sx={{ my: 2 }} />
-              <Typography variant="body2" color="text.secondary">
-                No comments available
-            </Typography>
+              {(() => {
+                const notes: { title: string; body: string; when?: string }[] = [];
+                if (displayData.resubmissionComments) {
+                  notes.push({
+                    title: 'Resubmission request',
+                    body: displayData.resubmissionComments,
+                    when: displayData.resubmissionDate
+                      ? formatDateTable(displayData.resubmissionDate)
+                      : undefined,
+                  });
+                }
+                if (displayData.contractReviewComments) {
+                  notes.push({
+                    title: 'Contract review',
+                    body: displayData.contractReviewComments,
+                    when: displayData.contractReviewDate
+                      ? formatDateTable(displayData.contractReviewDate)
+                      : undefined,
+                  });
+                }
+                if (notes.length === 0) {
+                  return (
+                    <Typography variant="body2" color="text.secondary">
+                      No resubmission or contract-review comments on this application.
+                    </Typography>
+                  );
+                }
+                return (
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {notes.map((note) => (
+                      <Alert key={note.title} severity="info" sx={{ alignItems: 'flex-start' }}>
+                        <Typography variant="subtitle2" fontWeight={600}>
+                          {note.title}
+                        </Typography>
+                        {note.when && (
+                          <Typography variant="caption" display="block" sx={{ mb: 0.5 }}>
+                            {note.when}
+                          </Typography>
+                        )}
+                        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                          {note.body}
+                        </Typography>
+                      </Alert>
+                    ))}
+                  </Box>
+                );
+              })()}
             </Paper>
           </Box>
         )}

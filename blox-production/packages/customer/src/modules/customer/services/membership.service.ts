@@ -79,15 +79,15 @@ class MembershipService {
         return null;
       }
 
-      const applicationsResponse = await supabaseApiService.getApplications();
+      const applicationsResponse = await supabaseApiService.getApplications({
+        customerEmail: email,
+      });
       if (applicationsResponse.status !== 'SUCCESS' || !applicationsResponse.data) {
         console.log('getMembershipStatus: failed to load applications', applicationsResponse.message);
         return null;
       }
 
-      const userApps = applicationsResponse.data.filter(
-        (app) => app.customerEmail?.toLowerCase() === email.toLowerCase()
-      );
+      const userApps = applicationsResponse.data;
       if (userApps.length === 0) {
         return null;
       }

@@ -12,6 +12,7 @@ import { Loading } from '@shared/components';
 import { ErrorBoundary } from '@shared/components';
 import { ScrollToTop } from '@shared/components/shared/ScrollToTop/ScrollToTop';
 import { AuthInitializer } from './modules/admin/components/AuthInitializer/AuthInitializer';
+import { PortalBasePathProvider } from '@shared/contexts/portal-base-path';
 import '@shared/styles/global.scss';
 import './App.scss';
 
@@ -22,24 +23,26 @@ function App() {
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <BrowserRouter>
-            <ScrollToTop />
-            <AuthInitializer />
-            <Box className="admin-app-wrapper">
-              <Suspense fallback={<Loading fullScreen message="Loading..." />}>
-                <AppRoutes />
-              </Suspense>
-              <ToastContainer
-                position="bottom-center"
-                autoClose={10000}
-                hideProgressBar={false}
-                newestOnTop
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-              />
-            </Box>
+            <PortalBasePathProvider basePath="/admin">
+              <ScrollToTop />
+              <AuthInitializer />
+              <Box className="admin-app-wrapper">
+                <Suspense fallback={<Loading fullScreen message="Loading..." />}>
+                  <AppRoutes />
+                </Suspense>
+                <ToastContainer
+                  position="bottom-center"
+                  autoClose={10000}
+                  hideProgressBar={false}
+                  newestOnTop
+                  closeOnClick
+                  rtl={false}
+                  pauseOnFocusLoss
+                  draggable
+                  pauseOnHover
+                />
+              </Box>
+            </PortalBasePathProvider>
           </BrowserRouter>
         </ThemeProvider>
       </Provider>

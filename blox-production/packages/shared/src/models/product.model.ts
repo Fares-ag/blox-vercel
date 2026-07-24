@@ -16,6 +16,8 @@ export interface Product {
   description?: string;
   chassisNumber?: string;
   engineNumber?: string;
+  /** Owning partner/dealer company. Undefined/null = platform (admin-managed). */
+  companyId?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,6 +44,8 @@ export interface ProductFilter {
   modelYear?: number[];
   engine?: string[];
   color?: string[];
+  /** Admin partner filter / dealer scope. */
+  companyId?: string;
   /** UI-only convenience field (used by FilterPanel range sliders). */
   priceRange?: [number, number];
   priceMin?: number;

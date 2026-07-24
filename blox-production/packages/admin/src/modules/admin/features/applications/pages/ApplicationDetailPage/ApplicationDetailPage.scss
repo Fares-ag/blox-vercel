@@ -92,7 +92,7 @@
       .header-title-section {
         .page-title {
           font-weight: 700;
-          color: #000000;
+          color: #16535B;
           font-family: 'IBM Plex Sans', sans-serif;
           margin-bottom: 4px;
         }
@@ -117,7 +117,7 @@
         color: var(--blox-black);
 
         &:hover {
-          background-color: rgba(14, 25, 9, 0.06);
+          background-color: rgba(22, 83, 91, 0.06);
         }
       }
     }
@@ -295,9 +295,9 @@
           width: 16px;
           height: 16px;
           border-radius: 50%;
-          background-color: #0E1909;
+          background-color: #16535B;
           border: 3px solid #FFFFFF;
-          box-shadow: 0 0 0 2px #0E1909;
+          box-shadow: 0 0 0 2px #16535B;
           flex-shrink: 0;
           margin-top: 2px;
           z-index: 1;
@@ -308,7 +308,7 @@
           padding-bottom: 8px;
 
           .timeline-title {
-            color: #000000;
+            color: #16535B;
             font-weight: 600;
             margin-bottom: 4px;
           }
