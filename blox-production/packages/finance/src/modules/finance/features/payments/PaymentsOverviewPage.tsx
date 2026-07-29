@@ -183,7 +183,7 @@ export const PaymentsOverviewPage: React.FC = () => {
   ];
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box className="finance-overview-page">
       <Typography variant="h2" sx={{ mb: 1 }}>
         Payments
       </Typography>

@@ -6,10 +6,31 @@
   }
 
   .finance-queue-toolbar {
-    display: flex;
-    gap: 12px;
-    align-items: center;
     margin-bottom: 16px;
-    padding: 16px;
+
+    .MuiCardContent-root {
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+
+      .search-bar {
+        flex: 1;
+        min-width: 200px;
+      }
+    }
+
+    @media (max-width: 899px) {
+      .MuiCardContent-root {
+        flex-direction: column !important;
+        align-items: stretch !important;
+
+        .search-bar {
+          min-width: 0;
+          width: 100%;
+        }
+      }
+    }
   }
 }

@@ -1,4 +1,6 @@
+@use './portal-responsive' as portal;
 @use './responsive.scss' as *;
+
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
@@ -573,3 +575,110 @@ p, .body-copy {
   opacity: 0.5;
   margin: var(--spacing-md) 0;
 }
+
+/* ── Cross-portal responsive shells (admin, credit, finance, dealer, customer) ── */
+
+.main-layout {
+  .main-content {
+    @include portal.down-md {
+      padding: var(--spacing-md);
+      padding-top: calc(var(--spacing-md) + 44px);
+    }
+
+    @include portal.down-sm {
+      padding: var(--spacing-sm);
+      padding-top: calc(var(--spacing-sm) + 44px);
+    }
+  }
+}
+
+.page-container {
+  @include portal.down-md {
+    padding: var(--spacing-md);
+    min-height: auto;
+  }
+}
+
+.page-header {
+  @include portal.down-md {
+    flex-direction: column;
+    align-items: stretch;
+
+    .page-title {
+      font-size: 24px;
+    }
+  }
+
+  @include portal.down-sm {
+    .page-title {
+      font-size: 20px;
+    }
+  }
+}
+
+.stat-card {
+  @include portal.down-md {
+    padding: var(--spacing-md);
+
+    .stat-value {
+      font-size: 24px;
+    }
+
+    .stat-icon {
+      font-size: 24px;
+    }
+  }
+}
+
+.content-card,
+.section-card,
+.MuiPaper-root.content-card,
+.MuiPaper-root.section-card {
+  @include portal.down-md {
+    padding: var(--spacing-md);
+  }
+}
+
+[class$='-list-page'],
+[class*='-queue-page'],
+[class*='-overview-page'],
+[class*='-detail-page'],
+[class*='-dashboard-page'],
+[class*='-logs-page'] {
+  @include portal.portal-page-shell;
+}
+
+.finance-overview-page,
+.finance-queue-page,
+.credit-queue-page {
+  .MuiCard-root {
+    @include portal.down-md {
+      .MuiCardContent-root,
+      &.MuiCard-root {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--spacing-sm);
+      }
+
+      .search-bar,
+      .MuiButton-root {
+        width: 100%;
+        max-width: 100%;
+      }
+    }
+  }
+
+  .MuiTabs-root {
+    overflow-x: auto;
+  }
+}
+
+.MuiDialog-paper {
+  @include portal.down-sm {
+    margin: var(--spacing-sm);
+    width: calc(100% - 2 * var(--spacing-sm)) !important;
+    max-width: calc(100% - 2 * var(--spacing-sm)) !important;
+  }
+}
+

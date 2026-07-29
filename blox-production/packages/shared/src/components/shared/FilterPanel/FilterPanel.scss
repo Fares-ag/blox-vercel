@@ -27,6 +27,10 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: var(--spacing-md);
+
+        @media (max-width: 899px) {
+          grid-template-columns: 1fr;
+        }
       }
 
       .range-slider {
@@ -38,6 +42,18 @@
       margin-top: var(--spacing-md);
       padding-top: var(--spacing-md);
       border-top: 1px solid var(--field-border-color);
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--spacing-sm);
+
+      @media (max-width: 899px) {
+        flex-direction: column;
+
+        button,
+        .MuiButton-root {
+          width: 100%;
+        }
+      }
     }
   }
 }

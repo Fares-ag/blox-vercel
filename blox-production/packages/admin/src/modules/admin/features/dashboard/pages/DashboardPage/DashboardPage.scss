@@ -19,7 +19,7 @@
     gap: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
     
-    @media (max-width: 960px) {
+    @media (max-width: 899px) {
       flex-wrap: wrap;
       gap: var(--spacing-md);
       
@@ -43,7 +43,7 @@
     gap: var(--spacing-lg);
     margin-bottom: var(--spacing-lg);
     
-    @media (max-width: 960px) {
+    @media (max-width: 899px) {
       flex-direction: column;
       align-items: stretch;
       gap: var(--spacing-md);

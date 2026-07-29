@@ -1,0 +1,119 @@
+// Align with MUI default breakpoints (md = 900px, sm = 600px).
+
+@mixin down-md {
+  @media (max-width: 899px) {
+    @content;
+  }
+}
+
+@mixin down-sm {
+  @media (max-width: 599px) {
+    @content;
+  }
+}
+
+@mixin up-md {
+  @media (min-width: 900px) {
+    @content;
+  }
+}
+
+// Shared list / queue / detail page shells used across admin, credit, finance, dealer.
+@mixin portal-page-shell {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+
+  @include down-md {
+    padding: var(--spacing-md) !important;
+  }
+
+  @include down-sm {
+    padding: var(--spacing-sm) !important;
+  }
+
+  .page-header,
+  .list-header {
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+
+    @include down-md {
+      flex-direction: column;
+      align-items: stretch;
+    }
+  }
+
+  .page-title {
+    @include down-md {
+      font-size: 24px !important;
+    }
+
+    @include down-sm {
+      font-size: 20px !important;
+    }
+  }
+
+  .header-actions,
+  .page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    align-items: center;
+
+    @include down-md {
+      width: 100%;
+
+      .search-bar,
+      .MuiTextField-root,
+      button,
+      .MuiButton-root {
+        width: 100%;
+        max-width: 100%;
+      }
+    }
+  }
+
+  .metrics-grid,
+  .stats-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    width: 100%;
+
+    > * {
+      flex: 1 1 220px;
+      min-width: 0;
+    }
+
+    @include down-sm {
+      > * {
+        flex: 1 1 100%;
+      }
+    }
+  }
+
+  .status-tabs-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+
+    .MuiTab-root {
+      @include down-md {
+        min-height: 44px;
+        font-size: 12px;
+        padding: var(--spacing-sm) var(--spacing-md);
+      }
+    }
+  }
+
+  .table-section,
+  .MuiTableContainer-root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .MuiGrid-container {
+    width: 100%;
+  }
+}

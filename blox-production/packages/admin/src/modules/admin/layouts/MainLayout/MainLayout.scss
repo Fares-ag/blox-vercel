@@ -1,21 +1,41 @@
 .main-layout {
   display: flex;
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   position: relative;
 
   .main-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: var(--spacing-lg);
     min-width: 0;
     width: 100%;
     max-width: 100%;
-    /* Let App brand gradient show through — pages should not paint opaque page fills */
     background: transparent;
+    -webkit-overflow-scrolling: touch;
   }
 
   .sidebar-toggle-button {
     transition: color var(--transition-base), transform var(--transition-base);
+  }
+}
+
+@media (max-width: 899px) {
+  .main-layout {
+    .main-content {
+      padding: var(--spacing-md);
+      padding-top: calc(var(--spacing-md) + 44px);
+    }
+  }
+}
+
+@media (max-width: 599px) {
+  .main-layout {
+    .main-content {
+      padding: var(--spacing-sm);
+      padding-top: calc(var(--spacing-sm) + 44px);
+    }
   }
 }

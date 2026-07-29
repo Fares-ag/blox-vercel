@@ -60,7 +60,7 @@
       min-width: 0;
     }
 
-    @media (max-width: 1024px) {
+    @media (max-width: 899px) {
       flex-direction: column;
 
       .left-column,
@@ -321,8 +321,17 @@
     }
   }
 
-  @media (max-width: 960px) {
+  @media (max-width: 899px) {
     padding: 16px;
+
+    .tabs-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+
+      .detail-tabs {
+        min-width: min-content;
+      }
+    }
 
     .page-header {
       flex-direction: column;

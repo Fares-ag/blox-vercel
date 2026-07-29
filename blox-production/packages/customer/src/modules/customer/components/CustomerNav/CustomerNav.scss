@@ -223,14 +223,14 @@
     display: none;
     color: var(--blox-white);
 
-    @media (max-width: 960px) {
+    @media (max-width: 899px) {
       display: flex;
       margin-right: 8px;
       margin-left: 0;
     }
   }
 
-  @media (max-width: 960px) {
+  @media (max-width: 899px) {
     .nav-toolbar {
       padding: 12px 16px;
 

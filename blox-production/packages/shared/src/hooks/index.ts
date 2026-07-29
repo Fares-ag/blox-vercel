@@ -1,3 +1,5 @@
+export { useIsMobile, useIsSmallMobile } from './useBreakpoint';
+
 // Note: useAuth depends on Redux and will need to be adapted per module
 // This is a base export - modules should extend this
 // Module-specific useAuth hooks are in their respective packages:

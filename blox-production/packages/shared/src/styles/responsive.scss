@@ -1,54 +1,70 @@
-// Responsive breakpoints
+@use './portal-responsive' as portal;
+
+// Responsive breakpoints — aligned with MUI (md = 900px, sm = 600px).
 $breakpoints: (
   xs: 0,
   sm: 600px,
-  md: 960px,
-  lg: 1280px,
-  xl: 1920px,
+  md: 900px,
+  lg: 1200px,
+  xl: 1536px,
 );
 
-// Mixins for responsive design
 @mixin mobile {
-  @media (max-width: 767px) {
+  @include portal.down-sm {
     @content;
   }
 }
 
 @mixin tablet {
-  @media (min-width: 768px) and (max-width: 1023px) {
+  @media (min-width: 600px) and (max-width: 899px) {
     @content;
   }
 }
 
 @mixin desktop {
-  @media (min-width: 1024px) {
+  @include portal.up-md {
     @content;
   }
 }
 
-// Responsive utilities
+@mixin down-md {
+  @include portal.down-md {
+    @content;
+  }
+}
+
+@mixin down-sm {
+  @include portal.down-sm {
+    @content;
+  }
+}
+
 .hide-mobile {
-  @include mobile {
+  @include down-md {
     display: none !important;
+  }
+}
+
+@mixin up-md {
+  @include portal.up-md {
+    @content;
   }
 }
 
 .hide-desktop {
-  @include desktop {
+  @include up-md {
     display: none !important;
   }
 }
 
-// Responsive grid adjustments
 .responsive-grid {
-  @include mobile {
+  @include down-md {
     grid-template-columns: 1fr !important;
   }
 }
 
-// Responsive table
 .responsive-table {
-  @include mobile {
+  @include down-md {
     .MuiTableCell-root {
       padding: 8px 4px;
       font-size: 12px;

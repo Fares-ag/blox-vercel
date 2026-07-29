@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Blox — Editable email signature</title>
+  <style>
+    body {
+      margin: 24px;
+      background: #F0F5F5;
+      font-family: "IBM Plex Sans", Arial, Helvetica, sans-serif;
+      color: #16535B;
+    }
+    .guide {
+      max-width: 640px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #4A5560;
+    }
+    .guide code { background: #fff; padding: 1px 6px; border-radius: 4px; }
+    .preview-label {
+      font-size: 11px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #708090;
+      margin-bottom: 8px;
+    }
+    .preview-card {
+      background: #fff;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(22, 83, 91, 0.08);
+      max-width: 640px;
+    }
+  </style>
+</head>
+<body>
+  <div class="guide">
+    <strong style="color:#16535B">How to use</strong><br />
+    1. Edit the placeholder fields below (name, title, phone, email).<br />
+    2. Host <code>blox-signature-banner.png</code> (or your logo) on a public URL and update the <code>img src</code>.<br />
+    3. Select only the signature table in the preview → Copy → Paste into Gmail / Outlook signature settings.<br />
+    Brand: Deep Green <code>#16535B</code> · Emerald <code>#00CFA2</code> · Lime CTA <code>#DBFF00</code> · Slate <code>#708090</code>
+  </div>
+
+  <div class="preview-label">Signature preview — select from the logo down</div>
+  <div class="preview-card">
+
+    <!-- ========== COPY FROM HERE ========== -->
+    <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;font-family:Arial,Helvetica,sans-serif;max-width:520px;color:#16535B;">
+      <tr>
+        <td style="padding:0 0 12px 0;">
+          <!-- Banner / logo: replace src with hosted Higgsfield or brand asset URL -->
+          <a href="https://blox-it.com" target="_blank" style="text-decoration:none;">
+            <img
+              src="https://blox-it.com/BloxLogo.png"
+              width="120"
+              height="36"
+              alt="BLOX"
+              style="display:block;border:0;outline:none;height:auto;max-width:140px;"
+            />
+          </a>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:0 0 10px 0;border-top:3px solid #00CFA2;"></td>
+      </tr>
+      <tr>
+        <td style="padding:0;">
+          <table cellpadding="0" cellspacing="0" border="0" role="presentation" style="border-collapse:collapse;">
+            <tr>
+              <td style="padding:0 16px 0 0;vertical-align:top;border-right:1px solid #A8B2BC;">
+                <!-- EDIT: Full name -->
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;font-weight:700;line-height:1.25;color:#16535B;">
+                  Your Name
+                </div>
+                <!-- EDIT: Job title -->
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:400;line-height:1.35;color:#708090;padding-top:2px;">
+                  Your Title
+                </div>
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:600;line-height:1.35;color:#00CFA2;padding-top:4px;">
+                  BLOX
+                </div>
+              </td>
+              <td style="padding:0 0 0 16px;vertical-align:top;">
+                <!-- EDIT: Phone -->
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#4A5560;">
+                  <span style="color:#708090;">M</span>&nbsp;
+                  <a href="tel:+97400000000" style="color:#16535B;text-decoration:none;">+974 0000 0000</a>
+                </div>
+                <!-- EDIT: Email -->
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#4A5560;">
+                  <span style="color:#708090;">E</span>&nbsp;
+                  <a href="mailto:you@blox-it.com" style="color:#16535B;text-decoration:none;">you@blox-it.com</a>
+                </div>
+                <div style="font-family:Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#4A5560;">
+                  <span style="color:#708090;">W</span>&nbsp;
+                  <a href="https://blox-it.com" target="_blank" style="color:#16535B;text-decoration:none;">blox-it.com</a>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:14px 0 0 0;">
+          <!-- Optional CTA pill — edit or delete -->
+          <a href="https://blox-it.com" target="_blank"
+             style="display:inline-block;background:#DBFF00;color:#16535B;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:700;text-decoration:none;padding:8px 14px;border-radius:4px;letter-spacing:0.02em;">
+            Finance Unboxed
+          </a>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:12px 0 0 0;font-family:Arial,Helvetica,sans-serif;font-size:10px;line-height:1.45;color:#A8B2BC;max-width:480px;">
+          This email and any attachments are confidential and intended solely for the addressee.
+        </td>
+      </tr>
+    </table>
+    <!-- ========== COPY TO HERE ========== -->
+
+  </div>
+</body>
+</html>

@@ -177,7 +177,7 @@ export const ActiveBookPage: React.FC = () => {
   ];
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box className="finance-overview-page">
       <Typography variant="h2" sx={{ mb: 1 }}>
         Active Book
       </Typography>

@@ -64,6 +64,7 @@ export const MainLayout: React.FC = () => {
       <SidePanel
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed(!collapsed)}
+        isMobile={isMobile}
         menuItems={adminMenuItems}
         user={user}
         onLogout={handleLogout}

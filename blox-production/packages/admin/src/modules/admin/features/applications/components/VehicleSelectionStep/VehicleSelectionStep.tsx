@@ -17,12 +17,22 @@ import { supabaseApiService } from '@shared/services';
 import type { Product } from '@shared/models/product.model';
 import { formatCurrency } from '@shared/utils/formatters';
 import { toast } from 'react-toastify';
+import { useAppSelector } from '../../../../store/hooks';
 import './VehicleSelectionStep.scss';
 
 export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) => {
+  const { user } = useAppSelector((state) => state.auth);
+  const isDealer = (user?.role || '').toLowerCase() === 'dealer_agent';
+
   const isCorporate = data?.customerInfo?.applicantType === 'corporate';
   const [searchTerm, setSearchTerm] = useState('');
-  const [products, setProducts] = useState<Product[]>([]);
+  const [filterMake, setFilterMake] = useState('');
+  const [filterModel, setFilterModel] = useState('');
+  const [filterYear, setFilterYear] = useState('');
+  const [filterCondition, setFilterCondition] = useState('');
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [makes, setMakes] = useState<string[]>([]);
+  const [models, setModels] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedVehicle, setSelectedVehicle] = useState<Product | null>(
     data.vehicle || (data.vehicleId ? ({ id: data.vehicleId } as Product) : null)
@@ -49,44 +59,133 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
     engineNumber: '',
   });
 
-  const searchVehicles = useCallback(async () => {
+  const loadVehicles = useCallback(async () => {
     setLoading(true);
     try {
-      // Load from Supabase only
-      const supabaseResponse = await supabaseApiService.getProducts();
-      
-      if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
-        let filtered = supabaseResponse.data;
-        
-        // Apply search filter if provided
-        if (searchTerm) {
-          filtered = supabaseResponse.data.filter(
-            (v: Product) =>
-              v.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              v.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              v.id.toLowerCase().includes(searchTerm.toLowerCase())
-          );
-        }
-        
-        setProducts(filtered);
-        if (filtered.length === 0 && !searchTerm) {
-          console.log('No vehicles found in Supabase');
-        }
+      const response = await supabaseApiService.queryProducts({
+        limit: 2000,
+        status: ['active'],
+        companyId: isDealer && user?.companyId ? user.companyId : undefined,
+      });
+
+      if (response.status === 'SUCCESS' && response.data) {
+        setAllProducts(response.data);
       } else {
-        throw new Error(supabaseResponse.message || 'Failed to load vehicles');
+        throw new Error(response.message || 'Failed to load vehicles');
       }
     } catch (error: any) {
       console.error('❌ Failed to load vehicles:', error);
       toast.error(error.message || 'Failed to load vehicles');
-      setProducts([]);
+      setAllProducts([]);
     } finally {
       setLoading(false);
     }
-  }, [searchTerm]);
+  }, [isDealer, user?.companyId]);
 
   useEffect(() => {
-    searchVehicles();
-  }, [searchVehicles]);
+    void loadVehicles();
+  }, [loadVehicles]);
+
+  useEffect(() => {
+    void supabaseApiService.getProductMakes('active').then((res) => {
+      if (res.status === 'SUCCESS' && res.data) {
+        setMakes(res.data);
+      }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!filterMake) {
+      setModels([]);
+      return;
+    }
+    let cancelled = false;
+    void supabaseApiService.getProductModels(filterMake, 'active').then((res) => {
+      if (cancelled) return;
+      if (res.status === 'SUCCESS' && res.data) {
+        setModels(res.data);
+      } else {
+        setModels([]);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [filterMake]);
+
+  const yearOptions = useMemo(() => {
+    let source = allProducts;
+    if (filterMake) {
+      source = source.filter((v) => v.make === filterMake);
+    }
+    if (filterModel) {
+      source = source.filter((v) => v.model === filterModel);
+    }
+    const years = [...new Set(source.map((v) => v.modelYear).filter(Boolean))].sort((a, b) => b - a);
+    return years.map((year) => ({ value: String(year), label: String(year) }));
+  }, [allProducts, filterMake, filterModel]);
+
+  const products = useMemo(() => {
+    let filtered = allProducts;
+
+    if (filterMake) {
+      filtered = filtered.filter((v) => v.make === filterMake);
+    }
+    if (filterModel) {
+      filtered = filtered.filter((v) => v.model === filterModel);
+    }
+    if (filterYear) {
+      const year = Number(filterYear);
+      filtered = filtered.filter((v) => v.modelYear === year);
+    }
+    if (filterCondition) {
+      filtered = filtered.filter((v) => v.condition === filterCondition);
+    }
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        (v) =>
+          v.make.toLowerCase().includes(term) ||
+          v.model.toLowerCase().includes(term) ||
+          v.id.toLowerCase().includes(term) ||
+          (v.trim && v.trim.toLowerCase().includes(term))
+      );
+    }
+
+    return filtered;
+  }, [allProducts, filterMake, filterModel, filterYear, filterCondition, searchTerm]);
+
+  const makeOptions: SelectOption[] = useMemo(
+    () => makes.map((make) => ({ value: make, label: make })),
+    [makes]
+  );
+
+  const modelOptions: SelectOption[] = useMemo(
+    () => models.map((model) => ({ value: model, label: model })),
+    [models]
+  );
+
+  const handleMakeFilterChange = (value: string) => {
+    setFilterMake(value);
+    setFilterModel('');
+    setFilterYear('');
+  };
+
+  const handleModelFilterChange = (value: string) => {
+    setFilterModel(value);
+    setFilterYear('');
+  };
+
+  const handleClearFilters = () => {
+    setFilterMake('');
+    setFilterModel('');
+    setFilterYear('');
+    setFilterCondition('');
+    setSearchTerm('');
+  };
+
+  const hasActiveFilters =
+    Boolean(filterMake || filterModel || filterYear || filterCondition || searchTerm.trim());
 
   const selectedIds = useMemo(
     () => new Set(selectedVehicles.map((v) => v.id)),
@@ -204,7 +303,7 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
       setAddDialogOpen(false);
 
       // Refresh list and select new vehicle
-      await searchVehicles();
+      await loadVehicles();
       handleSelectVehicle(res.data);
     } catch (e: any) {
       toast.error(e.message || 'Failed to create vehicle');
@@ -224,10 +323,59 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
         </Typography>
       )}
 
+      <Box className="filter-section">
+        <Grid container spacing={2} alignItems="flex-end">
+          <Grid item xs={12} sm={6} md={3}>
+            <Select
+              label="Make"
+              value={filterMake}
+              options={makeOptions}
+              onChange={(e) => handleMakeFilterChange(String(e.target.value))}
+              placeholder="All Makes"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <Select
+              label="Model"
+              value={filterModel}
+              options={modelOptions}
+              onChange={(e) => handleModelFilterChange(String(e.target.value))}
+              placeholder="All Models"
+              disabled={!filterMake}
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <Select
+              label="Year"
+              value={filterYear}
+              options={yearOptions}
+              onChange={(e) => setFilterYear(String(e.target.value))}
+              placeholder="All Years"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6} md={2}>
+            <Select
+              label="Condition"
+              value={filterCondition}
+              options={conditionOptions}
+              onChange={(e) => setFilterCondition(String(e.target.value))}
+              placeholder="All Conditions"
+            />
+          </Grid>
+          <Grid item xs={12} md={2}>
+            {hasActiveFilters && (
+              <Button variant="secondary" onClick={handleClearFilters} fullWidth>
+                Clear Filters
+              </Button>
+            )}
+          </Grid>
+        </Grid>
+      </Box>
+
       <Box className="search-section" sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
         <Box sx={{ flex: 1 }}>
         <Input
-          label="Search by Make, Model, or ID"
+          label="Search by Make, Model, Trim, or ID"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           placeholder="Enter vehicle details..."
@@ -237,6 +385,12 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
           + Add New Vehicle
         </Button>
       </Box>
+
+      {!loading && (
+        <Typography variant="body2" color="text.secondary" className="results-count">
+          {products.length} vehicle{products.length === 1 ? '' : 's'} found
+        </Typography>
+      )}
 
       {loading ? (
         <Loading />
@@ -279,7 +433,9 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
       ) : (
         <Box sx={{ mt: 3, textAlign: 'center', py: 4 }}>
           <Typography variant="body1" color="text.secondary">
-            {searchTerm ? 'No vehicles found matching your search.' : 'No vehicles available. Please try searching or check back later.'}
+            {hasActiveFilters
+              ? 'No vehicles found matching your filters.'
+              : 'No vehicles available. Please try searching or check back later.'}
           </Typography>
         </Box>
       )}
