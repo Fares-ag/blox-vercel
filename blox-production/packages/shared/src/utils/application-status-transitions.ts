@@ -61,12 +61,52 @@ const CREDIT_OFFICER_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatu
   rejected: ['under_review'],
 };
 
-/** Finance owns final activation. */
+/**
+ * Finance = credit decision parity + final activation.
+ * Credit-like actions land on pending_finance_activation; Activate → active.
+ */
 const FINANCE_OFFICER_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
+  under_review: [
+    'contract_signing_required',
+    'resubmission_required',
+    'rejected',
+    'pending_finance_activation',
+    'submission_cancelled',
+  ],
+  resubmission_required: ['under_review', 'rejected', 'submission_cancelled'],
+  contract_signing_required: [
+    'contracts_submitted',
+    'resubmission_required',
+    'rejected',
+    'under_review',
+  ],
+  contracts_submitted: [
+    'contract_under_review',
+    'pending_finance_activation',
+    'active',
+    'contract_signing_required',
+    'rejected',
+    'resubmission_required',
+  ],
+  contract_under_review: [
+    'pending_finance_activation',
+    'active',
+    'contract_signing_required',
+    'rejected',
+    'down_payment_required',
+  ],
+  down_payment_required: [
+    'down_payment_submitted',
+    'pending_finance_activation',
+    'rejected',
+  ],
+  down_payment_submitted: [
+    'pending_finance_activation',
+    'active',
+    'rejected',
+    'down_payment_required',
+  ],
   pending_finance_activation: ['active', 'rejected', 'under_review'],
-  contracts_submitted: ['pending_finance_activation', 'active', 'rejected'],
-  contract_under_review: ['pending_finance_activation', 'active', 'rejected'],
-  down_payment_submitted: ['pending_finance_activation', 'active', 'rejected'],
   rejected: ['under_review'],
 };
 
@@ -162,6 +202,15 @@ export const FINANCE_ACTIVATION_QUEUE_STATUSES: ApplicationStatus[] = [
   'contracts_submitted',
   'contract_under_review',
   'down_payment_submitted',
+];
+
+/**
+ * Finance review queue — same pipeline as credit so officers can decide
+ * (approve / reject / resubmit) before activation.
+ */
+export const FINANCE_REVIEW_QUEUE_STATUSES: ApplicationStatus[] = [
+  ...CREDIT_PIPELINE_STATUSES,
+  'rejected',
 ];
 
 /** Finance operational book (activated financing). */

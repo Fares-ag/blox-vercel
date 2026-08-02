@@ -229,6 +229,15 @@ export const ContractSigningPage: React.FC = () => {
             console.error('⚠️ Failed to create notification (non-critical):', notificationError);
             // Don't show error to user - notification failure is not critical
           });
+
+          void supabaseApiService
+            .notifyRoles(['credit_officer', 'finance_officer', 'admin', 'super_admin'], {
+              type: 'info',
+              title: 'Contract submitted',
+              message: `App #${id?.slice(0, 8)} signed contract is ready for review.`,
+              link: `/applications/view/${id}`,
+            })
+            .catch((err) => console.error('Failed to notify staff:', err));
           
           toast.success('Signed contract uploaded successfully! Your application is now submitted for admin review.');
           navigate(`/customer/my-applications/${id}`);

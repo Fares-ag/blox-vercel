@@ -10,7 +10,12 @@ import {
   SearchBar,
 } from '@shared/components';
 import { supabase } from '@shared/services/supabase.service';
+import { creditsService, supabaseApiService } from '@shared/services';
 import { formatCurrency, formatDate } from '@shared/utils';
+import {
+  ManageCreditsDialog,
+  type CreditsAction,
+} from '@admin-module/features/users/components/ManageCreditsDialog';
 import { toast } from 'react-toastify';
 
 type CreditRow = {
@@ -19,12 +24,15 @@ type CreditRow = {
   updated_at: string | null;
 };
 
-/** Read-only Blox Credits balances (`user_credits`). No top-up / adjust here. */
+/** Blox Credits balances with finance adjust (add / subtract / set). */
 export const CreditsOverviewPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<CreditRow[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selected, setSelected] = useState<CreditRow | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -51,6 +59,67 @@ export const CreditsOverviewPage: React.FC = () => {
     load();
   }, [load]);
 
+  const handleManageCredits = async (
+    action: CreditsAction,
+    amount: number,
+    description: string
+  ) => {
+    if (!selected?.user_email) return;
+    try {
+      setSaving(true);
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      const actorEmail = authUser?.email || undefined;
+
+      let result;
+      switch (action) {
+        case 'add':
+          result = await creditsService.addCredits(
+            selected.user_email,
+            amount,
+            description,
+            actorEmail
+          );
+          break;
+        case 'subtract':
+          result = await creditsService.subtractCredits(
+            selected.user_email,
+            amount,
+            description,
+            actorEmail
+          );
+          break;
+        case 'set':
+          result = await creditsService.setCredits(
+            selected.user_email,
+            amount,
+            description,
+            actorEmail
+          );
+          break;
+      }
+
+      if (result.status === 'SUCCESS') {
+        toast.success(result.data?.message || 'Credits updated');
+        void supabaseApiService
+          .notifyRoles(['admin', 'super_admin'], {
+            type: 'info',
+            title: 'Credits adjusted',
+            message: `${action} ${amount} for ${selected.user_email}${description ? ` — ${description}` : ''}`,
+            link: '/users',
+          })
+          .catch((err) => console.error('Failed to notify staff:', err));
+        await load();
+      } else {
+        throw new Error(result.message || 'Failed to update credits');
+      }
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update credits');
+      throw e;
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const filtered = rows.filter((r) => {
     if (!searchTerm) return true;
     return r.user_email?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -76,6 +145,22 @@ export const CreditsOverviewPage: React.FC = () => {
       label: 'Updated',
       format: (v) => (v ? formatDate(String(v)) : '—'),
     },
+    {
+      id: 'updated_at',
+      label: 'Actions',
+      format: (_v, row) => (
+        <Button
+          variant="secondary"
+          onClick={(e) => {
+            e.stopPropagation();
+            setSelected(row);
+            setDialogOpen(true);
+          }}
+        >
+          Adjust
+        </Button>
+      ),
+    },
   ];
 
   return (
@@ -84,7 +169,7 @@ export const CreditsOverviewPage: React.FC = () => {
         Customer credits
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Read-only Blox Credits balances. Adjustments remain admin-only.
+        View and adjust Blox Credits balances (add, subtract, or set).
       </Typography>
       <Card sx={{ p: 2, mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
         <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search email…" />
@@ -93,13 +178,27 @@ export const CreditsOverviewPage: React.FC = () => {
         </Button>
       </Card>
       {loading ? (
-        <TableSkeleton rows={8} columns={3} />
+        <TableSkeleton rows={8} columns={4} />
       ) : loadError ? (
         <EmptyState title="Failed to load" message={loadError} actionLabel="Retry" onAction={load} />
       ) : filtered.length === 0 ? (
         <EmptyState title="No credit balances" message="Customer credit balances will appear here." />
       ) : (
         <Table columns={columns} rows={filtered} />
+      )}
+
+      {selected && (
+        <ManageCreditsDialog
+          open={dialogOpen}
+          onClose={() => {
+            setDialogOpen(false);
+            setSelected(null);
+          }}
+          onSave={handleManageCredits}
+          userEmail={selected.user_email}
+          currentBalance={Number(selected.balance) || 0}
+          loading={saving}
+        />
       )}
     </Box>
   );

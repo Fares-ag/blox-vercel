@@ -95,8 +95,9 @@ export const ApplicationDetailPage: React.FC = () => {
   const isFinanceOfficer = role === 'finance_officer';
   const isFullAdmin = role === 'admin' || role === 'super_admin';
   const isSuperAdmin = role === 'super_admin';
-  const canCreditDecide = isCreditOfficer || isFullAdmin;
+  const canCreditDecide = isCreditOfficer || isFinanceOfficer || isFullAdmin;
   const canFinanceActivate = isFinanceOfficer || isFullAdmin;
+  const canMarkPaid = isFinanceOfficer || isFullAdmin;
   const [activeTab, setActiveTab] = useState(0);
   const [submittingToCredit, setSubmittingToCredit] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -229,6 +230,21 @@ export const ApplicationDetailPage: React.FC = () => {
     } finally {
       setSavingCompany(false);
     }
+  };
+
+  /** Portal-relative app link for staff bells (NotificationCenter prepends portalPrefix). */
+  const staffAppLink = id ? `/applications/view/${id}` : '/applications';
+
+  const notifyStaff = (
+    roles: Array<'admin' | 'super_admin' | 'credit_officer' | 'finance_officer'>,
+    type: 'success' | 'info' | 'warning' | 'error',
+    title: string,
+    message: string,
+    link: string = staffAppLink
+  ) => {
+    void supabaseApiService
+      .notifyRoles(roles, { type, title, message, link })
+      .catch((err) => console.error('Failed to notify staff:', err));
   };
 
   // Helper function to create in-app notifications and (optionally) send a transactional email.
@@ -405,6 +421,13 @@ export const ApplicationDetailPage: React.FC = () => {
           data: { amount: paymentAmount, method: 'Bank Transfer', dueDate: paymentToUpdate.dueDate },
           idempotencyKey: `receipt:bank:${id}:${paidIndex}`,
         }
+      );
+      notifyStaff(
+        ['admin', 'super_admin'],
+        'success',
+        'Installment marked paid',
+        `App #${id.slice(0, 8)} installment #${paidIndex + 1} marked paid (${formatCurrency(paymentAmount)}).`,
+        staffAppLink
       );
 
       await loadApplicationDetails(id);
@@ -695,6 +718,13 @@ export const ApplicationDetailPage: React.FC = () => {
           `/customer/my-applications/${id}/contract`,
           { templateId: 'contract_ready', idempotencyKey: `contract_ready:${id}` }
         );
+        notifyStaff(
+          ['admin', 'super_admin', 'finance_officer'],
+          'info',
+          'Contract ready for signing',
+          `App #${id?.slice(0, 8)} approved — customer must sign the contract.`,
+          staffAppLink
+        );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to update application');
       }
@@ -743,8 +773,8 @@ export const ApplicationDetailPage: React.FC = () => {
       
       switch (action) {
         case 'approve':
-          // Credit/admin contract approve → finance queue (admin may still activate directly elsewhere)
-          newStatus = isFinanceOfficer ? 'active' : 'pending_finance_activation';
+          // Credit + finance contract approve → pending activation (Activate Financing is separate)
+          newStatus = 'pending_finance_activation';
           break;
         case 'reject':
           newStatus = 'rejected';
@@ -764,35 +794,29 @@ export const ApplicationDetailPage: React.FC = () => {
       });
       
       if (supabaseResponse.status === 'SUCCESS' && supabaseResponse.data) {
-        if (action === 'approve' && newStatus === 'active') {
-          await syncPaymentSchedulesFromPlan(id);
-        }
         dispatch(updateApplication(supabaseResponse.data));
         dispatch(setSelected(supabaseResponse.data));
         toast.success(
           action === 'approve'
-            ? newStatus === 'active'
-              ? 'Contract approved and financing activated!'
-              : 'Contract approved — sent to finance for activation.'
+            ? 'Contract approved — sent to finance for activation.'
             : `Contract ${action === 'reject' ? 'rejected' : 'sent for resubmission'} successfully!`
         );
         setContractReviewOpen(false);
 
-        if (action === 'approve' && newStatus === 'active') {
-          void createNotificationForCustomer(
-            'success',
-            'Application Activated',
-            `Your application #${id?.slice(0, 8)} has been activated! Your financing is now active.`,
-            `/customer/my-applications/${id}`,
-            { templateId: 'application_approved', idempotencyKey: `approved:${id}` }
-          );
-        } else if (action === 'approve') {
+        if (action === 'approve') {
           void createNotificationForCustomer(
             'info',
             'Approved — Awaiting Activation',
-            `Your application #${id?.slice(0, 8)} was approved by credit and is awaiting finance activation.`,
+            `Your application #${id?.slice(0, 8)} was approved and is awaiting finance activation.`,
             `/customer/my-applications/${id}`,
             { templateId: 'application_credit_approved', idempotencyKey: `credit_approved:${id}` }
+          );
+          notifyStaff(
+            ['finance_officer', 'admin', 'super_admin'],
+            'info',
+            'Ready for finance activation',
+            `App #${id?.slice(0, 8)} contract approved — pending finance activation.`,
+            staffAppLink
           );
         } else if (action === 'reject') {
           void createNotificationForCustomer(
@@ -802,6 +826,13 @@ export const ApplicationDetailPage: React.FC = () => {
             `/customer/my-applications/${id}`,
             { templateId: 'application_rejected', data: { comments }, idempotencyKey: `rejected:${id}` }
           );
+          notifyStaff(
+            ['admin', 'super_admin'],
+            'error',
+            'Application rejected',
+            `App #${id?.slice(0, 8)} was rejected after contract review.`,
+            staffAppLink
+          );
         } else if (action === 'resubmit') {
           void createNotificationForCustomer(
             'warning',
@@ -809,6 +840,13 @@ export const ApplicationDetailPage: React.FC = () => {
             `Your contract for application #${id?.slice(0, 8)} requires resubmission.${comments ? ` ${comments}` : ''}`,
             `/customer/my-applications/${id}/contract`,
             { templateId: 'application_resubmission', data: { comments }, idempotencyKey: `resubmit_contract:${id}` }
+          );
+          notifyStaff(
+            ['admin', 'super_admin'],
+            'warning',
+            'Contract resubmission requested',
+            `App #${id?.slice(0, 8)} contract sent back for resubmission.`,
+            staffAppLink
           );
         }
       } else {
@@ -841,6 +879,13 @@ export const ApplicationDetailPage: React.FC = () => {
         dispatch(setSelected(supabaseResponse.data));
         toast.success('Resubmission requested successfully!');
         setResubmissionDialogOpen(false);
+        notifyStaff(
+          ['admin', 'super_admin'],
+          'warning',
+          'Documents resubmission requested',
+          `App #${id.slice(0, 8)} requires document resubmission.`,
+          staffAppLink
+        );
         void createNotificationForCustomer(
           'warning',
           'Resubmission Required',
@@ -893,9 +938,16 @@ export const ApplicationDetailPage: React.FC = () => {
         void createNotificationForCustomer(
           'info',
           'Approved — Awaiting Activation',
-          `Your application #${id?.slice(0, 8)} was approved by credit and is awaiting finance activation.`,
+          `Your application #${id?.slice(0, 8)} was approved and is awaiting finance activation.`,
           `/customer/my-applications/${id}`,
           { templateId: 'application_credit_approved', idempotencyKey: `credit_approved:${id}` }
+        );
+        notifyStaff(
+          ['finance_officer', 'admin', 'super_admin'],
+          'info',
+          'Approved for finance',
+          `App #${id?.slice(0, 8)} is pending finance activation.`,
+          staffAppLink
         );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to approve application');
@@ -947,6 +999,13 @@ export const ApplicationDetailPage: React.FC = () => {
           `/customer/my-applications/${id}`,
           { templateId: 'application_approved', idempotencyKey: `approved:${id}` }
         );
+        notifyStaff(
+          ['credit_officer', 'admin', 'super_admin'],
+          'success',
+          'Financing activated',
+          `App #${id?.slice(0, 8)} is now active.`,
+          staffAppLink
+        );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to activate application');
       }
@@ -958,9 +1017,6 @@ export const ApplicationDetailPage: React.FC = () => {
       setApproving(false);
     }
   };
-
-  /** @deprecated Use handleApproveForFinance / handleFinanceActivate */
-  const handleDirectApprove = handleApproveForFinance;
 
   const handleActivateDraft = async () => {
     if (!id || !displayData || approving || rejecting) return;
@@ -999,6 +1055,13 @@ export const ApplicationDetailPage: React.FC = () => {
           `Your application #${id?.slice(0, 8)} has been activated! Your financing is now active.`,
           `/customer/my-applications/${id}`,
           { templateId: 'application_approved', idempotencyKey: `approved:${id}` }
+        );
+        notifyStaff(
+          ['credit_officer', 'admin', 'super_admin'],
+          'success',
+          'Financing activated',
+          `App #${id?.slice(0, 8)} (draft) is now active.`,
+          staffAppLink
         );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to activate application');
@@ -1148,6 +1211,13 @@ export const ApplicationDetailPage: React.FC = () => {
           `/customer/my-applications/${id}`,
           { templateId: 'application_rejected', idempotencyKey: `rejected:${id}` }
         );
+        notifyStaff(
+          ['admin', 'super_admin'],
+          'error',
+          'Application rejected',
+          `App #${id?.slice(0, 8)} was rejected.`,
+          staffAppLink
+        );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to reject application');
       }
@@ -1174,6 +1244,13 @@ export const ApplicationDetailPage: React.FC = () => {
         dispatch(updateApplication(supabaseResponse.data));
         dispatch(setSelected(supabaseResponse.data));
         toast.success('Application reopened to Under Review');
+        notifyStaff(
+          ['credit_officer', 'admin', 'super_admin'],
+          'info',
+          'Application reopened',
+          `App #${id.slice(0, 8)} reopened to under review.`,
+          staffAppLink
+        );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to reopen application');
       }
@@ -1206,6 +1283,13 @@ export const ApplicationDetailPage: React.FC = () => {
         dispatch(updateApplication(supabaseResponse.data));
         dispatch(setSelected(supabaseResponse.data));
         toast.success('Submitted to credit queue');
+        notifyStaff(
+          ['credit_officer', 'admin', 'super_admin'],
+          'info',
+          'New application in credit queue',
+          `App #${id.slice(0, 8)} submitted for credit review.`,
+          staffAppLink
+        );
       } else {
         throw new Error(supabaseResponse.message || 'Failed to submit for credit review');
       }
@@ -1230,7 +1314,12 @@ export const ApplicationDetailPage: React.FC = () => {
               navigate(
                 withPortalBase(
                   portalBase,
-                  portalBase === '/credit' || isCreditOfficer ? '/queue' : '/applications'
+                  portalBase === '/credit' ||
+                    portalBase === '/finance' ||
+                    isCreditOfficer ||
+                    isFinanceOfficer
+                    ? '/queue'
+                    : '/applications'
                 )
               )
             }
@@ -2711,7 +2800,7 @@ export const ApplicationDetailPage: React.FC = () => {
                               </Typography>
                             </TableCell>
                             <TableCell align="center">
-                            {isFullAdmin && schedule.status !== 'paid' && (
+                            {canMarkPaid && schedule.status !== 'paid' && (
                               <Tooltip title="Mark as Paid">
                                 <IconButton
                                   size="small"

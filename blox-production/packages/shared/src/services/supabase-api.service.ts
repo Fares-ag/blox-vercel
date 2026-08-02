@@ -1429,16 +1429,23 @@ class SupabaseApiService {
     receiptUrl?: string
   ): Promise<ApiResponse<Application>> {
     try {
-      // Admin/super_admin only — customers must use SkipCash webhook / credits RPC / bank pending flow
+      // Admin or finance_officer — customers use SkipCash webhook / credits RPC / bank pending flow
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) {
         return { status: 'ERROR', message: 'Unauthorized', data: {} as Application };
       }
       const { data: isAdminFlag, error: adminCheckErr } = await supabase.rpc('is_admin');
-      if (adminCheckErr || isAdminFlag !== true) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      const role = (profile?.role || '').trim().toLowerCase();
+      const canMarkPaid = isAdminFlag === true || role === 'finance_officer';
+      if (adminCheckErr || !canMarkPaid) {
         return {
           status: 'ERROR',
-          message: 'Only admins can mark installments as paid',
+          message: 'Only admins or finance officers can mark installments as paid',
           data: {} as Application,
         };
       }
@@ -2731,12 +2738,84 @@ class SupabaseApiService {
     }
   }
 
+  /**
+   * Fan-out in-app notifications to staff roles (admin/credit/finance).
+   * Uses SECURITY DEFINER RPC — safe for customer submit handoffs too.
+   */
+  async notifyRoles(
+    roles: Array<'admin' | 'super_admin' | 'credit_officer' | 'finance_officer' | string>,
+    data: {
+      type: 'success' | 'info' | 'warning' | 'error';
+      title: string;
+      message: string;
+      link?: string;
+    }
+  ): Promise<ApiResponse<{ count: number }>> {
+    try {
+      const { data: count, error } = await supabase.rpc('notify_roles', {
+        p_roles: roles,
+        p_type: data.type,
+        p_title: data.title,
+        p_message: data.message,
+        p_link: data.link || null,
+      });
+      if (error) throw new Error(error.message || 'notify_roles failed');
+      return {
+        status: 'SUCCESS',
+        data: { count: Number(count) || 0 },
+        message: 'Staff notifications sent',
+      };
+    } catch (error: any) {
+      console.error('❌ notifyRoles error:', error);
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to notify roles',
+        data: { count: 0 },
+      };
+    }
+  }
+
+  /** Fan-out to explicit staff emails (staff callers only). */
+  async notifyUsers(
+    emails: string[],
+    data: {
+      type: 'success' | 'info' | 'warning' | 'error';
+      title: string;
+      message: string;
+      link?: string;
+    }
+  ): Promise<ApiResponse<{ count: number }>> {
+    try {
+      const { data: count, error } = await supabase.rpc('notify_users', {
+        p_emails: emails,
+        p_type: data.type,
+        p_title: data.title,
+        p_message: data.message,
+        p_link: data.link || null,
+      });
+      if (error) throw new Error(error.message || 'notify_users failed');
+      return {
+        status: 'SUCCESS',
+        data: { count: Number(count) || 0 },
+        message: 'Staff notifications sent',
+      };
+    } catch (error: any) {
+      console.error('❌ notifyUsers error:', error);
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to notify users',
+        data: { count: 0 },
+      };
+    }
+  }
+
   async getNotifications(userEmail: string): Promise<ApiResponse<any[]>> {
     try {
+      // Case-insensitive: staff RPC inserts lowercased emails; legacy rows may differ.
       const response = await supabase
         .from('notifications')
         .select('*')
-        .eq('user_email', userEmail)
+        .ilike('user_email', userEmail)
         .order('created_at', { ascending: false });
       
       if (response.error) {
@@ -3815,6 +3894,65 @@ class SupabaseApiService {
         message: error.message || 'Failed to fetch customer info',
         data: { customerInfo: {} },
       };
+    }
+  }
+
+  /**
+   * Approve or reject an application settlement request.
+   * Allowed for admin / finance_officer (RLS + client gate).
+   */
+  async updateSettlementStatus(
+    settlementId: string,
+    status: 'approved' | 'rejected'
+  ): Promise<ApiResponse<{ id: string; status: string }>> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) {
+        return { status: 'ERROR', message: 'Unauthorized', data: { id: '', status: '' } };
+      }
+      const { data: isAdminFlag } = await supabase.rpc('is_admin');
+      const { data: profile } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      const role = (profile?.role || '').trim().toLowerCase();
+      if (isAdminFlag !== true && role !== 'finance_officer') {
+        return {
+          status: 'ERROR',
+          message: 'Only admins or finance officers can update settlements',
+          data: { id: '', status: '' },
+        };
+      }
+
+      const patch: Record<string, unknown> = { status };
+      if (status === 'approved') {
+        patch.approved_at = new Date().toISOString();
+      }
+
+      const { data, error } = await supabase
+        .from('application_settlements')
+        .update(patch)
+        .eq('id', settlementId)
+        .select('id, status')
+        .single();
+
+      if (error || !data) {
+        return {
+          status: 'ERROR',
+          message: error?.message || 'Failed to update settlement',
+          data: { id: '', status: '' },
+        };
+      }
+
+      return {
+        status: 'SUCCESS',
+        message: `Settlement ${status}`,
+        data: { id: data.id, status: data.status },
+      };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to update settlement';
+      return { status: 'ERROR', message, data: { id: '', status: '' } };
     }
   }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import { Menu } from '@mui/icons-material';
-import { SidePanel, type MenuItem } from '@shared/components';
+import { SidePanel, NotificationCenter, type MenuItem } from '@shared/components';
 import { Outlet } from 'react-router-dom';
 import { useAppSelector } from '../../store/hooks';
 import { useAppDispatch } from '../../store/hooks';
@@ -100,6 +100,20 @@ export const MainLayout: React.FC = () => {
             <Menu />
           </IconButton>
         )}
+        <Box
+          sx={{
+            position: 'fixed',
+            right: '16px',
+            top: '16px',
+            zIndex: 1200,
+            color: 'var(--primary-color)',
+            backgroundColor: 'var(--blox-black)',
+            borderRadius: '10px',
+            boxShadow: 'var(--card-shadow)',
+          }}
+        >
+          <NotificationCenter userEmail={user?.email} portalPrefix="/admin" />
+        </Box>
         <Outlet />
       </Box>
     </Box>

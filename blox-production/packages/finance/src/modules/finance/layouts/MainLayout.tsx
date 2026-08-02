@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Box, IconButton, useMediaQuery, useTheme } from '@mui/material';
 import { Menu } from '@mui/icons-material';
-import { SidePanel, type MenuItem } from '@shared/components';
+import { SidePanel, NotificationCenter, type MenuItem } from '@shared/components';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@admin-module/store/hooks';
 import { logout } from '@admin-module/store/slices/auth.slice';
@@ -9,7 +9,7 @@ import { authService } from '@shared/services';
 import '@admin-module/layouts/MainLayout/MainLayout.scss';
 
 const menuItems: MenuItem[] = [
-  { id: 'queue', label: 'Activation Queue', path: '/finance/queue' },
+  { id: 'queue', label: 'Queue', path: '/finance/queue' },
   { id: 'book', label: 'Active Book', path: '/finance/book' },
   { id: 'payments', label: 'Payments', path: '/finance/payments' },
   { id: 'settlements', label: 'Settlements', path: '/finance/settlements' },
@@ -75,6 +75,19 @@ export const MainLayout: React.FC = () => {
             <Menu />
           </IconButton>
         )}
+        <Box
+          sx={{
+            position: 'fixed',
+            right: '16px',
+            top: '16px',
+            zIndex: 1200,
+            color: 'var(--primary-color)',
+            backgroundColor: 'var(--blox-black)',
+            borderRadius: '10px',
+          }}
+        >
+          <NotificationCenter userEmail={user?.email} portalPrefix="/finance" />
+        </Box>
         <Outlet />
       </Box>
     </Box>

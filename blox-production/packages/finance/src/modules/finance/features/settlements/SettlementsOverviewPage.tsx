@@ -11,6 +11,7 @@ import {
   SearchBar,
 } from '@shared/components';
 import { supabase } from '@shared/services/supabase.service';
+import { supabaseApiService } from '@shared/services';
 import { formatCurrency, formatDate } from '@shared/utils';
 import { usePortalBasePath, withPortalBase } from '@shared/contexts/portal-base-path';
 import { toast } from 'react-toastify';
@@ -27,7 +28,12 @@ type SettlementRow = {
   approved_at: string | null;
 };
 
-/** Read-only settlement requests. Approve/reject stays admin-only (no math changes). */
+function isPendingStatus(status: string | null): boolean {
+  const s = (status || '').toLowerCase();
+  return s === 'pending' || s === 'requested' || s === 'submitted';
+}
+
+/** Settlement requests with finance approve/reject. */
 export const SettlementsOverviewPage: React.FC = () => {
   const navigate = useNavigate();
   const portalBase = usePortalBasePath();
@@ -35,6 +41,7 @@ export const SettlementsOverviewPage: React.FC = () => {
   const [rows, setRows] = useState<SettlementRow[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [actingId, setActingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -62,6 +69,33 @@ export const SettlementsOverviewPage: React.FC = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  const handleUpdate = async (id: string, status: 'approved' | 'rejected') => {
+    const verb = status === 'approved' ? 'Approve' : 'Reject';
+    if (!window.confirm(`${verb} this settlement request?`)) return;
+    try {
+      setActingId(id);
+      const res = await supabaseApiService.updateSettlementStatus(id, status);
+      if (res.status !== 'SUCCESS') {
+        throw new Error(res.message || `Failed to ${status} settlement`);
+      }
+      toast.success(`Settlement ${status}`);
+      void supabaseApiService
+        .notifyRoles(['admin', 'super_admin'], {
+          type: status === 'approved' ? 'success' : 'warning',
+          title: `Settlement ${status}`,
+          message: `Settlement ${id.slice(0, 8)} was ${status}.`,
+          // Admin portal relative (recipients are admin/super_admin)
+          link: '/applications',
+        })
+        .catch((err) => console.error('Failed to notify staff:', err));
+      await load();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : `Failed to ${status} settlement`);
+    } finally {
+      setActingId(null);
+    }
+  };
 
   const filtered = rows.filter((r) => {
     if (!searchTerm) return true;
@@ -117,6 +151,31 @@ export const SettlementsOverviewPage: React.FC = () => {
       label: 'Requested',
       format: (v) => (v ? formatDate(String(v)) : '—'),
     },
+    {
+      id: 'id',
+      label: 'Actions',
+      format: (_v, row) =>
+        isPendingStatus(row.status) ? (
+          <Box sx={{ display: 'flex', gap: 1 }} onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="primary"
+              disabled={actingId === row.id}
+              onClick={() => handleUpdate(row.id, 'approved')}
+            >
+              Approve
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={actingId === row.id}
+              onClick={() => handleUpdate(row.id, 'rejected')}
+            >
+              Reject
+            </Button>
+          </Box>
+        ) : (
+          '—'
+        ),
+    },
   ];
 
   return (
@@ -125,7 +184,8 @@ export const SettlementsOverviewPage: React.FC = () => {
         Settlements
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Read-only view of settlement requests. Approval remains in the admin portal.
+        Review settlement requests. Approve or reject pending items. Discount settings remain
+        admin-only.
       </Typography>
       <Card sx={{ p: 2, mb: 2, display: 'flex', gap: 2, alignItems: 'center' }}>
         <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search…" />
@@ -134,7 +194,7 @@ export const SettlementsOverviewPage: React.FC = () => {
         </Button>
       </Card>
       {loading ? (
-        <TableSkeleton rows={8} columns={6} />
+        <TableSkeleton rows={8} columns={7} />
       ) : loadError ? (
         <EmptyState title="Failed to load" message={loadError} actionLabel="Retry" onAction={load} />
       ) : filtered.length === 0 ? (

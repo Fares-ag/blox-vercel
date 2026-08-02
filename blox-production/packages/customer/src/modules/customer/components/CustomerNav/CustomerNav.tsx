@@ -21,7 +21,7 @@ import { Menu as MenuIcon, AccountCircle, Logout, DirectionsCar, AccountBalanceW
 import { CircularProgress } from '@mui/material';
 import { useAppSelector } from '../../store/hooks';
 import { useAuth } from '../../hooks/useAuth';
-import { NotificationCenter } from '../../features/notifications/components/NotificationCenter/NotificationCenter';
+import { NotificationCenter } from '@shared/components';
 import { formatCurrency } from '@shared/utils/formatters';
 import { BLOX_CREDIT_QAR_VALUE, formatBloxCreditsCount } from '@shared/utils/blox-credits.utils';
 import { skipCashService, supabase } from '@shared/services';
@@ -338,7 +338,11 @@ export const CustomerNav: React.FC = () => {
         <Box className="nav-actions">
           {isAuthenticated ? (
             <>
-              <NotificationCenter />
+              <NotificationCenter
+                userEmail={user?.email}
+                portalPrefix="/customer"
+                emptyCaption="You'll see updates about your applications and payments here"
+              />
               {/* Blox Credits Wallet */}
               <Box 
                 className="blox-wallet"

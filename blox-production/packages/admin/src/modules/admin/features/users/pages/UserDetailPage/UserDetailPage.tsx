@@ -184,8 +184,15 @@ export const UserDetailPage: React.FC = () => {
 
       if (result.status === 'SUCCESS' && result.data) {
         toast.success(result.data.message || 'Credits updated successfully');
-      // Reload user details to update credits balance
-      await loadUserDetails();
+        void supabaseApiService
+          .notifyRoles(['admin', 'super_admin'], {
+            type: 'info',
+            title: 'Credits adjusted',
+            message: `${action} ${amount} for ${emailDecoded}${description ? ` — ${description}` : ''}`,
+            link: `/users/${encodeURIComponent(emailDecoded)}`,
+          })
+          .catch((err) => console.error('Failed to notify staff:', err));
+        await loadUserDetails();
       } else {
         throw new Error(result.message || 'Failed to update credits');
       }

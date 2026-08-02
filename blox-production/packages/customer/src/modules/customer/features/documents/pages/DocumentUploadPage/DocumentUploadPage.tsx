@@ -319,17 +319,16 @@ export const DocumentUploadPage: React.FC = () => {
         return;
       }
 
-      // Create notification for admin about document resubmission (non-blocking)
+      // Notify staff that documents were resubmitted (was incorrectly emailed to customer)
       void supabaseApiService
-        .createNotification({
-          userEmail: selected.customerEmail,
+        .notifyRoles(['credit_officer', 'admin', 'super_admin'], {
           type: 'info',
-          title: 'Documents Resubmitted',
-          message: `Customer has resubmitted ${documentsArray.length} document(s) for application #${id.slice(0, 8)}. Please review.`,
-          link: `/admin/applications/${id}`,
+          title: 'Documents resubmitted',
+          message: `Customer resubmitted ${documentsArray.length} document(s) for app #${id.slice(0, 8)}.`,
+          link: `/applications/view/${id}`,
         })
         .catch((notificationError) => {
-          console.error('⚠️ Failed to create notification (non-critical):', notificationError);
+          console.error('⚠️ Failed to notify staff (non-critical):', notificationError);
         });
 
       toast.success(

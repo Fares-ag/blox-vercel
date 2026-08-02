@@ -24,4 +24,9 @@ export { SidePanel, type MenuItem } from './shared/SidePanel/SidePanel';
 export { Skeleton, TableSkeleton } from './shared/Skeleton/Skeleton';
 export { Table, type Column } from './shared/Table/Table';
 export { VerticalBarChart } from './shared/VerticalBarChart/VerticalBarChart';
+export {
+  NotificationCenter,
+  type NotificationCenterProps,
+  type NotificationItem,
+} from './shared/NotificationCenter/NotificationCenter';
 

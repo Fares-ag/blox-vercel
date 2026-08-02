@@ -673,6 +673,15 @@ export const CreateApplicationPage: React.FC = () => {
             console.error('Failed to create notification:', notificationError);
           });
 
+        void supabaseApiService
+          .notifyRoles(['credit_officer', 'admin', 'super_admin'], {
+            type: 'info',
+            title: 'New application submitted',
+            message: `App #${applicationId.slice(0, 8)} is under review.`,
+            link: `/applications/view/${applicationId}`,
+          })
+          .catch((err) => console.error('Failed to notify staff:', err));
+
         void supabaseApiService.triggerTransactionalEmail({
           to: resolvedCustomerEmail,
           templateId: 'application_submitted',

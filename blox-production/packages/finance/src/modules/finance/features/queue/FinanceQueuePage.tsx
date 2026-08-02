@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Box, Typography, Chip, Tooltip } from '@mui/material';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Box, Typography, Chip, Tooltip, Tabs, Tab } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import {
   Table,
@@ -13,12 +13,20 @@ import {
 } from '@shared/components';
 import { supabaseApiService } from '@shared/services';
 import type { Application } from '@shared/models/application.model';
-import { FINANCE_ACTIVATION_QUEUE_STATUSES, formatCurrency } from '@shared/utils';
+import {
+  FINANCE_ACTIVATION_QUEUE_STATUSES,
+  FINANCE_REVIEW_QUEUE_STATUSES,
+  CREDIT_PIPELINE_STATUSES,
+  formatCurrency,
+} from '@shared/utils';
 import { usePortalBasePath, withPortalBase } from '@shared/contexts/portal-base-path';
 import { toast } from 'react-toastify';
 import './FinanceQueuePage.scss';
 
 const QUEUE_PAGE_SIZE = 100;
+
+type MainTab = 'activation' | 'review';
+type ReviewSubTab = 'pipeline' | 'rejected';
 
 function queueAgeLabel(app: Application): string {
   const start = app.submittedAt || app.submissionDate || app.updatedAt || app.createdAt;
@@ -42,65 +50,85 @@ export const FinanceQueuePage: React.FC = () => {
   const [noDealerAssignment, setNoDealerAssignment] = useState(false);
   const [offset, setOffset] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [mainTab, setMainTab] = useState<MainTab>('activation');
+  const [reviewSubTab, setReviewSubTab] = useState<ReviewSubTab>('pipeline');
 
-  const load = useCallback(async (nextOffset = 0, append = false) => {
-    try {
-      if (append) setLoadingMore(true);
-      else setLoading(true);
-      setLoadError(null);
-      setNoDealerAssignment(false);
+  const statusIn = useMemo(
+    () =>
+      mainTab === 'activation'
+        ? [...FINANCE_ACTIVATION_QUEUE_STATUSES]
+        : [...FINANCE_REVIEW_QUEUE_STATUSES],
+    [mainTab]
+  );
 
-      const assignmentRes = await supabaseApiService.getMyFinanceAssignmentInfo();
-      if (
-        assignmentRes.status === 'SUCCESS' &&
-        assignmentRes.data &&
-        assignmentRes.data.financeScope !== 'all' &&
-        assignmentRes.data.companyIds.length === 0
-      ) {
-        setNoDealerAssignment(true);
-        setApps([]);
-        setTruncated(false);
-        setOffset(0);
-        return;
+  const load = useCallback(
+    async (nextOffset = 0, append = false) => {
+      try {
+        if (append) setLoadingMore(true);
+        else setLoading(true);
+        setLoadError(null);
+        setNoDealerAssignment(false);
+
+        const assignmentRes = await supabaseApiService.getMyFinanceAssignmentInfo();
+        if (
+          assignmentRes.status === 'SUCCESS' &&
+          assignmentRes.data &&
+          assignmentRes.data.financeScope !== 'all' &&
+          assignmentRes.data.companyIds.length === 0
+        ) {
+          setNoDealerAssignment(true);
+          setApps([]);
+          setTruncated(false);
+          setOffset(0);
+          return;
+        }
+
+        const res = await supabaseApiService.getApplications({
+          skipCache: true,
+          lean: true,
+          leanOmitInstallmentPlan: true,
+          statusIn,
+          limit: QUEUE_PAGE_SIZE,
+          offset: nextOffset,
+        });
+        if (res.status !== 'SUCCESS' || !res.data) {
+          throw new Error(res.message || 'Failed to load queue');
+        }
+        const sorted = [...res.data].sort((a, b) => {
+          const ta = new Date(a.updatedAt || a.createdAt).getTime();
+          const tb = new Date(b.updatedAt || b.createdAt).getTime();
+          return tb - ta;
+        });
+        setApps((prev) => (append ? [...prev, ...sorted] : sorted));
+        const loaded = nextOffset + sorted.length;
+        const total = res.count ?? loaded;
+        setTruncated(total > loaded);
+        setOffset(loaded);
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Failed to load queue';
+        setLoadError(message);
+        if (!append) setApps([]);
+        toast.error(message);
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-
-      const res = await supabaseApiService.getApplications({
-        skipCache: true,
-        lean: true,
-        leanOmitInstallmentPlan: true,
-        statusIn: [...FINANCE_ACTIVATION_QUEUE_STATUSES],
-        limit: QUEUE_PAGE_SIZE,
-        offset: nextOffset,
-      });
-      if (res.status !== 'SUCCESS' || !res.data) {
-        throw new Error(res.message || 'Failed to load activation queue');
-      }
-      const sorted = [...res.data].sort((a, b) => {
-        const ta = new Date(a.updatedAt || a.createdAt).getTime();
-        const tb = new Date(b.updatedAt || b.createdAt).getTime();
-        return tb - ta;
-      });
-      setApps((prev) => (append ? [...prev, ...sorted] : sorted));
-      const loaded = nextOffset + sorted.length;
-      const total = res.count ?? loaded;
-      setTruncated(total > loaded);
-      setOffset(loaded);
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : 'Failed to load activation queue';
-      setLoadError(message);
-      if (!append) setApps([]);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  }, []);
+    },
+    [statusIn]
+  );
 
   useEffect(() => {
     load(0, false);
   }, [load]);
 
   const filtered = apps.filter((app) => {
+    if (mainTab === 'review') {
+      if (reviewSubTab === 'rejected') {
+        if (app.status !== 'rejected') return false;
+      } else if (!CREDIT_PIPELINE_STATUSES.includes(app.status as (typeof CREDIT_PIPELINE_STATUSES)[number])) {
+        return false;
+      }
+    }
     if (!searchTerm) return true;
     const q = searchTerm.toLowerCase();
     return (
@@ -185,15 +213,49 @@ export const FinanceQueuePage: React.FC = () => {
     },
   ];
 
+  const emptyTitle =
+    mainTab === 'activation'
+      ? 'Activation queue is empty'
+      : reviewSubTab === 'rejected'
+        ? 'No rejected applications'
+        : 'Review queue is empty';
+
+  const emptyMessage =
+    mainTab === 'activation'
+      ? 'No applications are waiting for finance activation.'
+      : reviewSubTab === 'rejected'
+        ? 'Rejected applications you can reopen will appear here.'
+        : 'No applications in the credit review pipeline right now.';
+
   return (
     <Box className="finance-queue-page">
       <Typography variant="h2" className="page-title">
-        Activation Queue
+        Queue
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Credit-approved applications awaiting finance activation. Activating starts the installment
-        schedule.
+        Review pipeline applications (credit-parity decisions) or activate financing for
+        credit-approved deals.
       </Typography>
+
+      <Tabs
+        value={mainTab === 'activation' ? 0 : 1}
+        onChange={(_, v) => setMainTab(v === 0 ? 'activation' : 'review')}
+        sx={{ mb: 2 }}
+      >
+        <Tab label="Activation" />
+        <Tab label="Review" />
+      </Tabs>
+
+      {mainTab === 'review' && (
+        <Tabs
+          value={reviewSubTab === 'pipeline' ? 0 : 1}
+          onChange={(_, v) => setReviewSubTab(v === 0 ? 'pipeline' : 'rejected')}
+          sx={{ mb: 2 }}
+        >
+          <Tab label="Pipeline" />
+          <Tab label="Rejected" />
+        </Tabs>
+      )}
 
       <Card className="finance-queue-toolbar">
         <SearchBar
@@ -227,10 +289,7 @@ export const FinanceQueuePage: React.FC = () => {
           message="Your finance account is scoped to assigned dealers, but none are linked yet. Ask an admin to assign you on the partner page."
         />
       ) : filtered.length === 0 ? (
-        <EmptyState
-          title="Queue is empty"
-          message="No applications are waiting for finance activation."
-        />
+        <EmptyState title={emptyTitle} message={emptyMessage} />
       ) : (
         <>
           <Table
