@@ -1441,11 +1441,12 @@ class SupabaseApiService {
         .eq('id', user.id)
         .maybeSingle();
       const role = (profile?.role || '').trim().toLowerCase();
-      const canMarkPaid = isAdminFlag === true || role === 'finance_officer';
+      const canMarkPaid =
+        isAdminFlag === true || role === 'finance_officer' || role === 'credit_officer';
       if (adminCheckErr || !canMarkPaid) {
         return {
           status: 'ERROR',
-          message: 'Only admins or finance officers can mark installments as paid',
+          message: 'Only admins, finance officers, or credit officers can mark installments as paid',
           data: {} as Application,
         };
       }

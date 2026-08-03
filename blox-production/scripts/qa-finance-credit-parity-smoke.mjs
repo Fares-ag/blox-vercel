@@ -857,7 +857,7 @@ async function main() {
     rec('N1', false, 'no smoke app', true);
   }
 
-  // N2 credit denied on mark-paid / settlements / credit RPCs
+  // N2 credit denied on settlements / credit RPCs; mark-paid allowed for credit
   if (credit.role === 'credit_officer') {
     const { data: isAdminFlag } = await credit.sb.rpc('is_admin');
     const roleOk = credit.role === 'credit_officer' && isAdminFlag !== true;
@@ -876,8 +876,8 @@ async function main() {
       !!addDeniedErr ||
       (Array.isArray(addDenied) && addDenied[0]?.success === false) ||
       /not authorized|permission|finance/i.test(addDeniedErr?.message || addDenied?.[0]?.message || '');
-    // Client gate for mark-paid is in API service; DB-level: credit updating payment_schedules
-    let schedDenied = false;
+    // Credit may mark schedules paid; assert UPDATE succeeds when a row exists
+    let schedMarkPaidOk = false;
     if (smokeAppId) {
       const { data: row } = await credit.sb
         .from('payment_schedules')
@@ -886,25 +886,48 @@ async function main() {
         .limit(1)
         .maybeSingle();
       if (row?.id) {
-        const { error: upErr } = await credit.sb
+        const targetStatus = row.status === 'paid' ? 'upcoming' : 'paid';
+        const { data: updated, error: upErr } = await credit.sb
           .from('payment_schedules')
-          .update({ status: 'paid' })
-          .eq('id', row.id);
-        const { data: again } = await fin.sb
-          .from('payment_schedules')
-          .select('status')
+          .update(
+            targetStatus === 'paid'
+              ? {
+                  status: 'paid',
+                  paid_date: new Date().toISOString(),
+                  paid_amount: 100,
+                  remaining_amount: 0,
+                }
+              : {
+                  status: 'upcoming',
+                  paid_date: null,
+                  paid_amount: 0,
+                  remaining_amount: 100,
+                }
+          )
           .eq('id', row.id)
+          .select('status')
           .maybeSingle();
-        // If credit could flip a paid/unpaid incorrectly — fail. Prefer deny or no-op.
-        schedDenied = !!upErr || again?.status === row.status || row.status === 'paid';
+        schedMarkPaidOk = !upErr && updated?.status === targetStatus;
+        // Restore prior status when we flipped away from paid for the assertion
+        if (schedMarkPaidOk && row.status === 'paid' && targetStatus === 'upcoming') {
+          await credit.sb
+            .from('payment_schedules')
+            .update({
+              status: 'paid',
+              paid_date: new Date().toISOString(),
+              paid_amount: 100,
+              remaining_amount: 0,
+            })
+            .eq('id', row.id);
+        }
       } else {
-        schedDenied = true; // no row visible / cannot act
+        schedMarkPaidOk = true; // no schedule row on smoke app — skip schedule assert
       }
     }
     rec(
       'N2',
-      roleOk && creditsDenied,
-      `creditsDenied=${creditsDenied} (${addDeniedErr?.message || addDenied?.[0]?.message || 'ok'}); settlementUpdate=${settErr?.message || 'no-error'}; scheduleGate=${schedDenied}; client markPaid/updateSettlement also role-gated`
+      roleOk && creditsDenied && schedMarkPaidOk,
+      `creditsDenied=${creditsDenied} (${addDeniedErr?.message || addDenied?.[0]?.message || 'ok'}); settlementUpdate=${settErr?.message || 'no-error'}; creditMarkPaid=${schedMarkPaidOk}; settlements/credits still role-gated`
     );
   } else {
     rec('N2', false, 'credit auth failed', true);

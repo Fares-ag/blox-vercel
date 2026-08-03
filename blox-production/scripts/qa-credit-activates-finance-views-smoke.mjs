@@ -259,7 +259,7 @@ async function main() {
       rec('C-SCHEDULES', !delE && !insE && (count ?? 0) >= 1, delE?.message || insE?.message || `rows=${count}`);
     }
 
-    // Credit cannot mark paid (API gate is separate; DB update may work — check role gate via attempting paid as credit then finance)
+    // Credit and finance can both mark paid
     if (!finance.error) {
       const { data: row } = await finance.sb
         .from('payment_schedules')
@@ -268,17 +268,45 @@ async function main() {
         .limit(1)
         .maybeSingle();
       if (row?.id) {
-        const { error: cPayErr } = await credit.sb
+        // Reset to upcoming so credit mark-paid is measurable
+        await finance.sb
           .from('payment_schedules')
-          .update({ status: 'paid', paid_amount: 100, remaining_amount: 0 })
+          .update({
+            status: 'upcoming',
+            paid_amount: 0,
+            remaining_amount: 100,
+            paid_date: null,
+          })
           .eq('id', row.id);
-        // Even if RLS allows update, product API blocks credit — note DB result
-        const { data: mid } = await finance.sb
+
+        const { data: cPaid, error: cPayErr } = await credit.sb
           .from('payment_schedules')
-          .select('status')
+          .update({
+            status: 'paid',
+            paid_date: new Date().toISOString(),
+            paid_amount: 100,
+            remaining_amount: 0,
+          })
           .eq('id', row.id)
+          .select('status')
           .maybeSingle();
-        // Prefer finance can mark paid
+        rec(
+          'C-MARK-PAID',
+          !cPayErr && cPaid?.status === 'paid',
+          cPayErr?.message || `creditPaid=${cPaid?.status}`
+        );
+
+        // Reset then finance mark-paid
+        await credit.sb
+          .from('payment_schedules')
+          .update({
+            status: 'upcoming',
+            paid_amount: 0,
+            remaining_amount: 100,
+            paid_date: null,
+          })
+          .eq('id', row.id);
+
         const { data: paid, error: fPayErr } = await finance.sb
           .from('payment_schedules')
           .update({
@@ -293,9 +321,10 @@ async function main() {
         rec(
           'F-MARK-PAID',
           !fPayErr && paid?.status === 'paid',
-          fPayErr?.message || `paid=${paid?.status}; creditAttempt=${cPayErr?.message || mid?.status}`
+          fPayErr?.message || `paid=${paid?.status}`
         );
       } else {
+        rec('C-MARK-PAID', false, 'no schedule row');
         rec('F-MARK-PAID', false, 'no schedule row');
       }
     }

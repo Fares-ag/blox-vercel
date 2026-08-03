@@ -97,7 +97,7 @@ export const ApplicationDetailPage: React.FC = () => {
   const isSuperAdmin = role === 'super_admin';
   const canCreditDecide = isCreditOfficer || isFinanceOfficer || isFullAdmin;
   const canActivateFinancing = isCreditOfficer || isFullAdmin;
-  const canMarkPaid = isFinanceOfficer || isFullAdmin;
+  const canMarkPaid = isFinanceOfficer || isFullAdmin || isCreditOfficer;
   const [activeTab, setActiveTab] = useState(0);
   const [submittingToCredit, setSubmittingToCredit] = useState(false);
   const [companies, setCompanies] = useState<Company[]>([]);

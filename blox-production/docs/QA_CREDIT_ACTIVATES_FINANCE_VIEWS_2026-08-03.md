@@ -12,7 +12,7 @@
 
 **SHIP WITH GATES**
 
-DB trigger, client matrix, schedule RLS, and API smoke are green (13/13). Residual gates are stale status/toast copy and browser click-through — not P0 blockers for the ownership swap.
+DB trigger, client matrix, schedule RLS (including credit UPDATE for mark-paid), and API smoke are green (14/14). Residual gates are stale status/toast copy and browser click-through — not P0 blockers for the ownership swap.
 
 ---
 
@@ -25,7 +25,7 @@ DB trigger, client matrix, schedule RLS, and API smoke are green (13/13). Residu
 | `CREDIT_QUEUE_STATUSES` includes PFA | **PASS** | Shared util + credit queue `statusIn` + pipeline tab filter |
 | Migrations remote | **PASS** | `20260803180000`, `20260803181000`, `20260803182000` in `schema_migrations` |
 | Trigger: credit activate / finance blocked | **PASS** | Smoke `F-BLOCK-ACTIVE` / `C-ACTIVATE`; trigger body includes credit PFA→active path |
-| Credit schedule RLS: insert/select/delete, no UPDATE | **PASS** | Policies: insert/read/delete with `credit_can_access_application`; **0** credit UPDATE policies |
+| Credit schedule RLS: insert/select/delete/update | **PASS** | Policies with `credit_can_access_application`; UPDATE added in `20260803210000_credit_mark_paid_schedules` |
 | UI `canActivateFinancing` | **PASS** | `isCreditOfficer \|\| isFullAdmin` (finance excluded) |
 | Schedule rebuild allows credit | **PASS** | `replacePaymentSchedulesFromInstallmentPlan` role gate includes `credit_officer` |
 | Activate notifies finance + admin | **PASS** | `notifyStaff(['finance_officer','admin','super_admin'], …)` on activate |
@@ -59,7 +59,7 @@ node scripts/qa-credit-activates-finance-views-smoke.mjs
 
 | # | Check | Result | Notes |
 |---|--------|--------|-------|
-| F1 | Finance mark-paid | **PASS** | Schedule → `paid`; credit cannot mark paid (attempt stays `upcoming`) |
+| F1 | Credit + finance mark-paid | **PASS** | Both can UPDATE schedule → `paid` |
 | F2 | Finance credits add/subtract | **PASS** | `admin_*_user_credits` OK for finance |
 | F3 | Credit denied credits RPC | **PASS** | `not authorized: … requires admin or finance_officer` |
 
@@ -92,14 +92,14 @@ node scripts/qa-credit-activates-finance-views-smoke.mjs
 ## Smoke summary
 
 ```
-pass: 13, fail: 0
+pass: 14, fail: 0
 M-CREDIT-PFA-ACTIVE, M-FINANCE-PFA-ACTIVE, M-QUEUE-PFA,
 AUTH-C, AUTH-F, SEED, C-PFA, F-BLOCK-ACTIVE, C-ACTIVATE,
-C-SCHEDULES, F-MARK-PAID, F-CREDITS, C-CREDITS-DENY
+C-SCHEDULES, C-MARK-PAID, F-MARK-PAID, F-CREDITS, C-CREDITS-DENY
 ```
 
 ---
 
 ## Verdict
 
-Activation ownership swap is enforced end-to-end (client + trigger + smoke). Finance retains decide + mark-paid/credits and cannot flip to `active`. **Ship with gates** above; optional follow-up: rename/refresh PFA-facing copy and a short browser pass on credit/finance portals.
+Activation ownership swap is enforced end-to-end (client + trigger + smoke). Finance retains decide + credits and cannot flip to `active`. Mark-paid is shared by credit, finance, and admin. **Ship with gates** above; optional follow-up: rename/refresh PFA-facing copy and a short browser pass on credit/finance portals.
