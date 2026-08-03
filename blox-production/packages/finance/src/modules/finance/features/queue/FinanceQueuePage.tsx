@@ -222,7 +222,7 @@ export const FinanceQueuePage: React.FC = () => {
 
   const emptyMessage =
     mainTab === 'activation'
-      ? 'No applications are waiting for finance activation.'
+      ? 'No applications are waiting for credit activation. Finance can view this queue only — Activate is on the credit portal.'
       : reviewSubTab === 'rejected'
         ? 'Rejected applications you can reopen will appear here.'
         : 'No applications in the credit review pipeline right now.';
@@ -233,8 +233,8 @@ export const FinanceQueuePage: React.FC = () => {
         Queue
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Review pipeline applications (credit-parity decisions) or activate financing for
-        credit-approved deals.
+        Review pipeline applications (credit-parity decisions) or view apps awaiting
+        credit activation. Activation is performed on the credit portal.
       </Typography>
 
       <Tabs

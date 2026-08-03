@@ -19,53 +19,8 @@ const DEALER_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = 
   resubmission_required: ['under_review'],
 };
 
-/** Credit approves into pending_finance_activation — never activates. */
+/** Credit decides + final activation (Activate → active). */
 const CREDIT_OFFICER_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
-  under_review: [
-    'contract_signing_required',
-    'resubmission_required',
-    'rejected',
-    'pending_finance_activation',
-    'submission_cancelled',
-  ],
-  resubmission_required: ['under_review', 'rejected', 'submission_cancelled'],
-  contract_signing_required: [
-    'contracts_submitted',
-    'resubmission_required',
-    'rejected',
-    'under_review',
-  ],
-  contracts_submitted: [
-    'contract_under_review',
-    'pending_finance_activation',
-    'contract_signing_required',
-    'rejected',
-    'resubmission_required',
-  ],
-  contract_under_review: [
-    'pending_finance_activation',
-    'contract_signing_required',
-    'rejected',
-    'down_payment_required',
-  ],
-  down_payment_required: [
-    'down_payment_submitted',
-    'pending_finance_activation',
-    'rejected',
-  ],
-  down_payment_submitted: [
-    'pending_finance_activation',
-    'rejected',
-    'down_payment_required',
-  ],
-  rejected: ['under_review'],
-};
-
-/**
- * Finance = credit decision parity + final activation.
- * Credit-like actions land on pending_finance_activation; Activate → active.
- */
-const FINANCE_OFFICER_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
   under_review: [
     'contract_signing_required',
     'resubmission_required',
@@ -107,6 +62,52 @@ const FINANCE_OFFICER_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStat
     'down_payment_required',
   ],
   pending_finance_activation: ['active', 'rejected', 'under_review'],
+  rejected: ['under_review'],
+};
+
+/**
+ * Finance = credit decision parity without activation.
+ * Credit-like actions land on pending_finance_activation; Activate is credit/admin only.
+ */
+const FINANCE_OFFICER_ALLOWED: Partial<Record<ApplicationStatus, ApplicationStatus[]>> = {
+  under_review: [
+    'contract_signing_required',
+    'resubmission_required',
+    'rejected',
+    'pending_finance_activation',
+    'submission_cancelled',
+  ],
+  resubmission_required: ['under_review', 'rejected', 'submission_cancelled'],
+  contract_signing_required: [
+    'contracts_submitted',
+    'resubmission_required',
+    'rejected',
+    'under_review',
+  ],
+  contracts_submitted: [
+    'contract_under_review',
+    'pending_finance_activation',
+    'contract_signing_required',
+    'rejected',
+    'resubmission_required',
+  ],
+  contract_under_review: [
+    'pending_finance_activation',
+    'contract_signing_required',
+    'rejected',
+    'down_payment_required',
+  ],
+  down_payment_required: [
+    'down_payment_submitted',
+    'pending_finance_activation',
+    'rejected',
+  ],
+  down_payment_submitted: [
+    'pending_finance_activation',
+    'rejected',
+    'down_payment_required',
+  ],
+  pending_finance_activation: ['rejected', 'under_review'],
   rejected: ['under_review'],
 };
 
@@ -188,11 +189,12 @@ export const CREDIT_PIPELINE_STATUSES: ApplicationStatus[] = [
 ];
 
 /**
- * Credit queue list statuses — pipeline plus rejected so officers can reopen
- * without needing a deep link. Pending finance / active stay out.
+ * Credit queue list statuses — pipeline plus rejected and pending activation
+ * so officers can activate without a deep link. Active stays out.
  */
 export const CREDIT_QUEUE_STATUSES: ApplicationStatus[] = [
   ...CREDIT_PIPELINE_STATUSES,
+  'pending_finance_activation',
   'rejected',
 ];
 

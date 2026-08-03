@@ -1637,11 +1637,11 @@ class SupabaseApiService {
         .maybeSingle();
       const role = (profile?.role || '').trim().toLowerCase();
       const canRebuild =
-        isAdminFlag === true || role === 'finance_officer';
+        isAdminFlag === true || role === 'finance_officer' || role === 'credit_officer';
       if (adminCheckErr || !canRebuild) {
         return {
           status: 'ERROR',
-          message: 'Only admins or finance officers can rebuild payment schedules',
+          message: 'Only admins, credit officers, or finance officers can rebuild payment schedules',
           data: { rows: 0 },
         };
       }

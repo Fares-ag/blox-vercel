@@ -123,7 +123,10 @@ export const CreditQueuePage: React.FC = () => {
     if (queueTab === 'rejected') {
       return apps.filter((a) => a.status === 'rejected');
     }
-    const pipelineSet = new Set<string>(CREDIT_PIPELINE_STATUSES);
+    const pipelineSet = new Set<string>([
+      ...CREDIT_PIPELINE_STATUSES,
+      'pending_finance_activation',
+    ]);
     return apps.filter((a) => pipelineSet.has(a.status));
   }, [apps, queueTab]);
 
@@ -238,7 +241,8 @@ export const CreditQueuePage: React.FC = () => {
         Credit Queue
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Submitted applications awaiting credit decisions. Drafts are hidden.
+        Submitted applications awaiting credit decisions, plus apps pending activation.
+        Drafts are hidden.
       </Typography>
 
       <Card className="credit-queue-toolbar">

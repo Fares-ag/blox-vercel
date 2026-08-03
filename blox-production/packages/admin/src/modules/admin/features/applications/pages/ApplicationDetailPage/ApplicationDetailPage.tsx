@@ -96,7 +96,7 @@ export const ApplicationDetailPage: React.FC = () => {
   const isFullAdmin = role === 'admin' || role === 'super_admin';
   const isSuperAdmin = role === 'super_admin';
   const canCreditDecide = isCreditOfficer || isFinanceOfficer || isFullAdmin;
-  const canFinanceActivate = isFinanceOfficer || isFullAdmin;
+  const canActivateFinancing = isCreditOfficer || isFullAdmin;
   const canMarkPaid = isFinanceOfficer || isFullAdmin;
   const [activeTab, setActiveTab] = useState(0);
   const [submittingToCredit, setSubmittingToCredit] = useState(false);
@@ -1000,7 +1000,7 @@ export const ApplicationDetailPage: React.FC = () => {
           { templateId: 'application_approved', idempotencyKey: `approved:${id}` }
         );
         notifyStaff(
-          ['credit_officer', 'admin', 'super_admin'],
+          ['finance_officer', 'admin', 'super_admin'],
           'success',
           'Financing activated',
           `App #${id?.slice(0, 8)} is now active.`,
@@ -1057,7 +1057,7 @@ export const ApplicationDetailPage: React.FC = () => {
           { templateId: 'application_approved', idempotencyKey: `approved:${id}` }
         );
         notifyStaff(
-          ['credit_officer', 'admin', 'super_admin'],
+          ['finance_officer', 'admin', 'super_admin'],
           'success',
           'Financing activated',
           `App #${id?.slice(0, 8)} (draft) is now active.`,
@@ -1463,7 +1463,7 @@ export const ApplicationDetailPage: React.FC = () => {
               </Button>
             </>
           )}
-          {canFinanceActivate &&
+          {canActivateFinancing &&
             (displayData.status === 'pending_finance_activation' ||
               displayData.status === 'contracts_submitted' ||
               displayData.status === 'contract_under_review' ||
@@ -1479,7 +1479,9 @@ export const ApplicationDetailPage: React.FC = () => {
               >
                 Activate Financing
               </Button>
-              {(isFinanceOfficer || displayData.status === 'pending_finance_activation') && (
+              {(isCreditOfficer ||
+                isFinanceOfficer ||
+                displayData.status === 'pending_finance_activation') && (
                 <Button
                   variant="secondary"
                   startIcon={<Cancel />}

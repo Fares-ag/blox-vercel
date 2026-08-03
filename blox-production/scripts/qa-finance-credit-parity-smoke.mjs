@@ -132,8 +132,21 @@ async function main() {
   if (dealer.error || dealer.role !== 'dealer_agent') {
     rec('SEED', false, dealer.error?.message || `dealer role=${dealer.role}`);
   } else {
-    const { data: products } = await dealer.sb.from('products').select('id').limit(1);
-    const vehicleId = products?.[0]?.id;
+    const { data: products } = await dealer.sb
+      .from('products')
+      .select('id')
+      .eq('company_id', dealer.companyId)
+      .eq('status', 'active')
+      .limit(1);
+    let vehicleId = products?.[0]?.id;
+    if (!vehicleId) {
+      const { data: anyProd } = await dealer.sb
+        .from('products')
+        .select('id')
+        .eq('company_id', dealer.companyId)
+        .limit(1);
+      vehicleId = anyProd?.[0]?.id;
+    }
     if (!vehicleId || !dealer.companyId) {
       rec('SEED', false, `missing product/company vehicle=${vehicleId} company=${dealer.companyId}`);
     } else {
@@ -224,7 +237,7 @@ async function main() {
     rec('F2', false, 'no smoke app', true);
   }
 
-  // F3 Activate Financing (+ payment_schedules dual-write)
+  // F3: finance cannot activate; credit activates + dual-writes payment_schedules
   if (smokeAppId) {
     const { data: app } = await fin.sb
       .from('applications')
@@ -233,55 +246,133 @@ async function main() {
       .single();
     const plan = app?.installment_plan || {};
     const schedule = Array.isArray(plan.schedule) ? plan.schedule : [];
-    const { data: act, error: actE } = await fin.sb
+
+    // Finance must be blocked from PFA → active
+    const { error: finActE } = await fin.sb
       .from('applications')
       .update({
         status: 'active',
         installment_plan: { ...plan, schedule },
       })
+      .eq('id', smokeAppId);
+    const { data: afterFin } = await fin.sb
+      .from('applications')
+      .select('status')
       .eq('id', smokeAppId)
-      .select('id, status')
       .single();
-    if (actE || act?.status !== 'active') {
-      rec('F3', false, actE?.message || `status=${act?.status}`);
-    } else {
-      // dual-write payment_schedules like replacePaymentSchedulesFromInstallmentPlan
-      const now = new Date().toISOString();
-      const rows = schedule
-        .map((s) => {
-          const dueDate = s.dueDate || s.due_date;
-          if (!dueDate) return null;
-          const amount = Number(s.amount) || 0;
-          return {
-            application_id: smokeAppId,
-            due_date: dueDate,
-            amount,
-            paid_amount: 0,
-            remaining_amount: amount,
-            status:
-              String(s.status || 'upcoming').toLowerCase() === 'pending'
-                ? 'upcoming'
-                : String(s.status || 'upcoming').toLowerCase(),
-            paid_date: null,
-            created_at: now,
-            updated_at: now,
-          };
-        })
-        .filter(Boolean);
-      const { error: delE } = await fin.sb.from('payment_schedules').delete().eq('application_id', smokeAppId);
-      const { error: insE } = rows.length
-        ? await fin.sb.from('payment_schedules').insert(rows)
-        : { error: null };
-      const { count } = await fin.sb
-        .from('payment_schedules')
-        .select('id', { count: 'exact', head: true })
-        .eq('application_id', smokeAppId);
+    const financeBlocked = afterFin?.status !== 'active';
+
+    // Credit activates — prefer unscoped credit officer used by activation smoke
+    const creditCandidates = [
+      { email: 'mafifi@q-auto.com', passwords: ['BloxCredit2026!', 'BloxTest2026!'] },
+      {
+        email: creditEmail,
+        passwords: [creditPass, process.env.SMOKE_SHARED_PASSWORD, 'BloxCredit2026!', 'BloxTest2026!'].filter(
+          Boolean
+        ),
+      },
+      { email: 'credit@blox.test', passwords: ['BloxCredit2026!', 'BloxTest2026!'] },
+    ];
+    let creditAct = { error: new Error('no credit'), role: null, sb: null };
+    for (const cand of creditCandidates) {
+      for (const pass of cand.passwords) {
+        const attempt = await login(url, anon, cand.email, pass);
+        if (!attempt.error && attempt.role === 'credit_officer') {
+          creditAct = attempt;
+          break;
+        }
+        creditAct = attempt;
+      }
+      if (!creditAct.error && creditAct.role === 'credit_officer') break;
+    }
+
+    if (creditAct.error || creditAct.role !== 'credit_officer') {
       rec(
         'F3',
-        !delE && !insE && (count ?? 0) >= 1,
-        `active; schedules=${count ?? 0}` +
-          (delE || insE ? ` syncErr=${delE?.message || insE?.message}` : '')
+        false,
+        `financeBlocked=${financeBlocked}; credit login failed: ${creditAct.error?.message || creditAct.role}`
       );
+    } else {
+      // Ensure PFA before credit activate (finance already moved under_review→PFA in F2)
+      if (afterFin?.status === 'under_review') {
+        await creditAct.sb
+          .from('applications')
+          .update({ status: 'pending_finance_activation' })
+          .eq('id', smokeAppId);
+      }
+      const { error: actE } = await creditAct.sb
+        .from('applications')
+        .update({
+          status: 'active',
+          installment_plan: { ...plan, schedule },
+        })
+        .eq('id', smokeAppId);
+      const { data: act } = await creditAct.sb
+        .from('applications')
+        .select('id, status')
+        .eq('id', smokeAppId)
+        .maybeSingle();
+
+      if (actE || act?.status !== 'active') {
+        rec(
+          'F3',
+          false,
+          `financeBlocked=${financeBlocked}; credit activate: ${actE?.message || act?.status || 'no row'}`
+        );
+      } else {
+        const now = new Date().toISOString();
+        const rows = schedule
+          .map((s) => {
+            const dueDate = s.dueDate || s.due_date;
+            if (!dueDate) return null;
+            const amount = Number(s.amount) || 0;
+            return {
+              application_id: smokeAppId,
+              due_date: dueDate,
+              amount,
+              paid_amount: 0,
+              remaining_amount: amount,
+              status:
+                String(s.status || 'upcoming').toLowerCase() === 'pending'
+                  ? 'upcoming'
+                  : String(s.status || 'upcoming').toLowerCase(),
+              paid_date: null,
+              created_at: now,
+              updated_at: now,
+            };
+          })
+          .filter(Boolean);
+        // Prefer finance writing schedules (money-ops); fall back to credit if needed
+        let delE = null;
+        let insE = null;
+        {
+          const d1 = await fin.sb.from('payment_schedules').delete().eq('application_id', smokeAppId);
+          delE = d1.error;
+          if (rows.length) {
+            const i1 = await fin.sb.from('payment_schedules').insert(rows);
+            insE = i1.error;
+          }
+        }
+        if (delE || insE) {
+          const d2 = await creditAct.sb.from('payment_schedules').delete().eq('application_id', smokeAppId);
+          delE = d2.error;
+          if (rows.length) {
+            const i2 = await creditAct.sb.from('payment_schedules').insert(rows);
+            insE = i2.error;
+          }
+        }
+        const { count } = await fin.sb
+          .from('payment_schedules')
+          .select('id', { count: 'exact', head: true })
+          .eq('application_id', smokeAppId);
+        rec(
+          'F3',
+          financeBlocked && !delE && !insE && (count ?? 0) >= 1,
+          `financeBlocked=${financeBlocked}; active; schedules=${count ?? 0}` +
+            (finActE ? ` financeReject=${finActE.message}` : '') +
+            (delE || insE ? ` syncErr=${delE?.message || insE?.message}` : '')
+        );
+      }
     }
   } else {
     rec('F3', false, 'no smoke app', true);
@@ -295,7 +386,21 @@ async function main() {
     const dealer2 = dealer;
     let f4Id = null;
     if (!dealer2.error && dealer2.companyId) {
-      const { data: products } = await dealer2.sb.from('products').select('id').limit(1);
+      const { data: products } = await dealer2.sb
+        .from('products')
+        .select('id')
+        .eq('company_id', dealer2.companyId)
+        .eq('status', 'active')
+        .limit(1);
+      const f4Vehicle =
+        products?.[0]?.id ||
+        (
+          await dealer2.sb
+            .from('products')
+            .select('id')
+            .eq('company_id', dealer2.companyId)
+            .limit(1)
+        ).data?.[0]?.id;
       const { data: created } = await dealer2.sb
         .from('applications')
         .insert({
@@ -303,7 +408,7 @@ async function main() {
           customer_email: `qa-finance-f4+${Date.now()}@blox.test`,
           customer_phone: '+97400000002',
           customer_info: { source: 'qa-finance-credit-parity-smoke-f4' },
-          vehicle_id: products?.[0]?.id,
+          vehicle_id: f4Vehicle,
           company_id: dealer2.companyId,
           agent_user_id: dealer2.user.id,
           status: 'draft',
@@ -380,7 +485,21 @@ async function main() {
     // Move smoke briefly for F5 using a fresh app to avoid breaking active book
     let f5Id = null;
     if (!dealer.error && dealer.companyId) {
-      const { data: products } = await dealer.sb.from('products').select('id').limit(1);
+      const { data: products } = await dealer.sb
+        .from('products')
+        .select('id')
+        .eq('company_id', dealer.companyId)
+        .eq('status', 'active')
+        .limit(1);
+      const f5Vehicle =
+        products?.[0]?.id ||
+        (
+          await dealer.sb
+            .from('products')
+            .select('id')
+            .eq('company_id', dealer.companyId)
+            .limit(1)
+        ).data?.[0]?.id;
       const { data: created } = await dealer.sb
         .from('applications')
         .insert({
@@ -388,7 +507,7 @@ async function main() {
           customer_email: `qa-finance-f5+${Date.now()}@blox.test`,
           customer_phone: '+97400000003',
           customer_info: { source: 'qa-finance-credit-parity-smoke-f5' },
-          vehicle_id: products?.[0]?.id,
+          vehicle_id: f5Vehicle,
           company_id: dealer.companyId,
           agent_user_id: dealer.user.id,
           status: 'draft',
@@ -604,7 +723,21 @@ async function main() {
     // put a dedicated app under_review for forced active
     let c1Id = null;
     if (!dealer.error && dealer.companyId) {
-      const { data: products } = await dealer.sb.from('products').select('id').limit(1);
+      const { data: products } = await dealer.sb
+        .from('products')
+        .select('id')
+        .eq('company_id', dealer.companyId)
+        .eq('status', 'active')
+        .limit(1);
+      const c1Vehicle =
+        products?.[0]?.id ||
+        (
+          await dealer.sb
+            .from('products')
+            .select('id')
+            .eq('company_id', dealer.companyId)
+            .limit(1)
+        ).data?.[0]?.id;
       const { data: created } = await dealer.sb
         .from('applications')
         .insert({
@@ -612,7 +745,7 @@ async function main() {
           customer_email: `qa-credit-c1+${Date.now()}@blox.test`,
           customer_phone: '+97400000004',
           customer_info: { source: 'qa-finance-credit-parity-smoke-c1' },
-          vehicle_id: products?.[0]?.id,
+          vehicle_id: c1Vehicle,
           company_id: dealer.companyId,
           agent_user_id: dealer.user.id,
           status: 'draft',
