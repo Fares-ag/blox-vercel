@@ -456,6 +456,9 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
                     />
                   )}
                   <Box className="vehicle-card-image-wrap">
+                    <Box className="vehicle-card-check" aria-hidden>
+                      ✓
+                    </Box>
                     <Box
                       component="img"
                       className="vehicle-card-image"
@@ -483,6 +486,11 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
                     <Typography variant="caption" color="textSecondary">
                       {vehicle.condition} • {(vehicle.mileage || 0).toLocaleString()} km
                     </Typography>
+                    {isSelected && (
+                      <Box className="selected-badge" component="span">
+                        Selected
+                      </Box>
+                    )}
                   </Box>
                 </Paper>
               </Grid>
