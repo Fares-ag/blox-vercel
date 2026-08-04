@@ -2742,6 +2742,7 @@ class SupabaseApiService {
   /**
    * Fan-out in-app notifications to staff roles (admin/credit/finance).
    * Uses SECURITY DEFINER RPC — safe for customer submit handoffs too.
+   * Also emails each recipient a staff_alert (client path; DB trigger is backup when GUCs set).
    */
   async notifyRoles(
     roles: Array<'admin' | 'super_admin' | 'credit_officer' | 'finance_officer' | string>,
@@ -2761,6 +2762,11 @@ class SupabaseApiService {
         p_link: data.link || null,
       });
       if (error) throw new Error(error.message || 'notify_roles failed');
+
+      void this.emailStaffAlertForRoles(roles, data).catch((err) =>
+        console.error('staff email fan-out failed (non-fatal):', err)
+      );
+
       return {
         status: 'SUCCESS',
         data: { count: Number(count) || 0 },
@@ -2795,6 +2801,12 @@ class SupabaseApiService {
         p_link: data.link || null,
       });
       if (error) throw new Error(error.message || 'notify_users failed');
+
+      const unique = [...new Set((emails || []).map((e) => e.trim().toLowerCase()).filter(Boolean))];
+      void this.emailStaffAlertToEmails(unique, data).catch((err) =>
+        console.error('staff email fan-out failed (non-fatal):', err)
+      );
+
       return {
         status: 'SUCCESS',
         data: { count: Number(count) || 0 },
@@ -2807,6 +2819,75 @@ class SupabaseApiService {
         message: error.message || 'Failed to notify users',
         data: { count: 0 },
       };
+    }
+  }
+
+  /** Resolve staff emails for roles and send staff_alert (best-effort). */
+  private async emailStaffAlertForRoles(
+    roles: string[],
+    data: { title: string; message: string; link?: string }
+  ): Promise<void> {
+    const { data: emails, error } = await supabase.rpc('staff_emails_for_notify_roles', {
+      p_roles: roles,
+    });
+    if (error) {
+      console.error('staff_emails_for_notify_roles failed:', error.message);
+      return;
+    }
+    const list = Array.isArray(emails) ? emails.map((e) => String(e).toLowerCase()) : [];
+    await this.emailStaffAlertToEmails(list, data);
+  }
+
+  private async emailStaffAlertToEmails(
+    emails: string[],
+    data: { title: string; message: string; link?: string }
+  ): Promise<void> {
+    const stamp = `${data.title}|${data.message}|${data.link || ''}`;
+    const adminBase = 'https://blox-admin.vercel.app';
+    const absoluteLink = (() => {
+      const link = (data.link || '').trim();
+      if (!link) return `${adminBase}/admin`;
+      if (/^https?:\/\//i.test(link)) return link;
+      if (link.startsWith('/admin') || link.startsWith('/credit') || link.startsWith('/finance')) {
+        // Prefer admin host for generic relative staff links; role-specific hosts are
+        // used by the staff-notify-email edge path when GUCs/secrets are set.
+        if (link.startsWith('/credit')) return `https://blox-credit.vercel.app${link}`;
+        if (link.startsWith('/finance')) return `https://blox-finance.vercel.app${link}`;
+        return `${adminBase}${link}`;
+      }
+      if (link.startsWith('/')) return `${adminBase}/admin${link}`;
+      return `${adminBase}/admin/${link}`;
+    })();
+    for (const to of emails) {
+      if (!to) continue;
+      const idem = `staff-alert:${to}:${await this.sha1Short(stamp)}`;
+      await this.triggerTransactionalEmail({
+        to,
+        templateId: 'staff_alert',
+        userEmail: to,
+        idempotencyKey: idem,
+        data: {
+          alertTitle: data.title,
+          alertMessage: data.message,
+          portalLink: absoluteLink,
+          portalName: 'portal',
+          title: data.title,
+          message: data.message,
+        },
+      });
+    }
+  }
+
+  private async sha1Short(input: string): Promise<string> {
+    try {
+      const buf = new TextEncoder().encode(input);
+      const hash = await crypto.subtle.digest('SHA-1', buf);
+      return Array.from(new Uint8Array(hash))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('')
+        .slice(0, 16);
+    } catch {
+      return String(input.length);
     }
   }
 

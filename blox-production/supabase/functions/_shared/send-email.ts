@@ -22,13 +22,20 @@ interface SendEmailArgs {
   idempotencyKey?: string;
 }
 
-export async function sendEmail(args: SendEmailArgs): Promise<void> {
+export interface SendEmailResult {
+  ok: boolean;
+  skipped?: boolean;
+  reason?: string;
+  error?: string;
+}
+
+export async function sendEmail(args: SendEmailArgs): Promise<SendEmailResult> {
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
   if (!supabaseUrl || !serviceRoleKey) {
     console.error("sendEmail: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-    return;
+    return { ok: false, error: "missing_supabase_env" };
   }
 
   try {
@@ -41,12 +48,21 @@ export async function sendEmail(args: SendEmailArgs): Promise<void> {
       body: JSON.stringify(args),
     });
 
+    const body = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const body = await res.text();
+      const error = body?.error ?? `send-email HTTP ${res.status}`;
       console.error(`sendEmail failed (${res.status}):`, body);
+      return { ok: false, error: String(error) };
     }
+
+    return {
+      ok: true,
+      skipped: body?.skipped === true,
+      reason: body?.reason ? String(body.reason) : undefined,
+    };
   } catch (err) {
     // Never throw — email failures must not break the calling flow.
     console.error("sendEmail network error:", err);
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
   }
 }

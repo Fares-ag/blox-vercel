@@ -63,7 +63,26 @@ This creates:
 ```bash
 cd blox-production
 npx supabase functions deploy send-email
+npx supabase functions deploy staff-notify-email
 ```
+
+### Staff portal email secrets
+
+Set on the Supabase project (Dashboard → Edge Functions → Secrets):
+
+| Key | Purpose | Recommended value |
+|-----|---------|-------------------|
+| `PORTAL_URL_ADMIN` | Absolute origin for admin CTA links | `https://blox-admin.vercel.app` |
+| `PORTAL_URL_CREDIT` | Absolute origin for credit portal | `https://blox-credit.vercel.app` |
+| `PORTAL_URL_FINANCE` | Absolute origin for finance portal | `https://blox-finance.vercel.app` |
+
+If unset, `staff-notify-email` falls back to those Vercel production hosts. Override when custom domains are live.
+
+Store Vault secrets `project_url` + `service_role_key` (see `scripts/setup-push-production.sql`) so the `notifications` AFTER INSERT trigger can call `staff-notify-email` (backup path; also powers push-notify). Hosted Supabase blocks custom `app.*` GUCs.
+
+**Primary path (works without GUCs):** [`notifyRoles`](../packages/shared/src/services/supabase-api.service.ts) / `notifyUsers` send `staff_alert` via `send-email` after the in-app RPC, using `staff_emails_for_notify_roles` to resolve recipients.
+
+**Behavior:** every in-app staff notification (admin / credit / finance) also sends a `staff_alert` email. Customer notification rows are skipped by the DB bridge (they already use dedicated transactional templates). Idempotency keys: `staff-email:{notification_id}` (trigger) or `staff-alert:{email}:{hash}` (client).
 
 ---
 
@@ -76,14 +95,16 @@ npx supabase functions deploy payment-reminders
 ### Schedule with pg_cron (run once in SQL editor)
 
 ```sql
+-- Requires Vault secrets from scripts/setup-push-production.sql
 SELECT cron.schedule(
   'blox-payment-reminders-daily',
   '0 7 * * *',  -- 7:00 AM UTC daily (10:00 AM Qatar time)
   $$
   SELECT net.http_post(
-    url := current_setting('app.supabase_url') || '/functions/v1/payment-reminders',
+    url := (SELECT c.base_url FROM public.edge_invoke_credentials() c)
+           || '/functions/v1/payment-reminders',
     headers := jsonb_build_object(
-      'Authorization', 'Bearer ' || current_setting('app.service_role_key'),
+      'Authorization', 'Bearer ' || (SELECT c.service_role_key FROM public.edge_invoke_credentials() c),
       'Content-Type', 'application/json'
     ),
     body := '{}'::jsonb
@@ -109,6 +130,10 @@ Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY
 - [ ] Confirm bank transfer in admin → check inbox for "Payment confirmed" receipt
 - [ ] Check `email_outbox` table for audit rows (`status = 'sent'`)
 - [ ] Run `payment-reminders` manually → verify reminders in inbox and `email_outbox`
+- [ ] Trigger staff `notify_roles` → staff get `staff_alert` email; `notifications.email_sent_at` set when Vault + Resend work
+- [ ] Confirm `RESEND_API_KEY` secret is set (send-email returns 500 without it)
+- [ ] Optional: run `scripts/setup-push-production.sql` (Vault `project_url` + `service_role_key`) for trigger/push backup path
+- [ ] Confirm customer lifecycle emails still send once (staff bridge skips non-staff rows)
 
 ---
 
@@ -121,4 +146,13 @@ FROM email_outbox
 WHERE status = 'failed'
 ORDER BY created_at DESC
 LIMIT 50;
+```
+
+Staff email parity:
+```sql
+SELECT id, user_email, title, email_sent_at, created_at
+FROM notifications
+WHERE email_sent_at IS NOT NULL
+ORDER BY email_sent_at DESC
+LIMIT 20;
 ```

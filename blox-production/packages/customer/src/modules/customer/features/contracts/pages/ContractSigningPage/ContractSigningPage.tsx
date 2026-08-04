@@ -230,6 +230,19 @@ export const ContractSigningPage: React.FC = () => {
             // Don't show error to user - notification failure is not critical
           });
 
+          void supabaseApiService.triggerTransactionalEmail({
+            to: application.customerEmail,
+            templateId: 'contract_signed',
+            userEmail: application.customerEmail,
+            idempotencyKey: `contract-signed:${id}`,
+            data: {
+              customerName: application.customerName,
+              applicationId: id,
+              vehicleName: application.vehicleName || application.vehicle?.name,
+              dashboardLink: `/customer/my-applications/${id}`,
+            },
+          });
+
           void supabaseApiService
             .notifyRoles(['credit_officer', 'finance_officer', 'admin', 'super_admin'], {
               type: 'info',

@@ -140,7 +140,8 @@ export type EmailTemplate =
   | 'abandoned_payment'
   | 'bank_transfer_received'
   | 'documents_resubmit'
-  | 'support_ack';
+  | 'support_ack'
+  | 'staff_alert';
 
 export interface EmailPayload {
   customerName?: string;
@@ -154,6 +155,11 @@ export interface EmailPayload {
   comments?: string;
   supportTopic?: string;
   ticketRef?: string;
+  /** Staff alert fields */
+  alertTitle?: string;
+  alertMessage?: string;
+  portalLink?: string;
+  portalName?: string;
   [key: string]: unknown;
 }
 
@@ -401,6 +407,26 @@ export function renderEmail(
           <p>You can reply to this email with any additional details.</p>
         `),
       };
+
+    case 'staff_alert': {
+      const alertTitle = String(data.alertTitle || data.title || 'BLOX update').trim();
+      const alertMessage = String(data.alertMessage || data.message || '').trim();
+      const portalLink = typeof data.portalLink === 'string' ? data.portalLink.trim() : '';
+      const portalName = String(data.portalName || 'portal').trim();
+      const cta = portalLink
+        ? `<a class="cta" href="${portalLink}">Open in ${portalName}</a>`
+        : '';
+      return {
+        subject: `[BLOX] ${alertTitle}`,
+        html: shell(`
+          <h1>${alertTitle}</h1>
+          <p>Hi,</p>
+          <p>${alertMessage || 'You have a new update in the BLOX staff portal.'}</p>
+          ${cta}
+          <p style="font-size:13px;color:#6B7280;">This alert mirrors your in-app notification. You can manage email preferences in your profile.</p>
+        `),
+      };
+    }
 
     default:
       return {

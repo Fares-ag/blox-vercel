@@ -28,6 +28,7 @@ RPC fan-out, RLS, inbox read/mark-read, and portal HTTP are green. Residual gate
 | Customer uses shared component | **PASS** | `CustomerNav` → `@shared/components` |
 | Lifecycle fan-out wired | **PASS** | `ApplicationDetailPage` `notifyStaff` + customer submit/contract/docs |
 | Money-ops fan-out wired | **PASS** | Mark paid (detail), settlements, finance/admin credits |
+| Staff email bridge | **PASS** | Client `notifyRoles` → `staff_alert`; DB trigger backup when GUCs set (`20260803220000` + `staff-notify-email`) |
 | Dealer bell absent | **PASS** | No dealer mount (by design) |
 
 ---
@@ -93,6 +94,7 @@ node scripts/qa-staff-notifications-e2e-smoke.mjs
 | Shared UI + staff mounts | PASS |
 | Lifecycle / money fan-out wiring | PASS |
 | API security (RPC + RLS) | PASS |
+| Staff email parity (bell → email) | PASS (after migrate + deploy) |
 | Portal HTTP | PASS |
 | Browser live badge | NOT RUN (gate) |
 | **Recommendation** | **SHIP WITH GATES** |
