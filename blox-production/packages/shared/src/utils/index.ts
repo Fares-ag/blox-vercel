@@ -22,4 +22,5 @@ export * from './application-status-transitions';
 export * from './documents-storage.utils';
 export * from './catalog-row-mappers';
 export * from './product-display.utils';
+export * from './product-image.utils';
 export * from './blox-credits.utils';

@@ -16,6 +16,12 @@ import type { StepProps } from '@shared/components/shared/MultiStepForm/MultiSte
 import { supabaseApiService } from '@shared/services';
 import type { Product } from '@shared/models/product.model';
 import { formatCurrency } from '@shared/utils/formatters';
+import {
+  DEFAULT_VEHICLE_IMAGE,
+  getProductDisplayImage,
+  isPublicOrRemoteImageUrl,
+  resolveDocumentsSignedUrl,
+} from '@shared/utils';
 import { toast } from 'react-toastify';
 import { useAppSelector } from '../../../../store/hooks';
 import './VehicleSelectionStep.scss';
@@ -34,6 +40,7 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
   const [makes, setMakes] = useState<string[]>([]);
   const [models, setModels] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [imageById, setImageById] = useState<Record<string, string>>({});
   const [selectedVehicle, setSelectedVehicle] = useState<Product | null>(
     data.vehicle || (data.vehicleId ? ({ id: data.vehicleId } as Product) : null)
   );
@@ -154,6 +161,39 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
 
     return filtered;
   }, [allProducts, filterMake, filterModel, filterYear, filterCondition, searchTerm]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const next: Record<string, string> = {};
+      const needSign: { id: string; ref: string }[] = [];
+
+      for (const p of products) {
+        const candidate = getProductDisplayImage(p);
+        if (isPublicOrRemoteImageUrl(candidate)) {
+          next[p.id] = candidate;
+        } else {
+          needSign.push({ id: p.id, ref: candidate });
+          next[p.id] = DEFAULT_VEHICLE_IMAGE;
+        }
+      }
+
+      if (needSign.length > 0) {
+        const { supabase } = await import('@shared/services');
+        await Promise.all(
+          needSign.map(async ({ id, ref }) => {
+            const signed = await resolveDocumentsSignedUrl(supabase, ref);
+            if (signed) next[id] = signed;
+          })
+        );
+      }
+
+      if (!cancelled) setImageById(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [products]);
 
   const makeOptions: SelectOption[] = useMemo(
     () => makes.map((make) => ({ value: make, label: make })),
@@ -412,19 +452,38 @@ export const VehicleSelectionStep: React.FC<StepProps> = ({ data, updateData }) 
                       checked={isSelected}
                       onClick={(e) => e.stopPropagation()}
                       onChange={() => handleSelectVehicle(vehicle)}
-                      sx={{ position: 'absolute', top: 4, right: 4 }}
+                      sx={{ position: 'absolute', top: 8, right: 8, zIndex: 1 }}
                     />
                   )}
-                  <Typography variant="h4">{vehicle.make} {vehicle.model}</Typography>
-                  <Typography variant="body2" color="textSecondary">
-                    {vehicle.trim} • {vehicle.modelYear}
-                  </Typography>
-                  <Typography variant="h5" className="price">
-                    {formatCurrency(vehicle.price)}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    {vehicle.condition} • {(vehicle.mileage || 0).toLocaleString()} km
-                  </Typography>
+                  <Box className="vehicle-card-image-wrap">
+                    <Box
+                      component="img"
+                      className="vehicle-card-image"
+                      src={imageById[vehicle.id] || getProductDisplayImage(vehicle)}
+                      alt={`${vehicle.make} ${vehicle.model}`}
+                      loading="lazy"
+                      onError={(e: React.SyntheticEvent<HTMLImageElement>) => {
+                        const img = e.currentTarget;
+                        if (img.dataset.fallback === '1') return;
+                        img.dataset.fallback = '1';
+                        img.src = DEFAULT_VEHICLE_IMAGE;
+                      }}
+                    />
+                  </Box>
+                  <Box className="vehicle-card-body">
+                    <Typography variant="h4">
+                      {vehicle.make} {vehicle.model}
+                    </Typography>
+                    <Typography variant="body2" color="textSecondary">
+                      {vehicle.trim} • {vehicle.modelYear}
+                    </Typography>
+                    <Typography variant="h5" className="price">
+                      {formatCurrency(vehicle.price)}
+                    </Typography>
+                    <Typography variant="caption" color="textSecondary">
+                      {vehicle.condition} • {(vehicle.mileage || 0).toLocaleString()} km
+                    </Typography>
+                  </Box>
                 </Paper>
               </Grid>
             );
