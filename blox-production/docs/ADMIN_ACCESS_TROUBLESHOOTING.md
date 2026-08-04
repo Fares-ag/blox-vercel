@@ -1,5 +1,13 @@
 # Admin Access Troubleshooting Guide
 
+## Creating staff accounts
+
+Use **Admin → Users → Create user** (or Super-admin → Users). Do not rely on Supabase Dashboard for day-to-day staff onboarding.
+
+If an admin cannot see applications after a role change, they must **log out and log back in** so the session refreshes.
+
+---
+
 ## Problem: Admin Can't See Customer Applications
 
 After applying secure RLS policies, admins might not be able to see applications if their role isn't set correctly.

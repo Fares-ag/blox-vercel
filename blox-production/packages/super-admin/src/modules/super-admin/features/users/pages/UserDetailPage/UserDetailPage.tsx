@@ -2,8 +2,5 @@ import React from 'react';
 import { StaffUserDetailPage } from '@shared/features/staff-users';
 
 export const UserDetailPage: React.FC = () => (
-  <StaffUserDetailPage
-    basePath="/admin/users"
-    applicationDetailPath={(id) => `/admin/applications/view/${id}`}
-  />
+  <StaffUserDetailPage basePath="/super-admin/users" />
 );

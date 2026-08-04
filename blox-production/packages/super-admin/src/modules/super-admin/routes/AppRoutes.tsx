@@ -23,6 +23,16 @@ const ActivityLogsPage = React.lazy(() =>
   import('../features/activity-logs/pages/ActivityLogsPage/ActivityLogsPage')
     .then(m => ({ default: m.ActivityLogsPage }))
 );
+const UsersListPage = React.lazy(() =>
+  import('../features/users/pages/UsersListPage/UsersListPage').then((m) => ({
+    default: m.UsersListPage,
+  }))
+);
+const UserDetailPage = React.lazy(() =>
+  import('../features/users/pages/UserDetailPage/UserDetailPage').then((m) => ({
+    default: m.UserDetailPage,
+  }))
+);
 
 export const AppRoutes: React.FC = () => {
   return (
@@ -48,6 +58,8 @@ export const AppRoutes: React.FC = () => {
       >
         <Route index element={<Navigate to="/super-admin/dashboard" replace />} />
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="users" element={<UsersListPage />} />
+        <Route path="users/:email" element={<UserDetailPage />} />
         <Route path="activity-logs" element={<ActivityLogsPage />} />
       </Route>
 

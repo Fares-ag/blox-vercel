@@ -4,7 +4,7 @@ Operational finance portal for credit-parity decisions, viewing the activation q
 
 ## Role
 
-Assign with `admin_set_user_role` (or super-admin UI) using role `finance_officer`.
+Create with **Admin → Users → Create user** (role `finance_officer`), or assign via `admin_set_user_role` / Users detail.
 
 Credit and finance remain **separate roles**. **Credit** (and admin) **Activate Financing** → `active`. Finance can decide into `pending_finance_activation` and **view** the activation queue / active book, but cannot activate. **Mark-paid** is shared by credit, finance, and admin. Settlements and Blox credits remain finance/admin.
 
@@ -19,7 +19,7 @@ Scripts: `dev:finance`, `build:finance`, `lint:finance`.
 
 ## Role + company scope
 
-- Assign role `finance_officer` (Users detail or `admin_set_user_role`).
+- Assign role `finance_officer` via **Create user** or Users detail (`admin_set_user_role`).
 - Default `users.finance_scope = 'all'` (platform-wide). For partner-only finance, set `finance_scope = 'assigned'` and assign companies on **Admin → Partner → Assigned finance officers**.
 - Settlement **discount settings** remain admin-only.
 

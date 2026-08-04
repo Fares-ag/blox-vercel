@@ -6,4 +6,5 @@ export * from './hooks';
 export * from './models';
 export * from './config';
 export * from './contexts/portal-base-path';
+export * from './features/staff-users';
 

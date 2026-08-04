@@ -1,0 +1,45 @@
+.users-list-page {
+  padding: var(--spacing-lg);
+  width: 100%;
+  background: transparent;
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+
+    .page-title {
+      font-weight: 700;
+      font-size: 32px;
+      color: var(--primary-text);
+      letter-spacing: -0.02em;
+    }
+
+    .page-subtitle {
+      margin-top: var(--spacing-xs);
+      color: var(--secondary-text);
+      font-size: 14px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: var(--spacing-sm);
+    }
+  }
+
+  .search-section {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .table-section {
+    background: var(--card-background);
+    border: 1px solid var(--divider-color);
+    border-radius: var(--radius-card);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    padding: var(--spacing-md);
+  }
+}

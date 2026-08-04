@@ -11,6 +11,7 @@ import './MainLayout.scss';
 
 const superAdminMenuItems: MenuItem[] = [
   { id: 'dashboard', label: 'Dashboard', path: '/super-admin/dashboard' },
+  { id: 'users', label: 'Users', path: '/super-admin/users' },
   { id: 'activity-logs', label: 'Activity Logs', path: '/super-admin/activity-logs' },
 ];
 

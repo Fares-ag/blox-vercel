@@ -3551,6 +3551,69 @@ class SupabaseApiService {
     }
   }
 
+  async createUser(input: {
+    email: string;
+    password: string;
+    role: string;
+    companyId?: string | null;
+    firstName?: string;
+    lastName?: string;
+    name?: string;
+  }): Promise<ApiResponse<{ id: string; email: string; role: string; companyId?: string | null }>> {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: input.email,
+          password: input.password,
+          role: input.role,
+          companyId: input.companyId ?? null,
+          firstName: input.firstName || undefined,
+          lastName: input.lastName || undefined,
+          name: input.name || undefined,
+        },
+      });
+
+      if (error) {
+        const ctx = (error as { context?: Response }).context;
+        let message = error.message || 'Failed to create user';
+        if (ctx && typeof ctx.json === 'function') {
+          try {
+            const errBody = await ctx.json();
+            if (errBody?.error) message = String(errBody.error);
+          } catch {
+            // keep message
+          }
+        }
+        return { status: 'ERROR', message, data: {} as any };
+      }
+
+      if (data?.error) {
+        return {
+          status: 'ERROR',
+          message: String(data.error),
+          data: {} as any,
+        };
+      }
+
+      return {
+        status: 'SUCCESS',
+        data: {
+          id: data.id,
+          email: data.email,
+          role: data.role,
+          companyId: data.companyId ?? null,
+        },
+        message: 'User created successfully',
+      };
+    } catch (error: any) {
+      return {
+        status: 'ERROR',
+        message: error.message || 'Failed to create user',
+        data: {} as any,
+      };
+    }
+  }
+
   async updateUserRole(userId: string, role: string): Promise<ApiResponse<User>> {
     try {
       const { data: rpcData, error: rpcError } = await supabase.rpc('admin_set_user_role', {

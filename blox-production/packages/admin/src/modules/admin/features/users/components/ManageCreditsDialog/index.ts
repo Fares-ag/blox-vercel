@@ -1,2 +1,1 @@
-export { ManageCreditsDialog } from './ManageCreditsDialog';
-export type { CreditsAction } from './ManageCreditsDialog';
+export { ManageCreditsDialog, type CreditsAction } from '@shared/features/staff-users';
