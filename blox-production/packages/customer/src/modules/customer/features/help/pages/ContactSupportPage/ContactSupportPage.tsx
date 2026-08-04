@@ -218,7 +218,9 @@ export const ContactSupportPage: React.FC = () => {
               <Phone className="contact-icon" />
               <Box>
                 <Typography variant="body2" className="contact-label">Phone</Typography>
-                <Typography variant="body1" fontWeight={600} className="contact-value">+974 1234 5678</Typography>
+                <Typography variant="body1" fontWeight={600} className="contact-value">
+                  <a href="tel:+97477887114">+974 7788 7114</a>
+                </Typography>
               </Box>
             </Box>
 

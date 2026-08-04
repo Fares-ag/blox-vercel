@@ -1,0 +1,130 @@
+.contact-us-page {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--background);
+  overflow-x: hidden;
+
+  .contact-hero {
+    background: var(--blox-black);
+    color: #fff;
+    padding: clamp(64px, 10vw, 100px) 0 clamp(48px, 7vw, 72px);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        ellipse 55% 45% at 85% 15%,
+        rgba(0, 207, 162, 0.2),
+        transparent 60%
+      );
+      pointer-events: none;
+    }
+
+    .MuiContainer-root {
+      position: relative;
+      z-index: 1;
+    }
+  }
+
+  .contact-brand {
+    font-size: clamp(28px, 5vw, 40px);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: var(--blox-lime);
+    margin: 0 0 16px;
+  }
+
+  .contact-hero-title {
+    font-size: clamp(36px, 6vw, 52px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin: 0 0 16px;
+    color: #fff;
+  }
+
+  .contact-hero-lead {
+    font-size: clamp(17px, 2.2vw, 20px);
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.9);
+    max-width: 34rem;
+    margin: 0;
+  }
+
+  .contact-body {
+    padding: clamp(40px, 6vw, 72px) 16px;
+  }
+
+  .contact-panel-title {
+    font-size: clamp(22px, 3vw, 28px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--primary-text);
+    margin: 0 0 20px;
+  }
+
+  .contact-form-panel,
+  .contact-aside {
+    background: var(--card-background, #fff);
+    border: 1px solid var(--divider-color, rgba(22, 83, 91, 0.1));
+    border-radius: 16px;
+    padding: clamp(24px, 4vw, 36px);
+    box-shadow: 0 4px 20px rgba(22, 83, 91, 0.06);
+  }
+
+  .contact-row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 22px;
+  }
+
+  .contact-row-icon {
+    color: var(--blox-emerald);
+    margin-top: 2px;
+  }
+
+  .contact-row-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--secondary-text);
+    margin-bottom: 2px;
+  }
+
+  .contact-row-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary-text);
+
+    a {
+      color: inherit;
+      text-decoration: none;
+
+      &:hover {
+        color: var(--blox-emerald-dark);
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .contact-hours {
+    margin-top: 28px;
+    padding-top: 24px;
+    border-top: 1px solid var(--divider-color, rgba(22, 83, 91, 0.12));
+  }
+
+  .contact-hours-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--primary-text);
+    margin-bottom: 10px;
+  }
+
+  .contact-hours-line {
+    font-size: 14px;
+    color: var(--secondary-text);
+    margin-bottom: 4px;
+  }
+}

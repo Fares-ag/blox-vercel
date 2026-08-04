@@ -35,7 +35,6 @@ const ChangePasswordPage = React.lazy(() => import('../features/profile/pages/Ch
 
 // Help Routes
 const FAQPage = React.lazy(() => import('../features/help/pages/FAQPage/FAQPage').then(m => ({ default: m.FAQPage })));
-const ContactSupportPage = React.lazy(() => import('../features/help/pages/ContactSupportPage/ContactSupportPage').then(m => ({ default: m.ContactSupportPage })));
 const TermsPage = React.lazy(() => import('../features/help/pages/TermsPage/TermsPage').then(m => ({ default: m.TermsPage })));
 const PrivacyPage = React.lazy(() => import('../features/help/pages/PrivacyPage/PrivacyPage').then(m => ({ default: m.PrivacyPage })));
 const DeleteAccountPage = React.lazy(() =>
@@ -57,6 +56,14 @@ const CreditTopUpCallbackPage = React.lazy(() => import('../features/membership/
 
 // Home/Landing Routes (Public - No Auth Required)
 const LandingPage = React.lazy(() => import('../features/home/pages/LandingPage/LandingPage').then(m => ({ default: m.LandingPage })));
+const AboutPage = React.lazy(() =>
+  import('../features/home/pages/AboutPage/AboutPage').then((m) => ({ default: m.AboutPage }))
+);
+const ContactUsPage = React.lazy(() =>
+  import('../features/home/pages/ContactUsPage/ContactUsPage').then((m) => ({
+    default: m.ContactUsPage,
+  }))
+);
 
 // Vehicle Routes (Public - No Auth Required)
 const VehicleBrowsePage = React.lazy(() => import('../features/vehicles/pages/VehicleBrowsePage/VehicleBrowsePage').then(m => ({ default: m.VehicleBrowsePage })));
@@ -105,6 +112,22 @@ export const AppRoutes: React.FC = () => {
         element={
           <CustomerNavWrapper>
             <LandingPage />
+          </CustomerNavWrapper>
+        }
+      />
+      <Route
+        path="/customer/about"
+        element={
+          <CustomerNavWrapper>
+            <AboutPage />
+          </CustomerNavWrapper>
+        }
+      />
+      <Route
+        path="/customer/contact"
+        element={
+          <CustomerNavWrapper>
+            <ContactUsPage />
           </CustomerNavWrapper>
         }
       />
@@ -175,7 +198,7 @@ export const AppRoutes: React.FC = () => {
         path="/customer/help/contact"
         element={
           <CustomerNavWrapper>
-            <ContactSupportPage />
+            <Navigate to="/customer/contact" replace />
           </CustomerNavWrapper>
         }
       />

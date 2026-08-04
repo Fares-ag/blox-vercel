@@ -15,6 +15,22 @@ export const CustomerFooter: React.FC = () => {
         <Box className="customer-footer__links">
           <MuiLink
             component={RouterLink}
+            to="/customer/about"
+            className="customer-footer__link"
+            underline="hover"
+          >
+            About us
+          </MuiLink>
+          <MuiLink
+            component={RouterLink}
+            to="/customer/contact"
+            className="customer-footer__link"
+            underline="hover"
+          >
+            Contact us
+          </MuiLink>
+          <MuiLink
+            component={RouterLink}
             to="/customer/legal/privacy"
             className="customer-footer__link"
             underline="hover"

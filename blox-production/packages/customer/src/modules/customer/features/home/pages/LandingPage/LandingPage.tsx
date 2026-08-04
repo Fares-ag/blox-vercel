@@ -302,6 +302,37 @@ export const LandingPage: React.FC = () => {
         </Container>
       </Box>
 
+      {/* About teaser */}
+      <Box className="about-teaser-section">
+        <Container maxWidth="md">
+          <Typography component="p" className="about-teaser-brand">
+            BLOX
+          </Typography>
+          <Typography variant="h2" className="about-teaser-title">
+            Who we are
+          </Typography>
+          <Typography className="about-teaser-body">
+            We help people own vehicles through transparent, Sharia-compliant equity partnerships—
+            financing that adapts to life, not the other way around.
+          </Typography>
+          <Box className="about-teaser-quote">
+            <Typography className="about-teaser-kicker">Vision</Typography>
+            <Typography className="about-teaser-statement">
+              To make equitable ownership the default standard for the world.
+            </Typography>
+          </Box>
+          <CustomButton
+            variant="secondary"
+            size="large"
+            onClick={() => navigate('/customer/about')}
+            endIcon={<ArrowForward />}
+            sx={{ mt: 4 }}
+          >
+            Read more about us
+          </CustomButton>
+        </Container>
+      </Box>
+
       {/* CTA Section */}
       <Box className="cta-section">
         <Container maxWidth="md">

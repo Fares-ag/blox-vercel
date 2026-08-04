@@ -230,6 +230,18 @@ export const CustomerNav: React.FC = () => {
           >
             Browse Vehicles
           </Button>
+          <Button
+            className={`nav-link ${isActive('/customer/about') ? 'active' : ''}`}
+            onClick={() => navigate('/customer/about')}
+          >
+            About
+          </Button>
+          <Button
+            className={`nav-link ${isActive('/customer/contact') ? 'active' : ''}`}
+            onClick={() => navigate('/customer/contact')}
+          >
+            Contact
+          </Button>
           {isAuthenticated && (
             <>
               <Button
@@ -301,6 +313,18 @@ export const CustomerNav: React.FC = () => {
           >
             <DirectionsCar sx={{ mr: 1 }} />
             Browse Vehicles
+          </MenuItem>
+          <MenuItem
+            onClick={() => { handleMobileMenuClose(); navigate('/customer/about'); }}
+            selected={isActive('/customer/about')}
+          >
+            About
+          </MenuItem>
+          <MenuItem
+            onClick={() => { handleMobileMenuClose(); navigate('/customer/contact'); }}
+            selected={isActive('/customer/contact')}
+          >
+            Contact
           </MenuItem>
           {isAuthenticated && [
             <MenuItem 
